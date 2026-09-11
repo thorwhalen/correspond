@@ -63,7 +63,7 @@ from correspond.ops import (
 )
 from correspond.registry import check_requirements, register_channel, unregister_channel
 from correspond.registry import channels as channel_registry
-from correspond.routing import RouteDecision, metadata_rule, route
+from correspond.routing import RouteDecision, check_binding, metadata_rule, route
 
 __all__ = [
     "Account",
@@ -95,6 +95,7 @@ __all__ = [
     "Writer",
     "capabilities",
     "channel_registry",
+    "check_binding",
     "check_requirements",
     "edit",
     "get_channel",

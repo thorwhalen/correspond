@@ -61,6 +61,9 @@ def test_importing_the_core_pulls_in_no_surface_library():
         ).stdout
     )
     assert not set(loaded) & SURFACE_LIBS
+    assert not set(loaded) & {"xdol", "dol"}, (
+        "the registry and the stores import these on first use"
+    )
 
 
 def test_the_tool_list_is_complete_and_classified():

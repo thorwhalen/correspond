@@ -45,7 +45,7 @@ Grades are a vocabulary, not a ranking. A policy lists the grades it accepts for
 
 ## Capabilities
 
-`correspond capabilities github` grades each operation `full`, `partial` or `none`, plus whether a write can start a conversation (`initiate`; a Telegram bot cannot), answer a specific message (`reply`) or carry a `priority`, how far back `read` sees (`history_depth`), the limits (text length, reactions), the rate limits and notes. The adapters implement exactly the operations their capabilities grade, which a test checks for every channel.
+`correspond capabilities github` grades each operation `full`, `partial` or `none`, plus whether a write can start a conversation (`initiate`; a Telegram bot cannot), answer a specific message (`reply`) or carry a `priority`, how far back `read` sees (`history_depth`), the limits (text length, reactions), the fields its messages carry in `native` (`native_fields`), the rate limits and notes. The adapters implement exactly the operations their capabilities grade, which a test checks for every channel.
 
 ```text
 $ correspond react ntfy:example-topic m1 eyes
@@ -54,7 +54,7 @@ ntfy does not support react
 
 ## Writing: dry run first
 
-- `--dry-run` on `send`, `edit` and `react` contacts nothing and changes nothing. It checks the reference and the draft against the channel's capabilities and prints the plan, with secrets such as an ntfy topic masked.
+- `--dry-run` on `send`, `edit` and `react` contacts nothing and changes nothing. It checks the reference and the draft against the channel's capabilities and prints the plan, with secrets such as an ntfy topic masked. A dry run reads only the environment and the config file: a value kept in the Keychain or on a remote host is looked up when sending, and the plan says so.
 - A write that fails is a result, not an exception: `ok: false`, an `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`), and whether a retry can help (`retryable`, `retry_after`).
 - `-` as the text reads it from stdin; `--json` prints the whole result.
 
@@ -97,6 +97,8 @@ export CORRESPOND_WEBINBOX_SECRET=...   # shared with the host application's ser
 uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1 --port 8765
 ```
 
+Behind a reverse proxy, also set `CORRESPOND_WEBINBOX_TRUSTED_PROXIES` to the number of proxies in front (usually `1`), or every visitor shares the proxy's rate limit. Several sites on one collector need a secret each, `CORRESPOND_WEBINBOX_SECRET_<SITE>` (the site name upper-cased, `-` as `_`), so that no site's server can sign identities for another; the shared `CORRESPOND_WEBINBOX_SECRET` serves a single site only.
+
 `POST /example-site/reports` takes JSON with a required `text` and optional `name`, `email`, `page`, `context`, `attachments` (base64, stored by SHA-256, referenced rather than inlined) and `identity`. Without `identity` a report is `claimed`. The host application's server can sign its logged-in user, which makes the report `bound`:
 
 ```python
@@ -122,7 +124,7 @@ decision = route(
 decision.target, decision.rule, decision.reason
 ```
 
-The rules are yours; correspond runs them in that order and says which one decided. Nothing matched returns `None`: the message is unrouted.
+The rules are yours; correspond runs them in that order and says which one decided. Nothing matched returns `None`: the message is unrouted. Check bindings when you load them: `check_binding(pattern)` lists what would make one never match, such as an unknown channel, or `?label=` where GitHub messages carry `labels`.
 
 ## Python
 

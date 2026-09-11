@@ -348,3 +348,9 @@ def test_imap_failures_are_classified_and_missing_settings_explained(mailbox):
         correspond.read("email:", registry={"email": Email()})
     with pytest.raises(correspond.InvalidRef):
         Email().parse_ref("not an address")
+
+
+def test_the_native_fields_messages_carry_are_the_ones_capabilities_declare(mailbox):
+    declared = set(Email().capabilities.native_fields)
+    for message in correspond.read("email:", registry=_registry(mailbox)):
+        assert set(message.native) <= declared

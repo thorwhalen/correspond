@@ -293,3 +293,17 @@ def test_a_missing_token_says_where_to_get_one():
     )
     result = correspond.send("telegram:-4001", "hi", registry=_registry(FakeBotApi()))
     assert result.error_kind == "auth"
+
+
+def test_the_native_fields_messages_carry_are_the_ones_capabilities_declare(token):
+    api = FakeBotApi(
+        getUpdates=[
+            {
+                "update_id": 1,
+                "message": _message(1, message_thread_id=3, is_topic_message=True),
+            }
+        ]
+    )
+    declared = set(Telegram().capabilities.native_fields)
+    for event in correspond.listen("telegram:", cursors={}, registry=_registry(api)):
+        assert set(event.message.native) <= declared

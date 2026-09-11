@@ -103,3 +103,28 @@ def test_the_classifier_runs_last_and_nothing_matched_means_unrouted():
         == "binding"
     )
     assert seen == ["m1"], "the classifier is not asked when a rule decided"
+
+
+def test_bindings_are_checked_against_the_fields_a_channel_carries():
+    from correspond.channels.github import GitHub
+    from correspond.routing import check_binding
+    from correspond.testing import demo_channel
+
+    registry = {"fake": demo_channel(), "github": GitHub()}
+    assert (
+        check_binding(
+            "fake:example/demo?labels=bug&grade=platform&author=ada", registry=registry
+        )
+        == []
+    )
+    [problem] = check_binding(
+        "github:example/app-issues?label=partner:*", registry=registry
+    )
+    assert "label=partner:* never matches" in problem and "labels" in problem
+    assert (
+        check_binding("github:example/app-issues?labels=partner:*", registry=registry)
+        == []
+    )
+    assert check_binding("*:example/demo?anything=x", registry=registry) == []
+    assert "unknown channel" in check_binding("nowhere:x", registry=registry)[0]
+    assert check_binding("no channel here", registry=registry)

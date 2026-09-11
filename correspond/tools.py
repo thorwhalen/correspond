@@ -189,6 +189,8 @@ def capabilities(channel: str) -> dict:
     ):
         if data[name] is not None:
             lines.append(f"{name}: {data[name]}")
+    if caps.native_fields:
+        lines.append(f"native fields: {', '.join(caps.native_fields)}")
     if caps.reactions:
         lines.append(f"reactions: {' '.join(caps.reactions)}")
     lines += [f"rate limit: {r}" for r in caps.rate_limits]

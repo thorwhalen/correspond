@@ -500,7 +500,14 @@ class Event:
 
 
 _SUPPORT_FIELDS = (*OPERATIONS, "initiate", "reply", "priority")
-_TUPLE_FIELDS = ("listen_modes", "reactions", "formats", "rate_limits", "notes")
+_TUPLE_FIELDS = (
+    "listen_modes",
+    "reactions",
+    "formats",
+    "native_fields",
+    "rate_limits",
+    "notes",
+)
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -510,7 +517,9 @@ class Capabilities:
     One ``Support`` per operation in :data:`OPERATIONS`, plus three features of writing:
     ``initiate`` (can a write start a conversation; Telegram bots cannot), ``reply``
     (can a draft answer a specific message) and ``priority``. ``history_depth`` says how
-    far back ``read`` sees; ``grades`` are the authenticity grades the channel can attest.
+    far back ``read`` sees; ``grades`` are the authenticity grades the channel can attest;
+    ``native_fields`` are the keys its messages may carry in ``native`` (what a routing
+    condition can test).
     """
 
     channel: str
@@ -534,6 +543,7 @@ class Capabilities:
     reactions_per_message: int | None = None
     max_upload_bytes: int | None = None
     formats: tuple[str, ...] = ("plain",)
+    native_fields: tuple[str, ...] = ()
     rate_limits: tuple[str, ...] = ()
     notes: tuple[str, ...] = ()
 

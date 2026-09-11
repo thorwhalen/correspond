@@ -291,6 +291,18 @@ class GitHub:
             max_title_length=MAX_TITLE_CHARS,
             reactions=REACTIONS,
             formats=("markdown",),
+            native_fields=(
+                "title",
+                "state",
+                "labels",
+                "number",
+                "kind",
+                "locked",
+                "category",
+                "node_id",
+                "minimized",
+                "replies_truncated",
+            ),
             rate_limits=(
                 "80 content-creating requests per minute and 500 per hour (secondary limits)",
                 "5,000 API requests per hour for a user token",
@@ -739,6 +751,16 @@ class GitHub:
                 )
             )
         timed.sort(key=lambda pair: pair[0])
+        # A list cut short (too many changes since the cursor) is complete only up to its last
+        # item. An event from the other list after that point would move the cursor past
+        # changes not fetched yet, so it waits for the next poll.
+        horizons = [
+            parse_time(items[-1].get("updated_at") or items[-1]["created_at"])
+            for items, cut in ((comments, comments_cut), (issues, issues_cut))
+            if cut and items
+        ]
+        if horizons:
+            timed = [pair for pair in timed if pair[0] <= min(horizons)]
         truncated = comments_cut or issues_cut or (bool(limit) and len(timed) > limit)
         if limit:
             timed = timed[:limit]

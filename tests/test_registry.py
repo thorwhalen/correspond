@@ -159,3 +159,15 @@ def test_registering_a_channel_refuses_a_second_one_unless_replacing():
     assert list(plain) == ["other"]
     registry.unregister_channel("other", registry=plain)
     assert plain == {}
+
+
+def test_skipping_the_keychain_runs_nothing(monkeypatch):
+    from correspond import settings
+
+    def refuse(service, **kwargs):
+        raise AssertionError(f"looked in the Keychain for {service}")
+
+    monkeypatch.setattr(settings, "keychain_get", refuse)
+    assert value("telegram", "token", keychain=False) is None
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", SECRET)
+    assert value("telegram", "token", keychain=False) == SECRET

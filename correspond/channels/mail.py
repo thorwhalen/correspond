@@ -12,8 +12,10 @@ seen.
 
 Authenticity is ``claimed`` unless the **topmost** ``Authentication-Results`` header was
 added by a server you trust (``trusted_authserv_ids``) and records ``dmarc=pass`` for the
-From domain: then it is ``domain``. Any lower copy of that header may have been written by
-the sender, so it is evidence, never a grade.
+From domain: then it is ``domain``. Only the topmost header counts, even when the trusted
+server added several: a lower one carrying the same authserv-id may have been written by the
+sender (not every server strips those), so a result recorded lower down fails safe as
+``claimed``.
 
 >>> Email().parse_ref("Ada@Example.org").encoded
 'email:ada@example.org'
@@ -224,6 +226,7 @@ class Email:
             listen_modes=("poll",),
             grades=(Grade.DOMAIN, Grade.CLAIMED),
             formats=("plain", "html"),
+            native_fields=("subject", "to", "cc", "folder", "uid", "references"),
             notes=(
                 "read and listen look at one folder (INBOX by default); your own sent mail is in another",
                 "listen polls by UID; IMAP IDLE is not used",

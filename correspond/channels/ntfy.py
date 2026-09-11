@@ -3,8 +3,9 @@
 References: ``ntfy:<topic>``, or ``ntfy:`` for the default topic, which is resolved in this
 order: ``$NTFY_TOPIC``; the macOS Keychain (service ``topic_keychain_service`` in the
 ``[ntfy]`` config table, default ``correspond-ntfy-topic``); an ssh host named by
-``topic_remote``, asked for the ``NTFY_TOPIC=...`` line of ``topic_remote_file``. The remote
-step runs only on a real send, never on a dry run, and a plan shows a topic masked.
+``topic_remote``, asked for the ``NTFY_TOPIC=...`` line of ``topic_remote_file``. A dry run
+reads only the environment and the config file (no Keychain, no remote host: those are looked
+up when sending), and a plan shows a topic masked.
 
 A topic is a bearer secret: anyone who knows an unauthenticated one can publish to it and
 read it. Prefer ``ntfy:`` to writing a topic into a reference that ends up in logs.
@@ -33,7 +34,7 @@ from correspond.model import (
     Support,
 )
 from correspond.registry import info, resolve, value
-from correspond.settings import mask
+from correspond.settings import keychain_available, keychain_service, mask
 
 __all__ = ["PRIORITY", "Ntfy"]
 
@@ -82,6 +83,7 @@ class Ntfy:
                 "send only: no read, listen or sender identity",
                 "the server turns a message over 4,096 bytes into an attachment",
                 "ntfy: (no topic) uses NTFY_TOPIC, the Keychain, or topic_remote",
+                "a dry run reads only the environment and the config file",
             ),
         )
 
@@ -93,16 +95,25 @@ class Ntfy:
             )
         return ConversationRef(channel=NAME, id=id, kind="topic")
 
-    def _default_topic(self, *, ask_remote: bool) -> tuple[str | None, str]:
-        found, source = resolve(NAME, info(NAME).setting("topic"), run=self.run)
+    def _default_topic(self, *, dry_run: bool) -> tuple[str | None, str]:
+        """The default topic and where it came from; a dry run reads only the environment and says where it would look next."""
+        setting = info(NAME).setting("topic")
+        found, source = resolve(NAME, setting, run=self.run, keychain=not dry_run)
         if found:
             return found, source
         host, path = value(NAME, "topic_remote"), value(NAME, "topic_remote_file")
-        if not (host and path):
+        if not dry_run:
+            if host and path:
+                return self._remote_topic(host, path), "remote"
             return None, "missing"
-        if not ask_remote:
-            return None, f"asked of {host} when sending"
-        return self._remote_topic(host, path), "remote"
+        later = []
+        if keychain_available():
+            later.append(f"the Keychain ({keychain_service(NAME, 'topic')})")
+        if host and path:
+            later.append(f"the host {host}")
+        if not later:
+            return None, "missing"
+        return None, "looked up when sending, in " + ", then ".join(later)
 
     def _remote_topic(self, host: str, path: str) -> str | None:
         if not HOST_RE.match(host):
@@ -134,7 +145,7 @@ class Ntfy:
         if ref.id:
             topic, source = ref.id, "reference"
         else:
-            topic, source = self._default_topic(ask_remote=not dry_run)
+            topic, source = self._default_topic(dry_run=dry_run)
         if topic is not None and not TOPIC_RE.match(topic):
             raise ChannelError(
                 f"the default topic (from {source}) is not a valid ntfy topic",
@@ -147,7 +158,7 @@ class Ntfy:
                 fix="send to ntfy:<topic>, or set NTFY_TOPIC, or set topic_remote and topic_remote_file under [ntfy]",
                 kind="validation",
             )
-        token = value(NAME, "token", run=self.run)
+        token = value(NAME, "token", run=self.run, keychain=not dry_run)
         headers = {"Content-Type": "text/plain; charset=utf-8"}
         if draft.title:
             headers["Title"] = _header(draft.title)
@@ -162,7 +173,13 @@ class Ntfy:
             "topic_source": source,
             "title": draft.title,
             "priority": draft.priority,
-            "authenticated": bool(token),
+            "authenticated": True
+            if token
+            else (
+                "checked when sending (Keychain)"
+                if dry_run and keychain_available()
+                else False
+            ),
             "text": draft.text,
         }
         if dry_run:

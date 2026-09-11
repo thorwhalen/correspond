@@ -9,7 +9,7 @@ Rationale and the provisional defaults: the "v0.1 architecture: seams and surfac
 | # | Seam | v0.1 default (no new dependency) | Replacement you can point at |
 |---|---|---|---|
 | 1 | which adapters exist: `registry=` on the facade functions | `xdol.Registry`, built lazily from the built-in channel table; an entry registers only when its optional modules import | `correspond.testing.FakeChannel` (tests, and liaise's offline suite); Discord over `discorddol` (tracking issue) |
-| 2 | how an adapter reaches its platform: `run=` (gh, macOS notifiers), `http=` (ntfy, Telegram), `imap=` / `smtp=` (email) | `subprocess.run`, `urllib.request`, `imaplib` / `smtplib` | the scripted fakes in the tests; `githubkit` with a GitHub App, `imap-tools`, `aiogram` as extras |
+| 2 | how an adapter reaches its platform: `run=` (gh, macOS notifiers), `http=` (ntfy, Telegram), `imap=` / `smtp=` (email) | `subprocess.run`, `urllib.request`, `imaplib` / `smtplib` | the scripted fakes in the tests; `imap-tools` behind `imap=` / `smtp=` (the GitHub adapter parses `gh api` output, so a GitHub App through `githubkit` is a second GitHub adapter added at seam 1, not a `run=` swap) |
 | 3 | where state lives: `cursors=` (listen), `store=` / `blobs=` (web inbox, Telegram log) | `dol` files under `~/.local/share/correspond/<kind>/` (`CORRESPOND_DATA_DIR` overrides the root) | a `dict` (tests); `s3dol` for a server's web inbox |
 | 4 | the last routing rule: `classifier=` on `route` | none: bindings → thread continuity → metadata decide, otherwise the message is unrouted | liaise's "is this message about subject X?" classifier |
 

@@ -124,7 +124,8 @@ def test_a_remote_host_that_looks_like_an_option_is_refused(config_file):
     assert (result.ok, result.error_kind) == (False, "validation")
 
 
-def test_no_topic_anywhere_is_a_failed_send_that_says_how_to_set_one():
+def test_no_topic_anywhere_is_a_failed_send_that_says_how_to_set_one(monkeypatch):
+    monkeypatch.setattr(sys, "platform", "linux")  # no Keychain a dry run could defer to
     for dry_run in (True, False):
         result = correspond.send(
             "ntfy:", "hello", dry_run=dry_run, registry=_ntfy(FakeHttp())
@@ -133,6 +134,41 @@ def test_no_topic_anywhere_is_a_failed_send_that_says_how_to_set_one():
             False,
             "validation",
         ) and "NTFY_TOPIC" in result.error
+
+
+def test_a_dry_run_reads_no_keychain_and_says_where_it_will_look(monkeypatch):
+    from correspond import settings
+
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.setattr(
+        shutil, "which", lambda name: "/usr/bin/security" if name == "security" else None
+    )
+
+    def keychain(service, **kwargs):
+        raise AssertionError(f"a dry run looked in the Keychain for {service}")
+
+    monkeypatch.setattr(settings, "keychain_get", keychain)
+    planned = correspond.send(
+        "ntfy:", "hello", dry_run=True, registry=_ntfy(FakeHttp(), _no_run)
+    )
+    assert (
+        planned.ok and "Keychain (correspond-ntfy-topic)" in planned.plan["topic_source"]
+    )
+    assert planned.plan["authenticated"] == "checked when sending (Keychain)"
+    assert correspond.send(
+        "ntfy:example-topic", "hello", dry_run=True, registry=_ntfy(FakeHttp(), _no_run)
+    ).ok
+    found = {
+        "correspond-ntfy-topic": "keychain-topic-1234",
+        "correspond-ntfy-token": "keychain-token",
+    }
+    monkeypatch.setattr(
+        settings, "keychain_get", lambda service, **kwargs: found.get(service, "")
+    )
+    http = FakeHttp(_ok())
+    assert correspond.send("ntfy:", "hello", registry=_ntfy(http, _no_run)).ok
+    assert http.calls[0]["url"].endswith("/keychain-topic-1234")
+    assert http.calls[0]["headers"]["Authorization"] == "Bearer keychain-token"
 
 
 def test_ntfy_failures_are_classified():

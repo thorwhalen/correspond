@@ -6,7 +6,8 @@ public channel), ``telegram:<chat id>/<topic id>`` (a forum topic).
 
 Bots have no history API, and Telegram keeps undelivered updates for at most 24 hours, so
 ``poll`` writes every update it receives to a local log under the data root
-(``telegram/``) and ``read`` reads that log. ``getUpdates`` confirms updates for every chat
+(``telegram/``) and ``read`` reads that log (a ``telegram:@name`` reference is first resolved
+with ``getChat``, over the network). ``getUpdates`` confirms updates for every chat
 at once, which is why listening is account-wide: narrow to one chat when routing.
 
 Senders are ``platform``: Telegram authenticated the account, and correspond pulled the
@@ -130,7 +131,8 @@ class Telegram:
             initiate=Support.NONE,
             reply=Support.FULL,
             history_depth=HistoryDepth.BUFFER_24H,
-            listen_modes=("long_poll",),
+            listen_modes=("poll",),
+            native_fields=("chat_type", "chat_title", "message_thread_id", "media"),
             grades=(Grade.PLATFORM,),
             max_text_length=MAX_TEXT_CHARS,
             reactions_per_message=1,
@@ -141,6 +143,7 @@ class Telegram:
             notes=(
                 "read returns what listen has logged on this machine; updates never polled within 24 hours are gone",
                 "listen is account-wide (telegram:); narrow to a chat when routing",
+                "reading telegram:@name first resolves the name with getChat, over the network",
                 "a bot cannot start a conversation: someone must write to it first",
                 "a title is prepended to the text: Telegram messages have none",
             ),

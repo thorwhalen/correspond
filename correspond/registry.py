@@ -267,7 +267,7 @@ CHANNELS: tuple[ChannelInfo, ...] = (
             Setting(
                 key="secret",
                 env="CORRESPOND_WEBINBOX_SECRET",
-                what="the HMAC key shared with the host application's server, which signs its logged-in user",
+                what="the HMAC key shared with the host application's server, which signs its logged-in user (a single site; several sites need CORRESPOND_WEBINBOX_SECRET_<SITE> each)",
                 where='generate one with: python -c "import secrets; print(secrets.token_hex(32))"',
                 secret=True,
             ),
@@ -296,14 +296,16 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 default="5000000",
             ),
             Setting(
-                key="trust_forwarded",
-                env="CORRESPOND_WEBINBOX_TRUST_FORWARDED",
-                what="rate-limit by X-Forwarded-For (only behind your own proxy)",
-                default="false",
+                key="trusted_proxies",
+                env="CORRESPOND_WEBINBOX_TRUSTED_PROXIES",
+                what="how many reverse proxies of yours stand in front of the collector; the address rate-limited is read that many hops from the right of X-Forwarded-For (0: the connecting address)",
+                default="0",
             ),
         ),
         notes=(
             "serve the collector on localhost behind your own server, e.g. `uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1`",
+            "behind a reverse proxy, set CORRESPOND_WEBINBOX_TRUSTED_PROXIES (1 for one proxy), or every visitor shares one rate limit",
+            "several sites on one collector need a secret each, CORRESPOND_WEBINBOX_SECRET_<SITE> (upper case, - as _), so no site's server can sign for another",
         ),
     ),
     ChannelInfo(
@@ -352,16 +354,21 @@ def resolve(
     *,
     config: Mapping[str, Any] | None = None,
     run: Callable[..., Any] = subprocess.run,
+    keychain: bool = True,
 ) -> tuple[str | None, str]:
-    """``(value, source)``; source is ``env``, ``keychain``, ``config``, ``default`` or ``missing``."""
+    """``(value, source)``; source is ``env``, ``keychain``, ``config``, ``default`` or ``missing``.
+
+    ``keychain=False`` skips the Keychain, so nothing runs: what a dry run does.
+    """
     from_env = os.environ.get(setting.env, "").strip()
     if from_env:
         return from_env, "env"
     if setting.secret:
-        service = _settings.keychain_service(channel, setting.key, config=config)
-        from_keychain = _settings.keychain_get(service, run=run)
-        if from_keychain:
-            return from_keychain, "keychain"
+        if keychain:
+            service = _settings.keychain_service(channel, setting.key, config=config)
+            from_keychain = _settings.keychain_get(service, run=run)
+            if from_keychain:
+                return from_keychain, "keychain"
     else:
         configured = _settings.channel_config(channel, config=config).get(setting.key)
         if configured not in (None, "", []):
@@ -392,9 +399,12 @@ def value(
     *,
     config: Mapping[str, Any] | None = None,
     run: Callable[..., Any] = subprocess.run,
+    keychain: bool = True,
 ) -> str | None:
-    """A channel setting's value, or ``None`` when it is not set and has no default."""
-    return resolve(channel, info(channel).setting(key), config=config, run=run)[0]
+    """A channel setting's value, or ``None`` when it is not set and has no default (``keychain=False``: skip the Keychain)."""
+    return resolve(
+        channel, info(channel).setting(key), config=config, run=run, keychain=keychain
+    )[0]
 
 
 def require(

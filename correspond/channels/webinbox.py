@@ -26,8 +26,10 @@ Only ``text`` is required.
 - **Storage.** A report is JSON in ``store`` under ``<site>/<sortable id>.json``;
   attachments are bytes in ``blobs`` under their SHA-256, referenced and never inlined.
 
-The app binds nothing: run it on localhost behind your own server. The limiter lives in
-memory, per process.
+The app binds nothing: run it on localhost behind your own server, and tell it how many
+reverse proxies stand in front (``trusted_proxies``) so the rate limit applies per visitor
+rather than to the proxy. The limiter lives in memory, per process. Each site has its own
+secret, so a server that can sign for one site cannot sign for another.
 
 **The channel** (:class:`WebInbox`): ``webinbox:<site>`` reads and listens to what the
 collector stored. It has no writer: a reply to a reporter goes out on another channel.
@@ -47,6 +49,7 @@ import hashlib
 import hmac
 import json
 import math
+import os
 import re
 import secrets
 import time
@@ -55,6 +58,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+from correspond import settings as _settings
 from correspond.errors import InvalidRef, MissingRequirement
 from correspond.model import (
     Attachment,
@@ -82,6 +86,7 @@ __all__ = [
     "identity_payload",
     "mk_app",
     "sign_identity",
+    "site_secret_env",
     "verify_identity",
 ]
 
@@ -390,10 +395,16 @@ async def _read_body(receive, limit: int) -> Any:
 
 
 def _client(
-    scope: Mapping[str, Any], headers: Mapping[str, str], trust_forwarded: bool
+    scope: Mapping[str, Any], headers: Mapping[str, str], trusted_proxies: int
 ) -> str:
-    if trust_forwarded and headers.get("x-forwarded-for"):
-        return headers["x-forwarded-for"].split(",")[0].strip()
+    """The address to rate-limit: ``trusted_proxies`` hops from the right of X-Forwarded-For, else the connection's.
+
+    Each proxy appends the address it received the request from, so whatever a client wrote
+    into the header itself sits on the left, where nothing looks.
+    """
+    hops = [h.strip() for h in headers.get("x-forwarded-for", "").split(",") if h.strip()]
+    if trusted_proxies and hops:
+        return hops[-trusted_proxies] if len(hops) >= trusted_proxies else hops[0]
     client = scope.get("client") or ("unknown", 0)
     return str(client[0])
 
@@ -406,13 +417,25 @@ def mk_app(
     rate_per_minute: float = 10,
     burst: int = 5,
     max_body_bytes: int = 5_000_000,
-    trust_forwarded: bool = False,
+    trusted_proxies: int = 0,
     clock: Callable[[], float] = time.time,
 ) -> Callable[..., Awaitable[None]]:
-    """The collector as an ASGI app, storing reports in ``store`` and attachments in ``blobs`` (files under the data root by default)."""
+    """The collector as an ASGI app, storing reports in ``store`` and attachments in ``blobs`` (files under the data root by default).
+
+    Behind reverse proxies of your own, set ``trusted_proxies`` to how many stand in front,
+    or every visitor shares the proxy's rate limit.
+    """
     by_name = {site.name: site for site in sites}
     if not by_name:
         raise ValueError("the collector needs at least one site")
+    if (
+        isinstance(trusted_proxies, bool)
+        or not isinstance(trusted_proxies, int)
+        or trusted_proxies < 0
+    ):
+        raise ValueError(
+            "trusted_proxies is how many proxies stand in front of the collector: 0 or more"
+        )
     if store is None or blobs is None:
         from correspond.stores import bytes_store, json_store
 
@@ -478,7 +501,7 @@ def mk_app(
                 else "reports must come from an allowed page"
             )
             return await _respond(send, 403, {"error": reason})
-        wait = limiter.take((site.name, _client(scope, headers, trust_forwarded)))
+        wait = limiter.take((site.name, _client(scope, headers, trusted_proxies)))
         if wait is not None:
             return await _respond(
                 send,
@@ -540,24 +563,58 @@ def app_from_env() -> Callable[..., Awaitable[None]]:
             "no sites are configured",
             fix="set CORRESPOND_WEBINBOX_SITES (comma-separated site names), or sites under [webinbox] in the config file",
         )
-    secret = value(NAME, "secret")
     sites = [
         Site(
             name=name,
             origins=_csv(value(NAME, "origins")),
-            secret=secret or None,
+            secret=_site_secret(name, several=len(names) > 1),
             max_age_s=int(value(NAME, "max_age_s") or 86_400),
         )
         for name in names
     ]
+    try:
+        trusted_proxies = int(value(NAME, "trusted_proxies") or 0)
+    except ValueError:
+        raise MissingRequirement(
+            NAME,
+            "CORRESPOND_WEBINBOX_TRUSTED_PROXIES is not a whole number",
+            fix="set it to how many reverse proxies stand in front of the collector (0, 1, ...)",
+            kind="validation",
+        ) from None
     return mk_app(
         sites,
         rate_per_minute=float(value(NAME, "rate_per_minute") or 10),
         burst=int(value(NAME, "burst") or 5),
         max_body_bytes=int(value(NAME, "max_body_bytes") or 5_000_000),
-        trust_forwarded=(value(NAME, "trust_forwarded") or "").lower()
-        in ("1", "true", "yes", "on"),
+        trusted_proxies=trusted_proxies,
     )
+
+
+def site_secret_env(site: str) -> str:
+    """The environment variable holding one site's own secret.
+
+    >>> site_secret_env("example-site")
+    'CORRESPOND_WEBINBOX_SECRET_EXAMPLE_SITE'
+    """
+    return "CORRESPOND_WEBINBOX_SECRET_" + site.upper().replace("-", "_")
+
+
+def _site_secret(site: str, *, several: bool) -> str | None:
+    """A site's own secret (its variable, then the Keychain); the shared one only when it is the only site."""
+    own = os.environ.get(site_secret_env(site), "").strip() or _settings.keychain_get(
+        f"correspond-webinbox-secret-{site}"
+    )
+    if own:
+        return own
+    shared = value(NAME, "secret")
+    if shared and several:
+        raise MissingRequirement(
+            NAME,
+            f"site {site} has no secret of its own, and one shared secret would let any site's server sign identities for the others",
+            fix=f"set {site_secret_env(site)}, and one for each other site",
+            kind="auth",
+        )
+    return shared or None
 
 
 # -------------------------------------------------------------------------- channel
@@ -605,6 +662,7 @@ class WebInbox:
             history_depth=HistoryDepth.FULL,
             listen_modes=("poll",),
             grades=(Grade.CLAIMED, Grade.BOUND),
+            native_fields=("page", "context", "contact"),
             formats=("plain",),
             notes=(
                 "no writer: reply to a reporter on another channel (the email or handle they gave, when signed)",

@@ -16,7 +16,9 @@ rule decided and why.
    target, ``(target, reason)``, or ``None``.
 
 Nothing matched: ``route`` returns ``None`` and the message is unrouted. What that means
-(an operator queue, a drop) is the caller's decision.
+(an operator queue, a drop) is the caller's decision. A condition on a field the channel's
+messages never carry (``?label=`` where GitHub messages carry ``labels``) never matches;
+:func:`check_binding` reports that when bindings are loaded.
 
 >>> from correspond.testing import demo_message
 >>> message = demo_message(conversation="github:example/app#12", labels=["partner:ada"])
@@ -31,11 +33,21 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
+from typing import Any
 from urllib.parse import parse_qsl
 
+from correspond.errors import CorrespondError
 from correspond.model import Message
 
-__all__ = ["RULES", "RouteDecision", "binding_matches", "metadata_rule", "route"]
+__all__ = [
+    "MESSAGE_FIELDS",
+    "RULES",
+    "RouteDecision",
+    "binding_matches",
+    "check_binding",
+    "metadata_rule",
+    "route",
+]
 
 #: The order the chain runs in.
 RULES = ("binding", "thread", "metadata", "classifier")
@@ -155,3 +167,42 @@ def route(
             )
             return RouteDecision(target=str(target), rule="classifier", reason=reason)
     return None
+
+
+#: Condition fields every message has, whatever its channel's ``native`` fields.
+MESSAGE_FIELDS = ("author", "grade")
+
+
+def check_binding(
+    pattern: str, *, registry: Mapping[str, Any] | None = None
+) -> list[str]:
+    """What would make a binding never match, found when bindings are loaded instead of by messages quietly going unrouted.
+
+    Reports a pattern without a channel, an unknown channel, and a condition on a field the
+    channel's messages never carry (its ``native_fields``, plus ``author`` and ``grade``).
+    A channel written as a wildcard is not checked.
+
+    >>> from correspond.testing import demo_channel
+    >>> check_binding("fake:example/demo?labels=bug", registry={"fake": demo_channel()})
+    []
+    >>> check_binding("fake:example/demo?label=bug", registry={"fake": demo_channel()})
+    ["the condition label=bug never matches: fake messages carry no field 'label' (they carry labels, author, grade)"]
+    """
+    from correspond.ops import get_channel
+
+    ref_glob, _, query = pattern.partition("?")
+    channel, separator, _ = ref_glob.partition(":")
+    if not separator or not channel:
+        return [f"{pattern!r} is not a binding: a binding starts with <channel>:"]
+    if _WILDCARDS & set(channel):
+        return []
+    try:
+        caps = get_channel(channel, registry=registry).capabilities
+    except CorrespondError as error:
+        return [str(error)]
+    carried = (*caps.native_fields, *MESSAGE_FIELDS)
+    return [
+        f"the condition {field}={glob} never matches: {channel} messages carry no field {field!r} (they carry {', '.join(carried)})"
+        for field, glob in parse_qsl(query, keep_blank_values=True)
+        if field not in carried
+    ]

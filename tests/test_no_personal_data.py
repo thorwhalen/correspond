@@ -9,10 +9,12 @@ signs of a leak:
 - an absolute local home path;
 - a ``github.com/<owner>`` URL, ``owner/repo`` string or ``@handle`` whose owner or handle
   is not a placeholder or one of this project's own orgs;
-- a token (GitHub, Telegram bot, Slack, PyPI), a private key, a phone number, a Telegram
-  supergroup id.
+- a token (GitHub, Telegram bot, Slack, PyPI, AWS, an ``sk-`` API key, an ntfy ``tk_``
+  token, a literal bearer token), a private key, a phone number, a Telegram supergroup id, a
+  Windows drive path;
+- an IPv4 address outside loopback and the documentation ranges.
 
-It cannot catch a real name or a real ntfy topic written as prose; that part is on whoever
+It cannot catch a real name, a real ntfy topic, or a short chat or user id written as prose; that part is on whoever
 writes the text. Strings that must look like leaks inside this file are built by
 concatenation, so the guard does not trip on itself.
 """
@@ -97,7 +99,15 @@ SECRET_RES = {
     "a private key": re.compile(r"-----BEGIN (?:[A-Z]+ )*PRIVATE KEY-----"),
     "a phone number": re.compile(r"(?<![\w/+])\+\d{10,15}\b"),
     "a Telegram supergroup id": re.compile(r"(?<![\w-])-100\d{10}\b"),
+    "an AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+    "an API key": re.compile(r"\bsk-[A-Za-z0-9_-]{20,}"),
+    "an ntfy access token": re.compile(r"\btk_[A-Za-z0-9]{24,}"),
+    "a bearer token": re.compile(r"\bBearer [A-Za-z0-9._~+/-]{20,}"),
+    "a Windows drive path": re.compile(r"\b[A-Za-z]:\\[A-Za-z0-9_. -]+\\"),
 }
+#: Loopback, "any", and the RFC 5737 documentation ranges are fine in examples.
+ALLOWED_IPV4_PREFIXES = ("127.", "0.0.0.0", "192.0.2.", "198.51.100.", "203.0.113.")
+IPV4_RE = re.compile(r"(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?![\w.])")
 
 
 def _text_files() -> list[Path]:
@@ -145,6 +155,15 @@ def secrets_in(text: str) -> list[str]:
     return [what for what, pattern in SECRET_RES.items() if pattern.search(text)]
 
 
+def ips_outside_documentation(text: str) -> list[str]:
+    return [
+        m.group(0)
+        for m in IPV4_RE.finditer(text)
+        if all(int(part) <= 255 for part in m.group(0).split("."))
+        and not m.group(0).startswith(ALLOWED_IPV4_PREFIXES)
+    ]
+
+
 def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
@@ -187,6 +206,17 @@ def test_no_tokens_keys_phone_numbers_or_chat_ids():
     assert not offenders, f"secret-looking values: {offenders}"
 
 
+def test_no_ip_addresses_outside_loopback_and_documentation_ranges():
+    offenders = {
+        str(p.relative_to(REPO_ROOT)): found
+        for p in _text_files()
+        if (found := ips_outside_documentation(_read(p)))
+    }
+    assert not offenders, (
+        f"IP address(es) outside loopback and the documentation ranges: {offenders}"
+    )
+
+
 def test_the_guard_actually_catches_leaks():
     """Mutation check: each detector must fire on a planted leak, or the guard guards nothing."""
     planted_email = "someone" + "@" + "realmail.org"
@@ -224,3 +254,18 @@ def test_the_guard_actually_catches_leaks():
     assert secrets_in("call +" + "15551234567") == ["a phone number"]
     assert secrets_in("chat -" + "1001234567890") == ["a Telegram supergroup id"]
     assert secrets_in("react +1, chat -4001, update 1757581200") == []
+    assert secrets_in("key " + "AKIA" + "ABCDEFGHIJKLMNOP") == ["an AWS access key"]
+    assert secrets_in("key " + "sk-" + "a" * 24) == ["an API key"]
+    assert secrets_in("NTFY_TOKEN=" + "tk_" + "a" * 29) == ["an ntfy access token"]
+    assert secrets_in("Authorization: " + "Bearer " + "a" * 32) == ["a bearer token"]
+    assert secrets_in("D:" + "\\projects\\inbox") == ["a Windows drive path"]
+    assert secrets_in("a task-list, a risk-free desk-top") == []
+    assert ips_outside_documentation(
+        "server " + "203.0.113.47" + " and " + "10.1.2" + ".3"
+    ) == ["10.1.2" + ".3"]
+    assert (
+        ips_outside_documentation(
+            "bind 127.0.0.1 or 0.0.0.0; see 198.51.100.7; version 1.2.3"
+        )
+        == []
+    )

@@ -645,3 +645,66 @@ def test_references_are_validated_and_normalised():
     for bad in ("octocat", "octocat/hello-world#0", "-bad/repo", "octocat/hello world"):
         with pytest.raises(correspond.InvalidRef):
             github.parse_ref(bad)
+
+
+def test_the_native_fields_messages_carry_are_the_ones_capabilities_declare():
+    declared = set(GitHub().capabilities.native_fields)
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        (
+            "GET",
+            rf"repos/{REPO}/issues/1/comments\?per_page=100&page=1",
+            (200, [_comment(11)]),
+        ),
+        ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
+        (
+            "POST",
+            "graphql",
+            (200, _discussion([_post(501, replies=[_post(502, replies=None)])])),
+        ),
+    )
+    for ref in (f"github:{REPO}#1", f"github:{REPO}#5"):
+        for message in _read(gh, ref):
+            assert set(message.native) <= declared, (
+                message.id,
+                set(message.native) - declared,
+            )
+
+
+def test_a_list_cut_short_holds_back_later_events_from_the_other_list(monkeypatch):
+    from correspond.channels import github as github_module
+
+    monkeypatch.setattr(github_module, "PAGE_SIZE", 2)
+    monkeypatch.setattr(github_module, "MAX_PAGES", 1)
+    since = "2026-09-11T08:00:00Z"
+    gh = ScriptedGh(
+        WHOAMI,
+        (
+            "GET",
+            rf"repos/{REPO}/issues/comments\?sort=updated&direction=asc&since={since}&per_page=2&page=1",
+            (
+                200,
+                [
+                    _comment(31, created="2026-09-11T08:10:00Z"),
+                    _comment(32, created="2026-09-11T08:20:00Z"),
+                ],
+                {"Date": "Fri, 11 Sep 2026 10:00:00 GMT"},
+            ),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since={since}&per_page=2&page=1",
+            (200, [_issue(7, created="2026-09-11T09:30:00Z")]),
+        ),
+    )
+    cursors = {f"github:{REPO}": since}
+    events = list(
+        correspond.listen(
+            f"github:{REPO}", cursors=cursors, registry={"github": GitHub(run=gh)}
+        )
+    )
+    assert [e.message.id for e in events] == ["issuecomment-31", "issuecomment-32"], (
+        "issue 7 waits: comments after 08:20 were not fetched"
+    )
+    assert cursors[f"github:{REPO}"] == "2026-09-11T08:20:00Z"

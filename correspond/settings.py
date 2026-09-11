@@ -39,6 +39,7 @@ __all__ = [
     "channel_config",
     "config_path",
     "data_dir",
+    "keychain_available",
     "keychain_get",
     "keychain_service",
     "load_config",
@@ -123,7 +124,7 @@ def keychain_service(
 
 def keychain_get(service: str, *, run: Callable[..., Any] = subprocess.run) -> str:
     """A generic password from the macOS Keychain, or ``""`` when absent, not on macOS, or slow."""
-    if sys.platform != "darwin" or not shutil.which("security"):
+    if not keychain_available():
         return ""
     try:
         proc = run(
@@ -135,6 +136,11 @@ def keychain_get(service: str, *, run: Callable[..., Any] = subprocess.run) -> s
     except (OSError, subprocess.SubprocessError):
         return ""
     return proc.stdout.strip() if proc.returncode == 0 else ""
+
+
+def keychain_available() -> bool:
+    """Whether a Keychain lookup can happen here (macOS with the ``security`` tool)."""
+    return sys.platform == "darwin" and shutil.which("security") is not None
 
 
 def mask(value: str | None) -> str:

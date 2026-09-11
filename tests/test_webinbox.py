@@ -291,7 +291,8 @@ def test_the_collector_from_the_environment(monkeypatch, isolated):
         app_from_env()
     monkeypatch.setenv("CORRESPOND_WEBINBOX_SITES", f"{SITE}, other-site")
     monkeypatch.setenv("CORRESPOND_WEBINBOX_ORIGINS", ORIGIN)
-    monkeypatch.setenv("CORRESPOND_WEBINBOX_SECRET", SECRET)
+    monkeypatch.setenv("CORRESPOND_WEBINBOX_SECRET_EXAMPLE_SITE", SECRET)
+    monkeypatch.setenv("CORRESPOND_WEBINBOX_SECRET_OTHER_SITE", SECRET)
     app = app_from_env()
     identity = sign_identity(SECRET, "other-site", "u-7")
     assert (
@@ -334,3 +335,62 @@ def test_the_identity_payload_is_plain_lines_without_breaks():
         identity_payload(SITE, "u-42\nsomeone-else", NOW)
     with pytest.raises(ValueError):
         Site(name="Not A Site")
+
+
+def test_behind_a_proxy_the_limit_applies_per_visitor_read_from_the_right(stores):
+    proxy = ("127.0.0.1", 5000)
+
+    def statuses(app, forwarded):
+        return [
+            call(
+                app, payload={"text": "hi"}, client=proxy, headers={"x-forwarded-for": f}
+            )[0]
+            for f in forwarded
+        ]
+
+    visitors = ["198.51.100.7", "198.51.100.8"]
+    assert statuses(_app(stores, burst=1), visitors) == [201, 429], (
+        "without trusted proxies, everyone behind the proxy shares one limit"
+    )
+    behind_one = _app(stores, burst=1, trusted_proxies=1)
+    assert statuses(behind_one, visitors) == [201, 201]
+    spoofed = ["192.0.2.1, 198.51.100.9", "192.0.2.2, 198.51.100.9"]
+    assert statuses(behind_one, spoofed) == [201, 429], (
+        "what a client writes on the left buys no fresh limit"
+    )
+    for bad in (-1, True, "1"):
+        with pytest.raises(ValueError):
+            _app(stores, trusted_proxies=bad)
+
+
+def test_several_sites_need_a_secret_each(monkeypatch):
+    from correspond.channels.webinbox import site_secret_env
+
+    monkeypatch.setenv("CORRESPOND_WEBINBOX_SITES", "site-a,site-b")
+    monkeypatch.setenv("CORRESPOND_WEBINBOX_ORIGINS", ORIGIN)
+    monkeypatch.setenv("CORRESPOND_WEBINBOX_SECRET", SECRET)
+    with pytest.raises(MissingRequirement, match="CORRESPOND_WEBINBOX_SECRET_SITE_A"):
+        app_from_env()
+    monkeypatch.setenv(site_secret_env("site-a"), "secret-for-site-a")
+    monkeypatch.setenv(site_secret_env("site-b"), "secret-for-site-b")
+    app = app_from_env()
+    own = sign_identity("secret-for-site-b", "site-b", "u-7")
+    borrowed = sign_identity("secret-for-site-a", "site-b", "u-7")
+    assert (
+        call(app, path="/site-b/reports", payload={"text": "hi", "identity": own})[0]
+        == 201
+    )
+    assert (
+        call(app, path="/site-b/reports", payload={"text": "hi", "identity": borrowed})[0]
+        == 401
+    )
+    monkeypatch.setenv("CORRESPOND_WEBINBOX_TRUSTED_PROXIES", "one")
+    with pytest.raises(MissingRequirement, match="whole number"):
+        app_from_env()
+
+
+def test_the_native_fields_messages_carry_are_the_ones_capabilities_declare(stores):
+    assert call(_app(stores), payload={"text": "hi", "page": f"{ORIGIN}/x"})[0] == 201
+    declared = set(WebInbox().capabilities.native_fields)
+    for message in correspond.read(f"webinbox:{SITE}", registry=_inbox(stores)):
+        assert set(message.native) <= declared
