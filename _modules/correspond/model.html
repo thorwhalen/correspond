@@ -1,0 +1,948 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.model &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">correspond.model</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for correspond.model</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""The data model every channel is described in.</span>
+
+<span class="sd">Accounts, conversation references, channel identities, authenticity, messages,</span>
+<span class="sd">attachments, events, capabilities, drafts and send results: frozen dataclasses that</span>
+<span class="sd">round-trip through JSON-ready dicts (``to_dict`` / ``from_dict``), because every surface</span>
+<span class="sd">(the CLI, MCP, a ledger on disk) moves them as JSON.</span>
+
+<span class="sd">There is no person here. A :class:`ChannelIdentity` is who the platform says sent a</span>
+<span class="sd">message and :class:`Authenticity` is how sure the channel is. Linking an identity to a</span>
+<span class="sd">person is a job for a people registry, with its own evidence.</span>
+
+<span class="sd">&gt;&gt;&gt; ref = ConversationRef.parse("github:octocat/hello-world#1")</span>
+<span class="sd">&gt;&gt;&gt; ref.channel, ref.id, str(ref)</span>
+<span class="sd">('github', 'octocat/hello-world#1', 'github:octocat/hello-world#1')</span>
+<span class="sd">&gt;&gt;&gt; ConversationRef.from_dict(ref.to_dict()) == ref</span>
+<span class="sd">True</span>
+<span class="sd">&gt;&gt;&gt; Grade("bound") in {Grade.PLATFORM, Grade.BOUND, Grade.CRYPTO}</span>
+<span class="sd">True</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">enum</span><span class="w"> </span><span class="kn">import</span> <span class="n">StrEnum</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ERROR_KINDS</span><span class="p">,</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">CorrespondError</span><span class="p">,</span> <span class="n">InvalidRef</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"ACTS_AS"</span><span class="p">,</span>
+    <span class="s2">"EVENT_KINDS"</span><span class="p">,</span>
+    <span class="s2">"OPERATIONS"</span><span class="p">,</span>
+    <span class="s2">"PRIORITIES"</span><span class="p">,</span>
+    <span class="s2">"Account"</span><span class="p">,</span>
+    <span class="s2">"Attachment"</span><span class="p">,</span>
+    <span class="s2">"Authenticity"</span><span class="p">,</span>
+    <span class="s2">"Capabilities"</span><span class="p">,</span>
+    <span class="s2">"ChannelIdentity"</span><span class="p">,</span>
+    <span class="s2">"ConversationRef"</span><span class="p">,</span>
+    <span class="s2">"Draft"</span><span class="p">,</span>
+    <span class="s2">"Event"</span><span class="p">,</span>
+    <span class="s2">"Grade"</span><span class="p">,</span>
+    <span class="s2">"HistoryDepth"</span><span class="p">,</span>
+    <span class="s2">"Message"</span><span class="p">,</span>
+    <span class="s2">"SendResult"</span><span class="p">,</span>
+    <span class="s2">"Support"</span><span class="p">,</span>
+    <span class="s2">"format_time"</span><span class="p">,</span>
+    <span class="s2">"parse_time"</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="c1">#: The seven operations, in the order capabilities and surfaces list them.</span>
+<span class="n">OPERATIONS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"read"</span><span class="p">,</span> <span class="s2">"listen"</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="s2">"edit"</span><span class="p">,</span> <span class="s2">"react"</span><span class="p">,</span> <span class="s2">"upload"</span><span class="p">,</span> <span class="s2">"verify"</span><span class="p">)</span>
+<span class="c1">#: Whose name a write goes out under.</span>
+<span class="n">ACTS_AS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"bot"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"app"</span><span class="p">,</span> <span class="s2">"service"</span><span class="p">)</span>
+<span class="c1">#: What an :class:`Event` reports.</span>
+<span class="n">EVENT_KINDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"message.created"</span><span class="p">,</span> <span class="s2">"message.updated"</span><span class="p">,</span> <span class="s2">"reaction.added"</span><span class="p">)</span>
+<span class="c1">#: The priorities a draft may ask for; channels without priorities refuse anything but ``None``.</span>
+<span class="n">PRIORITIES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"low"</span><span class="p">,</span> <span class="s2">"normal"</span><span class="p">,</span> <span class="s2">"high"</span><span class="p">,</span> <span class="s2">"urgent"</span><span class="p">)</span>
+
+<span class="n">CHANNEL_NAME_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^[a-z][a-z0-9_-]{0,31}$"</span><span class="p">)</span>
+<span class="n">_UNSAFE_ID_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[\s\x00-\x1f\x7f]"</span><span class="p">)</span>
+
+
+<span class="c1"># ----------------------------------------------------------------------------- time</span>
+
+
+<div class="viewcode-block" id="format_time">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.format_time">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">format_time</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""ISO 8601 in UTC with a ``Z`` suffix; a naive datetime is taken to be UTC.</span>
+
+<span class="sd">    &gt;&gt;&gt; format_time(datetime(2026, 9, 11, 12, 30, tzinfo=timezone.utc))</span>
+<span class="sd">    '2026-09-11T12:30:00Z'</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">value</span><span class="o">.</span><span class="n">tzinfo</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">value</span><span class="o">.</span><span class="n">astimezone</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"+00:00"</span><span class="p">,</span> <span class="s2">"Z"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="parse_time">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.parse_time">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_time</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The inverse of :func:`format_time`; also accepts offsets and datetimes. Naive means UTC.</span>
+
+<span class="sd">    &gt;&gt;&gt; parse_time("2026-09-11T12:30:00Z") == datetime(2026, 9, 11, 12, 30, tzinfo=timezone.utc)</span>
+<span class="sd">    True</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">value</span> <span class="o">==</span> <span class="s2">""</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">datetime</span><span class="p">):</span>
+        <span class="n">moment</span> <span class="o">=</span> <span class="n">value</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">moment</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromisoformat</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"Z"</span><span class="p">,</span> <span class="s2">"+00:00"</span><span class="p">))</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">CorrespondError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2"> is not a time; use ISO 8601, e.g. 2026-09-11T12:30:00Z"</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">return</span> <span class="n">moment</span> <span class="k">if</span> <span class="n">moment</span><span class="o">.</span><span class="n">tzinfo</span> <span class="k">else</span> <span class="n">moment</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------- vocabularies</span>
+
+
+<div class="viewcode-block" id="Grade">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Grade">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Grade</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""How sure the channel is about who sent a message: a vocabulary, not a ranking.</span>
+
+<span class="sd">    - ``forged``: verification was attempted and failed.</span>
+<span class="sd">    - ``claimed``: nothing verifiable (a typed name, an unauthenticated From header, anonymous input).</span>
+<span class="sd">    - ``platform``: the platform authenticated the account (GitHub, Telegram).</span>
+<span class="sd">    - ``domain``: email authenticated by *your own* receiving server's Authentication-Results.</span>
+<span class="sd">    - ``bound``: a host application signed an assertion about its logged-in user.</span>
+<span class="sd">    - ``crypto``: a signed payload (a GitHub webhook's ``X-Hub-Signature-256``).</span>
+
+<span class="sd">    A policy names the grades it accepts for a permission. Comparing grades with ``&lt;``</span>
+<span class="sd">    raises, because ``domain`` is neither stronger nor weaker than ``platform``.</span>
+
+<span class="sd">    &gt;&gt;&gt; Grade.CLAIMED &lt; Grade.PLATFORM</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    TypeError: authenticity grades are not ranked; test membership in the grades a policy accepts</span>
+<span class="sd">    """</span>
+
+    <span class="n">FORGED</span> <span class="o">=</span> <span class="s2">"forged"</span>
+    <span class="n">CLAIMED</span> <span class="o">=</span> <span class="s2">"claimed"</span>
+    <span class="n">PLATFORM</span> <span class="o">=</span> <span class="s2">"platform"</span>
+    <span class="n">DOMAIN</span> <span class="o">=</span> <span class="s2">"domain"</span>
+    <span class="n">BOUND</span> <span class="o">=</span> <span class="s2">"bound"</span>
+    <span class="n">CRYPTO</span> <span class="o">=</span> <span class="s2">"crypto"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_not_ranked</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+            <span class="s2">"authenticity grades are not ranked; test membership in the grades a policy accepts"</span>
+        <span class="p">)</span>
+
+    <span class="fm">__lt__</span> <span class="o">=</span> <span class="fm">__le__</span> <span class="o">=</span> <span class="fm">__gt__</span> <span class="o">=</span> <span class="fm">__ge__</span> <span class="o">=</span> <span class="n">_not_ranked</span></div>
+
+
+
+<div class="viewcode-block" id="Support">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Support">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Support</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""How well a channel does something: ``full``, ``partial`` (with limits in ``notes``), or ``none``."""</span>
+
+    <span class="n">FULL</span> <span class="o">=</span> <span class="s2">"full"</span>
+    <span class="n">PARTIAL</span> <span class="o">=</span> <span class="s2">"partial"</span>
+    <span class="n">NONE</span> <span class="o">=</span> <span class="s2">"none"</span></div>
+
+
+
+<div class="viewcode-block" id="HistoryDepth">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.HistoryDepth">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">HistoryDepth</span><span class="p">(</span><span class="n">StrEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""How far back ``read`` sees: all history, a 24-hour buffer, only what correspond has seen since it was linked or started listening, or nothing."""</span>
+
+    <span class="n">FULL</span> <span class="o">=</span> <span class="s2">"full"</span>
+    <span class="n">BUFFER_24H</span> <span class="o">=</span> <span class="s2">"buffer_24h"</span>
+    <span class="n">SINCE_LINK</span> <span class="o">=</span> <span class="s2">"since_link"</span>
+    <span class="n">NONE</span> <span class="o">=</span> <span class="s2">"none"</span></div>
+
+
+
+<span class="c1"># ------------------------------------------------------------------------ references</span>
+
+
+<div class="viewcode-block" id="Account">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Account">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Account</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The credentialed endpoint correspond acts through: whose name a write goes out under."""</span>
+
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">acts_as</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"user"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">acts_as</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ACTS_AS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"acts_as must be one of </span><span class="si">{</span><span class="n">ACTS_AS</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">acts_as</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Account.to_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Account.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""JSON-ready."""</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"channel"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="s2">"id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">"acts_as"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">acts_as</span><span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="Account.from_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Account.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Account</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The inverse of :meth:`to_dict`."""</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"channel"</span><span class="p">],</span> <span class="nb">id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span> <span class="n">acts_as</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"acts_as"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">)</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ConversationRef">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.ConversationRef">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ConversationRef</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Where a conversation lives: a channel and that channel's own id, encoded ``&lt;channel&gt;:&lt;id&gt;``.</span>
+
+<span class="sd">    Two references are equal when channel and id are. ``kind`` (``issue``, ``discussion``,</span>
+<span class="sd">    ``chat``, ``address``, …) and ``parent`` describe the conversation and are filled in by</span>
+<span class="sd">    the channel's adapter, so a freshly parsed reference equals its normalised form.</span>
+
+<span class="sd">    &gt;&gt;&gt; ConversationRef.parse("telegram:-4001/7") == ConversationRef(channel="telegram", id="-4001/7", kind="topic")</span>
+<span class="sd">    True</span>
+<span class="sd">    &gt;&gt;&gt; ConversationRef.parse("nonsense")</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    correspond.errors.InvalidRef: 'nonsense' is not a conversation reference: the form is &lt;channel&gt;:&lt;id&gt;, e.g. github:octocat/hello-world#1</span>
+<span class="sd">    """</span>
+
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">compare</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">parent</span><span class="p">:</span> <span class="n">ConversationRef</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compare</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">CHANNEL_NAME_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"channel name </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="si">!r}</span><span class="s2"> must be lowercase letters, digits, '-' or '_', starting with a letter"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">_UNSAFE_ID_RE</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"conversation id </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">!r}</span><span class="s2"> must not contain whitespace or control characters"</span>
+            <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encoded</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The stable string form, ``&lt;channel&gt;:&lt;id&gt;``."""</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoded</span>
+
+<div class="viewcode-block" id="ConversationRef.parse">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.ConversationRef.parse">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">ConversationRef</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConversationRef</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Split ``&lt;channel&gt;:&lt;id&gt;`` without consulting the channel (its adapter normalises the id)."""</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">ConversationRef</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">text</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"a conversation reference is a string, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="n">channel</span><span class="p">,</span> <span class="n">separator</span><span class="p">,</span> <span class="n">native_id</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">":"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">separator</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">text</span><span class="si">!r}</span><span class="s2"> is not a conversation reference: the form is &lt;channel&gt;:&lt;id&gt;, e.g. github:octocat/hello-world#1"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">native_id</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ConversationRef.to_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.ConversationRef.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""JSON-ready, with the encoded form under ``ref``."""</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"ref"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="s2">"channel"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+            <span class="s2">"id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="s2">"kind"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span>
+            <span class="s2">"parent"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">parent</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="ConversationRef.from_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.ConversationRef.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConversationRef</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The inverse of :meth:`to_dict`; a bare encoded string also works."""</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s2">"channel"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"ref"</span><span class="p">])</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"parent"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"channel"</span><span class="p">],</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+            <span class="n">kind</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"kind"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+            <span class="n">parent</span><span class="o">=</span><span class="bp">cls</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">parent</span><span class="p">)</span> <span class="k">if</span> <span class="n">parent</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ChannelIdentity">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.ChannelIdentity">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ChannelIdentity</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Who a channel says sent something: its native id and what the platform attests about it. Not a person."""</span>
+
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">native_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">handle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">display_name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">is_bot</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">is_self</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">authority</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">address</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``&lt;channel&gt;:&lt;handle&gt;``, or the native id when there is no handle: the form a people registry resolves.</span>
+
+<span class="sd">        &gt;&gt;&gt; ChannelIdentity(channel="github", native_id="583231", handle="octocat").address</span>
+<span class="sd">        'github:octocat'</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">handle</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="bp">self</span><span class="o">.</span><span class="n">native_id</span><span class="si">}</span><span class="s2">"</span>
+
+<div class="viewcode-block" id="ChannelIdentity.label">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.ChannelIdentity.label">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">label</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A short name for transcripts."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_name</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">native_id</span> <span class="ow">or</span> <span class="s2">"anonymous"</span></div>
+
+
+<div class="viewcode-block" id="ChannelIdentity.to_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.ChannelIdentity.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""JSON-ready."""</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"channel"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+            <span class="s2">"native_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">native_id</span><span class="p">,</span>
+            <span class="s2">"handle"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span>
+            <span class="s2">"display_name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">display_name</span><span class="p">,</span>
+            <span class="s2">"is_bot"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_bot</span><span class="p">,</span>
+            <span class="s2">"is_self"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_self</span><span class="p">,</span>
+            <span class="s2">"authority"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authority</span><span class="p">,</span>
+            <span class="s2">"address"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="ChannelIdentity.from_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.ChannelIdentity.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">ChannelIdentity</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The inverse of :meth:`to_dict`."""</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"channel"</span><span class="p">],</span>
+            <span class="n">native_id</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native_id"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+            <span class="n">handle</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"handle"</span><span class="p">),</span>
+            <span class="n">display_name</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"display_name"</span><span class="p">),</span>
+            <span class="n">is_bot</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"is_bot"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)),</span>
+            <span class="n">is_self</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"is_self"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)),</span>
+            <span class="n">authority</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"authority"</span><span class="p">),</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Authenticity">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Authenticity">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Authenticity</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A grade and its evidence, computed on correspond's side of the hop and never read from a payload.</span>
+
+<span class="sd">    &gt;&gt;&gt; Authenticity(grade="bound", evidence={"method": "hmac-sha256"}).to_dict()</span>
+<span class="sd">    {'grade': 'bound', 'evidence': {'method': 'hmac-sha256'}}</span>
+<span class="sd">    """</span>
+
+    <span class="n">grade</span><span class="p">:</span> <span class="n">Grade</span>
+    <span class="n">evidence</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"grade"</span><span class="p">,</span> <span class="n">Grade</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grade</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"evidence"</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">evidence</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Authenticity.to_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Authenticity.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""JSON-ready."""</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"grade"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">grade</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s2">"evidence"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">evidence</span><span class="p">)}</span></div>
+
+
+<div class="viewcode-block" id="Authenticity.from_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Authenticity.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Authenticity</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The inverse of :meth:`to_dict`."""</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">grade</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"grade"</span><span class="p">],</span> <span class="n">evidence</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"evidence"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span></div>
+</div>
+
+
+
+<span class="c1"># -------------------------------------------------------------------------- messages</span>
+
+
+<div class="viewcode-block" id="Attachment">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Attachment">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Attachment</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A file that came with a message: referenced by ``ref``, fetched only on :meth:`content`, never inlined."""</span>
+
+    <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">media_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"application/octet-stream"</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">sha256</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">loader</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">bytes</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compare</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Attachment.content">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Attachment.content">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">content</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The bytes, fetched now through the channel that produced the attachment."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">loader</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">CorrespondError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"attachment </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="si">}</span><span class="s2"> did not come through a channel in this process, so it cannot be fetched; read the message again"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Attachment.to_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Attachment.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""JSON-ready (without the loader)."""</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"ref"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ref</span><span class="p">,</span>
+            <span class="s2">"media_type"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">media_type</span><span class="p">,</span>
+            <span class="s2">"name"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">"size"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">size</span><span class="p">,</span>
+            <span class="s2">"sha256"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sha256</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="Attachment.from_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Attachment.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Attachment</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The inverse of :meth:`to_dict` (the result has no loader)."""</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">ref</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"ref"</span><span class="p">],</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"media_type"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"application/octet-stream"</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">),</span>
+            <span class="n">size</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"size"</span><span class="p">),</span>
+            <span class="n">sha256</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sha256"</span><span class="p">),</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Message">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Message">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Message</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One message in a conversation, normalised, with the channel's own fields kept in ``native``."""</span>
+
+    <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">conversation</span><span class="p">:</span> <span class="n">ConversationRef</span>
+    <span class="n">author</span><span class="p">:</span> <span class="n">ChannelIdentity</span>
+    <span class="n">authenticity</span><span class="p">:</span> <span class="n">Authenticity</span>
+    <span class="n">sent_at</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">body</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">body_format</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"plain"</span>
+    <span class="n">attachments</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Attachment</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">reply_to</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">thread_root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">edited_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">native</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">raw</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compare</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="nb">repr</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"attachments"</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attachments</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"native"</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">native</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Message.to_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Message.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">include_raw</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""JSON-ready; ``raw`` (the untouched payload) only when asked for."""</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="s2">"conversation"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">conversation</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s2">"author"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s2">"authenticity"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">authenticity</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+            <span class="s2">"sent_at"</span><span class="p">:</span> <span class="n">format_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sent_at</span><span class="p">),</span>
+            <span class="s2">"text"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="s2">"body"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">body</span><span class="p">,</span>
+            <span class="s2">"body_format"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">body_format</span><span class="p">,</span>
+            <span class="s2">"attachments"</span><span class="p">:</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attachments</span><span class="p">],</span>
+            <span class="s2">"reply_to"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+            <span class="s2">"thread_root"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">thread_root</span><span class="p">,</span>
+            <span class="s2">"edited_at"</span><span class="p">:</span> <span class="n">format_time</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">edited_at</span><span class="p">),</span>
+            <span class="s2">"url"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span>
+            <span class="s2">"native"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">native</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">include_raw</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">"raw"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">raw</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="Message.from_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Message.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The inverse of :meth:`to_dict`."""</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">ConversationRef</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"conversation"</span><span class="p">]),</span>
+            <span class="n">author</span><span class="o">=</span><span class="n">ChannelIdentity</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"author"</span><span class="p">]),</span>
+            <span class="n">authenticity</span><span class="o">=</span><span class="n">Authenticity</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"authenticity"</span><span class="p">]),</span>
+            <span class="n">sent_at</span><span class="o">=</span><span class="n">parse_time</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"sent_at"</span><span class="p">]),</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span>
+            <span class="n">body</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"body"</span><span class="p">),</span>
+            <span class="n">body_format</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"body_format"</span><span class="p">,</span> <span class="s2">"plain"</span><span class="p">),</span>
+            <span class="n">attachments</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span>
+                <span class="n">Attachment</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"attachments"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">()</span>
+            <span class="p">),</span>
+            <span class="n">reply_to</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"reply_to"</span><span class="p">),</span>
+            <span class="n">thread_root</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"thread_root"</span><span class="p">),</span>
+            <span class="n">edited_at</span><span class="o">=</span><span class="n">parse_time</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"edited_at"</span><span class="p">)),</span>
+            <span class="n">url</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"url"</span><span class="p">),</span>
+            <span class="n">native</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{},</span>
+            <span class="n">raw</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"raw"</span><span class="p">),</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Event">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Event">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Event</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Something that happened on a channel, as a listener reports it: dedupe on ``delivery_id``, resume from ``cursor``."""</span>
+
+    <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">delivery_id</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">message</span><span class="p">:</span> <span class="n">Message</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">payload</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">EVENT_KINDS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"event kind must be one of </span><span class="si">{</span><span class="n">EVENT_KINDS</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"payload"</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">payload</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Event.to_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Event.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""JSON-ready."""</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"kind"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span>
+            <span class="s2">"channel"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+            <span class="s2">"delivery_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">delivery_id</span><span class="p">,</span>
+            <span class="s2">"cursor"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">cursor</span><span class="p">,</span>
+            <span class="s2">"message"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"payload"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">payload</span><span class="p">),</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="Event.from_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Event.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Event</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The inverse of :meth:`to_dict`."""</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">kind</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"kind"</span><span class="p">],</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"channel"</span><span class="p">],</span>
+            <span class="n">delivery_id</span><span class="o">=</span><span class="n">data</span><span class="p">[</span><span class="s2">"delivery_id"</span><span class="p">],</span>
+            <span class="n">cursor</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"cursor"</span><span class="p">),</span>
+            <span class="n">message</span><span class="o">=</span><span class="n">Message</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">message</span><span class="p">)</span> <span class="k">if</span> <span class="n">message</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">payload</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"payload"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{},</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<span class="c1"># ---------------------------------------------------------------------- capabilities</span>
+
+
+<span class="n">_SUPPORT_FIELDS</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">OPERATIONS</span><span class="p">,</span> <span class="s2">"initiate"</span><span class="p">,</span> <span class="s2">"reply"</span><span class="p">,</span> <span class="s2">"priority"</span><span class="p">)</span>
+<span class="n">_TUPLE_FIELDS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"listen_modes"</span><span class="p">,</span>
+    <span class="s2">"reactions"</span><span class="p">,</span>
+    <span class="s2">"formats"</span><span class="p">,</span>
+    <span class="s2">"rate_limits"</span><span class="p">,</span>
+    <span class="s2">"notes"</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="Capabilities">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Capabilities">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Capabilities</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What a channel can do, graded, with its limits.</span>
+
+<span class="sd">    One ``Support`` per operation in :data:`OPERATIONS`, plus three features of writing:</span>
+<span class="sd">    ``initiate`` (can a write start a conversation; Telegram bots cannot), ``reply``</span>
+<span class="sd">    (can a draft answer a specific message) and ``priority``. ``history_depth`` says how</span>
+<span class="sd">    far back ``read`` sees; ``grades`` are the authenticity grades the channel can attest;</span>
+<span class="sd">    ``native_fields`` are the keys its messages may carry in ``native`` (what a routing</span>
+<span class="sd">    condition can test), or ``None`` when the channel does not declare them.</span>
+<span class="sd">    """</span>
+
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">read</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">listen</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">send</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">edit</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">react</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">upload</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">verify</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">initiate</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">reply</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">history_depth</span><span class="p">:</span> <span class="n">HistoryDepth</span> <span class="o">=</span> <span class="n">HistoryDepth</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">listen_modes</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">grades</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Grade</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">max_text_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">max_title_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">edit_max_age_s</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">reactions</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">reactions_per_message</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">max_upload_bytes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">formats</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"plain"</span><span class="p">,)</span>
+    <span class="n">native_fields</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">rate_limits</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">notes</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_SUPPORT_FIELDS</span><span class="p">:</span>
+            <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">Support</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"history_depth"</span><span class="p">,</span> <span class="n">HistoryDepth</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">history_depth</span><span class="p">))</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"grades"</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">Grade</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grades</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_TUPLE_FIELDS</span><span class="p">:</span>
+            <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">native_fields</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"native_fields"</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">native_fields</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Capabilities.supports">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Capabilities.supports">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">supports</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Support</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The support level for one of :data:`OPERATIONS`."""</span>
+        <span class="k">if</span> <span class="n">operation</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">OPERATIONS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"unknown operation </span><span class="si">{</span><span class="n">operation</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">OPERATIONS</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operation</span><span class="p">)</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">operations</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The operations the channel has at all (full or partial)."""</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">op</span> <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">OPERATIONS</span> <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Capabilities.to_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Capabilities.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""JSON-ready."""</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"channel"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">}</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_SUPPORT_FIELDS</span><span class="p">})</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">"history_depth"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">history_depth</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">"grades"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">g</span><span class="o">.</span><span class="n">value</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grades</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="s2">"max_text_length"</span><span class="p">,</span>
+            <span class="s2">"max_title_length"</span><span class="p">,</span>
+            <span class="s2">"edit_max_age_s"</span><span class="p">,</span>
+            <span class="s2">"reactions_per_message"</span><span class="p">,</span>
+            <span class="s2">"max_upload_bytes"</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">name</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_TUPLE_FIELDS</span><span class="p">})</span>
+        <span class="n">data</span><span class="p">[</span><span class="s2">"native_fields"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">native_fields</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">native_fields</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span></div>
+
+
+<div class="viewcode-block" id="Capabilities.from_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Capabilities.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Capabilities</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The inverse of :meth:`to_dict`."""</span>
+        <span class="n">known</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">__dataclass_fields__</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">known</span><span class="p">})</span></div>
+</div>
+
+
+
+<span class="c1"># ------------------------------------------------------------------------- writing</span>
+
+
+<div class="viewcode-block" id="Draft">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Draft">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Draft</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What to write: the text, and the few things channels share (a title, the message answered, a priority)."""</span>
+
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">reply_to</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"draft text must be a string, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">PRIORITIES</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"priority must be one of </span><span class="si">{</span><span class="n">PRIORITIES</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">priority</span><span class="si">!r}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+<div class="viewcode-block" id="Draft.to_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.Draft.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""JSON-ready."""</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"text"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="s2">"title"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="s2">"reply_to"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+            <span class="s2">"priority"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
+        <span class="p">}</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SendResult">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.SendResult">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SendResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What a write did, or would do (``dry_run``), or why it failed and whether a retry could help."""</span>
+
+    <span class="n">ok</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">conversation</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"send"</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">account</span><span class="p">:</span> <span class="n">Account</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">plan</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">error</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">error_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">retryable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">retry_after</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_kind</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ERROR_KINDS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"error_kind must be one of </span><span class="si">{</span><span class="n">ERROR_KINDS</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">error_kind</span><span class="si">!r}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"plan"</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plan</span><span class="p">))</span>
+
+<div class="viewcode-block" id="SendResult.failure">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.SendResult.failure">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">failure</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">error</span><span class="p">:</span> <span class="n">ChannelError</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">conversation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"send"</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">plan</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A result carrying a :class:`~correspond.errors.ChannelError`'s classification."""</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">channel</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">conversation</span><span class="p">,</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">operation</span><span class="p">,</span>
+            <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+            <span class="n">plan</span><span class="o">=</span><span class="n">plan</span> <span class="ow">or</span> <span class="p">{},</span>
+            <span class="n">error</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">),</span>
+            <span class="n">error_kind</span><span class="o">=</span><span class="n">error</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span>
+            <span class="n">retryable</span><span class="o">=</span><span class="n">error</span><span class="o">.</span><span class="n">retryable</span><span class="p">,</span>
+            <span class="n">retry_after</span><span class="o">=</span><span class="n">error</span><span class="o">.</span><span class="n">retry_after</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SendResult.to_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.SendResult.to_dict">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""JSON-ready."""</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"ok"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">ok</span><span class="p">,</span>
+            <span class="s2">"channel"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+            <span class="s2">"conversation"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">conversation</span><span class="p">,</span>
+            <span class="s2">"operation"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">operation</span><span class="p">,</span>
+            <span class="s2">"dry_run"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dry_run</span><span class="p">,</span>
+            <span class="s2">"message_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">message_id</span><span class="p">,</span>
+            <span class="s2">"url"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">url</span><span class="p">,</span>
+            <span class="s2">"account"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">account</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">account</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="s2">"plan"</span><span class="p">:</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">plan</span><span class="p">),</span>
+            <span class="s2">"error"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">error</span><span class="p">,</span>
+            <span class="s2">"error_kind"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">error_kind</span><span class="p">,</span>
+            <span class="s2">"retryable"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">retryable</span><span class="p">,</span>
+            <span class="s2">"retry_after"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">retry_after</span><span class="p">,</span>
+        <span class="p">}</span></div>
+
+
+<div class="viewcode-block" id="SendResult.from_dict">
+<a class="viewcode-back" href="../../module_docs/correspond/model.html#correspond.SendResult.from_dict">[docs]</a>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_dict</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The inverse of :meth:`to_dict`."""</span>
+        <span class="n">account</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"account"</span><span class="p">)</span>
+        <span class="n">known</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">__dataclass_fields__</span><span class="p">)</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">known</span> <span class="ow">and</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">"account"</span><span class="p">}</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">fields</span><span class="p">,</span> <span class="n">account</span><span class="o">=</span><span class="n">Account</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">account</span><span class="p">)</span> <span class="k">if</span> <span class="n">account</span> <span class="k">else</span> <span class="kc">None</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

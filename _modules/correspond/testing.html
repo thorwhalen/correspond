@@ -1,0 +1,343 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.testing &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">correspond.testing</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for correspond.testing</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""An in-memory channel for tests and rehearsals, and ``python -m correspond.testing``: the CLI with it registered.</span>
+
+<span class="sd">:class:`FakeChannel` reads the conversations it was seeded with and records what it is</span>
+<span class="sd">asked to send. It implements ``Reader`` and ``Writer`` only, so every other operation</span>
+<span class="sd">raises ``NotSupported``, exactly as a real channel without that operation does. Nothing it</span>
+<span class="sd">does leaves the process, which makes it the channel to rehearse a workflow on::</span>
+
+<span class="sd">    python -m correspond.testing read fake:example/demo</span>
+<span class="sd">    python -m correspond.testing send fake:example/demo "hello" --dry-run</span>
+
+<span class="sd">&gt;&gt;&gt; fake = demo_channel()</span>
+<span class="sd">&gt;&gt;&gt; [m.text for m in fake.read(fake.parse_ref("example/demo"))]</span>
+<span class="sd">['The export drops the last row.', 'Seen it too, on the CSV export.']</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Account</span><span class="p">,</span>
+    <span class="n">Authenticity</span><span class="p">,</span>
+    <span class="n">Capabilities</span><span class="p">,</span>
+    <span class="n">ChannelIdentity</span><span class="p">,</span>
+    <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">Draft</span><span class="p">,</span>
+    <span class="n">Grade</span><span class="p">,</span>
+    <span class="n">HistoryDepth</span><span class="p">,</span>
+    <span class="n">Message</span><span class="p">,</span>
+    <span class="n">SendResult</span><span class="p">,</span>
+    <span class="n">Support</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"DEMO_CONVERSATION"</span><span class="p">,</span> <span class="s2">"FakeChannel"</span><span class="p">,</span> <span class="s2">"demo_channel"</span><span class="p">,</span> <span class="s2">"demo_message"</span><span class="p">,</span> <span class="s2">"main"</span><span class="p">]</span>
+
+<span class="n">DEMO_CONVERSATION</span> <span class="o">=</span> <span class="s2">"example/demo"</span>
+<span class="n">_ID_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^[A-Za-z0-9._/#-]+$"</span><span class="p">)</span>
+<span class="n">_EPOCH</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2026</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="FakeChannel">
+<a class="viewcode-back" href="../../module_docs/correspond/testing.html#correspond.testing.FakeChannel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">FakeChannel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A channel held in memory: seeded conversations to read, and a record of sends (``sent``)."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"fake"</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">conversations</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Message</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conversations</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">key</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">messages</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">messages</span> <span class="ow">in</span> <span class="p">(</span><span class="n">conversations</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sent</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">ConversationRef</span><span class="p">,</span> <span class="n">Draft</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Capabilities</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Read and send, with a small text limit; nothing else."""</span>
+        <span class="k">return</span> <span class="n">Capabilities</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">read</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">send</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">initiate</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">reply</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">history_depth</span><span class="o">=</span><span class="n">HistoryDepth</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">grades</span><span class="o">=</span><span class="p">(</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span> <span class="n">Grade</span><span class="o">.</span><span class="n">CLAIMED</span><span class="p">),</span>
+            <span class="n">max_text_length</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
+            <span class="n">notes</span><span class="o">=</span><span class="p">(</span><span class="s2">"in memory: nothing leaves the process"</span><span class="p">,),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="FakeChannel.parse_ref">
+<a class="viewcode-back" href="../../module_docs/correspond/testing.html#correspond.testing.FakeChannel.parse_ref">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConversationRef</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Any non-empty id of letters, digits and ``._/#-``."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_ID_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="nb">id</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> conversation ids are like </span><span class="si">{</span><span class="n">DEMO_CONVERSATION</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="nb">id</span><span class="si">!r}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"thread"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FakeChannel.read">
+<a class="viewcode-back" href="../../module_docs/correspond/testing.html#correspond.testing.FakeChannel.read">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The seeded (and sent) messages of a conversation."""</span>
+        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">conversations</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ref</span><span class="si">}</span><span class="s2"> does not exist"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"not_found"</span><span class="p">)</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">conversations</span><span class="p">[</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="k">if</span> <span class="n">since</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">m</span><span class="o">.</span><span class="n">sent_at</span> <span class="o">&gt;=</span> <span class="n">since</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">messages</span><span class="p">[</span><span class="o">-</span><span class="n">limit</span><span class="p">:]</span> <span class="k">if</span> <span class="n">limit</span> <span class="k">else</span> <span class="n">messages</span></div>
+
+
+<div class="viewcode-block" id="FakeChannel.send">
+<a class="viewcode-back" href="../../module_docs/correspond/testing.html#correspond.testing.FakeChannel.send">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Append to the conversation (or, with ``dry_run``, say that it would)."""</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"append a message to the in-memory conversation"</span><span class="p">,</span>
+            <span class="s2">"conversation"</span><span class="p">:</span> <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="s2">"text"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="s2">"reply_to"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">account</span> <span class="o">=</span> <span class="n">Account</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"fake-bot"</span><span class="p">,</span> <span class="n">acts_as</span><span class="o">=</span><span class="s2">"bot"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+                <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+                <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
+                <span class="n">account</span><span class="o">=</span><span class="n">account</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">thread</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conversations</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="p">[])</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="n">demo_message</span><span class="p">(</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">message_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"m</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">thread</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">handle</span><span class="o">=</span><span class="s2">"fake-bot"</span><span class="p">,</span>
+            <span class="n">is_self</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">reply_to</span><span class="o">=</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+            <span class="n">sent_at</span><span class="o">=</span><span class="n">_EPOCH</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">thread</span><span class="p">)),</span>
+        <span class="p">)</span>
+        <span class="n">thread</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sent</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">message_id</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">account</span><span class="o">=</span><span class="n">account</span><span class="p">,</span>
+            <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="demo_message">
+<a class="viewcode-back" href="../../module_docs/correspond/testing.html#correspond.testing.demo_message">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">demo_message</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">conversation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"fake:</span><span class="si">{</span><span class="n">DEMO_CONVERSATION</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"The export drops the last row."</span><span class="p">,</span>
+    <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"m1"</span><span class="p">,</span>
+    <span class="n">handle</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="s2">"ada"</span><span class="p">,</span>
+    <span class="n">grade</span><span class="p">:</span> <span class="n">Grade</span> <span class="o">=</span> <span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+    <span class="n">is_self</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">reply_to</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">sent_at</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">=</span> <span class="n">_EPOCH</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A fictional message, for examples and tests."""</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">conversation</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Message</span><span class="p">(</span>
+        <span class="nb">id</span><span class="o">=</span><span class="n">message_id</span><span class="p">,</span>
+        <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="p">,</span>
+        <span class="n">author</span><span class="o">=</span><span class="n">ChannelIdentity</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+            <span class="n">native_id</span><span class="o">=</span><span class="n">handle</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+            <span class="n">handle</span><span class="o">=</span><span class="n">handle</span><span class="p">,</span>
+            <span class="n">display_name</span><span class="o">=</span><span class="n">handle</span><span class="o">.</span><span class="n">title</span><span class="p">()</span> <span class="k">if</span> <span class="n">handle</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">is_self</span><span class="o">=</span><span class="n">is_self</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="n">authenticity</span><span class="o">=</span><span class="n">Authenticity</span><span class="p">(</span><span class="n">grade</span><span class="o">=</span><span class="n">grade</span><span class="p">,</span> <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="s2">"correspond.testing"</span><span class="p">}),</span>
+        <span class="n">sent_at</span><span class="o">=</span><span class="n">sent_at</span><span class="p">,</span>
+        <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+        <span class="n">reply_to</span><span class="o">=</span><span class="n">reply_to</span><span class="p">,</span>
+        <span class="n">native</span><span class="o">=</span><span class="p">{</span><span class="s2">"labels"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">labels</span><span class="p">)}</span> <span class="k">if</span> <span class="n">labels</span> <span class="k">else</span> <span class="p">{},</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="demo_channel">
+<a class="viewcode-back" href="../../module_docs/correspond/testing.html#correspond.testing.demo_channel">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">demo_channel</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"fake"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">FakeChannel</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A :class:`FakeChannel` seeded with one short conversation, ``example/demo``."""</span>
+    <span class="k">return</span> <span class="n">FakeChannel</span><span class="p">(</span>
+        <span class="n">name</span><span class="p">,</span>
+        <span class="n">conversations</span><span class="o">=</span><span class="p">{</span>
+            <span class="n">DEMO_CONVERSATION</span><span class="p">:</span> <span class="p">[</span>
+                <span class="n">demo_message</span><span class="p">(</span><span class="n">conversation</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">DEMO_CONVERSATION</span><span class="si">}</span><span class="s2">"</span><span class="p">),</span>
+                <span class="n">demo_message</span><span class="p">(</span>
+                    <span class="n">conversation</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">DEMO_CONVERSATION</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">text</span><span class="o">=</span><span class="s2">"Seen it too, on the CSV export."</span><span class="p">,</span>
+                    <span class="n">message_id</span><span class="o">=</span><span class="s2">"m2"</span><span class="p">,</span>
+                    <span class="n">handle</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">CLAIMED</span><span class="p">,</span>
+                    <span class="n">reply_to</span><span class="o">=</span><span class="s2">"m1"</span><span class="p">,</span>
+                    <span class="n">sent_at</span><span class="o">=</span><span class="n">_EPOCH</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
+                <span class="p">),</span>
+            <span class="p">]</span>
+        <span class="p">},</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="main">
+<a class="viewcode-back" href="../../module_docs/correspond/testing.html#correspond.testing.main">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">argv</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The ordinary ``correspond`` CLI, with the demo fake channel registered as ``fake``."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.__main__</span><span class="w"> </span><span class="kn">import</span> <span class="n">main</span> <span class="k">as</span> <span class="n">cli</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_channel</span>
+
+    <span class="n">register_channel</span><span class="p">(</span><span class="n">demo_channel</span><span class="p">(),</span> <span class="n">replace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">cli</span><span class="p">(</span><span class="n">argv</span><span class="p">)</span></div>
+
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

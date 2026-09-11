@@ -1,0 +1,590 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.channels.telegram &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">correspond.channels.telegram</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for correspond.channels.telegram</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Telegram: a bot over the Bot API, with the standard library.</span>
+
+<span class="sd">References: ``telegram:`` (the bot's whole update stream, for listening),</span>
+<span class="sd">``telegram:&lt;chat id&gt;`` (a private chat, a group or a channel; ``telegram:@name`` for a</span>
+<span class="sd">public channel), ``telegram:&lt;chat id&gt;/&lt;topic id&gt;`` (a forum topic).</span>
+
+<span class="sd">Bots have no history API, and Telegram keeps undelivered updates for at most 24 hours, so</span>
+<span class="sd">``poll`` writes every update it receives to a local log under the data root</span>
+<span class="sd">(``telegram/``) and ``read`` reads that log (a ``telegram:@name`` reference is first resolved</span>
+<span class="sd">with ``getChat``, over the network). ``getUpdates`` confirms updates for every chat</span>
+<span class="sd">at once, which is why listening is account-wide: narrow to one chat when routing.</span>
+
+<span class="sd">Senders are ``platform``: Telegram authenticated the account, and correspond pulled the</span>
+<span class="sd">update from the Bot API itself. The bot token never appears in an error or a plan.</span>
+
+<span class="sd">&gt;&gt;&gt; Telegram().parse_ref("-4001/7").parent.encoded</span>
+<span class="sd">'telegram:-4001'</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.channels._http</span><span class="w"> </span><span class="kn">import</span> <span class="n">urllib_http</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span><span class="p">,</span> <span class="n">NotSupported</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Account</span><span class="p">,</span>
+    <span class="n">Authenticity</span><span class="p">,</span>
+    <span class="n">Capabilities</span><span class="p">,</span>
+    <span class="n">ChannelIdentity</span><span class="p">,</span>
+    <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">Draft</span><span class="p">,</span>
+    <span class="n">Event</span><span class="p">,</span>
+    <span class="n">Grade</span><span class="p">,</span>
+    <span class="n">HistoryDepth</span><span class="p">,</span>
+    <span class="n">Message</span><span class="p">,</span>
+    <span class="n">SendResult</span><span class="p">,</span>
+    <span class="n">Support</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">with_final_cursor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">require</span><span class="p">,</span> <span class="n">value</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Telegram"</span><span class="p">]</span>
+
+<span class="n">NAME</span> <span class="o">=</span> <span class="s2">"telegram"</span>
+<span class="n">CHAT_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^(?:-?[1-9][0-9]{0,19}|@[A-Za-z][A-Za-z0-9_]{3,31})$"</span><span class="p">)</span>
+<span class="n">MAX_TEXT_CHARS</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">MAX_UPDATES</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">UPDATE_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"message"</span><span class="p">,</span> <span class="s2">"edited_message"</span><span class="p">,</span> <span class="s2">"channel_post"</span><span class="p">,</span> <span class="s2">"edited_channel_post"</span><span class="p">)</span>
+<span class="n">_MEDIA</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"photo"</span><span class="p">,</span> <span class="s2">"document"</span><span class="p">,</span> <span class="s2">"voice"</span><span class="p">,</span> <span class="s2">"video"</span><span class="p">,</span> <span class="s2">"audio"</span><span class="p">,</span> <span class="s2">"sticker"</span><span class="p">,</span> <span class="s2">"animation"</span><span class="p">)</span>
+<span class="n">_PLATFORM</span> <span class="o">=</span> <span class="n">Authenticity</span><span class="p">(</span>
+    <span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span> <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"attested_by"</span><span class="p">:</span> <span class="s2">"the Telegram Bot API (getUpdates)"</span><span class="p">}</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_log_key</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">chat</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">message</span><span class="o">.</span><span class="n">conversation</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">id</span>
+        <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">conversation</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">else</span> <span class="n">message</span><span class="o">.</span><span class="n">conversation</span><span class="o">.</span><span class="n">id</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">chat</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">.json"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_error</span><span class="p">(</span><span class="n">code</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">retry_after</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ChannelError</span><span class="p">:</span>
+    <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Telegram </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">description</span><span class="si">}</span><span class="s2">"</span>
+    <span class="n">lowered</span> <span class="o">=</span> <span class="n">description</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="mi">429</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"rate_limited"</span><span class="p">,</span> <span class="n">retryable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">retry_after</span><span class="o">=</span><span class="n">retry_after</span>
+        <span class="p">)</span>
+    <span class="c1"># 401 is a refused token; the Bot API answers a malformed token's URL with a bare 404 "Not Found".</span>
+    <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="mi">401</span> <span class="ow">or</span> <span class="p">(</span><span class="n">code</span> <span class="o">==</span> <span class="mi">404</span> <span class="ow">and</span> <span class="n">lowered</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"not found"</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2"> (the bot token was not accepted)"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"auth"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="mi">403</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"permission"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s2">"not found"</span> <span class="ow">in</span> <span class="n">lowered</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"not_found"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="mi">409</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2"> (another getUpdates consumer or a webhook is active for this bot)"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"unavailable"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">code</span> <span class="o">&gt;=</span> <span class="mi">500</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"unavailable"</span><span class="p">,</span> <span class="n">retryable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">retry_after</span><span class="o">=</span><span class="n">retry_after</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="Telegram">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/telegram.html#correspond.channels.telegram.Telegram">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Telegram</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A Telegram bot: listen, read the local log, send, edit, react."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="n">NAME</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">http</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">urllib_http</span><span class="p">,</span>
+        <span class="n">log</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">run</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">http</span> <span class="o">=</span> <span class="n">http</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run</span> <span class="o">=</span> <span class="n">run</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="o">=</span> <span class="n">log</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Every message this bot has received or sent, as JSON, keyed ``&lt;chat id&gt;/&lt;message id&gt;.json``."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">json_store</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="o">=</span> <span class="n">json_store</span><span class="p">(</span><span class="n">NAME</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Capabilities</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A bot's view of Telegram."""</span>
+        <span class="k">return</span> <span class="n">Capabilities</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="n">read</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
+            <span class="n">listen</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">send</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">edit</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">react</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">initiate</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">NONE</span><span class="p">,</span>
+            <span class="n">reply</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">history_depth</span><span class="o">=</span><span class="n">HistoryDepth</span><span class="o">.</span><span class="n">BUFFER_24H</span><span class="p">,</span>
+            <span class="n">listen_modes</span><span class="o">=</span><span class="p">(</span><span class="s2">"poll"</span><span class="p">,),</span>
+            <span class="n">native_fields</span><span class="o">=</span><span class="p">(</span><span class="s2">"chat_type"</span><span class="p">,</span> <span class="s2">"chat_title"</span><span class="p">,</span> <span class="s2">"message_thread_id"</span><span class="p">,</span> <span class="s2">"media"</span><span class="p">),</span>
+            <span class="n">grades</span><span class="o">=</span><span class="p">(</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,),</span>
+            <span class="n">max_text_length</span><span class="o">=</span><span class="n">MAX_TEXT_CHARS</span><span class="p">,</span>
+            <span class="n">reactions_per_message</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">formats</span><span class="o">=</span><span class="p">(</span><span class="s2">"plain"</span><span class="p">,),</span>
+            <span class="n">rate_limits</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"about one message per second per chat, 20 per minute per group"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"read returns what listen has logged on this machine; updates never polled within 24 hours are gone"</span><span class="p">,</span>
+                <span class="s2">"listen is account-wide (telegram:); narrow to a chat when routing"</span><span class="p">,</span>
+                <span class="s2">"reading telegram:@name first resolves the name with getChat, over the network"</span><span class="p">,</span>
+                <span class="s2">"a bot cannot start a conversation: someone must write to it first"</span><span class="p">,</span>
+                <span class="s2">"a title is prepended to the text: Telegram messages have none"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="Telegram.parse_ref">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/telegram.html#correspond.channels.telegram.Telegram.parse_ref">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConversationRef</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``""`` (the bot), a chat id or ``@name``, or ``&lt;chat id&gt;/&lt;topic id&gt;``."""</span>
+        <span class="k">if</span> <span class="nb">id</span> <span class="o">==</span> <span class="s2">""</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"bot"</span><span class="p">)</span>
+        <span class="n">chat</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">topic</span> <span class="o">=</span> <span class="nb">id</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">CHAT_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">chat</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">topic</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">topic</span><span class="o">.</span><span class="n">isdigit</span><span class="p">())</span> <span class="ow">or</span> <span class="nb">id</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">"/"</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"telegram references are telegram:, telegram:&lt;chat id&gt;, telegram:@name or telegram:&lt;chat id&gt;/&lt;topic id&gt;, not telegram:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="n">chat_ref</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">chat</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"chat"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">topic</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">chat_ref</span>
+        <span class="k">return</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"topic"</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">chat_ref</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ------------------------------------------------------------------ plumbing</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"token"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"api_url"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"https://api.telegram.org"</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="p">(</span>
+                <span class="s2">"POST"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">/bot</span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"Content-Type"</span><span class="p">:</span> <span class="s2">"application/json"</span><span class="p">},</span>
+                <span class="n">body</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="n">params</span><span class="p">))</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="s2">"&lt;token&gt;"</span><span class="p">),</span>
+                <span class="n">kind</span><span class="o">=</span><span class="n">error</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span>
+                <span class="n">retryable</span><span class="o">=</span><span class="n">error</span><span class="o">.</span><span class="n">retryable</span><span class="p">,</span>
+                <span class="n">retry_after</span><span class="o">=</span><span class="n">error</span><span class="o">.</span><span class="n">retry_after</span><span class="p">,</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ok"</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"result"</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="n">description</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"description"</span><span class="p">)</span> <span class="ow">or</span> <span class="sa">f</span><span class="s2">"HTTP </span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span>
+            <span class="n">token</span><span class="p">,</span> <span class="s2">"&lt;token&gt;"</span>
+        <span class="p">)</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"error_code"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">)</span>
+        <span class="n">retry_after</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"parameters"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"retry_after"</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">_error</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">retry_after</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">is_self</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+        <span class="n">chat</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"chat"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">chat_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message_thread_id"</span><span class="p">)</span> <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"is_topic_message"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">conversation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">chat_id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">thread</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">thread</span> <span class="k">else</span> <span class="n">chat_id</span><span class="p">)</span>
+        <span class="n">sender</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"from"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sender_chat"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+            <span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">(</span><span class="n">sender</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"first_name"</span><span class="p">),</span> <span class="n">sender</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"last_name"</span><span class="p">))</span> <span class="k">if</span> <span class="n">p</span>
+        <span class="p">)</span>
+        <span class="n">reply</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"reply_to_message"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">replied</span> <span class="o">=</span> <span class="n">reply</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message_id"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Message</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"message_id"</span><span class="p">]),</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">conversation</span><span class="p">,</span>
+            <span class="n">author</span><span class="o">=</span><span class="n">ChannelIdentity</span><span class="p">(</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                <span class="n">native_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sender</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)),</span>
+                <span class="n">handle</span><span class="o">=</span><span class="n">sender</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"username"</span><span class="p">),</span>
+                <span class="n">display_name</span><span class="o">=</span><span class="n">name</span> <span class="ow">or</span> <span class="n">sender</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"title"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">is_bot</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">sender</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"is_bot"</span><span class="p">)),</span>
+                <span class="n">is_self</span><span class="o">=</span><span class="n">is_self</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">authenticity</span><span class="o">=</span><span class="n">_PLATFORM</span><span class="p">,</span>
+            <span class="n">sent_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"date"</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">),</span> <span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">),</span>
+            <span class="n">edited_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"edit_date"</span><span class="p">]),</span> <span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"edit_date"</span><span class="p">)</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"caption"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+            <span class="c1"># In a forum topic every message "replies" to the topic's first message; that is not a reply.</span>
+            <span class="n">reply_to</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">replied</span><span class="p">)</span> <span class="k">if</span> <span class="n">replied</span> <span class="ow">and</span> <span class="n">replied</span> <span class="o">!=</span> <span class="n">thread</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">native</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"chat_type"</span><span class="p">:</span> <span class="n">chat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">),</span>
+                <span class="s2">"chat_title"</span><span class="p">:</span> <span class="n">chat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"title"</span><span class="p">),</span>
+                <span class="s2">"message_thread_id"</span><span class="p">:</span> <span class="n">thread</span><span class="p">,</span>
+                <span class="s2">"media"</span><span class="p">:</span> <span class="p">[</span><span class="n">kind</span> <span class="k">for</span> <span class="n">kind</span> <span class="ow">in</span> <span class="n">_MEDIA</span> <span class="k">if</span> <span class="n">kind</span> <span class="ow">in</span> <span class="n">data</span><span class="p">],</span>
+            <span class="p">},</span>
+            <span class="n">raw</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_target</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="s2">"name a chat: telegram:&lt;chat id&gt;"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">)</span>
+        <span class="n">chat</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">topic</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+        <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"chat_id"</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">chat</span><span class="p">)</span> <span class="k">if</span> <span class="n">chat</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"-"</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="k">else</span> <span class="n">chat</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">topic</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">"message_thread_id"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">params</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_message_number</span><span class="p">(</span><span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Telegram message ids are numbers, not </span><span class="si">{</span><span class="n">message_id</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">message_id</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remember</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"message_id"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">is_self</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">[</span><span class="n">_log_key</span><span class="p">(</span><span class="n">message</span><span class="p">)]</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">message</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_account</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Account</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">bot</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"from"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">bot</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">Account</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"@</span><span class="si">{</span><span class="n">bot</span><span class="p">[</span><span class="s1">'username'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">bot</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"username"</span><span class="p">)</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">bot</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">)),</span>
+            <span class="n">acts_as</span><span class="o">=</span><span class="s2">"bot"</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="c1"># --------------------------------------------------------------- operations</span>
+
+<div class="viewcode-block" id="Telegram.poll">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/telegram.html#correspond.channels.telegram.Telegram.poll">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">poll</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Updates since ``cursor`` (an update offset), every one logged before it is handed over."""</span>
+        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
+                <span class="s2">"listen to one chat"</span><span class="p">,</span>
+                <span class="n">NAME</span><span class="p">,</span>
+                <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"listen to telegram: and route by conversation"</span><span class="p">,),</span>
+            <span class="p">)</span>
+        <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"timeout"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"allowed_updates"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">UPDATE_TYPES</span><span class="p">)}</span>
+        <span class="k">if</span> <span class="n">cursor</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"a Telegram cursor is an update offset, not </span><span class="si">{</span><span class="n">cursor</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">"offset"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">limit</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">"limit"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">MAX_UPDATES</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">limit</span><span class="p">)))</span>
+        <span class="n">updates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"getUpdates"</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">update</span> <span class="ow">in</span> <span class="n">updates</span><span class="p">:</span>
+            <span class="n">update_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">update</span><span class="p">[</span><span class="s2">"update_id"</span><span class="p">])</span>
+            <span class="n">kind</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">UPDATE_TYPES</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">update</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">kind</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">update</span><span class="p">[</span><span class="n">kind</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">[</span><span class="n">_log_key</span><span class="p">(</span><span class="n">message</span><span class="p">)]</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+            <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Event</span><span class="p">(</span>
+                    <span class="n">kind</span><span class="o">=</span><span class="s2">"message.updated"</span>
+                    <span class="k">if</span> <span class="n">kind</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"edited"</span><span class="p">)</span>
+                    <span class="k">else</span> <span class="s2">"message.created"</span><span class="p">,</span>
+                    <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                    <span class="n">delivery_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"telegram:update-</span><span class="si">{</span><span class="n">update_id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">cursor</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">update_id</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+                    <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span>
+                    <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">"update_id"</span><span class="p">:</span> <span class="n">update_id</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">:</span> <span class="n">kind</span><span class="p">},</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">final</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">updates</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">"update_id"</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">updates</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">with_final_cursor</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">final</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Telegram.read">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/telegram.html#correspond.channels.telegram.Telegram.read">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""What the log holds for a chat or topic, oldest first."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="s2">"read one chat: telegram:&lt;chat id&gt;"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">)</span>
+        <span class="n">chat</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">parent</span> <span class="k">else</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span>
+        <span class="n">topic</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)[</span><span class="mi">2</span><span class="p">]</span> <span class="ow">or</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">chat</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"@"</span><span class="p">):</span>
+            <span class="n">chat</span> <span class="o">=</span> <span class="nb">str</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"getChat"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"chat_id"</span><span class="p">:</span> <span class="n">chat</span><span class="p">})</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="n">chat</span><span class="p">))</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">chat</span><span class="si">}</span><span class="s2">/"</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">key</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="n">Message</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">[</span><span class="n">key</span><span class="p">])</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">topic</span> <span class="ow">is</span> <span class="kc">None</span>
+                <span class="ow">or</span> <span class="nb">str</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">native</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message_thread_id"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span> <span class="o">==</span> <span class="n">topic</span>
+            <span class="p">):</span>
+                <span class="n">messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="n">messages</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">sent_at</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="k">else</span> <span class="mi">0</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">window</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="n">since</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Telegram.send">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/telegram.html#correspond.channels.telegram.Telegram.send">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``sendMessage``, the title (if any) prepended."""</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span> <span class="k">else</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_TEXT_CHARS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"with the title the text is </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="si">}</span><span class="s2"> characters; Telegram accepts </span><span class="si">{</span><span class="n">MAX_TEXT_CHARS</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">params</span><span class="p">[</span><span class="s2">"text"</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span>
+        <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">"reply_parameters"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"message_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message_number</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"action"</span><span class="p">:</span> <span class="s2">"sendMessage"</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">,</span> <span class="s2">"title_prepended"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">)}</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+                <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="n">plan</span>
+            <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"sendMessage"</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remember</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">message_id</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="n">message</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">account</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_account</span><span class="p">(</span><span class="n">result</span><span class="p">),</span>
+            <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Telegram.edit">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/telegram.html#correspond.channels.telegram.Telegram.edit">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">edit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+        <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``editMessageText`` on one of the bot's messages."""</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"message_thread_id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span><span class="s2">"message_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message_number</span><span class="p">(</span><span class="n">message_id</span><span class="p">),</span> <span class="s2">"text"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"action"</span><span class="p">:</span> <span class="s2">"editMessageText"</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+                <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+                <span class="n">operation</span><span class="o">=</span><span class="s2">"edit"</span><span class="p">,</span>
+                <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"editMessageText"</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_remember</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">operation</span><span class="o">=</span><span class="s2">"edit"</span><span class="p">,</span>
+            <span class="n">message_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">),</span>
+            <span class="n">account</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_account</span><span class="p">(</span><span class="n">result</span><span class="p">),</span>
+            <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Telegram.react">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/telegram.html#correspond.channels.telegram.Telegram.react">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">react</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+        <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">reaction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``setMessageReaction`` with one emoji (a bot has one reaction per message)."""</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"message_thread_id"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"message_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message_number</span><span class="p">(</span><span class="n">message_id</span><span class="p">),</span>
+                <span class="s2">"reaction"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"emoji"</span><span class="p">,</span> <span class="s2">"emoji"</span><span class="p">:</span> <span class="n">reaction</span><span class="p">}],</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"action"</span><span class="p">:</span> <span class="s2">"setMessageReaction"</span><span class="p">,</span> <span class="o">**</span><span class="n">params</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+                <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+                <span class="n">operation</span><span class="o">=</span><span class="s2">"react"</span><span class="p">,</span>
+                <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"setMessageReaction"</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">operation</span><span class="o">=</span><span class="s2">"react"</span><span class="p">,</span>
+            <span class="n">message_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">),</span>
+            <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

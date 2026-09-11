@@ -1,0 +1,185 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.channels._http &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="correspond.channels.github" href="github.html" />
+    <link rel="prev" title="correspond.channels" href="../channels.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../channels.html">correspond.channels</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">correspond.channels._http</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.channels._http.Response"><code class="docutils literal notranslate"><span class="pre">Response</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels._http.Response.json"><code class="docutils literal notranslate"><span class="pre">Response.json()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.channels._http.classify"><code class="docutils literal notranslate"><span class="pre">classify()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.channels._http.retry_after_seconds"><code class="docutils literal notranslate"><span class="pre">retry_after_seconds()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.channels._http.urllib_http"><code class="docutils literal notranslate"><span class="pre">urllib_http()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">correspond.channels._http</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/module_docs/correspond/channels/_http.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-correspond.channels._http">
+<span id="correspond-channels-http"></span><h1>correspond.channels._http<a class="headerlink" href="#module-correspond.channels._http" title="Link to this heading"></a></h1>
+<p>A small HTTP client over <code class="docutils literal notranslate"><span class="pre">urllib</span></code>, shared by the HTTP adapters, with failures classified.</p>
+<p>Adapters take it as <code class="docutils literal notranslate"><span class="pre">http=</span></code>. The call shape is
+<code class="docutils literal notranslate"><span class="pre">http(method,</span> <span class="pre">url,</span> <span class="pre">*,</span> <span class="pre">headers=None,</span> <span class="pre">body=None,</span> <span class="pre">timeout=DEFAULT_TIMEOUT_S)</span> <span class="pre">-&gt;</span> <span class="pre">Response</span></code>:
+an HTTP error status comes back as a <code class="docutils literal notranslate"><span class="pre">Response</span></code> like any other, and only “could not reach
+the server” raises, as a <code class="docutils literal notranslate"><span class="pre">ChannelError</span></code> of kind <code class="docutils literal notranslate"><span class="pre">network</span></code> that names the host and never
+the URL (a URL path can carry a token). Tests pass a scripted function of the same shape.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">classify</span><span class="p">(</span><span class="mi">429</span><span class="p">,</span> <span class="s2">"slow down"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"retry-after"</span><span class="p">:</span> <span class="s2">"3"</span><span class="p">})</span><span class="o">.</span><span class="n">retry_after</span>
+<span class="go">3.0</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">classify</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="s2">"gone"</span><span class="p">)</span><span class="o">.</span><span class="n">kind</span>
+<span class="go">'not_found'</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.channels._http.Response">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels._http.</span></span><span class="sig-name descname"><span class="pre">Response</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">headers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping[str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">str]</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">b''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/correspond/channels/_http.html#Response"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels._http.Response" title="Link to this definition"></a></dt>
+<dd><p>An HTTP response: status, lower-cased headers, raw body.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels._http.Response.json">
+<span class="sig-name descname"><span class="pre">json</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="../../../_modules/correspond/channels/_http.html#Response.json"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels._http.Response.json" title="Link to this definition"></a></dt>
+<dd><p>The body parsed as JSON, or <code class="docutils literal notranslate"><span class="pre">None</span></code> when it is not JSON.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels._http.classify">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels._http.</span></span><span class="sig-name descname"><span class="pre">classify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">status</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">headers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../errors.html#correspond.errors.ChannelError" title="correspond.errors.ChannelError"><span class="pre">ChannelError</span></a></span></span><a class="reference internal" href="../../../_modules/correspond/channels/_http.html#classify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels._http.classify" title="Link to this definition"></a></dt>
+<dd><p>The <a class="reference internal" href="../errors.html#correspond.errors.ChannelError" title="correspond.errors.ChannelError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChannelError</span></code></a> an HTTP error status means.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels._http.retry_after_seconds">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels._http.</span></span><span class="sig-name descname"><span class="pre">retry_after_seconds</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">headers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="reference internal" href="../../../_modules/correspond/channels/_http.html#retry_after_seconds"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels._http.retry_after_seconds" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">Retry-After</span></code> in seconds (it may be a number or an HTTP date), or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels._http.urllib_http">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels._http.</span></span><span class="sig-name descname"><span class="pre">urllib_http</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">headers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timeout</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">30</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#correspond.channels._http.Response" title="correspond.channels._http.Response"><span class="pre">Response</span></a></span></span><a class="reference internal" href="../../../_modules/correspond/channels/_http.html#urllib_http"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels._http.urllib_http" title="Link to this definition"></a></dt>
+<dd><p>One request with the standard library.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../channels.html" class="btn btn-neutral float-left" title="correspond.channels" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="github.html" class="btn btn-neutral float-right" title="correspond.channels.github" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

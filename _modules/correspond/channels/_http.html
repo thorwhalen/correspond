@@ -1,0 +1,272 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.channels._http &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">correspond.channels._http</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for correspond.channels._http</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""A small HTTP client over ``urllib``, shared by the HTTP adapters, with failures classified.</span>
+
+<span class="sd">Adapters take it as ``http=``. The call shape is</span>
+<span class="sd">``http(method, url, *, headers=None, body=None, timeout=DEFAULT_TIMEOUT_S) -&gt; Response``:</span>
+<span class="sd">an HTTP error status comes back as a ``Response`` like any other, and only "could not reach</span>
+<span class="sd">the server" raises, as a ``ChannelError`` of kind ``network`` that names the host and never</span>
+<span class="sd">the URL (a URL path can carry a token). Tests pass a scripted function of the same shape.</span>
+
+<span class="sd">&gt;&gt;&gt; classify(429, "slow down", {"retry-after": "3"}).retry_after</span>
+<span class="sd">3.0</span>
+<span class="sd">&gt;&gt;&gt; classify(404, "gone").kind</span>
+<span class="sd">'not_found'</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">urllib.error</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">urllib.request</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">email.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parsedate_to_datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">urlsplit</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"DEFAULT_TIMEOUT_S"</span><span class="p">,</span>
+    <span class="s2">"Response"</span><span class="p">,</span>
+    <span class="s2">"classify"</span><span class="p">,</span>
+    <span class="s2">"retry_after_seconds"</span><span class="p">,</span>
+    <span class="s2">"urllib_http"</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">DEFAULT_TIMEOUT_S</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="n">USER_AGENT</span> <span class="o">=</span> <span class="s2">"correspond (+https://github.com/thorwhalen/correspond)"</span>
+
+
+<div class="viewcode-block" id="Response">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/_http.html#correspond.channels._http.Response">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Response</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""An HTTP response: status, lower-cased headers, raw body."""</span>
+
+    <span class="n">status</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">body</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">""</span>
+
+<div class="viewcode-block" id="Response.json">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/_http.html#correspond.channels._http.Response.json">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">json</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The body parsed as JSON, or ``None`` when it is not JSON."""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">body</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"null"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">UnicodeDecodeError</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+</div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_lowered</span><span class="p">(</span><span class="n">headers</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">headers</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span> <span class="k">if</span> <span class="n">headers</span> <span class="k">else</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="urllib_http">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/_http.html#correspond.channels._http.urllib_http">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">urllib_http</span><span class="p">(</span>
+    <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">body</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">DEFAULT_TIMEOUT_S</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Response</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One request with the standard library."""</span>
+    <span class="n">request</span> <span class="o">=</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">Request</span><span class="p">(</span>
+        <span class="n">url</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">body</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+        <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"User-Agent"</span><span class="p">:</span> <span class="n">USER_AGENT</span><span class="p">,</span> <span class="o">**</span><span class="p">(</span><span class="n">headers</span> <span class="ow">or</span> <span class="p">{})},</span>
+    <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlopen</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span> <span class="k">as</span> <span class="n">reply</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="n">_lowered</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">headers</span><span class="p">),</span> <span class="n">reply</span><span class="o">.</span><span class="n">read</span><span class="p">())</span>
+    <span class="k">except</span> <span class="n">urllib</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">HTTPError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">OSError</span><span class="p">:</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">""</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">code</span><span class="p">,</span> <span class="n">_lowered</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">headers</span><span class="p">),</span> <span class="n">payload</span> <span class="ow">or</span> <span class="sa">b</span><span class="s2">""</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="n">urllib</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">URLError</span><span class="p">,</span> <span class="ne">TimeoutError</span><span class="p">,</span> <span class="ne">OSError</span><span class="p">)</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="s2">"reason"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"could not reach </span><span class="si">{</span><span class="n">urlsplit</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">hostname</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">reason</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"network"</span><span class="p">,</span>
+            <span class="n">retryable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="retry_after_seconds">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/_http.html#correspond.channels._http.retry_after_seconds">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">retry_after_seconds</span><span class="p">(</span><span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``Retry-After`` in seconds (it may be a number or an HTTP date), or ``None``."""</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="p">(</span><span class="n">headers</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"retry-after"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">raw</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">max</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">parsedate_to_datetime</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span> <span class="o">-</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="classify">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/_http.html#correspond.channels._http.classify">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">classify</span><span class="p">(</span>
+    <span class="n">status</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ChannelError</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The :class:`~correspond.errors.ChannelError` an HTTP error status means."""</span>
+    <span class="n">retry_after</span> <span class="o">=</span> <span class="n">retry_after_seconds</span><span class="p">(</span><span class="n">headers</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">429</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"rate_limited"</span><span class="p">,</span> <span class="n">retryable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">retry_after</span><span class="o">=</span><span class="n">retry_after</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">401</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"auth"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="mi">403</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"permission"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">status</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="mi">410</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"not_found"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">status</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">408</span><span class="p">,</span> <span class="mi">504</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"network"</span><span class="p">,</span> <span class="n">retryable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">retry_after</span><span class="o">=</span><span class="n">retry_after</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="mi">400</span> <span class="o">&lt;=</span> <span class="n">status</span> <span class="o">&lt;</span> <span class="mi">500</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span>
+        <span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"unavailable"</span><span class="p">,</span> <span class="n">retryable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">retry_after</span><span class="o">=</span><span class="n">retry_after</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

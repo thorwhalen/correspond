@@ -1,0 +1,686 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.ops &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">correspond.ops</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for correspond.ops</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""The operations: seven small protocols an adapter implements a subset of, and the verbs that call them.</span>
+
+<span class="sd">An adapter is any object with a ``name``, ``capabilities`` and ``parse_ref(id)``, plus the</span>
+<span class="sd">methods of whichever protocols it can honour:</span>
+
+<span class="sd">=========  ==========================================================================</span>
+<span class="sd">Reader     ``read(ref, *, since=None, limit=None) -&gt; Iterable[Message]``</span>
+<span class="sd">Listener   ``poll(ref, *, cursor=None, limit=None) -&gt; Iterable[Event]``</span>
+<span class="sd">Writer     ``send(ref, draft, *, dry_run=False) -&gt; SendResult``</span>
+<span class="sd">Editor     ``edit(ref, message_id, draft, *, dry_run=False) -&gt; SendResult``</span>
+<span class="sd">Reactor    ``react(ref, message_id, reaction, *, dry_run=False) -&gt; SendResult``</span>
+<span class="sd">Uploader   ``upload(ref, name, data, *, media_type, dry_run=False) -&gt; SendResult``</span>
+<span class="sd">Verifier   ``verify(headers, body) -&gt; Authenticity``</span>
+<span class="sd">=========  ==========================================================================</span>
+
+<span class="sd">The verbs here (:func:`read`, :func:`listen`, :func:`send`, …) take a reference string,</span>
+<span class="sd">find the adapter in the registry, and raise :class:`~correspond.errors.NotSupported`</span>
+<span class="sd">naming the operation when the adapter lacks it; never a silent no-op. Writes check the</span>
+<span class="sd">draft against the channel's capabilities first, and turn a</span>
+<span class="sd">:class:`~correspond.errors.ChannelError` into a ``SendResult`` with ``ok=False``, so a</span>
+<span class="sd">failed notification never crashes its caller. ``dry_run=True`` contacts nothing.</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">NotSupported</span><span class="p">,</span> <span class="n">UnknownChannel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Authenticity</span><span class="p">,</span>
+    <span class="n">Capabilities</span><span class="p">,</span>
+    <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">Draft</span><span class="p">,</span>
+    <span class="n">Event</span><span class="p">,</span>
+    <span class="n">Message</span><span class="p">,</span>
+    <span class="n">SendResult</span><span class="p">,</span>
+    <span class="n">Support</span><span class="p">,</span>
+    <span class="n">parse_time</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"PROTOCOLS"</span><span class="p">,</span>
+    <span class="s2">"Channel"</span><span class="p">,</span>
+    <span class="s2">"Editor"</span><span class="p">,</span>
+    <span class="s2">"Listener"</span><span class="p">,</span>
+    <span class="s2">"Reactor"</span><span class="p">,</span>
+    <span class="s2">"Reader"</span><span class="p">,</span>
+    <span class="s2">"Uploader"</span><span class="p">,</span>
+    <span class="s2">"Verifier"</span><span class="p">,</span>
+    <span class="s2">"Writer"</span><span class="p">,</span>
+    <span class="s2">"capabilities"</span><span class="p">,</span>
+    <span class="s2">"edit"</span><span class="p">,</span>
+    <span class="s2">"get_channel"</span><span class="p">,</span>
+    <span class="s2">"implemented"</span><span class="p">,</span>
+    <span class="s2">"listen"</span><span class="p">,</span>
+    <span class="s2">"parse_ref"</span><span class="p">,</span>
+    <span class="s2">"react"</span><span class="p">,</span>
+    <span class="s2">"read"</span><span class="p">,</span>
+    <span class="s2">"send"</span><span class="p">,</span>
+    <span class="s2">"upload"</span><span class="p">,</span>
+    <span class="s2">"verify"</span><span class="p">,</span>
+    <span class="s2">"window"</span><span class="p">,</span>
+    <span class="s2">"with_final_cursor"</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="Channel">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.Channel">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Channel</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""What every adapter has: a name, its capabilities, and the grammar of its conversation ids."""</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Capabilities</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConversationRef</span><span class="p">:</span> <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="Reader">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.Reader">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Reader</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Messages of a conversation, oldest first; ``limit`` keeps the most recent."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">since</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span> <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="Listener">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.Listener">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Listener</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Events since ``cursor``, oldest first, each carrying the cursor to resume after it."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">poll</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span> <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="Writer">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.Writer">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Writer</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Send a draft to a conversation."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span> <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="Editor">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.Editor">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Editor</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Replace the text of a message correspond's account wrote."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">edit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+        <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span> <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="Reactor">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.Reactor">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Reactor</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Add a reaction to a message."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">react</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+        <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">reaction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span> <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="Uploader">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.Uploader">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Uploader</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Send a file to a conversation."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">upload</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">media_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"application/octet-stream"</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span> <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="Verifier">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.Verifier">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Verifier</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Grade an inbound delivery (a webhook, a posted report) from its headers and raw body."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">verify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">body</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Authenticity</span><span class="p">:</span> <span class="o">...</span></div>
+
+
+
+<span class="c1">#: Operation name → the protocol an adapter implements to have it.</span>
+<span class="n">PROTOCOLS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">type</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"read"</span><span class="p">:</span> <span class="n">Reader</span><span class="p">,</span>
+    <span class="s2">"listen"</span><span class="p">:</span> <span class="n">Listener</span><span class="p">,</span>
+    <span class="s2">"send"</span><span class="p">:</span> <span class="n">Writer</span><span class="p">,</span>
+    <span class="s2">"edit"</span><span class="p">:</span> <span class="n">Editor</span><span class="p">,</span>
+    <span class="s2">"react"</span><span class="p">:</span> <span class="n">Reactor</span><span class="p">,</span>
+    <span class="s2">"upload"</span><span class="p">:</span> <span class="n">Uploader</span><span class="p">,</span>
+    <span class="s2">"verify"</span><span class="p">:</span> <span class="n">Verifier</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="implemented">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.implemented">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">implemented</span><span class="p">(</span><span class="n">adapter</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The operations an adapter implements, in :data:`~correspond.model.OPERATIONS` order."""</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span>
+        <span class="n">op</span> <span class="k">for</span> <span class="n">op</span><span class="p">,</span> <span class="n">protocol</span> <span class="ow">in</span> <span class="n">PROTOCOLS</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">protocol</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1"># ------------------------------------------------------------------ adapter helpers</span>
+
+
+<div class="viewcode-block" id="window">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.window">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">window</span><span class="p">(</span>
+    <span class="n">messages</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Message</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">since</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Messages sent or edited at or after ``since``, oldest first, keeping the last ``limit``."""</span>
+    <span class="n">kept</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">m</span>
+        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">messages</span>
+        <span class="k">if</span> <span class="n">since</span> <span class="ow">is</span> <span class="kc">None</span>
+        <span class="ow">or</span> <span class="n">m</span><span class="o">.</span><span class="n">sent_at</span> <span class="o">&gt;=</span> <span class="n">since</span>
+        <span class="ow">or</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">edited_at</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">m</span><span class="o">.</span><span class="n">edited_at</span> <span class="o">&gt;=</span> <span class="n">since</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">kept</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="n">m</span><span class="o">.</span><span class="n">sent_at</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">kept</span><span class="p">[</span><span class="o">-</span><span class="n">limit</span><span class="p">:]</span> <span class="k">if</span> <span class="n">limit</span> <span class="ow">and</span> <span class="n">limit</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="n">kept</span></div>
+
+
+
+<div class="viewcode-block" id="with_final_cursor">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.with_final_cursor">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">with_final_cursor</span><span class="p">(</span>
+    <span class="n">events</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Event</span><span class="p">],</span> <span class="n">final_cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Yield ``events``, then hand ``final_cursor`` to :func:`listen`, so a quiet poll still moves the cursor forward."""</span>
+    <span class="k">yield from</span> <span class="n">events</span>
+    <span class="k">return</span> <span class="n">final_cursor</span></div>
+
+
+
+<span class="c1"># -------------------------------------------------------------------------- lookup</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_registry</span><span class="p">(</span><span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">registry</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">registry</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">channels</span>
+
+    <span class="k">return</span> <span class="n">channels</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="get_channel">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.get_channel">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_channel</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The adapter registered under ``name``; :class:`~correspond.errors.UnknownChannel` says what to do if there is none."""</span>
+    <span class="n">registry</span> <span class="o">=</span> <span class="n">_registry</span><span class="p">(</span><span class="n">registry</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">registry</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CHANNELS</span>
+
+        <span class="n">built_in</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">CHANNELS</span><span class="p">}</span>
+        <span class="n">hint</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"run `correspond requirements </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">` to see what it needs"</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">built_in</span>
+            <span class="k">else</span> <span class="s2">""</span>
+        <span class="p">)</span>
+        <span class="k">raise</span> <span class="n">UnknownChannel</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">known</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">registry</span><span class="p">),</span> <span class="n">hint</span><span class="o">=</span><span class="n">hint</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="parse_ref">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.parse_ref">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">parse_ref</span><span class="p">(</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConversationRef</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A reference normalised by its channel's adapter (kind and parent filled in, the id validated)."""</span>
+    <span class="n">generic</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">get_channel</span><span class="p">(</span><span class="n">generic</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">)</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="n">generic</span><span class="o">.</span><span class="n">id</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="capabilities">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.capabilities">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Capabilities</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What a channel can do, graded, with its limits."""</span>
+    <span class="k">return</span> <span class="n">get_channel</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">)</span><span class="o">.</span><span class="n">capabilities</span></div>
+
+
+
+<span class="n">_ALTERNATIVES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"edit"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"send"</span><span class="p">,</span> <span class="s2">"send a follow-up message"</span><span class="p">),</span>
+    <span class="s2">"react"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"send"</span><span class="p">,</span> <span class="s2">"reply with a message"</span><span class="p">),</span>
+    <span class="s2">"read"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"listen"</span><span class="p">,</span> <span class="s2">"listen, which returns new messages"</span><span class="p">),</span>
+    <span class="s2">"send"</span><span class="p">:</span> <span class="p">(</span><span class="s2">"read"</span><span class="p">,</span> <span class="s2">"reply on another channel the sender gave"</span><span class="p">),</span>
+<span class="p">}</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_adapter_for</span><span class="p">(</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">ConversationRef</span><span class="p">]:</span>
+    <span class="n">generic</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+    <span class="n">adapter</span> <span class="o">=</span> <span class="n">get_channel</span><span class="p">(</span><span class="n">generic</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">PROTOCOLS</span><span class="p">[</span><span class="n">operation</span><span class="p">]):</span>
+        <span class="n">needs</span><span class="p">,</span> <span class="n">hint</span> <span class="o">=</span> <span class="n">_ALTERNATIVES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+        <span class="n">alternatives</span> <span class="o">=</span> <span class="p">(</span><span class="n">hint</span><span class="p">,)</span> <span class="k">if</span> <span class="n">needs</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">PROTOCOLS</span><span class="p">[</span><span class="n">needs</span><span class="p">])</span> <span class="k">else</span> <span class="p">()</span>
+        <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">alternatives</span><span class="o">=</span><span class="n">alternatives</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">adapter</span><span class="p">,</span> <span class="n">adapter</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="n">generic</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------- reads</span>
+
+
+<div class="viewcode-block" id="read">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.read">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">since</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The messages of a conversation, oldest first (``limit`` keeps the most recent ones)."""</span>
+    <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"read"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">adapter</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="n">parse_time</span><span class="p">(</span><span class="n">since</span><span class="p">),</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_committing</span><span class="p">(</span>
+    <span class="n">events</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Event</span><span class="p">],</span> <span class="n">cursors</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">commit</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
+    <span class="n">iterator</span> <span class="o">=</span> <span class="nb">iter</span><span class="p">(</span><span class="n">events</span><span class="p">)</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">event</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">iterator</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">done</span><span class="p">:</span>
+            <span class="c1"># A poll may end by returning where to resume (see `with_final_cursor`).</span>
+            <span class="k">if</span> <span class="n">commit</span> <span class="ow">and</span> <span class="n">done</span><span class="o">.</span><span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">cursors</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">done</span><span class="o">.</span><span class="n">value</span>
+            <span class="k">return</span>
+        <span class="k">yield</span> <span class="n">event</span>
+        <span class="c1"># Reached only when the consumer asks for the next event: delivery is at-least-once.</span>
+        <span class="k">if</span> <span class="n">commit</span> <span class="ow">and</span> <span class="n">event</span><span class="o">.</span><span class="n">cursor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">cursors</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">cursor</span>
+
+
+<div class="viewcode-block" id="listen">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.listen">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">listen</span><span class="p">(</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">cursors</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">commit</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Events since the cursor stored for ``ref``; each cursor is stored once the consumer moves past its event.</span>
+
+<span class="sd">    ``cursors`` defaults to files under the data root. Events can repeat after a crash or an</span>
+<span class="sd">    early ``break``: deduplicate on ``delivery_id``.</span>
+<span class="sd">    """</span>
+    <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"listen"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cursors</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">cursor_store</span>
+
+        <span class="n">cursors</span> <span class="o">=</span> <span class="n">cursor_store</span><span class="p">()</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span>
+    <span class="k">return</span> <span class="n">_committing</span><span class="p">(</span>
+        <span class="n">adapter</span><span class="o">.</span><span class="n">poll</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">cursor</span><span class="o">=</span><span class="n">cursors</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">),</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">),</span> <span class="n">cursors</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">commit</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="verify">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.verify">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">verify</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="n">body</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Authenticity</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Grade an inbound delivery on ``channel`` from its headers and raw body."""</span>
+    <span class="n">adapter</span> <span class="o">=</span> <span class="n">get_channel</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">Verifier</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span><span class="s2">"verify"</span><span class="p">,</span> <span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">adapter</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="n">headers</span><span class="p">,</span> <span class="n">body</span><span class="p">)</span></div>
+
+
+
+<span class="c1"># --------------------------------------------------------------------------- writes</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_feature_check</span><span class="p">(</span><span class="n">adapter</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Raise for a feature the channel lacks; return a validation problem, or ``None``."""</span>
+    <span class="n">caps</span><span class="p">:</span> <span class="n">Capabilities</span> <span class="o">=</span> <span class="n">adapter</span><span class="o">.</span><span class="n">capabilities</span>
+    <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">priority</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">"normal"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">caps</span><span class="o">.</span><span class="n">priority</span> <span class="ow">is</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
+            <span class="s2">"priority"</span><span class="p">,</span> <span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"send without a priority"</span><span class="p">,)</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span> <span class="ow">and</span> <span class="n">caps</span><span class="o">.</span><span class="n">reply</span> <span class="ow">is</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span><span class="s2">"reply"</span><span class="p">,</span> <span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"send without reply_to"</span><span class="p">,))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+        <span class="k">return</span> <span class="s2">"nothing to send: the text is empty"</span>
+    <span class="k">if</span> <span class="n">caps</span><span class="o">.</span><span class="n">max_text_length</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">caps</span><span class="o">.</span><span class="n">max_text_length</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"the text is </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">)</span><span class="si">}</span><span class="s2"> characters; </span><span class="si">{</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> accepts at most </span><span class="si">{</span><span class="n">caps</span><span class="o">.</span><span class="n">max_text_length</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span> <span class="ow">and</span> <span class="n">caps</span><span class="o">.</span><span class="n">max_title_length</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">caps</span><span class="o">.</span><span class="n">max_title_length</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"the title is </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">)</span><span class="si">}</span><span class="s2"> characters; </span><span class="si">{</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> accepts at most </span><span class="si">{</span><span class="n">caps</span><span class="o">.</span><span class="n">max_title_length</span><span class="si">}</span><span class="s2">"</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_write</span><span class="p">(</span>
+    <span class="n">adapter</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">call</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">call</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="o">.</span><span class="n">failure</span><span class="p">(</span>
+            <span class="n">error</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">operation</span><span class="p">,</span>
+            <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_invalid</span><span class="p">(</span>
+    <span class="n">adapter</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">problem</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">):</span>
+    <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+        <span class="n">ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">channel</span><span class="o">=</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+        <span class="n">operation</span><span class="o">=</span><span class="n">operation</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="n">error</span><span class="o">=</span><span class="n">problem</span><span class="p">,</span>
+        <span class="n">error_kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="send">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.send">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Draft</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">reply_to</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Send ``text`` (or a :class:`~correspond.model.Draft`) to a conversation; ``dry_run`` shows the plan and contacts nothing."""</span>
+    <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
+    <span class="n">draft</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">text</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">Draft</span><span class="p">)</span>
+        <span class="k">else</span> <span class="n">Draft</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span> <span class="n">reply_to</span><span class="o">=</span><span class="n">reply_to</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">problem</span> <span class="o">=</span> <span class="n">_feature_check</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">problem</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_write</span><span class="p">(</span>
+        <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="edit">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.edit">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">edit</span><span class="p">(</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Replace the text of a message correspond's account wrote."""</span>
+    <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"edit"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
+    <span class="n">draft</span> <span class="o">=</span> <span class="n">Draft</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">problem</span> <span class="o">=</span> <span class="n">_feature_check</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+        <span class="kc">None</span> <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">else</span> <span class="s2">"which message? the message id is empty"</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">problem</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"edit"</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_write</span><span class="p">(</span>
+        <span class="n">adapter</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">,</span>
+        <span class="s2">"edit"</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="p">,</span>
+        <span class="k">lambda</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">),</span> <span class="n">draft</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="react">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.react">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">react</span><span class="p">(</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">reaction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Add a reaction to a message (the channel's capabilities list the reactions it accepts)."""</span>
+    <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"react"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">adapter</span><span class="o">.</span><span class="n">capabilities</span><span class="o">.</span><span class="n">reactions</span>
+    <span class="n">problem</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+        <span class="n">problem</span> <span class="o">=</span> <span class="s2">"which message? the message id is empty"</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">reaction</span> <span class="ow">or</span> <span class="p">(</span><span class="n">allowed</span> <span class="ow">and</span> <span class="n">reaction</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">allowed</span><span class="p">):</span>
+        <span class="n">problem</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> accepts the reactions </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">allowed</span><span class="p">)</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'(any single emoji)'</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="n">reaction</span><span class="si">!r}</span><span class="s2">"</span>
+    <span class="k">if</span> <span class="n">problem</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"react"</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_write</span><span class="p">(</span>
+        <span class="n">adapter</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">,</span>
+        <span class="s2">"react"</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="p">,</span>
+        <span class="k">lambda</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">react</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">),</span> <span class="n">reaction</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="upload">
+<a class="viewcode-back" href="../../module_docs/correspond/ops.html#correspond.upload">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">upload</span><span class="p">(</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">media_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"application/octet-stream"</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Send a file to a conversation."""</span>
+    <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"upload"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
+    <span class="n">limit</span> <span class="o">=</span> <span class="n">adapter</span><span class="o">.</span><span class="n">capabilities</span><span class="o">.</span><span class="n">max_upload_bytes</span>
+    <span class="k">if</span> <span class="n">limit</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">limit</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span>
+            <span class="n">adapter</span><span class="p">,</span>
+            <span class="n">ref</span><span class="p">,</span>
+            <span class="s2">"upload"</span><span class="p">,</span>
+            <span class="n">dry_run</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2"> bytes; </span><span class="si">{</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> accepts at most </span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_write</span><span class="p">(</span>
+        <span class="n">adapter</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">,</span>
+        <span class="s2">"upload"</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="p">,</span>
+        <span class="k">lambda</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="n">media_type</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,4 @@
+correspond.registry
+===================
+.. automodule:: correspond.registry
+   :members:

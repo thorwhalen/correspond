@@ -1,0 +1,25 @@
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+   module_docs/correspond
+   module_docs/correspond/__main__
+   module_docs/correspond/channels
+   module_docs/correspond/channels/_http
+   module_docs/correspond/channels/github
+   module_docs/correspond/channels/macos
+   module_docs/correspond/channels/mail
+   module_docs/correspond/channels/ntfy
+   module_docs/correspond/channels/telegram
+   module_docs/correspond/channels/webinbox
+   module_docs/correspond/errors
+   module_docs/correspond/mcp
+   module_docs/correspond/model
+   module_docs/correspond/ops
+   module_docs/correspond/registry
+   module_docs/correspond/render
+   module_docs/correspond/routing
+   module_docs/correspond/settings
+   module_docs/correspond/stores
+   module_docs/correspond/testing
+   module_docs/correspond/tools

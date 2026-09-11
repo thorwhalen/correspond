@@ -1,0 +1,4 @@
+correspond.channels.telegram
+============================
+.. automodule:: correspond.channels.telegram
+   :members:

@@ -1,0 +1,4 @@
+correspond.__main__
+===================
+.. automodule:: correspond.__main__
+   :members:

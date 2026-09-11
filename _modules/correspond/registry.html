@@ -1,0 +1,766 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.registry &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">correspond.registry</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for correspond.registry</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Which channels exist: the built-in channel table, the registry built from it, and what each channel needs.</span>
+
+<span class="sd">The table (:data:`CHANNELS`) is the one place a channel is described: its adapter's</span>
+<span class="sd">factory, the optional modules and extra it needs, the binaries and platforms, and every</span>
+<span class="sd">setting with its environment variable and where to get it. Adapters read settings through</span>
+<span class="sd">:func:`value` and :func:`require`, so a variable name is written once.</span>
+
+<span class="sd">The process registry (:func:`channels`) is an ``xdol.Registry`` built from the table on</span>
+<span class="sd">first use: a channel registers only when its optional modules import, and its adapter is</span>
+<span class="sd">constructed only when first asked for. :func:`check_requirements` explains what a channel</span>
+<span class="sd">is missing, without printing a secret.</span>
+
+<span class="sd">&gt;&gt;&gt; info("telegram").setting("token").env</span>
+<span class="sd">'TELEGRAM_BOT_TOKEN'</span>
+<span class="sd">&gt;&gt;&gt; info("discord").planned</span>
+<span class="sd">'https://github.com/thorwhalen/correspond/issues/2'</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib.util</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shutil</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span> <span class="k">as</span> <span class="n">_settings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">MissingRequirement</span><span class="p">,</span> <span class="n">UnknownChannel</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"CHANNELS"</span><span class="p">,</span>
+    <span class="s2">"ChannelInfo"</span><span class="p">,</span>
+    <span class="s2">"Setting"</span><span class="p">,</span>
+    <span class="s2">"build_registry"</span><span class="p">,</span>
+    <span class="s2">"channels"</span><span class="p">,</span>
+    <span class="s2">"check_requirements"</span><span class="p">,</span>
+    <span class="s2">"info"</span><span class="p">,</span>
+    <span class="s2">"load_factory"</span><span class="p">,</span>
+    <span class="s2">"register_channel"</span><span class="p">,</span>
+    <span class="s2">"require"</span><span class="p">,</span>
+    <span class="s2">"resolve"</span><span class="p">,</span>
+    <span class="s2">"unregister_channel"</span><span class="p">,</span>
+    <span class="s2">"value"</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">ISSUES</span> <span class="o">=</span> <span class="s2">"https://github.com/thorwhalen/correspond/issues"</span>
+
+
+<div class="viewcode-block" id="Setting">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.Setting">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Setting</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One value a channel reads: its config key, its environment variable, what it is and how to get it.</span>
+
+<span class="sd">    A ``secret`` is never read from the config file: it comes from ``env``, else (on macOS)</span>
+<span class="sd">    the Keychain.</span>
+<span class="sd">    """</span>
+
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">env</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">what</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">where</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">secret</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">required</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">default</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="ChannelInfo">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.ChannelInfo">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ChannelInfo</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Everything correspond knows about a channel before constructing its adapter."""</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">summary</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">factory</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">modules</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">extra</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">binaries</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">platforms</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">settings</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Setting</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">notes</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">check</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">planned</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="ChannelInfo.setting">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.ChannelInfo.setting">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">setting</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Setting</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The setting named ``key``."""</span>
+        <span class="k">for</span> <span class="n">setting</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">settings</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">setting</span><span class="o">.</span><span class="n">key</span> <span class="o">==</span> <span class="n">key</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">setting</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> has no setting </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="n">CHANNELS</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">ChannelInfo</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">ChannelInfo</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"github"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"GitHub issues, pull request conversations and discussions, through the gh CLI (the machine's gh login; correspond holds no token)"</span><span class="p">,</span>
+        <span class="n">factory</span><span class="o">=</span><span class="s2">"correspond.channels.github:GitHub"</span><span class="p">,</span>
+        <span class="n">binaries</span><span class="o">=</span><span class="p">((</span><span class="s2">"gh"</span><span class="p">,),),</span>
+        <span class="n">settings</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"webhook_secret"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"GITHUB_WEBHOOK_SECRET"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the webhook secret, used only to verify deliveries"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s2">"the secret set on the repository or organization webhook (Settings, Webhooks)"</span><span class="p">,</span>
+                <span class="n">secret</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"log in once with `gh auth login` (https://cli.github.com/); check with `gh auth status`"</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">ChannelInfo</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"email"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Email: IMAP to read and listen, SMTP to send, with the standard library"</span><span class="p">,</span>
+        <span class="n">factory</span><span class="o">=</span><span class="s2">"correspond.channels.mail:Email"</span><span class="p">,</span>
+        <span class="n">settings</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"imap_host"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_EMAIL_IMAP_HOST"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the IMAP server"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s2">"your mail provider's IMAP settings"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"imap_port"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_EMAIL_IMAP_PORT"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the IMAP port (TLS)"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"993"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"smtp_host"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_EMAIL_SMTP_HOST"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the SMTP server"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s2">"your mail provider's SMTP settings"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"smtp_port"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_EMAIL_SMTP_PORT"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the SMTP port: 465 for TLS, 587 for STARTTLS"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"465"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"user"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_EMAIL_USER"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the mailbox login, usually its address"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"password"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_EMAIL_PASSWORD"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the mailbox password, preferably an app password"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s2">"your mail provider's app-password page (for Gmail: https://myaccount.google.com/apppasswords)"</span><span class="p">,</span>
+                <span class="n">secret</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"from_address"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_EMAIL_FROM"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the From address of sends (default: the login)"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"folder"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_EMAIL_FOLDER"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the folder read and listened to"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"INBOX"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"trusted_authserv_ids"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_EMAIL_TRUSTED_AUTHSERV_IDS"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"comma-separated authserv-ids of your own receiving server; only their Authentication-Results can make a sender `domain`"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s2">"the topmost Authentication-Results header of a message your provider delivered (for Gmail: mx.google.com)"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">ChannelInfo</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"ntfy"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Push notifications through an ntfy server (send only)"</span><span class="p">,</span>
+        <span class="n">factory</span><span class="o">=</span><span class="s2">"correspond.channels.ntfy:Ntfy"</span><span class="p">,</span>
+        <span class="n">settings</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"url"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"NTFY_URL"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the ntfy server"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"https://ntfy.sh"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"topic"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"NTFY_TOPIC"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the default topic, used by `ntfy:` with no topic"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s2">"any long, hard-to-guess string; subscribe to it in the ntfy app (https://ntfy.sh)"</span><span class="p">,</span>
+                <span class="n">secret</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"token"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"NTFY_TOKEN"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"an access token, for a server that requires one"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s2">"your ntfy server's account page"</span><span class="p">,</span>
+                <span class="n">secret</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"topic_remote"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_NTFY_TOPIC_REMOTE"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"an ssh host asked for the default topic when neither the environment nor the Keychain has it"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"topic_remote_file"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_NTFY_TOPIC_REMOTE_FILE"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the file on that host holding a NTFY_TOPIC=... line"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"anyone who knows an unauthenticated topic can publish to it and read it: treat it as a secret"</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">ChannelInfo</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"macos"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Notification Centre banners on this Mac (send only)"</span><span class="p">,</span>
+        <span class="n">factory</span><span class="o">=</span><span class="s2">"correspond.channels.macos:MacOS"</span><span class="p">,</span>
+        <span class="n">binaries</span><span class="o">=</span><span class="p">((</span><span class="s2">"terminal-notifier"</span><span class="p">,</span> <span class="s2">"osascript"</span><span class="p">),),</span>
+        <span class="n">platforms</span><span class="o">=</span><span class="p">(</span><span class="s2">"darwin"</span><span class="p">,),</span>
+        <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"terminal-notifier (`brew install terminal-notifier`) keeps bodies intact; osascript is the fallback"</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">ChannelInfo</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"telegram"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"A Telegram bot over the Bot API: listen with getUpdates, read what was logged, send, edit, react"</span><span class="p">,</span>
+        <span class="n">factory</span><span class="o">=</span><span class="s2">"correspond.channels.telegram:Telegram"</span><span class="p">,</span>
+        <span class="n">settings</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"token"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"TELEGRAM_BOT_TOKEN"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the bot token"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s2">"create a bot with BotFather in Telegram (https://core.telegram.org/bots/tutorial)"</span><span class="p">,</span>
+                <span class="n">secret</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"api_url"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_TELEGRAM_API_URL"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the Bot API server"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"https://api.telegram.org"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"a bot can write only to chats that wrote to it first, or groups it was added to"</span><span class="p">,</span>
+            <span class="s2">"privacy mode (on by default) hides group messages that do not address the bot"</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">ChannelInfo</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"webinbox"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Reports posted from web pages to correspond's ASGI collector, and a reader over what it stored"</span><span class="p">,</span>
+        <span class="n">factory</span><span class="o">=</span><span class="s2">"correspond.channels.webinbox:WebInbox"</span><span class="p">,</span>
+        <span class="n">check</span><span class="o">=</span><span class="s2">"correspond.channels.webinbox:requirements_problems"</span><span class="p">,</span>
+        <span class="n">settings</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"sites"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_WEBINBOX_SITES"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"comma-separated site names the collector accepts"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"origins"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_WEBINBOX_ORIGINS"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"comma-separated page origins allowed to post, e.g. https://app.example.org"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"secret"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_WEBINBOX_SECRET"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the HMAC key shared with the host application's server, which signs its logged-in user (a single site; several sites need CORRESPOND_WEBINBOX_SECRET_&lt;SITE&gt; each)"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s1">'generate one with: python -c "import secrets; print(secrets.token_hex(32))"'</span><span class="p">,</span>
+                <span class="n">secret</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"max_age_s"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_WEBINBOX_MAX_AGE_S"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"how long a signed identity stays valid, in seconds"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"86400"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"rate_per_minute"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_WEBINBOX_RATE_PER_MINUTE"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"reports accepted per client per minute, per site"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"10"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"burst"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_WEBINBOX_BURST"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"reports a client may send in a burst"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"5"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"max_body_bytes"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_WEBINBOX_MAX_BODY_BYTES"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the largest request accepted, attachments included"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"5000000"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"trusted_proxies"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_WEBINBOX_TRUSTED_PROXIES"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"how many reverse proxies of yours stand in front of the collector; the address rate-limited is read that many hops from the right of X-Forwarded-For (0: the connecting address)"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"0"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"serve the collector on localhost behind your own server, e.g. `uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1`"</span><span class="p">,</span>
+            <span class="s2">"for a reverse proxy on another host set CORRESPOND_WEBINBOX_TRUSTED_PROXIES (1 for one proxy), or every visitor shares one rate limit; uvicorn already resolves a proxy on 127.0.0.1"</span><span class="p">,</span>
+            <span class="s2">"several sites on one collector need a secret each, CORRESPOND_WEBINBOX_SECRET_&lt;SITE&gt; (upper case, - as _) or the Keychain item correspond-webinbox-secret-&lt;site&gt;, so no site's server can sign for another"</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="n">ChannelInfo</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"discord"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Discord: read and post over REST, listen on the gateway"</span><span class="p">,</span>
+        <span class="n">extra</span><span class="o">=</span><span class="s2">"discord"</span><span class="p">,</span>
+        <span class="n">planned</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ISSUES</span><span class="si">}</span><span class="s2">/2"</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">ChannelInfo</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"slack"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Slack: Socket Mode or the Events API"</span><span class="p">,</span>
+        <span class="n">extra</span><span class="o">=</span><span class="s2">"slack"</span><span class="p">,</span>
+        <span class="n">planned</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ISSUES</span><span class="si">}</span><span class="s2">/3"</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">ChannelInfo</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"signal"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Signal through signal-cli-rest-api"</span><span class="p">,</span>
+        <span class="n">extra</span><span class="o">=</span><span class="s2">"signal"</span><span class="p">,</span>
+        <span class="n">planned</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ISSUES</span><span class="si">}</span><span class="s2">/4"</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">ChannelInfo</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"apprise"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Apprise as a send-only writer for about 155 notification services"</span><span class="p">,</span>
+        <span class="n">extra</span><span class="o">=</span><span class="s2">"apprise"</span><span class="p">,</span>
+        <span class="n">planned</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ISSUES</span><span class="si">}</span><span class="s2">/5"</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">_INFO</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ChannelInfo</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="n">c</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">CHANNELS</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="info">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.info">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">info</span><span class="p">(</span><span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ChannelInfo</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The table entry for a built-in channel."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_INFO</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">UnknownChannel</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">known</span><span class="o">=</span><span class="n">_INFO</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span></div>
+
+
+
+<span class="c1"># ------------------------------------------------------------------------ settings</span>
+
+
+<div class="viewcode-block" id="resolve">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.resolve">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">setting</span><span class="p">:</span> <span class="n">Setting</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">run</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">,</span>
+    <span class="n">keychain</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""``(value, source)``; source is ``env``, ``keychain``, ``config``, ``default`` or ``missing``.</span>
+
+<span class="sd">    ``keychain=False`` skips the Keychain, so nothing runs: what a dry run does.</span>
+<span class="sd">    """</span>
+    <span class="n">from_env</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">setting</span><span class="o">.</span><span class="n">env</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">from_env</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">from_env</span><span class="p">,</span> <span class="s2">"env"</span>
+    <span class="k">if</span> <span class="n">setting</span><span class="o">.</span><span class="n">secret</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">keychain</span><span class="p">:</span>
+            <span class="n">service</span> <span class="o">=</span> <span class="n">_settings</span><span class="o">.</span><span class="n">keychain_service</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">setting</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+            <span class="n">from_keychain</span> <span class="o">=</span> <span class="n">_settings</span><span class="o">.</span><span class="n">keychain_get</span><span class="p">(</span><span class="n">service</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">from_keychain</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">from_keychain</span><span class="p">,</span> <span class="s2">"keychain"</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">configured</span> <span class="o">=</span> <span class="n">_settings</span><span class="o">.</span><span class="n">channel_config</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">setting</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">configured</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="p">[]):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">configured</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">return</span> <span class="s2">","</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">configured</span><span class="p">),</span> <span class="s2">"config"</span>
+            <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">configured</span><span class="p">),</span> <span class="s2">"config"</span>
+    <span class="k">if</span> <span class="n">setting</span><span class="o">.</span><span class="n">default</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">setting</span><span class="o">.</span><span class="n">default</span><span class="p">,</span> <span class="s2">"default"</span>
+    <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"missing"</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fix</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">setting</span><span class="p">:</span> <span class="n">Setting</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">setting</span><span class="o">.</span><span class="n">secret</span><span class="p">:</span>
+        <span class="n">how</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"set </span><span class="si">{</span><span class="n">setting</span><span class="o">.</span><span class="n">env</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="o">==</span> <span class="s2">"darwin"</span><span class="p">:</span>
+            <span class="n">service</span> <span class="o">=</span> <span class="n">_settings</span><span class="o">.</span><span class="n">keychain_service</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">setting</span><span class="o">.</span><span class="n">key</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+            <span class="n">how</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">", or store it in the Keychain: security add-generic-password -s </span><span class="si">{</span><span class="n">service</span><span class="si">}</span><span class="s2"> -a correspond -w"</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">how</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"set </span><span class="si">{</span><span class="n">setting</span><span class="o">.</span><span class="n">env</span><span class="si">}</span><span class="s2">, or </span><span class="si">{</span><span class="n">setting</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2"> under [</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">] in the config file"</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">how</span><span class="si">}</span><span class="s2">; </span><span class="si">{</span><span class="n">setting</span><span class="o">.</span><span class="n">where</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">setting</span><span class="o">.</span><span class="n">where</span> <span class="k">else</span> <span class="n">how</span>
+
+
+<div class="viewcode-block" id="value">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.value">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">value</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">run</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">,</span>
+    <span class="n">keychain</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A channel setting's value, or ``None`` when it is not set and has no default (``keychain=False``: skip the Keychain)."""</span>
+    <span class="k">return</span> <span class="n">resolve</span><span class="p">(</span>
+        <span class="n">channel</span><span class="p">,</span> <span class="n">info</span><span class="p">(</span><span class="n">channel</span><span class="p">)</span><span class="o">.</span><span class="n">setting</span><span class="p">(</span><span class="n">key</span><span class="p">),</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span> <span class="n">keychain</span><span class="o">=</span><span class="n">keychain</span>
+    <span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="require">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.require">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">require</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">run</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A channel setting's value, or :class:`~correspond.errors.MissingRequirement` saying how to set it."""</span>
+    <span class="n">setting</span> <span class="o">=</span> <span class="n">info</span><span class="p">(</span><span class="n">channel</span><span class="p">)</span><span class="o">.</span><span class="n">setting</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="n">resolve</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">setting</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingRequirement</span><span class="p">(</span>
+            <span class="n">channel</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">setting</span><span class="o">.</span><span class="n">what</span><span class="si">}</span><span class="s2"> is not set"</span><span class="p">,</span>
+            <span class="n">fix</span><span class="o">=</span><span class="n">_fix</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">setting</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">),</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"auth"</span> <span class="k">if</span> <span class="n">setting</span><span class="o">.</span><span class="n">secret</span> <span class="k">else</span> <span class="s2">"unavailable"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">found</span></div>
+
+
+
+<span class="c1"># ------------------------------------------------------------------------ registry</span>
+
+
+<div class="viewcode-block" id="load_factory">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.load_factory">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">load_factory</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The object a ``module:attribute`` reference names."""</span>
+    <span class="n">module_name</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">attribute</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">":"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">module_name</span><span class="p">),</span> <span class="n">attribute</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_construct</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">load_factory</span><span class="p">(</span><span class="n">ref</span><span class="p">)()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_importable</span><span class="p">(</span><span class="n">info_</span><span class="p">:</span> <span class="n">ChannelInfo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="n">module</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">module</span> <span class="ow">in</span> <span class="n">info_</span><span class="o">.</span><span class="n">modules</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="build_registry">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.build_registry">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">build_registry</span><span class="p">(</span>
+    <span class="n">infos</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">ChannelInfo</span><span class="p">]</span> <span class="o">=</span> <span class="n">CHANNELS</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"correspond channels"</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""A fresh ``xdol.Registry`` with a lazy entry for every built channel whose optional modules import."""</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">xdol</span><span class="w"> </span><span class="kn">import</span> <span class="n">Registry</span>
+
+    <span class="n">registry</span> <span class="o">=</span> <span class="n">Registry</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">infos</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">planned</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">entry</span><span class="o">.</span><span class="n">factory</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">_importable</span><span class="p">(</span><span class="n">entry</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="n">registry</span><span class="o">.</span><span class="n">register_lazy</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">_construct</span><span class="p">,</span> <span class="n">entry</span><span class="o">.</span><span class="n">factory</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">registry</span></div>
+
+
+
+<div class="viewcode-block" id="channels">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.channels">[docs]</a>
+<span class="nd">@functools</span><span class="o">.</span><span class="n">cache</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">channels</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The process registry: built on first use, then shared."""</span>
+    <span class="k">return</span> <span class="n">build_registry</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="register_channel">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.register_channel">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">register_channel</span><span class="p">(</span>
+    <span class="n">adapter</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">replace</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Add an adapter (tests, or a channel defined outside correspond). ``replace`` swaps out an existing one."""</span>
+    <span class="n">registry</span> <span class="o">=</span> <span class="n">channels</span><span class="p">()</span> <span class="k">if</span> <span class="n">registry</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">registry</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span> <span class="ow">or</span> <span class="n">adapter</span><span class="o">.</span><span class="n">name</span>
+    <span class="k">if</span> <span class="n">replace</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">registry</span><span class="p">:</span>
+        <span class="k">del</span> <span class="n">registry</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">registry</span><span class="p">,</span> <span class="s2">"register"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">registry</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">adapter</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">registry</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s2"> is already registered"</span><span class="p">)</span>
+    <span class="n">registry</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">adapter</span>
+    <span class="k">return</span> <span class="n">adapter</span></div>
+
+
+
+<div class="viewcode-block" id="unregister_channel">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.unregister_channel">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">unregister_channel</span><span class="p">(</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">registry</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Remove a channel from the registry."""</span>
+    <span class="n">registry</span> <span class="o">=</span> <span class="n">channels</span><span class="p">()</span> <span class="k">if</span> <span class="n">registry</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">registry</span>
+    <span class="k">del</span> <span class="n">registry</span><span class="p">[</span><span class="n">name</span><span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="check_requirements">
+<a class="viewcode-back" href="../../module_docs/correspond/registry.html#correspond.check_requirements">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_requirements</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">run</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What a channel needs and what is missing: the install command, binaries, platform, and every setting's source. Never a secret's value."""</span>
+    <span class="n">registry</span> <span class="o">=</span> <span class="n">channels</span><span class="p">()</span> <span class="k">if</span> <span class="n">registry</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">registry</span>
+    <span class="k">if</span> <span class="n">channel</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_INFO</span><span class="p">:</span>
+        <span class="n">registered</span> <span class="o">=</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">registry</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2"> is registered from outside correspond; it declares no requirements"</span>
+            <span class="k">if</span> <span class="n">registered</span>
+            <span class="k">else</span> <span class="sa">f</span><span class="s2">"unknown channel </span><span class="si">{</span><span class="n">channel</span><span class="si">!r}</span><span class="s2">; built in: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">_INFO</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"ok"</span><span class="p">:</span> <span class="n">registered</span><span class="p">,</span>
+            <span class="s2">"channel"</span><span class="p">:</span> <span class="n">channel</span><span class="p">,</span>
+            <span class="s2">"registered"</span><span class="p">:</span> <span class="n">registered</span><span class="p">,</span>
+            <span class="s2">"problems"</span><span class="p">:</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">registered</span> <span class="k">else</span> <span class="p">[</span><span class="n">summary</span><span class="p">],</span>
+            <span class="s2">"settings"</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">"summary"</span><span class="p">:</span> <span class="n">summary</span><span class="p">,</span>
+            <span class="s2">"text"</span><span class="p">:</span> <span class="n">summary</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="n">entry</span> <span class="o">=</span> <span class="n">_INFO</span><span class="p">[</span><span class="n">channel</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">planned</span><span class="p">:</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2"> is not built yet; it is tracked at </span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">planned</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">"ok"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">"channel"</span><span class="p">:</span> <span class="n">channel</span><span class="p">,</span>
+            <span class="s2">"registered"</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+            <span class="s2">"planned"</span><span class="p">:</span> <span class="n">entry</span><span class="o">.</span><span class="n">planned</span><span class="p">,</span>
+            <span class="s2">"problems"</span><span class="p">:</span> <span class="p">[</span><span class="n">summary</span><span class="p">],</span>
+            <span class="s2">"settings"</span><span class="p">:</span> <span class="p">[],</span>
+            <span class="s2">"summary"</span><span class="p">:</span> <span class="n">summary</span><span class="p">,</span>
+            <span class="s2">"text"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">summary</span><span class="si">}</span><span class="se">\n</span><span class="si">{</span><span class="n">summary</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="n">problems</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">warnings</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">install</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">missing_modules</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">modules</span> <span class="k">if</span> <span class="n">importlib</span><span class="o">.</span><span class="n">util</span><span class="o">.</span><span class="n">find_spec</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">missing_modules</span><span class="p">:</span>
+        <span class="n">install</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">'pip install "correspond[</span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">extra</span><span class="si">}</span><span class="s1">]"'</span>
+        <span class="n">problems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"missing Python modules </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_modules</span><span class="p">)</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">install</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">alternatives</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">binaries</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">shutil</span><span class="o">.</span><span class="n">which</span><span class="p">(</span><span class="n">binary</span><span class="p">)</span> <span class="k">for</span> <span class="n">binary</span> <span class="ow">in</span> <span class="n">alternatives</span><span class="p">):</span>
+            <span class="n">problems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"needs </span><span class="si">{</span><span class="s1">' or '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">alternatives</span><span class="p">)</span><span class="si">}</span><span class="s2"> on PATH"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">platforms</span> <span class="ow">and</span> <span class="n">sys</span><span class="o">.</span><span class="n">platform</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">platforms</span><span class="p">:</span>
+        <span class="n">problems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"works only on </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">platforms</span><span class="p">)</span><span class="si">}</span><span class="s2"> (this is </span><span class="si">{</span><span class="n">sys</span><span class="o">.</span><span class="n">platform</span><span class="si">}</span><span class="s2">)"</span>
+        <span class="p">)</span>
+
+    <span class="n">table</span> <span class="o">=</span> <span class="n">_settings</span><span class="o">.</span><span class="n">channel_config</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+    <span class="n">rows</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">setting</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">settings</span><span class="p">:</span>
+        <span class="n">found</span><span class="p">,</span> <span class="n">source</span> <span class="o">=</span> <span class="n">resolve</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">setting</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">)</span>
+        <span class="n">rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"key"</span><span class="p">:</span> <span class="n">setting</span><span class="o">.</span><span class="n">key</span><span class="p">,</span>
+                <span class="s2">"env"</span><span class="p">:</span> <span class="n">setting</span><span class="o">.</span><span class="n">env</span><span class="p">,</span>
+                <span class="s2">"what"</span><span class="p">:</span> <span class="n">setting</span><span class="o">.</span><span class="n">what</span><span class="p">,</span>
+                <span class="s2">"secret"</span><span class="p">:</span> <span class="n">setting</span><span class="o">.</span><span class="n">secret</span><span class="p">,</span>
+                <span class="s2">"required"</span><span class="p">:</span> <span class="n">setting</span><span class="o">.</span><span class="n">required</span><span class="p">,</span>
+                <span class="s2">"source"</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">setting</span><span class="o">.</span><span class="n">secret</span> <span class="ow">and</span> <span class="n">setting</span><span class="o">.</span><span class="n">key</span> <span class="ow">in</span> <span class="n">table</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">setting</span><span class="o">.</span><span class="n">key</span><span class="si">}</span><span class="s2"> under [</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">] in the config file is ignored: a secret comes from </span><span class="si">{</span><span class="n">setting</span><span class="o">.</span><span class="n">env</span><span class="si">}</span><span class="s2"> or the Keychain"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">setting</span><span class="o">.</span><span class="n">required</span> <span class="ow">and</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">problems</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">setting</span><span class="o">.</span><span class="n">what</span><span class="si">}</span><span class="s2"> is not set: </span><span class="si">{</span><span class="n">_fix</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span><span class="w"> </span><span class="n">setting</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">entry</span><span class="o">.</span><span class="n">check</span><span class="p">:</span>
+        <span class="n">problems</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">load_factory</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">check</span><span class="p">)())</span>
+
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">entry</span><span class="o">.</span><span class="n">summary</span><span class="si">}</span><span class="s2">"</span><span class="p">]</span>
+    <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"problem: </span><span class="si">{</span><span class="n">p</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">problems</span><span class="p">]</span>
+    <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"warning: </span><span class="si">{</span><span class="n">w</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">warnings</span><span class="p">]</span>
+    <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span>
+        <span class="sa">f</span><span class="s2">"  </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'env'</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;40</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">r</span><span class="p">[</span><span class="s1">'source'</span><span class="p">]</span><span class="si">:</span><span class="s2">&lt;9</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">'(required) '</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">r</span><span class="p">[</span><span class="s1">'required'</span><span class="p">]</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">''</span><span class="si">}{</span><span class="n">r</span><span class="p">[</span><span class="s1">'what'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span>
+    <span class="p">]</span>
+    <span class="n">lines</span> <span class="o">+=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"note: </span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">entry</span><span class="o">.</span><span class="n">notes</span><span class="p">]</span>
+    <span class="n">summary</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2"> is ready"</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">problems</span>
+        <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">problems</span><span class="p">)</span><span class="si">}</span><span class="s2"> problem(s)"</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"ok"</span><span class="p">:</span> <span class="ow">not</span> <span class="n">problems</span><span class="p">,</span>
+        <span class="s2">"channel"</span><span class="p">:</span> <span class="n">channel</span><span class="p">,</span>
+        <span class="s2">"registered"</span><span class="p">:</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">registry</span><span class="p">,</span>
+        <span class="s2">"install"</span><span class="p">:</span> <span class="n">install</span><span class="p">,</span>
+        <span class="s2">"problems"</span><span class="p">:</span> <span class="n">problems</span><span class="p">,</span>
+        <span class="s2">"warnings"</span><span class="p">:</span> <span class="n">warnings</span><span class="p">,</span>
+        <span class="s2">"settings"</span><span class="p">:</span> <span class="n">rows</span><span class="p">,</span>
+        <span class="s2">"notes"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">entry</span><span class="o">.</span><span class="n">notes</span><span class="p">),</span>
+        <span class="s2">"summary"</span><span class="p">:</span> <span class="n">summary</span><span class="p">,</span>
+        <span class="s2">"text"</span><span class="p">:</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">),</span>
+    <span class="p">}</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

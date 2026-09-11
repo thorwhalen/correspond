@@ -1,0 +1,255 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.errors &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/channels/webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/correspond/tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">correspond.errors</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for correspond.errors</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""What correspond raises, and the vocabulary a failed write reports.</span>
+
+<span class="sd">Two families, on purpose:</span>
+
+<span class="sd">- **Mistakes a caller fixes in code or configuration raise**: an unknown channel</span>
+<span class="sd">  (:class:`UnknownChannel`), a malformed conversation reference (:class:`InvalidRef`), an</span>
+<span class="sd">  operation the channel does not have (:class:`NotSupported`). A retry changes nothing.</span>
+<span class="sd">- **Failures of the platform or of the message** are :class:`ChannelError` inside an</span>
+<span class="sd">  adapter, carrying an ``kind`` from :data:`ERROR_KINDS`, ``retryable`` and</span>
+<span class="sd">  ``retry_after``. Reads let them propagate; the write verbs turn them into a</span>
+<span class="sd">  ``SendResult`` with ``ok=False``, so a notifier never crashes its caller.</span>
+
+<span class="sd">&gt;&gt;&gt; str(NotSupported("react", "ntfy"))</span>
+<span class="sd">'ntfy does not support react'</span>
+<span class="sd">&gt;&gt;&gt; error = ChannelError("slow down", kind="rate_limited", retryable=True, retry_after=30)</span>
+<span class="sd">&gt;&gt;&gt; error.kind, error.retryable, error.retry_after</span>
+<span class="sd">('rate_limited', True, 30.0)</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"ERROR_KINDS"</span><span class="p">,</span>
+    <span class="s2">"ChannelError"</span><span class="p">,</span>
+    <span class="s2">"CorrespondError"</span><span class="p">,</span>
+    <span class="s2">"InvalidRef"</span><span class="p">,</span>
+    <span class="s2">"MissingRequirement"</span><span class="p">,</span>
+    <span class="s2">"NotSupported"</span><span class="p">,</span>
+    <span class="s2">"UnknownChannel"</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="c1">#: Why a platform call failed, for a caller deciding whether to retry, fix the draft, or ask a human.</span>
+<span class="n">ERROR_KINDS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"auth"</span><span class="p">,</span>  <span class="c1"># the credential is missing, expired or refused</span>
+    <span class="s2">"permission"</span><span class="p">,</span>  <span class="c1"># authenticated, but not allowed to do this here</span>
+    <span class="s2">"not_found"</span><span class="p">,</span>  <span class="c1"># the conversation or message does not exist, or is not visible</span>
+    <span class="s2">"rate_limited"</span><span class="p">,</span>  <span class="c1"># slow down; `retry_after` says for how long when the platform said</span>
+    <span class="s2">"network"</span><span class="p">,</span>  <span class="c1"># the platform could not be reached</span>
+    <span class="s2">"validation"</span><span class="p">,</span>  <span class="c1"># the input was rejected (by the platform, or by correspond on its behalf)</span>
+    <span class="s2">"unavailable"</span><span class="p">,</span>  <span class="c1"># the platform failed, or something local (a binary, the OS) is missing</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="CorrespondError">
+<a class="viewcode-back" href="../../module_docs/correspond/errors.html#correspond.CorrespondError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CorrespondError</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""An expected failure, with a message meant for the person or agent that asked."""</span></div>
+
+
+
+<div class="viewcode-block" id="InvalidRef">
+<a class="viewcode-back" href="../../module_docs/correspond/errors.html#correspond.InvalidRef">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">InvalidRef</span><span class="p">(</span><span class="n">CorrespondError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A conversation reference that does not parse, or that its channel rejects."""</span></div>
+
+
+
+<div class="viewcode-block" id="UnknownChannel">
+<a class="viewcode-back" href="../../module_docs/correspond/errors.html#correspond.UnknownChannel">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">UnknownChannel</span><span class="p">(</span><span class="n">CorrespondError</span><span class="p">,</span> <span class="ne">LookupError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A channel name that no registered adapter answers to."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">known</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span> <span class="n">hint</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">channel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">known</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">known</span><span class="p">))</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"unknown channel </span><span class="si">{</span><span class="n">channel</span><span class="si">!r}</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">known</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"; available: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">known</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="n">hint</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">". </span><span class="si">{</span><span class="n">hint</span><span class="si">}</span><span class="s2">"</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="NotSupported">
+<a class="viewcode-back" href="../../module_docs/correspond/errors.html#correspond.NotSupported">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NotSupported</span><span class="p">(</span><span class="n">CorrespondError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The channel does not have this operation (or this feature of it). Never a silent no-op."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">alternatives</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">()):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operation</span> <span class="o">=</span> <span class="n">operation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">channel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alternatives</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">alternatives</span><span class="p">)</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2"> does not support </span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">alternatives</span><span class="p">:</span>
+            <span class="n">message</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"; instead: </span><span class="si">{</span><span class="s1">'; '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">alternatives</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ChannelError">
+<a class="viewcode-back" href="../../module_docs/correspond/errors.html#correspond.ChannelError">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ChannelError</span><span class="p">(</span><span class="n">CorrespondError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A platform call that failed, classified so the caller can decide what to do."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">retryable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">retry_after</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ERROR_KINDS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"unknown error kind </span><span class="si">{</span><span class="n">kind</span><span class="si">!r}</span><span class="s2">; expected one of </span><span class="si">{</span><span class="n">ERROR_KINDS</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kind</span> <span class="o">=</span> <span class="n">kind</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">retryable</span> <span class="o">=</span> <span class="n">retryable</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">retry_after</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">retry_after</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">retry_after</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="MissingRequirement">
+<a class="viewcode-back" href="../../module_docs/correspond/errors.html#correspond.MissingRequirement">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MissingRequirement</span><span class="p">(</span><span class="n">ChannelError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Something the channel needs is not here: a credential, a binary, an extra, an OS."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">missing</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">fix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"unavailable"</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">channel</span> <span class="o">=</span> <span class="n">channel</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">missing</span> <span class="o">=</span> <span class="n">missing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fix</span> <span class="o">=</span> <span class="n">fix</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">missing</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">fix</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

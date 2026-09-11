@@ -1,0 +1,208 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.testing &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="correspond.tools" href="tools.html" />
+    <link rel="prev" title="correspond.stores" href="stores.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stores.html">correspond.stores</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">correspond.testing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.testing.FakeChannel"><code class="docutils literal notranslate"><span class="pre">FakeChannel</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.testing.FakeChannel.capabilities"><code class="docutils literal notranslate"><span class="pre">FakeChannel.capabilities</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.testing.FakeChannel.parse_ref"><code class="docutils literal notranslate"><span class="pre">FakeChannel.parse_ref()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.testing.FakeChannel.read"><code class="docutils literal notranslate"><span class="pre">FakeChannel.read()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.testing.FakeChannel.send"><code class="docutils literal notranslate"><span class="pre">FakeChannel.send()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.testing.demo_channel"><code class="docutils literal notranslate"><span class="pre">demo_channel()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.testing.demo_message"><code class="docutils literal notranslate"><span class="pre">demo_message()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.testing.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">correspond.testing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/module_docs/correspond/testing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-correspond.testing">
+<span id="correspond-testing"></span><h1>correspond.testing<a class="headerlink" href="#module-correspond.testing" title="Link to this heading"></a></h1>
+<p>An in-memory channel for tests and rehearsals, and <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">correspond.testing</span></code>: the CLI with it registered.</p>
+<p><a class="reference internal" href="#correspond.testing.FakeChannel" title="correspond.testing.FakeChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">FakeChannel</span></code></a> reads the conversations it was seeded with and records what it is
+asked to send. It implements <code class="docutils literal notranslate"><span class="pre">Reader</span></code> and <code class="docutils literal notranslate"><span class="pre">Writer</span></code> only, so every other operation
+raises <code class="docutils literal notranslate"><span class="pre">NotSupported</span></code>, exactly as a real channel without that operation does. Nothing it
+does leaves the process, which makes it the channel to rehearse a workflow on:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">correspond</span><span class="o">.</span><span class="n">testing</span> <span class="n">read</span> <span class="n">fake</span><span class="p">:</span><span class="n">example</span><span class="o">/</span><span class="n">demo</span>
+<span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">correspond</span><span class="o">.</span><span class="n">testing</span> <span class="n">send</span> <span class="n">fake</span><span class="p">:</span><span class="n">example</span><span class="o">/</span><span class="n">demo</span> <span class="s2">"hello"</span> <span class="o">--</span><span class="n">dry</span><span class="o">-</span><span class="n">run</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">fake</span> <span class="o">=</span> <span class="n">demo_channel</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="p">[</span><span class="n">m</span><span class="o">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">fake</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">fake</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="s2">"example/demo"</span><span class="p">))]</span>
+<span class="go">['The export drops the last row.', 'Seen it too, on the CSV export.']</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.testing.FakeChannel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.testing.</span></span><span class="sig-name descname"><span class="pre">FakeChannel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'fake'</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversations</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="model.html#correspond.model.Message" title="correspond.model.Message"><span class="pre">Message</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/correspond/testing.html#FakeChannel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.testing.FakeChannel" title="Link to this definition"></a></dt>
+<dd><p>A channel held in memory: seeded conversations to read, and a record of sends (<code class="docutils literal notranslate"><span class="pre">sent</span></code>).</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="correspond.testing.FakeChannel.capabilities">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">capabilities</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="model.html#correspond.model.Capabilities" title="correspond.model.Capabilities"><span class="pre">Capabilities</span></a></span><a class="headerlink" href="#correspond.testing.FakeChannel.capabilities" title="Link to this definition"></a></dt>
+<dd><p>Read and send, with a small text limit; nothing else.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.testing.FakeChannel.parse_ref">
+<span class="sig-name descname"><span class="pre">parse_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></span><a class="reference internal" href="../../_modules/correspond/testing.html#FakeChannel.parse_ref"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.testing.FakeChannel.parse_ref" title="Link to this definition"></a></dt>
+<dd><p>Any non-empty id of letters, digits and <code class="docutils literal notranslate"><span class="pre">._/#-</span></code>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.testing.FakeChannel.read">
+<span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">since</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="model.html#correspond.model.Message" title="correspond.model.Message"><span class="pre">Message</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/correspond/testing.html#FakeChannel.read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.testing.FakeChannel.read" title="Link to this definition"></a></dt>
+<dd><p>The seeded (and sent) messages of a conversation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.testing.FakeChannel.send">
+<span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="model.html#correspond.model.Draft" title="correspond.model.Draft"><span class="pre">Draft</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="model.html#correspond.model.SendResult" title="correspond.model.SendResult"><span class="pre">SendResult</span></a></span></span><a class="reference internal" href="../../_modules/correspond/testing.html#FakeChannel.send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.testing.FakeChannel.send" title="Link to this definition"></a></dt>
+<dd><p>Append to the conversation (or, with <code class="docutils literal notranslate"><span class="pre">dry_run</span></code>, say that it would).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.testing.demo_channel">
+<span class="sig-prename descclassname"><span class="pre">correspond.testing.</span></span><span class="sig-name descname"><span class="pre">demo_channel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'fake'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#correspond.testing.FakeChannel" title="correspond.testing.FakeChannel"><span class="pre">FakeChannel</span></a></span></span><a class="reference internal" href="../../_modules/correspond/testing.html#demo_channel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.testing.demo_channel" title="Link to this definition"></a></dt>
+<dd><p>A <a class="reference internal" href="#correspond.testing.FakeChannel" title="correspond.testing.FakeChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">FakeChannel</span></code></a> seeded with one short conversation, <code class="docutils literal notranslate"><span class="pre">example/demo</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.testing.demo_message">
+<span class="sig-prename descclassname"><span class="pre">correspond.testing.</span></span><span class="sig-name descname"><span class="pre">demo_message</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">conversation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'fake:example/demo'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'The</span> <span class="pre">export</span> <span class="pre">drops</span> <span class="pre">the</span> <span class="pre">last</span> <span class="pre">row.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'m1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">handle</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'ada'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grade</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="model.html#correspond.model.Grade" title="correspond.model.Grade"><span class="pre">Grade</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">Grade.PLATFORM</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">is_self</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reply_to</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sent_at</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">datetime.datetime(2026,</span> <span class="pre">9,</span> <span class="pre">11,</span> <span class="pre">9,</span> <span class="pre">0,</span> <span class="pre">tzinfo=datetime.timezone.utc)</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="model.html#correspond.model.Message" title="correspond.model.Message"><span class="pre">Message</span></a></span></span><a class="reference internal" href="../../_modules/correspond/testing.html#demo_message"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.testing.demo_message" title="Link to this definition"></a></dt>
+<dd><p>A fictional message, for examples and tests.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.testing.main">
+<span class="sig-prename descclassname"><span class="pre">correspond.testing.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../../_modules/correspond/testing.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.testing.main" title="Link to this definition"></a></dt>
+<dd><p>The ordinary <code class="docutils literal notranslate"><span class="pre">correspond</span></code> CLI, with the demo fake channel registered as <code class="docutils literal notranslate"><span class="pre">fake</span></code>.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="stores.html" class="btn btn-neutral float-left" title="correspond.stores" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="tools.html" class="btn btn-neutral float-right" title="correspond.tools" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

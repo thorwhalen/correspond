@@ -1,0 +1,982 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.channels.webinbox &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">correspond.channels.webinbox</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for correspond.channels.webinbox</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""The web inbox: a small ASGI collector web pages post reports to, and the channel that reads them.</span>
+
+<span class="sd">**The collector** (:func:`mk_app`; or ``uvicorn --factory correspond.channels.webinbox:app_from_env``)</span>
+<span class="sd">accepts ``POST /&lt;site&gt;/reports`` with a JSON body::</span>
+
+<span class="sd">    {"text": "The export drops the last row.",</span>
+<span class="sd">     "name": "Ada", "email": "ada@example.org",</span>
+<span class="sd">     "page": "https://app.example.org/export",</span>
+<span class="sd">     "context": {"viewport": "1280x800"},</span>
+<span class="sd">     "identity": {"user": "u-42", "name": "Ada", "email": null, "issued_at": 1757592000, "sig": "&lt;hex&gt;"},</span>
+<span class="sd">     "attachments": [{"name": "screen.png", "media_type": "image/png", "data": "&lt;base64&gt;"}]}</span>
+
+<span class="sd">Only ``text`` is required.</span>
+
+<span class="sd">- **Identity.** Without ``identity`` a report is ``claimed`` (``name`` and ``email`` are</span>
+<span class="sd">  whatever was typed). With one, the host application's *server* has signed its logged-in</span>
+<span class="sd">  user with the site's secret (:func:`sign_identity`); a valid, fresh signature makes the</span>
+<span class="sd">  report ``bound``. An invalid or expired signature is refused with 401 and nothing is</span>
+<span class="sd">  stored.</span>
+<span class="sd">- **Origins.** A browser's ``Origin`` must be on the site's allowlist (403 otherwise); a</span>
+<span class="sd">  request without one is refused unless the site allows server-to-server posts. CORS</span>
+<span class="sd">  preflight is answered for allowed origins only. An origin check stops other pages from</span>
+<span class="sd">  posting through a visitor's browser; it authenticates no one.</span>
+<span class="sd">- **Limits.** A per-client token bucket (429 with ``Retry-After``), the body size (413),</span>
+<span class="sd">  caps on text, context and attachments, and a media-type allowlist.</span>
+<span class="sd">- **Storage.** A report is JSON in ``store`` under ``&lt;site&gt;/&lt;sortable id&gt;.json``;</span>
+<span class="sd">  attachments are bytes in ``blobs`` under their SHA-256, referenced and never inlined.</span>
+
+<span class="sd">The app binds nothing: run it on localhost behind your own server, and tell it how many</span>
+<span class="sd">reverse proxies stand in front (``trusted_proxies``) so the rate limit applies per visitor</span>
+<span class="sd">rather than to the proxy. The limiter lives in memory, per process. Each site has its own</span>
+<span class="sd">secret, so a server that can sign for one site cannot sign for another.</span>
+
+<span class="sd">**The channel** (:class:`WebInbox`): ``webinbox:&lt;site&gt;`` reads and listens to what the</span>
+<span class="sd">collector stored. It has no writer: a reply to a reporter goes out on another channel.</span>
+
+<span class="sd">The identity payload is plain lines, so any server language can sign it:</span>
+
+<span class="sd">&gt;&gt;&gt; identity_payload("example-site", "u-42", 1757592000, name="Ada")</span>
+<span class="sd">b'v1\\nexample-site\\n1757592000\\nu-42\\nAda\\n'</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">binascii</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hmac</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ipaddress</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">secrets</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span> <span class="k">as</span> <span class="n">_settings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidRef</span><span class="p">,</span> <span class="n">MissingRequirement</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Attachment</span><span class="p">,</span>
+    <span class="n">Authenticity</span><span class="p">,</span>
+    <span class="n">Capabilities</span><span class="p">,</span>
+    <span class="n">ChannelIdentity</span><span class="p">,</span>
+    <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">Event</span><span class="p">,</span>
+    <span class="n">Grade</span><span class="p">,</span>
+    <span class="n">HistoryDepth</span><span class="p">,</span>
+    <span class="n">Message</span><span class="p">,</span>
+    <span class="n">Support</span><span class="p">,</span>
+    <span class="n">format_time</span><span class="p">,</span>
+    <span class="n">parse_time</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">with_final_cursor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">info</span><span class="p">,</span> <span class="n">resolve</span><span class="p">,</span> <span class="n">value</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"MEDIA_TYPES"</span><span class="p">,</span>
+    <span class="s2">"Site"</span><span class="p">,</span>
+    <span class="s2">"TokenBucket"</span><span class="p">,</span>
+    <span class="s2">"WebInbox"</span><span class="p">,</span>
+    <span class="s2">"app_from_env"</span><span class="p">,</span>
+    <span class="s2">"identity_payload"</span><span class="p">,</span>
+    <span class="s2">"mk_app"</span><span class="p">,</span>
+    <span class="s2">"requirements_problems"</span><span class="p">,</span>
+    <span class="s2">"sign_identity"</span><span class="p">,</span>
+    <span class="s2">"site_secret_env"</span><span class="p">,</span>
+    <span class="s2">"verify_identity"</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">NAME</span> <span class="o">=</span> <span class="s2">"webinbox"</span>
+<span class="n">BLOBS_KIND</span> <span class="o">=</span> <span class="s2">"webinbox-blobs"</span>
+<span class="n">SITE_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^[a-z0-9][a-z0-9-]{0,62}$"</span><span class="p">)</span>
+<span class="n">IDENTITY_VERSION</span> <span class="o">=</span> <span class="s2">"v1"</span>
+<span class="n">MAX_TEXT_CHARS</span> <span class="o">=</span> <span class="mi">20_000</span>
+<span class="n">MAX_NAME_CHARS</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">MAX_EMAIL_CHARS</span> <span class="o">=</span> <span class="mi">320</span>
+<span class="n">MAX_PAGE_CHARS</span> <span class="o">=</span> <span class="mi">2_000</span>
+<span class="n">MAX_CONTEXT_BYTES</span> <span class="o">=</span> <span class="mi">64_000</span>
+<span class="n">MAX_ATTACHMENTS</span> <span class="o">=</span> <span class="mi">5</span>
+<span class="n">MEDIA_TYPES</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"image/png"</span><span class="p">,</span>
+    <span class="s2">"image/jpeg"</span><span class="p">,</span>
+    <span class="s2">"image/webp"</span><span class="p">,</span>
+    <span class="s2">"image/gif"</span><span class="p">,</span>
+    <span class="s2">"text/plain"</span><span class="p">,</span>
+    <span class="s2">"application/json"</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">CLOCK_SKEW_S</span> <span class="o">=</span> <span class="mi">300</span>
+<span class="n">MAX_TRACKED_CLIENTS</span> <span class="o">=</span> <span class="mi">10_000</span>
+<span class="n">BLOB_PREFIX</span> <span class="o">=</span> <span class="s2">"blob:"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_csv</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">part</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="p">(</span><span class="n">text</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span> <span class="k">if</span> <span class="n">part</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_origin</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="Site">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.Site">[docs]</a>
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">Site</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One inbox the collector accepts reports for: who may post from where, and the key signed identities are checked with."""</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">origins</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">secret</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">allow_no_origin</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">max_age_s</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">86_400</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">SITE_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"site names are lowercase letters, digits and '-', not </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">!r}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"origins"</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">_origin</span><span class="p">(</span><span class="n">o</span><span class="p">)</span> <span class="k">for</span> <span class="n">o</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">origins</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">secret</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"secret"</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">secret</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">))</span></div>
+
+
+
+<span class="c1"># -------------------------------------------------------------------------- identity</span>
+
+
+<div class="viewcode-block" id="identity_payload">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.identity_payload">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">identity_payload</span><span class="p">(</span>
+    <span class="n">site</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">user</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">issued_at</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The bytes a host application signs for its logged-in user: ``v1``, site, issued-at, user, name, email, one per line."""</span>
+    <span class="n">fields</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">IDENTITY_VERSION</span><span class="p">,</span>
+        <span class="n">site</span><span class="p">,</span>
+        <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">issued_at</span><span class="p">)),</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">user</span><span class="p">),</span>
+        <span class="n">name</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+        <span class="n">email</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="ow">in</span> <span class="n">f</span> <span class="ow">or</span> <span class="s2">"</span><span class="se">\r</span><span class="s2">"</span> <span class="ow">in</span> <span class="n">f</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"identity fields cannot contain line breaks"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fields</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="sign_identity">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.sign_identity">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">sign_identity</span><span class="p">(</span>
+    <span class="n">secret</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">bytes</span><span class="p">,</span>
+    <span class="n">site</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">user</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">email</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">issued_at</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What a host application's server gives its page for the logged-in user; the page sends it as ``identity``."""</span>
+    <span class="n">issued</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="k">if</span> <span class="n">issued_at</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">issued_at</span><span class="p">)</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">secret</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">secret</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">secret</span>
+    <span class="n">payload</span> <span class="o">=</span> <span class="n">identity_payload</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">issued</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="n">email</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"user"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">user</span><span class="p">),</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+        <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span>
+        <span class="s2">"issued_at"</span><span class="p">:</span> <span class="n">issued</span><span class="p">,</span>
+        <span class="s2">"sig"</span><span class="p">:</span> <span class="n">hmac</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">(),</span>
+    <span class="p">}</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_forged</span><span class="p">(</span><span class="n">reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Authenticity</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">Authenticity</span><span class="p">(</span><span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">FORGED</span><span class="p">,</span> <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"reason"</span><span class="p">:</span> <span class="n">reason</span><span class="p">})</span>
+
+
+<div class="viewcode-block" id="verify_identity">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.verify_identity">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">verify_identity</span><span class="p">(</span>
+    <span class="n">identity</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="n">Site</span><span class="p">,</span> <span class="n">now</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Authenticity</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``bound`` for a valid, fresh signature from the site's host application; ``forged`` with the reason otherwise."""</span>
+    <span class="k">if</span> <span class="n">site</span><span class="o">.</span><span class="n">secret</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_forged</span><span class="p">(</span><span class="s2">"this inbox has no secret, so it cannot check a signed identity"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">user</span><span class="p">,</span> <span class="n">received</span> <span class="o">=</span> <span class="n">identity</span><span class="p">[</span><span class="s2">"user"</span><span class="p">],</span> <span class="n">identity</span><span class="p">[</span><span class="s2">"sig"</span><span class="p">]</span>
+        <span class="n">name</span><span class="p">,</span> <span class="n">email</span> <span class="o">=</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">),</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"email"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">user</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">received</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">v</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">email</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span>
+        <span class="n">issued_at</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">identity</span><span class="p">[</span><span class="s2">"issued_at"</span><span class="p">])</span>
+        <span class="n">payload</span> <span class="o">=</span> <span class="n">identity_payload</span><span class="p">(</span><span class="n">site</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">issued_at</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">email</span><span class="o">=</span><span class="n">email</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">OverflowError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_forged</span><span class="p">(</span><span class="s2">"the identity is malformed"</span><span class="p">)</span>
+    <span class="n">expected</span> <span class="o">=</span> <span class="n">hmac</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">site</span><span class="o">.</span><span class="n">secret</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">received</span><span class="o">.</span><span class="n">isascii</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">hmac</span><span class="o">.</span><span class="n">compare_digest</span><span class="p">(</span><span class="n">received</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">expected</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_forged</span><span class="p">(</span><span class="s2">"the signature does not match"</span><span class="p">)</span>
+    <span class="n">age</span> <span class="o">=</span> <span class="n">now</span> <span class="o">-</span> <span class="n">issued_at</span>
+    <span class="k">if</span> <span class="n">age</span> <span class="o">&gt;</span> <span class="n">site</span><span class="o">.</span><span class="n">max_age_s</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_forged</span><span class="p">(</span><span class="s2">"the signed identity has expired"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">age</span> <span class="o">&lt;</span> <span class="o">-</span><span class="n">CLOCK_SKEW_S</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_forged</span><span class="p">(</span><span class="s2">"the signed identity is dated in the future"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Authenticity</span><span class="p">(</span>
+        <span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">BOUND</span><span class="p">,</span>
+        <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="s2">"hmac-sha256"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span> <span class="s2">"issued_at"</span><span class="p">:</span> <span class="n">issued_at</span><span class="p">},</span>
+    <span class="p">)</span></div>
+
+
+
+<span class="c1"># ------------------------------------------------------------------------ collector</span>
+
+
+<div class="viewcode-block" id="TokenBucket">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.TokenBucket">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TokenBucket</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Per-key token buckets: ``rate_per_minute`` sustained, ``burst`` at once. In memory, one process.</span>
+
+<span class="sd">    &gt;&gt;&gt; bucket = TokenBucket(rate_per_minute=60, burst=1, clock=lambda: 0.0)</span>
+<span class="sd">    &gt;&gt;&gt; bucket.take("client"), bucket.take("client")</span>
+<span class="sd">    (None, 1.0)</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">rate_per_minute</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">burst</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">clock</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">monotonic</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">rate_per_minute</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"rate_per_minute must be positive"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="n">rate_per_minute</span> <span class="o">/</span> <span class="mf">60.0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">burst</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">burst</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clock</span> <span class="o">=</span> <span class="n">clock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buckets</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
+
+<div class="viewcode-block" id="TokenBucket.take">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.TokenBucket.take">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">take</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``None`` when a token was available (and is now spent); otherwise the seconds until one is."""</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+        <span class="n">tokens</span><span class="p">,</span> <span class="n">updated</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buckets</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">burst</span><span class="p">),</span> <span class="n">now</span><span class="p">))</span>
+        <span class="n">tokens</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">burst</span><span class="p">),</span> <span class="n">tokens</span> <span class="o">+</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">updated</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">tokens</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_buckets</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">tokens</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">now</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buckets</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_TRACKED_CLIENTS</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_forget_full</span><span class="p">(</span><span class="n">now</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_buckets</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">now</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">tokens</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_forget_full</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">now</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="n">tokens</span><span class="p">,</span> <span class="n">updated</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_buckets</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
+            <span class="k">if</span> <span class="n">tokens</span> <span class="o">+</span> <span class="p">(</span><span class="n">now</span> <span class="o">-</span> <span class="n">updated</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">rate</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">burst</span><span class="p">:</span>
+                <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_buckets</span><span class="p">[</span><span class="n">key</span><span class="p">]</span></div>
+
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">_Refused</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">status</span> <span class="o">=</span> <span class="n">status</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_optional_text</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">found</span> <span class="o">==</span> <span class="s2">""</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">found</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">_Refused</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> must be a string"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">limit</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_Refused</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> is longer than </span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2"> characters"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">found</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_report</span><span class="p">(</span>
+    <span class="n">site</span><span class="p">:</span> <span class="n">Site</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">now</span><span class="p">:</span> <span class="nb">float</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]]:</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+        <span class="k">raise</span> <span class="n">_Refused</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s2">"text is required"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_TEXT_CHARS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_Refused</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"text is longer than </span><span class="si">{</span><span class="n">MAX_TEXT_CHARS</span><span class="si">}</span><span class="s2"> characters"</span><span class="p">)</span>
+    <span class="n">page</span> <span class="o">=</span> <span class="n">_optional_text</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="s2">"page"</span><span class="p">,</span> <span class="n">MAX_PAGE_CHARS</span><span class="p">)</span>
+    <span class="n">identity</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"identity"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">identity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">_Refused</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s2">"identity must be an object"</span><span class="p">)</span>
+        <span class="n">authenticity</span> <span class="o">=</span> <span class="n">verify_identity</span><span class="p">(</span><span class="n">identity</span><span class="p">,</span> <span class="n">site</span><span class="o">=</span><span class="n">site</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="n">now</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">authenticity</span><span class="o">.</span><span class="n">grade</span> <span class="ow">is</span> <span class="n">Grade</span><span class="o">.</span><span class="n">FORGED</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">_Refused</span><span class="p">(</span>
+                <span class="mi">401</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"identity not accepted: </span><span class="si">{</span><span class="n">authenticity</span><span class="o">.</span><span class="n">evidence</span><span class="p">[</span><span class="s1">'reason'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="n">name</span><span class="p">,</span> <span class="n">email</span> <span class="o">=</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">),</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"email"</span><span class="p">)</span>
+        <span class="n">author</span> <span class="o">=</span> <span class="n">ChannelIdentity</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">native_id</span><span class="o">=</span><span class="n">identity</span><span class="p">[</span><span class="s2">"user"</span><span class="p">],</span> <span class="n">display_name</span><span class="o">=</span><span class="n">name</span> <span class="ow">or</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">contact</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span> <span class="s2">"signed"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">_optional_text</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="n">MAX_NAME_CHARS</span><span class="p">)</span>
+        <span class="n">email</span> <span class="o">=</span> <span class="n">_optional_text</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">,</span> <span class="n">MAX_EMAIL_CHARS</span><span class="p">)</span>
+        <span class="n">authenticity</span> <span class="o">=</span> <span class="n">Authenticity</span><span class="p">(</span>
+            <span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">CLAIMED</span><span class="p">,</span> <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"reason"</span><span class="p">:</span> <span class="s2">"no signed identity"</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">author</span> <span class="o">=</span> <span class="n">ChannelIdentity</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">native_id</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">display_name</span><span class="o">=</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">contact</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span> <span class="s2">"signed"</span><span class="p">:</span> <span class="kc">False</span><span class="p">}</span>
+    <span class="n">context</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"context"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">context</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">context</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">MAX_CONTEXT_BYTES</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_Refused</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"context is larger than </span><span class="si">{</span><span class="n">MAX_CONTEXT_BYTES</span><span class="si">}</span><span class="s2"> bytes"</span><span class="p">)</span>
+    <span class="n">items</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"attachments"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_ATTACHMENTS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">_Refused</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"attachments must be a list of at most </span><span class="si">{</span><span class="n">MAX_ATTACHMENTS</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">attachments</span><span class="p">,</span> <span class="n">files</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">items</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">_Refused</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s2">"each attachment must be an object"</span><span class="p">)</span>
+        <span class="n">media_type</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"media_type"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">media_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">MEDIA_TYPES</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">_Refused</span><span class="p">(</span><span class="mi">415</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"attachments may be </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">MEDIA_TYPES</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"data"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">),</span> <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">binascii</span><span class="o">.</span><span class="n">Error</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">_Refused</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s2">"attachment data must be base64"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">_Refused</span><span class="p">(</span><span class="mi">400</span><span class="p">,</span> <span class="s2">"an attachment is empty"</span><span class="p">)</span>
+        <span class="n">digest</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+        <span class="n">files</span><span class="p">[</span><span class="n">digest</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">attachments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">"ref"</span><span class="p">:</span> <span class="n">BLOB_PREFIX</span> <span class="o">+</span> <span class="n">digest</span><span class="p">,</span>
+                <span class="s2">"media_type"</span><span class="p">:</span> <span class="n">media_type</span><span class="p">,</span>
+                <span class="s2">"name"</span><span class="p">:</span> <span class="n">_optional_text</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">,</span> <span class="n">MAX_NAME_CHARS</span><span class="p">),</span>
+                <span class="s2">"size"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+                <span class="s2">"sha256"</span><span class="p">:</span> <span class="n">digest</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+    <span class="n">received</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="n">now</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"id"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">received</span><span class="si">:</span><span class="s2">%Y%m%dT%H%M%S%fZ</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">secrets</span><span class="o">.</span><span class="n">token_hex</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="s2">"site"</span><span class="p">:</span> <span class="n">site</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="s2">"received_at"</span><span class="p">:</span> <span class="n">format_time</span><span class="p">(</span><span class="n">received</span><span class="p">),</span>
+        <span class="s2">"text"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+        <span class="s2">"page"</span><span class="p">:</span> <span class="n">page</span><span class="p">,</span>
+        <span class="s2">"context"</span><span class="p">:</span> <span class="n">context</span><span class="p">,</span>
+        <span class="s2">"contact"</span><span class="p">:</span> <span class="n">contact</span><span class="p">,</span>
+        <span class="s2">"author"</span><span class="p">:</span> <span class="n">author</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+        <span class="s2">"authenticity"</span><span class="p">:</span> <span class="n">authenticity</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span>
+        <span class="s2">"attachments"</span><span class="p">:</span> <span class="n">attachments</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">record</span><span class="p">,</span> <span class="n">files</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_respond</span><span class="p">(</span>
+    <span class="n">send</span><span class="p">,</span> <span class="n">status</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">body</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">""</span> <span class="k">if</span> <span class="n">payload</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+    <span class="n">raw</span> <span class="o">=</span> <span class="p">[(</span><span class="sa">b</span><span class="s2">"content-type"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"application/json"</span><span class="p">)]</span> <span class="k">if</span> <span class="n">payload</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+    <span class="n">raw</span> <span class="o">+=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"latin-1"</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"latin-1"</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="p">(</span><span class="n">headers</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="p">]</span>
+    <span class="n">raw</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="sa">b</span><span class="s2">"content-length"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">body</span><span class="p">))</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"latin-1"</span><span class="p">)))</span>
+    <span class="k">await</span> <span class="n">send</span><span class="p">({</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"http.response.start"</span><span class="p">,</span> <span class="s2">"status"</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span> <span class="s2">"headers"</span><span class="p">:</span> <span class="n">raw</span><span class="p">})</span>
+    <span class="k">await</span> <span class="n">send</span><span class="p">({</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"http.response.body"</span><span class="p">,</span> <span class="s2">"body"</span><span class="p">:</span> <span class="n">body</span><span class="p">})</span>
+
+
+<span class="n">_TOO_LARGE</span> <span class="o">=</span> <span class="nb">object</span><span class="p">()</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">_read_body</span><span class="p">(</span><span class="n">receive</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="n">chunks</span><span class="p">,</span> <span class="n">size</span> <span class="o">=</span> <span class="p">[],</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="n">message</span> <span class="o">=</span> <span class="k">await</span> <span class="n">receive</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">message</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"http.disconnect"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">chunk</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"body"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="sa">b</span><span class="s2">""</span>
+        <span class="n">size</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">size</span> <span class="o">&gt;</span> <span class="n">limit</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_TOO_LARGE</span>
+        <span class="n">chunks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">chunk</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"more_body"</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="k">return</span> <span class="sa">b</span><span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chunks</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_bucket</span><span class="p">(</span><span class="n">address</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One rate-limit bucket per IPv4 address and per IPv6 /64, with any port removed."""</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">address</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"["</span><span class="p">):</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"]"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="n">text</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">":"</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">":"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ip</span> <span class="o">=</span> <span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_address</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">text</span>
+    <span class="k">if</span> <span class="n">ip</span><span class="o">.</span><span class="n">version</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_network</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ip</span><span class="si">}</span><span class="s2">/64"</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">ip</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_from_a_proxy</span><span class="p">(</span><span class="n">peer</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether a connection could come from one of our proxies: anything but a public address."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_address</span><span class="p">(</span><span class="n">_bucket</span><span class="p">(</span><span class="n">peer</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">is_global</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_client</span><span class="p">(</span>
+    <span class="n">scope</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">trusted_proxies</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The rate-limit bucket: the address ``trusted_proxies`` hops from the right of X-Forwarded-For when the connection comes from a proxy, else the connection's own.</span>
+
+<span class="sd">    Each proxy appends the address it received the request from, so whatever a client wrote</span>
+<span class="sd">    into the header itself sits on the left, where nothing looks, and a public address</span>
+<span class="sd">    connecting directly is never taken for a proxy. The count assumes the collector can be</span>
+<span class="sd">    reached only through those proxies: bind it to a local address.</span>
+<span class="sd">    """</span>
+    <span class="n">client</span> <span class="o">=</span> <span class="n">scope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"client"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="s2">"unknown"</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">peer</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">client</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">hops</span> <span class="o">=</span> <span class="p">[</span><span class="n">h</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">h</span> <span class="ow">in</span> <span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"x-forwarded-for"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span> <span class="k">if</span> <span class="n">h</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span>
+    <span class="k">if</span> <span class="n">trusted_proxies</span> <span class="ow">and</span> <span class="n">hops</span> <span class="ow">and</span> <span class="n">_from_a_proxy</span><span class="p">(</span><span class="n">peer</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">_bucket</span><span class="p">(</span>
+            <span class="n">hops</span><span class="p">[</span><span class="o">-</span><span class="n">trusted_proxies</span><span class="p">]</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">hops</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">trusted_proxies</span> <span class="k">else</span> <span class="n">hops</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">_bucket</span><span class="p">(</span><span class="n">peer</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="mk_app">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.mk_app">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mk_app</span><span class="p">(</span>
+    <span class="n">sites</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Site</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">store</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">blobs</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">rate_per_minute</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">burst</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="n">max_body_bytes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5_000_000</span><span class="p">,</span>
+    <span class="n">trusted_proxies</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">clock</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""The collector as an ASGI app, storing reports in ``store`` and attachments in ``blobs`` (files under the data root by default).</span>
+
+<span class="sd">    Behind reverse proxies of your own, set ``trusted_proxies`` to how many stand in front,</span>
+<span class="sd">    or every visitor shares the proxy's rate limit.</span>
+<span class="sd">    """</span>
+    <span class="n">by_name</span> <span class="o">=</span> <span class="p">{</span><span class="n">site</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">site</span> <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">sites</span><span class="p">}</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">by_name</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"the collector needs at least one site"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">trusted_proxies</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">trusted_proxies</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+        <span class="ow">or</span> <span class="n">trusted_proxies</span> <span class="o">&lt;</span> <span class="mi">0</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"trusted_proxies is how many proxies stand in front of the collector: 0 or more"</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">store</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">blobs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">bytes_store</span><span class="p">,</span> <span class="n">json_store</span>
+
+        <span class="n">store</span> <span class="o">=</span> <span class="n">json_store</span><span class="p">(</span><span class="n">NAME</span><span class="p">)</span> <span class="k">if</span> <span class="n">store</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">store</span>
+        <span class="n">blobs</span> <span class="o">=</span> <span class="n">bytes_store</span><span class="p">(</span><span class="n">BLOBS_KIND</span><span class="p">)</span> <span class="k">if</span> <span class="n">blobs</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">blobs</span>
+    <span class="n">limiter</span> <span class="o">=</span> <span class="n">TokenBucket</span><span class="p">(</span><span class="n">rate_per_minute</span><span class="o">=</span><span class="n">rate_per_minute</span><span class="p">,</span> <span class="n">burst</span><span class="o">=</span><span class="n">burst</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">app</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">receive</span><span class="p">,</span> <span class="n">send</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">scope</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"lifespan"</span><span class="p">:</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="k">await</span> <span class="n">receive</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">message</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"lifespan.startup"</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">send</span><span class="p">({</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"lifespan.startup.complete"</span><span class="p">})</span>
+                <span class="k">elif</span> <span class="n">message</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"lifespan.shutdown"</span><span class="p">:</span>
+                    <span class="k">await</span> <span class="n">send</span><span class="p">({</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"lifespan.shutdown.complete"</span><span class="p">})</span>
+                    <span class="k">return</span>
+        <span class="k">if</span> <span class="n">scope</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">"http"</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">raw_name</span><span class="p">,</span> <span class="n">raw_value</span> <span class="ow">in</span> <span class="n">scope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"headers"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">():</span>
+            <span class="n">name</span><span class="p">,</span> <span class="n">text</span> <span class="o">=</span> <span class="n">raw_name</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"latin-1"</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">raw_value</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"latin-1"</span><span class="p">)</span>
+            <span class="c1"># Repeated X-Forwarded-For lines form one list, in order (RFC 9110, section 5.3).</span>
+            <span class="n">joined</span> <span class="o">=</span> <span class="n">name</span> <span class="o">==</span> <span class="s2">"x-forwarded-for"</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">headers</span>
+            <span class="n">headers</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">headers</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">text</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">joined</span> <span class="k">else</span> <span class="n">text</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">scope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"path"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span> <span class="k">if</span> <span class="n">p</span><span class="p">]</span>
+        <span class="n">site</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">by_name</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span> <span class="ow">and</span> <span class="n">parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"reports"</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">site</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="mi">404</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"no such inbox"</span><span class="p">})</span>
+        <span class="n">origin</span> <span class="o">=</span> <span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"origin"</span><span class="p">)</span>
+        <span class="n">allowed</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">(</span><span class="n">_origin</span><span class="p">(</span><span class="n">origin</span><span class="p">)</span> <span class="ow">in</span> <span class="n">site</span><span class="o">.</span><span class="n">origins</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">origin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="k">else</span> <span class="n">site</span><span class="o">.</span><span class="n">allow_no_origin</span>
+        <span class="p">)</span>
+        <span class="n">cors</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="p">{</span><span class="s2">"access-control-allow-origin"</span><span class="p">:</span> <span class="n">origin</span><span class="p">,</span> <span class="s2">"vary"</span><span class="p">:</span> <span class="s2">"Origin"</span><span class="p">}</span>
+            <span class="k">if</span> <span class="n">origin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">allowed</span>
+            <span class="k">else</span> <span class="p">{}</span>
+        <span class="p">)</span>
+        <span class="n">method</span> <span class="o">=</span> <span class="n">scope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"method"</span><span class="p">,</span> <span class="s2">"GET"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">"OPTIONS"</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">cors</span><span class="p">:</span>
+                <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="mi">403</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"origin not allowed"</span><span class="p">})</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span>
+                <span class="n">send</span><span class="p">,</span>
+                <span class="mi">204</span><span class="p">,</span>
+                <span class="kc">None</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="o">**</span><span class="n">cors</span><span class="p">,</span>
+                    <span class="s2">"access-control-allow-methods"</span><span class="p">:</span> <span class="s2">"POST, OPTIONS"</span><span class="p">,</span>
+                    <span class="s2">"access-control-allow-headers"</span><span class="p">:</span> <span class="s2">"content-type"</span><span class="p">,</span>
+                    <span class="s2">"access-control-max-age"</span><span class="p">:</span> <span class="s2">"600"</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="o">!=</span> <span class="s2">"POST"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span>
+                <span class="n">send</span><span class="p">,</span> <span class="mi">405</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"use POST"</span><span class="p">},</span> <span class="p">{</span><span class="o">**</span><span class="n">cors</span><span class="p">,</span> <span class="s2">"allow"</span><span class="p">:</span> <span class="s2">"POST, OPTIONS"</span><span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">allowed</span><span class="p">:</span>
+            <span class="n">reason</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">"origin not allowed"</span>
+                <span class="k">if</span> <span class="n">origin</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="s2">"reports must come from an allowed page"</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="mi">403</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="n">reason</span><span class="p">})</span>
+        <span class="n">wait</span> <span class="o">=</span> <span class="n">limiter</span><span class="o">.</span><span class="n">take</span><span class="p">((</span><span class="n">site</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">_client</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">headers</span><span class="p">,</span> <span class="n">trusted_proxies</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="n">wait</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span>
+                <span class="n">send</span><span class="p">,</span>
+                <span class="mi">429</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"too many reports; try again later"</span><span class="p">},</span>
+                <span class="p">{</span><span class="o">**</span><span class="n">cors</span><span class="p">,</span> <span class="s2">"retry-after"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">wait</span><span class="p">)))},</span>
+            <span class="p">)</span>
+        <span class="n">declared</span> <span class="o">=</span> <span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"content-length"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">declared</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">declared</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_body_bytes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span>
+                <span class="n">send</span><span class="p">,</span>
+                <span class="mi">413</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"reports are limited to </span><span class="si">{</span><span class="n">max_body_bytes</span><span class="si">}</span><span class="s2"> bytes"</span><span class="p">},</span>
+                <span class="n">cors</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"content-type"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">";"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="o">!=</span> <span class="s2">"application/json"</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span>
+                <span class="n">send</span><span class="p">,</span> <span class="mi">415</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"send JSON (content-type: application/json)"</span><span class="p">},</span> <span class="n">cors</span>
+            <span class="p">)</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="k">await</span> <span class="n">_read_body</span><span class="p">(</span><span class="n">receive</span><span class="p">,</span> <span class="n">max_body_bytes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">body</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">body</span> <span class="ow">is</span> <span class="n">_TOO_LARGE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span>
+                <span class="n">send</span><span class="p">,</span>
+                <span class="mi">413</span><span class="p">,</span>
+                <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"reports are limited to </span><span class="si">{</span><span class="n">max_body_bytes</span><span class="si">}</span><span class="s2"> bytes"</span><span class="p">},</span>
+                <span class="n">cors</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">UnicodeDecodeError</span><span class="p">,</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="mi">400</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"the body is not JSON"</span><span class="p">},</span> <span class="n">cors</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span>
+                <span class="n">send</span><span class="p">,</span> <span class="mi">400</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"the body must be a JSON object"</span><span class="p">},</span> <span class="n">cors</span>
+            <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">record</span><span class="p">,</span> <span class="n">files</span> <span class="o">=</span> <span class="n">_report</span><span class="p">(</span><span class="n">site</span><span class="p">,</span> <span class="n">payload</span><span class="p">,</span> <span class="n">now</span><span class="o">=</span><span class="n">clock</span><span class="p">())</span>
+        <span class="k">except</span> <span class="n">_Refused</span> <span class="k">as</span> <span class="n">refusal</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="n">refusal</span><span class="o">.</span><span class="n">status</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="n">refusal</span><span class="o">.</span><span class="n">message</span><span class="p">},</span> <span class="n">cors</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">digest</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">files</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">blobs</span><span class="p">[</span><span class="n">digest</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+        <span class="n">store</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">site</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">record</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">.json"</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">_respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="mi">201</span><span class="p">,</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">record</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]},</span> <span class="n">cors</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">app</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_proxy_count</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="n">raw</span><span class="p">,</span> <span class="n">source</span> <span class="o">=</span> <span class="n">resolve</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="n">info</span><span class="p">(</span><span class="n">NAME</span><span class="p">)</span><span class="o">.</span><span class="n">setting</span><span class="p">(</span><span class="s2">"trusted_proxies"</span><span class="p">))</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">re</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[0-9]+"</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+        <span class="n">where</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">"trusted_proxies under [webinbox] in the config file"</span>
+            <span class="k">if</span> <span class="n">source</span> <span class="o">==</span> <span class="s2">"config"</span>
+            <span class="k">else</span> <span class="s2">"CORRESPOND_WEBINBOX_TRUSTED_PROXIES"</span>
+        <span class="p">)</span>
+        <span class="k">raise</span> <span class="n">MissingRequirement</span><span class="p">(</span>
+            <span class="n">NAME</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2"> must be a whole number of proxies, not </span><span class="si">{</span><span class="n">raw</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">fix</span><span class="o">=</span><span class="s2">"set it to how many reverse proxies stand in front of the collector (0, 1, ...)"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_configured</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">Site</span><span class="p">],</span> <span class="nb">int</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The sites and proxy count the environment and config file describe, or MissingRequirement saying what is wrong."""</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">_csv</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"sites"</span><span class="p">))))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">names</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingRequirement</span><span class="p">(</span>
+            <span class="n">NAME</span><span class="p">,</span>
+            <span class="s2">"no sites are configured"</span><span class="p">,</span>
+            <span class="n">fix</span><span class="o">=</span><span class="s2">"set CORRESPOND_WEBINBOX_SITES (comma-separated site names), or sites under [webinbox] in the config file"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">refused</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">SITE_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">name</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">refused</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingRequirement</span><span class="p">(</span>
+            <span class="n">NAME</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"site names are lowercase letters, digits and '-', not </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">refused</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">fix</span><span class="o">=</span><span class="s2">"rename them in CORRESPOND_WEBINBOX_SITES"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">origins</span> <span class="o">=</span> <span class="n">_csv</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"origins"</span><span class="p">))</span>
+    <span class="n">max_age_s</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"max_age_s"</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">86_400</span><span class="p">)</span>
+    <span class="n">sites</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">Site</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">origins</span><span class="o">=</span><span class="n">origins</span><span class="p">,</span>
+            <span class="n">secret</span><span class="o">=</span><span class="n">_site_secret</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">several</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="n">max_age_s</span><span class="o">=</span><span class="n">max_age_s</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="n">sites</span><span class="p">,</span> <span class="n">_proxy_count</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="app_from_env">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.app_from_env">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">app_from_env</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""The collector configured from the environment and the ``[webinbox]`` config table (for ``uvicorn --factory``)."""</span>
+    <span class="n">sites</span><span class="p">,</span> <span class="n">trusted_proxies</span> <span class="o">=</span> <span class="n">_configured</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">mk_app</span><span class="p">(</span>
+        <span class="n">sites</span><span class="p">,</span>
+        <span class="n">rate_per_minute</span><span class="o">=</span><span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"rate_per_minute"</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">10</span><span class="p">),</span>
+        <span class="n">burst</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"burst"</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">5</span><span class="p">),</span>
+        <span class="n">max_body_bytes</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"max_body_bytes"</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">5_000_000</span><span class="p">),</span>
+        <span class="n">trusted_proxies</span><span class="o">=</span><span class="n">trusted_proxies</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="requirements_problems">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.requirements_problems">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">requirements_problems</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""What would stop the collector starting from this configuration; nothing when no site is configured, since reading stored reports needs none."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_csv</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"sites"</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">_configured</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">MissingRequirement</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)]</span>
+    <span class="k">return</span> <span class="p">[]</span></div>
+
+
+
+<div class="viewcode-block" id="site_secret_env">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.site_secret_env">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">site_secret_env</span><span class="p">(</span><span class="n">site</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The environment variable holding one site's own secret.</span>
+
+<span class="sd">    &gt;&gt;&gt; site_secret_env("example-site")</span>
+<span class="sd">    'CORRESPOND_WEBINBOX_SECRET_EXAMPLE_SITE'</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="s2">"CORRESPOND_WEBINBOX_SECRET_"</span> <span class="o">+</span> <span class="n">site</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"-"</span><span class="p">,</span> <span class="s2">"_"</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_site_secret</span><span class="p">(</span><span class="n">site</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">several</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A site's own secret, from its variable or its Keychain item ``correspond-webinbox-secret-&lt;site&gt;``, before the shared one; the shared one only when it is the only site."""</span>
+    <span class="n">own</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">site_secret_env</span><span class="p">(</span><span class="n">site</span><span class="p">),</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="n">_settings</span><span class="o">.</span><span class="n">keychain_get</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"correspond-webinbox-secret-</span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">own</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">own</span>
+    <span class="n">shared</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"secret"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">shared</span> <span class="ow">and</span> <span class="n">several</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingRequirement</span><span class="p">(</span>
+            <span class="n">NAME</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"site </span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2"> has no secret of its own, and one shared secret would let any site's server sign identities for the others"</span><span class="p">,</span>
+            <span class="n">fix</span><span class="o">=</span><span class="sa">f</span><span class="s2">"set </span><span class="si">{</span><span class="n">site_secret_env</span><span class="p">(</span><span class="n">site</span><span class="p">)</span><span class="si">}</span><span class="s2">, and one for each other site"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"auth"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">shared</span> <span class="ow">or</span> <span class="kc">None</span>
+
+
+<span class="c1"># -------------------------------------------------------------------------- channel</span>
+
+
+<div class="viewcode-block" id="WebInbox">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.WebInbox">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">WebInbox</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Reports the collector stored, as a channel: read and listen per site."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="n">NAME</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">store</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">blobs</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="o">=</span> <span class="n">store</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_blobs</span> <span class="o">=</span> <span class="n">blobs</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">store</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The report store (JSON files under the data root by default)."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">json_store</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store</span> <span class="o">=</span> <span class="n">json_store</span><span class="p">(</span><span class="n">NAME</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_store</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">blobs</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The attachment store, keyed by SHA-256."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blobs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">bytes_store</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_blobs</span> <span class="o">=</span> <span class="n">bytes_store</span><span class="p">(</span><span class="n">BLOBS_KIND</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_blobs</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Capabilities</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Read and listen; no writer."""</span>
+        <span class="k">return</span> <span class="n">Capabilities</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="n">read</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">listen</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">history_depth</span><span class="o">=</span><span class="n">HistoryDepth</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">listen_modes</span><span class="o">=</span><span class="p">(</span><span class="s2">"poll"</span><span class="p">,),</span>
+            <span class="n">grades</span><span class="o">=</span><span class="p">(</span><span class="n">Grade</span><span class="o">.</span><span class="n">CLAIMED</span><span class="p">,</span> <span class="n">Grade</span><span class="o">.</span><span class="n">BOUND</span><span class="p">),</span>
+            <span class="n">native_fields</span><span class="o">=</span><span class="p">(</span><span class="s2">"page"</span><span class="p">,</span> <span class="s2">"context"</span><span class="p">,</span> <span class="s2">"contact"</span><span class="p">),</span>
+            <span class="n">formats</span><span class="o">=</span><span class="p">(</span><span class="s2">"plain"</span><span class="p">,),</span>
+            <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"no writer: reply to a reporter on another channel (the email or handle they gave, when signed)"</span><span class="p">,</span>
+                <span class="s2">"reports live where the collector runs; read them there, or point store= at a shared store"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="WebInbox.parse_ref">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.WebInbox.parse_ref">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConversationRef</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A site name."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">SITE_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="nb">id</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"webinbox references name a site, webinbox:&lt;site&gt;, not webinbox:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">site</span><span class="si">}</span><span class="s2">/"</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span> <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="ow">and</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">".json"</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+        <span class="n">attachments</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+            <span class="n">Attachment</span><span class="p">(</span>
+                <span class="n">ref</span><span class="o">=</span><span class="n">a</span><span class="p">[</span><span class="s2">"ref"</span><span class="p">],</span>
+                <span class="n">media_type</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"media_type"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"application/octet-stream"</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">),</span>
+                <span class="n">size</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"size"</span><span class="p">),</span>
+                <span class="n">sha256</span><span class="o">=</span><span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sha256"</span><span class="p">),</span>
+                <span class="n">loader</span><span class="o">=</span><span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blobs</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">,</span> <span class="n">a</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sha256"</span><span class="p">)),</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"attachments"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Message</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">record</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="p">,</span>
+            <span class="n">author</span><span class="o">=</span><span class="n">ChannelIdentity</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"author"</span><span class="p">]),</span>
+            <span class="n">authenticity</span><span class="o">=</span><span class="n">Authenticity</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"authenticity"</span><span class="p">]),</span>
+            <span class="n">sent_at</span><span class="o">=</span><span class="n">parse_time</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"received_at"</span><span class="p">]),</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+            <span class="n">attachments</span><span class="o">=</span><span class="n">attachments</span><span class="p">,</span>
+            <span class="n">native</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"page"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"page"</span><span class="p">),</span>
+                <span class="s2">"context"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"context"</span><span class="p">),</span>
+                <span class="s2">"contact"</span><span class="p">:</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"contact"</span><span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="WebInbox.read">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.WebInbox.read">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The site's reports, oldest first."""</span>
+        <span class="k">return</span> <span class="n">window</span><span class="p">(</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)),</span>
+            <span class="n">since</span><span class="o">=</span><span class="n">since</span><span class="p">,</span>
+            <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WebInbox.poll">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.WebInbox.poll">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">poll</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Reports stored after the one ``cursor`` names (a report id)."""</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">k</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keys</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cursor</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">k</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">][:</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="s2">".json"</span><span class="p">)]</span> <span class="o">&gt;</span> <span class="n">cursor</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">limit</span><span class="p">:</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">keys</span><span class="p">[:</span><span class="n">limit</span><span class="p">]</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">:</span>
+            <span class="n">report_id</span> <span class="o">=</span> <span class="n">key</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">][:</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="s2">".json"</span><span class="p">)]</span>
+            <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Event</span><span class="p">(</span>
+                    <span class="n">kind</span><span class="o">=</span><span class="s2">"message.created"</span><span class="p">,</span>
+                    <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                    <span class="n">delivery_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"webinbox:</span><span class="si">{</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">report_id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">cursor</span><span class="o">=</span><span class="n">report_id</span><span class="p">,</span>
+                    <span class="n">message</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">key</span><span class="p">]),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">with_final_cursor</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

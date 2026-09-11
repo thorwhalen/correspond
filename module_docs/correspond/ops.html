@@ -1,0 +1,326 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.ops &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="correspond.registry" href="registry.html" />
+    <link rel="prev" title="correspond.model" href="model.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="channels/webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">correspond.model</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">correspond.ops</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.Channel"><code class="docutils literal notranslate"><span class="pre">Channel</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.Editor"><code class="docutils literal notranslate"><span class="pre">Editor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.Listener"><code class="docutils literal notranslate"><span class="pre">Listener</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.PROTOCOLS"><code class="docutils literal notranslate"><span class="pre">PROTOCOLS</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.Reactor"><code class="docutils literal notranslate"><span class="pre">Reactor</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.Reader"><code class="docutils literal notranslate"><span class="pre">Reader</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.Uploader"><code class="docutils literal notranslate"><span class="pre">Uploader</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.Verifier"><code class="docutils literal notranslate"><span class="pre">Verifier</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.Writer"><code class="docutils literal notranslate"><span class="pre">Writer</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.capabilities"><code class="docutils literal notranslate"><span class="pre">capabilities()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.edit"><code class="docutils literal notranslate"><span class="pre">edit()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.get_channel"><code class="docutils literal notranslate"><span class="pre">get_channel()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.implemented"><code class="docutils literal notranslate"><span class="pre">implemented()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.listen"><code class="docutils literal notranslate"><span class="pre">listen()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.parse_ref"><code class="docutils literal notranslate"><span class="pre">parse_ref()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.react"><code class="docutils literal notranslate"><span class="pre">react()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.read"><code class="docutils literal notranslate"><span class="pre">read()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.send"><code class="docutils literal notranslate"><span class="pre">send()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.upload"><code class="docutils literal notranslate"><span class="pre">upload()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.verify"><code class="docutils literal notranslate"><span class="pre">verify()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.window"><code class="docutils literal notranslate"><span class="pre">window()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.ops.with_final_cursor"><code class="docutils literal notranslate"><span class="pre">with_final_cursor()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">correspond.ops</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/module_docs/correspond/ops.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-correspond.ops">
+<span id="correspond-ops"></span><h1>correspond.ops<a class="headerlink" href="#module-correspond.ops" title="Link to this heading"></a></h1>
+<p>The operations: seven small protocols an adapter implements a subset of, and the verbs that call them.</p>
+<p>An adapter is any object with a <code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">capabilities</span></code> and <code class="docutils literal notranslate"><span class="pre">parse_ref(id)</span></code>, plus the
+methods of whichever protocols it can honour:</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p>Reader</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">read(ref,</span> <span class="pre">*,</span> <span class="pre">since=None,</span> <span class="pre">limit=None)</span> <span class="pre">-&gt;</span> <span class="pre">Iterable[Message]</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Listener</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">poll(ref,</span> <span class="pre">*,</span> <span class="pre">cursor=None,</span> <span class="pre">limit=None)</span> <span class="pre">-&gt;</span> <span class="pre">Iterable[Event]</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Writer</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">send(ref,</span> <span class="pre">draft,</span> <span class="pre">*,</span> <span class="pre">dry_run=False)</span> <span class="pre">-&gt;</span> <span class="pre">SendResult</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Editor</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">edit(ref,</span> <span class="pre">message_id,</span> <span class="pre">draft,</span> <span class="pre">*,</span> <span class="pre">dry_run=False)</span> <span class="pre">-&gt;</span> <span class="pre">SendResult</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Reactor</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">react(ref,</span> <span class="pre">message_id,</span> <span class="pre">reaction,</span> <span class="pre">*,</span> <span class="pre">dry_run=False)</span> <span class="pre">-&gt;</span> <span class="pre">SendResult</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Uploader</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">upload(ref,</span> <span class="pre">name,</span> <span class="pre">data,</span> <span class="pre">*,</span> <span class="pre">media_type,</span> <span class="pre">dry_run=False)</span> <span class="pre">-&gt;</span> <span class="pre">SendResult</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Verifier</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">verify(headers,</span> <span class="pre">body)</span> <span class="pre">-&gt;</span> <span class="pre">Authenticity</span></code></p></td>
+</tr>
+</tbody>
+</table>
+<p>The verbs here (<a class="reference internal" href="#correspond.ops.read" title="correspond.ops.read"><code class="xref py py-func docutils literal notranslate"><span class="pre">read()</span></code></a>, <a class="reference internal" href="#correspond.ops.listen" title="correspond.ops.listen"><code class="xref py py-func docutils literal notranslate"><span class="pre">listen()</span></code></a>, <a class="reference internal" href="#correspond.ops.send" title="correspond.ops.send"><code class="xref py py-func docutils literal notranslate"><span class="pre">send()</span></code></a>, …) take a reference string,
+find the adapter in the registry, and raise <a class="reference internal" href="errors.html#correspond.errors.NotSupported" title="correspond.errors.NotSupported"><code class="xref py py-class docutils literal notranslate"><span class="pre">NotSupported</span></code></a>
+naming the operation when the adapter lacks it; never a silent no-op. Writes check the
+draft against the channel’s capabilities first, and turn a
+<a class="reference internal" href="errors.html#correspond.errors.ChannelError" title="correspond.errors.ChannelError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChannelError</span></code></a> into a <code class="docutils literal notranslate"><span class="pre">SendResult</span></code> with <code class="docutils literal notranslate"><span class="pre">ok=False</span></code>, so a
+failed notification never crashes its caller. <code class="docutils literal notranslate"><span class="pre">dry_run=True</span></code> contacts nothing.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.ops.Channel">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Channel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/correspond/ops.html#Channel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Channel" title="Link to this definition"></a></dt>
+<dd><p>What every adapter has: a name, its capabilities, and the grammar of its conversation ids.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.ops.Editor">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Editor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/correspond/ops.html#Editor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Editor" title="Link to this definition"></a></dt>
+<dd><p>Replace the text of a message correspond’s account wrote.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.ops.Listener">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Listener</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/correspond/ops.html#Listener"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Listener" title="Link to this definition"></a></dt>
+<dd><p>Events since <code class="docutils literal notranslate"><span class="pre">cursor</span></code>, oldest first, each carrying the cursor to resume after it.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="correspond.ops.PROTOCOLS">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">PROTOCOLS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">type</span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'edit':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Editor'&gt;,</span> <span class="pre">'listen':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Listener'&gt;,</span> <span class="pre">'react':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Reactor'&gt;,</span> <span class="pre">'read':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Reader'&gt;,</span> <span class="pre">'send':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Writer'&gt;,</span> <span class="pre">'upload':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Uploader'&gt;,</span> <span class="pre">'verify':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Verifier'&gt;}</span></span><a class="headerlink" href="#correspond.ops.PROTOCOLS" title="Link to this definition"></a></dt>
+<dd><p>Operation name → the protocol an adapter implements to have it.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.ops.Reactor">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Reactor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/correspond/ops.html#Reactor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Reactor" title="Link to this definition"></a></dt>
+<dd><p>Add a reaction to a message.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.ops.Reader">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Reader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/correspond/ops.html#Reader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Reader" title="Link to this definition"></a></dt>
+<dd><p>Messages of a conversation, oldest first; <code class="docutils literal notranslate"><span class="pre">limit</span></code> keeps the most recent.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.ops.Uploader">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Uploader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/correspond/ops.html#Uploader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Uploader" title="Link to this definition"></a></dt>
+<dd><p>Send a file to a conversation.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.ops.Verifier">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Verifier</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/correspond/ops.html#Verifier"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Verifier" title="Link to this definition"></a></dt>
+<dd><p>Grade an inbound delivery (a webhook, a posted report) from its headers and raw body.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.ops.Writer">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Writer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/correspond/ops.html#Writer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Writer" title="Link to this definition"></a></dt>
+<dd><p>Send a draft to a conversation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.capabilities">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">capabilities</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="model.html#correspond.model.Capabilities" title="correspond.model.Capabilities"><span class="pre">Capabilities</span></a></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#capabilities"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.capabilities" title="Link to this definition"></a></dt>
+<dd><p>What a channel can do, graded, with its limits.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.edit">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="model.html#correspond.model.SendResult" title="correspond.model.SendResult"><span class="pre">SendResult</span></a></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.edit" title="Link to this definition"></a></dt>
+<dd><p>Replace the text of a message correspond’s account wrote.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.get_channel">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">get_channel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#get_channel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.get_channel" title="Link to this definition"></a></dt>
+<dd><p>The adapter registered under <code class="docutils literal notranslate"><span class="pre">name</span></code>; <a class="reference internal" href="errors.html#correspond.errors.UnknownChannel" title="correspond.errors.UnknownChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnknownChannel</span></code></a> says what to do if there is none.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.implemented">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">implemented</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">adapter</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#implemented"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.implemented" title="Link to this definition"></a></dt>
+<dd><p>The operations an adapter implements, in <a class="reference internal" href="model.html#correspond.model.OPERATIONS" title="correspond.model.OPERATIONS"><code class="xref py py-data docutils literal notranslate"><span class="pre">OPERATIONS</span></code></a> order.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.listen">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">listen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursors</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">MutableMapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="model.html#correspond.model.Event" title="correspond.model.Event"><span class="pre">Event</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#listen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.listen" title="Link to this definition"></a></dt>
+<dd><p>Events since the cursor stored for <code class="docutils literal notranslate"><span class="pre">ref</span></code>; each cursor is stored once the consumer moves past its event.</p>
+<p><code class="docutils literal notranslate"><span class="pre">cursors</span></code> defaults to files under the data root. Events can repeat after a crash or an
+early <code class="docutils literal notranslate"><span class="pre">break</span></code>: deduplicate on <code class="docutils literal notranslate"><span class="pre">delivery_id</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.parse_ref">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">parse_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#parse_ref"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.parse_ref" title="Link to this definition"></a></dt>
+<dd><p>A reference normalised by its channel’s adapter (kind and parent filled in, the id validated).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.react">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">react</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="model.html#correspond.model.SendResult" title="correspond.model.SendResult"><span class="pre">SendResult</span></a></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#react"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.react" title="Link to this definition"></a></dt>
+<dd><p>Add a reaction to a message (the channel’s capabilities list the reactions it accepts).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.read">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">since</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="model.html#correspond.model.Message" title="correspond.model.Message"><span class="pre">Message</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.read" title="Link to this definition"></a></dt>
+<dd><p>The messages of a conversation, oldest first (<code class="docutils literal notranslate"><span class="pre">limit</span></code> keeps the most recent ones).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.send">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="model.html#correspond.model.Draft" title="correspond.model.Draft"><span class="pre">Draft</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reply_to</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="model.html#correspond.model.SendResult" title="correspond.model.SendResult"><span class="pre">SendResult</span></a></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.send" title="Link to this definition"></a></dt>
+<dd><p>Send <code class="docutils literal notranslate"><span class="pre">text</span></code> (or a <a class="reference internal" href="model.html#correspond.model.Draft" title="correspond.model.Draft"><code class="xref py py-class docutils literal notranslate"><span class="pre">Draft</span></code></a>) to a conversation; <code class="docutils literal notranslate"><span class="pre">dry_run</span></code> shows the plan and contacts nothing.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.upload">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">upload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference internal" href="model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">media_type</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'application/octet-stream'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="model.html#correspond.model.SendResult" title="correspond.model.SendResult"><span class="pre">SendResult</span></a></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#upload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.upload" title="Link to this definition"></a></dt>
+<dd><p>Send a file to a conversation.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.verify">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">verify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">headers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="model.html#correspond.model.Authenticity" title="correspond.model.Authenticity"><span class="pre">Authenticity</span></a></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#verify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.verify" title="Link to this definition"></a></dt>
+<dd><p>Grade an inbound delivery on <code class="docutils literal notranslate"><span class="pre">channel</span></code> from its headers and raw body.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.window">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">window</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">messages</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="model.html#correspond.model.Message" title="correspond.model.Message"><span class="pre">Message</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">since</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="model.html#correspond.model.Message" title="correspond.model.Message"><span class="pre">Message</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#window"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.window" title="Link to this definition"></a></dt>
+<dd><p>Messages sent or edited at or after <code class="docutils literal notranslate"><span class="pre">since</span></code>, oldest first, keeping the last <code class="docutils literal notranslate"><span class="pre">limit</span></code>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.with_final_cursor">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">with_final_cursor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">events</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="model.html#correspond.model.Event" title="correspond.model.Event"><span class="pre">Event</span></a><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">final_cursor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Iterator</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="model.html#correspond.model.Event" title="correspond.model.Event"><span class="pre">Event</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../_modules/correspond/ops.html#with_final_cursor"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.with_final_cursor" title="Link to this definition"></a></dt>
+<dd><p>Yield <code class="docutils literal notranslate"><span class="pre">events</span></code>, then hand <code class="docutils literal notranslate"><span class="pre">final_cursor</span></code> to <a class="reference internal" href="#correspond.ops.listen" title="correspond.ops.listen"><code class="xref py py-func docutils literal notranslate"><span class="pre">listen()</span></code></a>, so a quiet poll still moves the cursor forward.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="model.html" class="btn btn-neutral float-left" title="correspond.model" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="registry.html" class="btn btn-neutral float-right" title="correspond.registry" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

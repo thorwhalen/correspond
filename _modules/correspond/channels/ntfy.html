@@ -1,0 +1,345 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.channels.ntfy &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/channels/webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../module_docs/correspond/tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">correspond.channels.ntfy</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for correspond.channels.ntfy</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""ntfy: push notifications to a phone or a desktop through an ntfy server (send only).</span>
+
+<span class="sd">References: ``ntfy:&lt;topic&gt;``, or ``ntfy:`` for the default topic, which is resolved in this</span>
+<span class="sd">order: ``$NTFY_TOPIC``; the macOS Keychain (service ``topic_keychain_service`` in the</span>
+<span class="sd">``[ntfy]`` config table, default ``correspond-ntfy-topic``); an ssh host named by</span>
+<span class="sd">``topic_remote``, asked for the ``NTFY_TOPIC=...`` line of ``topic_remote_file``. A dry run</span>
+<span class="sd">reads only the environment and the config file (no Keychain, no remote host: those are looked</span>
+<span class="sd">up when sending), and a plan shows a topic masked.</span>
+
+<span class="sd">A topic is a bearer secret: anyone who knows an unauthenticated one can publish to it and</span>
+<span class="sd">read it. Prefer ``ntfy:`` to writing a topic into a reference that ends up in logs.</span>
+
+<span class="sd">&gt;&gt;&gt; Ntfy().parse_ref("").kind</span>
+<span class="sd">'topic'</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">shlex</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">email.header</span><span class="w"> </span><span class="kn">import</span> <span class="n">Header</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.channels._http</span><span class="w"> </span><span class="kn">import</span> <span class="n">classify</span><span class="p">,</span> <span class="n">urllib_http</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span><span class="p">,</span> <span class="n">MissingRequirement</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Account</span><span class="p">,</span>
+    <span class="n">Capabilities</span><span class="p">,</span>
+    <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">Draft</span><span class="p">,</span>
+    <span class="n">SendResult</span><span class="p">,</span>
+    <span class="n">Support</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">info</span><span class="p">,</span> <span class="n">resolve</span><span class="p">,</span> <span class="n">value</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">keychain_available</span><span class="p">,</span> <span class="n">keychain_service</span><span class="p">,</span> <span class="n">mask</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PRIORITY"</span><span class="p">,</span> <span class="s2">"Ntfy"</span><span class="p">]</span>
+
+<span class="n">NAME</span> <span class="o">=</span> <span class="s2">"ntfy"</span>
+<span class="n">TOPIC_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^[A-Za-z0-9_-]{1,64}$"</span><span class="p">)</span>
+<span class="n">HOST_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^[A-Za-z0-9_][A-Za-z0-9._@-]{0,252}$"</span><span class="p">)</span>
+<span class="c1">#: Draft priorities as ntfy's 1-5 scale.</span>
+<span class="n">PRIORITY</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"low"</span><span class="p">:</span> <span class="s2">"2"</span><span class="p">,</span> <span class="s2">"normal"</span><span class="p">:</span> <span class="s2">"3"</span><span class="p">,</span> <span class="s2">"high"</span><span class="p">:</span> <span class="s2">"4"</span><span class="p">,</span> <span class="s2">"urgent"</span><span class="p">:</span> <span class="s2">"5"</span><span class="p">}</span>
+<span class="n">MAX_TITLE_CHARS</span> <span class="o">=</span> <span class="mi">250</span>
+<span class="n">REMOTE_TIMEOUT_S</span> <span class="o">=</span> <span class="mi">30</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_header</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A header value: one line, RFC 2047-encoded when it is not ASCII."""</span>
+    <span class="n">flat</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">flat</span><span class="o">.</span><span class="n">isascii</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">flat</span>
+    <span class="k">return</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">Header</span><span class="p">(</span><span class="n">flat</span><span class="p">,</span> <span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">maxlinelen</span><span class="o">=</span><span class="mi">10_000</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+
+
+<div class="viewcode-block" id="Ntfy">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/ntfy.html#correspond.channels.ntfy.Ntfy">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Ntfy</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""An ntfy server: publish to a topic."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="n">NAME</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">http</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">urllib_http</span><span class="p">,</span>
+        <span class="n">run</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">http</span> <span class="o">=</span> <span class="n">http</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run</span> <span class="o">=</span> <span class="n">run</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Capabilities</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Send only, with priorities."""</span>
+        <span class="k">return</span> <span class="n">Capabilities</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="n">send</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">initiate</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">priority</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">max_title_length</span><span class="o">=</span><span class="n">MAX_TITLE_CHARS</span><span class="p">,</span>
+            <span class="n">formats</span><span class="o">=</span><span class="p">(</span><span class="s2">"plain"</span><span class="p">,),</span>
+            <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"send only: no read, listen or sender identity"</span><span class="p">,</span>
+                <span class="s2">"the server turns a message over 4,096 bytes into an attachment"</span><span class="p">,</span>
+                <span class="s2">"ntfy: (no topic) uses NTFY_TOPIC, the Keychain, or topic_remote"</span><span class="p">,</span>
+                <span class="s2">"a dry run reads only the environment and the config file"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="Ntfy.parse_ref">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/ntfy.html#correspond.channels.ntfy.Ntfy.parse_ref">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConversationRef</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A topic, or nothing for the default topic."""</span>
+        <span class="k">if</span> <span class="nb">id</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">TOPIC_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"ntfy topics are 1-64 letters, digits, '-' or '_' (or ntfy: for the default topic), not </span><span class="si">{</span><span class="nb">id</span><span class="si">!r}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"topic"</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_default_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The default topic and where it came from; a dry run reads only the environment and says where it would look next."""</span>
+        <span class="n">setting</span> <span class="o">=</span> <span class="n">info</span><span class="p">(</span><span class="n">NAME</span><span class="p">)</span><span class="o">.</span><span class="n">setting</span><span class="p">(</span><span class="s2">"topic"</span><span class="p">)</span>
+        <span class="n">found</span><span class="p">,</span> <span class="n">source</span> <span class="o">=</span> <span class="n">resolve</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="n">setting</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">,</span> <span class="n">keychain</span><span class="o">=</span><span class="ow">not</span> <span class="n">dry_run</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">found</span><span class="p">,</span> <span class="n">source</span>
+        <span class="n">host</span><span class="p">,</span> <span class="n">path</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"topic_remote"</span><span class="p">),</span> <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"topic_remote_file"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">host</span> <span class="ow">and</span> <span class="n">path</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_remote_topic</span><span class="p">(</span><span class="n">host</span><span class="p">,</span> <span class="n">path</span><span class="p">),</span> <span class="s2">"remote"</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"missing"</span>
+        <span class="n">later</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">keychain_available</span><span class="p">():</span>
+            <span class="n">later</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the Keychain (</span><span class="si">{</span><span class="n">keychain_service</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span><span class="w"> </span><span class="s1">'topic'</span><span class="p">)</span><span class="si">}</span><span class="s2">)"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">host</span> <span class="ow">and</span> <span class="n">path</span><span class="p">:</span>
+            <span class="n">later</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the host </span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">later</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"missing"</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">"looked up when sending, in "</span> <span class="o">+</span> <span class="s2">", then "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">later</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remote_topic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">HOST_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">host</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"topic_remote </span><span class="si">{</span><span class="n">host</span><span class="si">!r}</span><span class="s2"> is not a host name"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span>
+            <span class="p">)</span>
+        <span class="n">command</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"grep -h '^NTFY_TOPIC=' </span><span class="si">{</span><span class="n">shlex</span><span class="o">.</span><span class="n">quote</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">proc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">"ssh"</span><span class="p">,</span> <span class="s2">"-o"</span><span class="p">,</span> <span class="s2">"BatchMode=yes"</span><span class="p">,</span> <span class="s2">"-o"</span><span class="p">,</span> <span class="s2">"ConnectTimeout=10"</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">command</span><span class="p">],</span>
+                <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">timeout</span><span class="o">=</span><span class="n">REMOTE_TIMEOUT_S</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">SubprocessError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">proc</span><span class="o">.</span><span class="n">returncode</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="p">(</span><span class="n">proc</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"NTFY_TOPIC="</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"="</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">"'</span><span class="se">\"</span><span class="s2">"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="Ntfy.send">
+<a class="viewcode-back" href="../../../module_docs/correspond/channels/ntfy.html#correspond.channels.ntfy.Ntfy.send">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Publish ``draft.text`` (with its title and priority) to the topic."""</span>
+        <span class="n">server</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"url"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"https://ntfy.sh"</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+            <span class="n">topic</span><span class="p">,</span> <span class="n">source</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">"reference"</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">topic</span><span class="p">,</span> <span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_topic</span><span class="p">(</span><span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">topic</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">TOPIC_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">topic</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"the default topic (from </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">) is not a valid ntfy topic"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">topic</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">source</span> <span class="o">==</span> <span class="s2">"missing"</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">dry_run</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">MissingRequirement</span><span class="p">(</span>
+                <span class="n">NAME</span><span class="p">,</span>
+                <span class="s2">"there is no topic: the reference names none and no default topic was found"</span><span class="p">,</span>
+                <span class="n">fix</span><span class="o">=</span><span class="s2">"send to ntfy:&lt;topic&gt;, or set NTFY_TOPIC, or set topic_remote and topic_remote_file under [ntfy]"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"token"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">,</span> <span class="n">keychain</span><span class="o">=</span><span class="ow">not</span> <span class="n">dry_run</span><span class="p">)</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"Content-Type"</span><span class="p">:</span> <span class="s2">"text/plain; charset=utf-8"</span><span class="p">}</span>
+        <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">:</span>
+            <span class="n">headers</span><span class="p">[</span><span class="s2">"Title"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_header</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">priority</span><span class="p">:</span>
+            <span class="n">headers</span><span class="p">[</span><span class="s2">"Priority"</span><span class="p">]</span> <span class="o">=</span> <span class="n">PRIORITY</span><span class="p">[</span><span class="n">draft</span><span class="o">.</span><span class="n">priority</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">token</span><span class="p">:</span>
+            <span class="n">headers</span><span class="p">[</span><span class="s2">"Authorization"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Bearer </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">deferred</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"topic"</span><span class="p">]</span> <span class="k">if</span> <span class="n">topic</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">deferred_token</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">token</span> <span class="ow">and</span> <span class="n">dry_run</span> <span class="ow">and</span> <span class="n">keychain_available</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">deferred_token</span><span class="p">:</span>
+            <span class="n">deferred</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"token"</span><span class="p">)</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"publish"</span><span class="p">,</span>
+            <span class="s2">"server"</span><span class="p">:</span> <span class="n">server</span><span class="p">,</span>
+            <span class="s2">"topic"</span><span class="p">:</span> <span class="n">mask</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span> <span class="k">if</span> <span class="n">topic</span> <span class="k">else</span> <span class="s2">"(not resolved yet)"</span><span class="p">,</span>
+            <span class="s2">"topic_source"</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span>
+            <span class="s2">"title"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="s2">"priority"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
+            <span class="s2">"authenticated"</span><span class="p">:</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">token</span> <span class="k">else</span> <span class="p">(</span><span class="kc">None</span> <span class="k">if</span> <span class="n">deferred_token</span> <span class="k">else</span> <span class="kc">False</span><span class="p">),</span>
+            <span class="s2">"text"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">deferred</span><span class="p">:</span>
+            <span class="n">plan</span><span class="p">[</span><span class="s2">"looked_up_when_sending"</span><span class="p">]</span> <span class="o">=</span> <span class="n">deferred</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+                <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="n">plan</span>
+            <span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="p">(</span>
+            <span class="s2">"POST"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">server</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">topic</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">300</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="n">detail</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"error"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">raise</span> <span class="n">classify</span><span class="p">(</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"ntfy refused the message (</span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}{</span><span class="s1">': '</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">str</span><span class="p">(</span><span class="n">detail</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">detail</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">''</span><span class="si">}</span><span class="s2">)"</span><span class="p">,</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">message_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">)</span>
+            <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">account</span><span class="o">=</span><span class="n">Account</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">server</span><span class="p">,</span> <span class="n">acts_as</span><span class="o">=</span><span class="s2">"service"</span><span class="p">),</span>
+            <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

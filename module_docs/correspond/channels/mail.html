@@ -1,0 +1,207 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.channels.mail &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="correspond.channels.ntfy" href="ntfy.html" />
+    <link rel="prev" title="correspond.channels.macos" href="macos.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1"><a class="reference internal" href="github.html">correspond.channels.github</a></li>
+<li class="toctree-l1"><a class="reference internal" href="macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">correspond.channels.mail</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.channels.mail.Email"><code class="docutils literal notranslate"><span class="pre">Email</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.mail.Email.capabilities"><code class="docutils literal notranslate"><span class="pre">Email.capabilities</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.mail.Email.parse_ref"><code class="docutils literal notranslate"><span class="pre">Email.parse_ref()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.mail.Email.poll"><code class="docutils literal notranslate"><span class="pre">Email.poll()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.mail.Email.read"><code class="docutils literal notranslate"><span class="pre">Email.read()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.mail.Email.send"><code class="docutils literal notranslate"><span class="pre">Email.send()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.channels.mail.authenticity"><code class="docutils literal notranslate"><span class="pre">authenticity()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">correspond.channels.mail</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/module_docs/correspond/channels/mail.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-correspond.channels.mail">
+<span id="correspond-channels-mail"></span><h1>correspond.channels.mail<a class="headerlink" href="#module-correspond.channels.mail" title="Link to this heading"></a></h1>
+<p>Email: IMAP to read and listen, SMTP to send, with the standard library.</p>
+<p>References:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">email:</span></code>: the whole folder (<code class="docutils literal notranslate"><span class="pre">INBOX</span></code> unless configured), which is what <code class="docutils literal notranslate"><span class="pre">listen</span></code> watches.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">email:&lt;address&gt;</span></code>: the correspondence with one address: its messages in the folder,
+and sends to it.</p></li>
+</ul>
+<p>Message ids are <code class="docutils literal notranslate"><span class="pre">Message-ID</span></code> headers, angle brackets included. A draft’s <code class="docutils literal notranslate"><span class="pre">reply_to</span></code> is
+one, and the send carries <code class="docutils literal notranslate"><span class="pre">In-Reply-To</span></code> and <code class="docutils literal notranslate"><span class="pre">References</span></code>. Reading never marks a message
+seen.</p>
+<p>Authenticity is <code class="docutils literal notranslate"><span class="pre">claimed</span></code> unless the <strong>topmost</strong> <code class="docutils literal notranslate"><span class="pre">Authentication-Results</span></code> header was
+added by a server you trust (<code class="docutils literal notranslate"><span class="pre">trusted_authserv_ids</span></code>) and records <code class="docutils literal notranslate"><span class="pre">dmarc=pass</span></code> for the
+From domain: then it is <code class="docutils literal notranslate"><span class="pre">domain</span></code>. Only the topmost header counts, even when the trusted
+server added several: a lower one carrying the same authserv-id may have been written by the
+sender (not every server strips those), so a result recorded lower down fails safe as
+<code class="docutils literal notranslate"><span class="pre">claimed</span></code>.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Email</span><span class="p">()</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="s2">"Ada@Example.org"</span><span class="p">)</span><span class="o">.</span><span class="n">encoded</span>
+<span class="go">'email:ada@example.org'</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.channels.mail.Email">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.mail.</span></span><span class="sig-name descname"><span class="pre">Email</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">*,</span> <span class="pre">imap:</span> <span class="pre">~collections.abc.Callable[[],</span> <span class="pre">~typing.Any]</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">smtp:</span> <span class="pre">~collections.abc.Callable[[],</span> <span class="pre">~typing.Any]</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">run:</span> <span class="pre">~collections.abc.Callable[[...],</span> <span class="pre">~typing.Any]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">run&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/correspond/channels/mail.html#Email"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.mail.Email" title="Link to this definition"></a></dt>
+<dd><p>A mailbox over IMAP and SMTP.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="correspond.channels.mail.Email.capabilities">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">capabilities</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../model.html#correspond.model.Capabilities" title="correspond.model.Capabilities"><span class="pre">Capabilities</span></a></span><a class="headerlink" href="#correspond.channels.mail.Email.capabilities" title="Link to this definition"></a></dt>
+<dd><p>Read and listen to one folder; send with threading headers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.mail.Email.parse_ref">
+<span class="sig-name descname"><span class="pre">parse_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></span><a class="reference internal" href="../../../_modules/correspond/channels/mail.html#Email.parse_ref"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.mail.Email.parse_ref" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> for the folder, or an address.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.mail.Email.poll">
+<span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/correspond/channels/mail.html#Email.poll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.mail.Email.poll" title="Link to this definition"></a></dt>
+<dd><p>New messages since <code class="docutils literal notranslate"><span class="pre">cursor</span></code> (<code class="docutils literal notranslate"><span class="pre">&lt;uidvalidity&gt;:&lt;uid&gt;</span></code>); a first poll, or a changed UIDVALIDITY, looks back a day.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.mail.Email.read">
+<span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">since</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../model.html#correspond.model.Message" title="correspond.model.Message"><span class="pre">Message</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/correspond/channels/mail.html#Email.read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.mail.Email.read" title="Link to this definition"></a></dt>
+<dd><p>Messages in the folder (from <code class="docutils literal notranslate"><span class="pre">ref</span></code>’s address, if it has one), oldest first; never marked seen.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.mail.Email.send">
+<span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../model.html#correspond.model.Draft" title="correspond.model.Draft"><span class="pre">Draft</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../model.html#correspond.model.SendResult" title="correspond.model.SendResult"><span class="pre">SendResult</span></a></span></span><a class="reference internal" href="../../../_modules/correspond/channels/mail.html#Email.send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.mail.Email.send" title="Link to this definition"></a></dt>
+<dd><p>Send to <code class="docutils literal notranslate"><span class="pre">ref</span></code>’s address, with <code class="docutils literal notranslate"><span class="pre">In-Reply-To</span></code> and <code class="docutils literal notranslate"><span class="pre">References</span></code> when replying.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.mail.authenticity">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.mail.</span></span><span class="sig-name descname"><span class="pre">authenticity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">EmailMessage</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trusted_authserv_ids</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Iterable</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../model.html#correspond.model.Authenticity" title="correspond.model.Authenticity"><span class="pre">Authenticity</span></a></span></span><a class="reference internal" href="../../../_modules/correspond/channels/mail.html#authenticity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.mail.authenticity" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">domain</span></code> only when the topmost Authentication-Results comes from a trusted server and DMARC passed for the From domain.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="macos.html" class="btn btn-neutral float-left" title="correspond.channels.macos" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ntfy.html" class="btn btn-neutral float-right" title="correspond.channels.ntfy" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

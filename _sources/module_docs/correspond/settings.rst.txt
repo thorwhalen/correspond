@@ -1,0 +1,4 @@
+correspond.settings
+===================
+.. automodule:: correspond.settings
+   :members:

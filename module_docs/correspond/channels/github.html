@@ -1,0 +1,240 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>correspond.channels.github &mdash; correspond 0.0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/graphviz.css?v=4ae1632d" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=d45e8c67"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+      <script src="../../../_static/toggleprompt.js?v=d7ede5d2"></script>
+      <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+      <script src="../../../_static/copybutton.js?v=f281be69"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <link rel="next" title="correspond.channels.macos" href="macos.html" />
+    <link rel="prev" title="correspond.channels._http" href="_http.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            correspond
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../../correspond.html">correspond</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../__main__.html">correspond.__main__</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../channels.html">correspond.channels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_http.html">correspond.channels._http</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">correspond.channels.github</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.channels.github.GitHub"><code class="docutils literal notranslate"><span class="pre">GitHub</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.github.GitHub.capabilities"><code class="docutils literal notranslate"><span class="pre">GitHub.capabilities</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.github.GitHub.edit"><code class="docutils literal notranslate"><span class="pre">GitHub.edit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.github.GitHub.parse_ref"><code class="docutils literal notranslate"><span class="pre">GitHub.parse_ref()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.github.GitHub.poll"><code class="docutils literal notranslate"><span class="pre">GitHub.poll()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.github.GitHub.react"><code class="docutils literal notranslate"><span class="pre">GitHub.react()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.github.GitHub.read"><code class="docutils literal notranslate"><span class="pre">GitHub.read()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.github.GitHub.send"><code class="docutils literal notranslate"><span class="pre">GitHub.send()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#correspond.channels.github.GitHub.verify"><code class="docutils literal notranslate"><span class="pre">GitHub.verify()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#correspond.channels.github.signature"><code class="docutils literal notranslate"><span class="pre">signature()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l1"><a class="reference internal" href="mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l1"><a class="reference internal" href="telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l1"><a class="reference internal" href="webinbox.html">correspond.channels.webinbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../errors.html">correspond.errors</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../mcp.html">correspond.mcp</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../model.html">correspond.model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ops.html">correspond.ops</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../registry.html">correspond.registry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../render.html">correspond.render</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../routing.html">correspond.routing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../settings.html">correspond.settings</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../stores.html">correspond.stores</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">correspond.testing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../tools.html">correspond.tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">correspond</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">correspond.channels.github</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/module_docs/correspond/channels/github.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-correspond.channels.github">
+<span id="correspond-channels-github"></span><h1>correspond.channels.github<a class="headerlink" href="#module-correspond.channels.github" title="Link to this heading"></a></h1>
+<p>GitHub: issues, pull request conversations and discussions, through the <code class="docutils literal notranslate"><span class="pre">gh</span></code> CLI.</p>
+<p>correspond never holds a GitHub token: every call is <code class="docutils literal notranslate"><span class="pre">gh</span> <span class="pre">api</span></code>, authenticated as whatever
+account <code class="docutils literal notranslate"><span class="pre">gh</span></code> is logged in as on this machine, so writes act as that user. Request bodies
+go to <code class="docutils literal notranslate"><span class="pre">gh</span></code> on stdin, never on its command line, so a long comment cannot hit the argument
+limit and never shows in the process table.</p>
+<p>References:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo</span></code>: the repository. <code class="docutils literal notranslate"><span class="pre">read</span></code> lists recent open issues and pull
+requests, <code class="docutils literal notranslate"><span class="pre">listen</span></code> polls its issue and comment activity, <code class="docutils literal notranslate"><span class="pre">send</span></code> opens an issue (a
+title is required).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo#N</span></code>: an issue, a pull request, or a discussion. GitHub numbers the
+three in one sequence; correspond asks which.</p></li>
+</ul>
+<p>Message ids match the anchors in GitHub’s own URLs: <code class="docutils literal notranslate"><span class="pre">issue-N</span></code> (the opening post of issue
+or pull request N), <code class="docutils literal notranslate"><span class="pre">issuecomment-ID</span></code>, <code class="docutils literal notranslate"><span class="pre">discussion-N</span></code>, <code class="docutils literal notranslate"><span class="pre">discussioncomment-ID</span></code>.</p>
+<p>Messages read through the API are <code class="docutils literal notranslate"><span class="pre">platform</span></code> (GitHub authenticated the account), with the
+author’s <code class="docutils literal notranslate"><span class="pre">author_association</span></code> (<code class="docutils literal notranslate"><span class="pre">OWNER</span></code>, <code class="docutils literal notranslate"><span class="pre">MEMBER</span></code>, <code class="docutils literal notranslate"><span class="pre">CONTRIBUTOR</span></code>, <code class="docutils literal notranslate"><span class="pre">NONE</span></code>, …) as
+<code class="docutils literal notranslate"><span class="pre">authority</span></code>. A webhook delivery is graded by <a class="reference internal" href="#correspond.channels.github.GitHub.verify" title="correspond.channels.github.GitHub.verify"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GitHub.verify()</span></code></a>: <code class="docutils literal notranslate"><span class="pre">crypto</span></code> when its
+<code class="docutils literal notranslate"><span class="pre">X-Hub-Signature-256</span></code> matches the configured secret, <code class="docutils literal notranslate"><span class="pre">forged</span></code> otherwise.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">GitHub</span><span class="p">()</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="s2">"OctoCat/Hello-World#1"</span><span class="p">)</span><span class="o">.</span><span class="n">encoded</span>
+<span class="go">'github:octocat/hello-world#1'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">signature</span><span class="p">(</span><span class="s2">"a-secret"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"</span><span class="si">{}</span><span class="s2">"</span><span class="p">)</span>
+<span class="go">'sha256=...'</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.github.</span></span><span class="sig-name descname"><span class="pre">GitHub</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">*,</span> <span class="pre">run:</span> <span class="pre">~collections.abc.Callable[[...],</span> <span class="pre">~typing.Any]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">run&gt;,</span> <span class="pre">gh:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">'gh'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/correspond/channels/github.html#GitHub"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub" title="Link to this definition"></a></dt>
+<dd><p>GitHub through <code class="docutils literal notranslate"><span class="pre">gh</span></code>: read, listen, send, edit, react, and verify webhook deliveries.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.capabilities">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">capabilities</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="../model.html#correspond.model.Capabilities" title="correspond.model.Capabilities"><span class="pre">Capabilities</span></a></span><a class="headerlink" href="#correspond.channels.github.GitHub.capabilities" title="Link to this definition"></a></dt>
+<dd><p>Issues, pull request conversations and discussions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.edit">
+<span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../model.html#correspond.model.Draft" title="correspond.model.Draft"><span class="pre">Draft</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../model.html#correspond.model.SendResult" title="correspond.model.SendResult"><span class="pre">SendResult</span></a></span></span><a class="reference internal" href="../../../_modules/correspond/channels/github.html#GitHub.edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.edit" title="Link to this definition"></a></dt>
+<dd><p>Replace the body of an issue, a comment, a discussion or a discussion comment.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.parse_ref">
+<span class="sig-name descname"><span class="pre">parse_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></span><a class="reference internal" href="../../../_modules/correspond/channels/github.html#GitHub.parse_ref"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.parse_ref" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">owner/repo</span></code> or <code class="docutils literal notranslate"><span class="pre">owner/repo#N</span></code>, lower-cased (GitHub names are case-insensitive).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.poll">
+<span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../../_modules/correspond/channels/github.html#GitHub.poll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.poll" title="Link to this definition"></a></dt>
+<dd><p>Issue and comment activity since <code class="docutils literal notranslate"><span class="pre">cursor</span></code>; a first poll looks back a day.</p>
+<p>The cursor is opaque JSON: the update time the next poll starts from (<code class="docutils literal notranslate"><span class="pre">t</span></code>; GitHub’s
+<code class="docutils literal notranslate"><span class="pre">since</span></code> includes it), the creation time from which an issue still counts as new
+(<code class="docutils literal notranslate"><span class="pre">l</span></code>, which stays behind while the issues list is being read in parts), and the
+events already delivered at <code class="docutils literal notranslate"><span class="pre">t</span></code> (<code class="docutils literal notranslate"><span class="pre">seen</span></code>). So neither <code class="docutils literal notranslate"><span class="pre">limit</span></code> nor several changes
+within one second can make a poll repeat itself, and a list cut short (more than
+<code class="docutils literal notranslate"><span class="pre">MAX_PAGES</span></code> pages changed) is resumed from where it was cut. A bare ISO time is also
+accepted as a cursor.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.react">
+<span class="sig-name descname"><span class="pre">react</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reaction</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../model.html#correspond.model.SendResult" title="correspond.model.SendResult"><span class="pre">SendResult</span></a></span></span><a class="reference internal" href="../../../_modules/correspond/channels/github.html#GitHub.react"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.react" title="Link to this definition"></a></dt>
+<dd><p>Add one of <code class="xref py py-data docutils literal notranslate"><span class="pre">REACTIONS</span></code> to an issue, a comment, a discussion or a discussion comment.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.read">
+<span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">since</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">datetime</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="../model.html#correspond.model.Message" title="correspond.model.Message"><span class="pre">Message</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../../../_modules/correspond/channels/github.html#GitHub.read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.read" title="Link to this definition"></a></dt>
+<dd><p>An issue, pull request or discussion with its comments; for a repository, recent open issues and pull requests.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.send">
+<span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><span class="pre">ConversationRef</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="../model.html#correspond.model.Draft" title="correspond.model.Draft"><span class="pre">Draft</span></a></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../model.html#correspond.model.SendResult" title="correspond.model.SendResult"><span class="pre">SendResult</span></a></span></span><a class="reference internal" href="../../../_modules/correspond/channels/github.html#GitHub.send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.send" title="Link to this definition"></a></dt>
+<dd><p>Comment on an issue, pull request or discussion; on a repository, open an issue (<code class="docutils literal notranslate"><span class="pre">title</span></code> required).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.verify">
+<span class="sig-name descname"><span class="pre">verify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">headers</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Mapping</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="../model.html#correspond.model.Authenticity" title="correspond.model.Authenticity"><span class="pre">Authenticity</span></a></span></span><a class="reference internal" href="../../../_modules/correspond/channels/github.html#GitHub.verify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.verify" title="Link to this definition"></a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">crypto</span></code> when <code class="docutils literal notranslate"><span class="pre">X-Hub-Signature-256</span></code> matches the webhook secret, <code class="docutils literal notranslate"><span class="pre">forged</span></code> otherwise.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.github.signature">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.github.</span></span><span class="sig-name descname"><span class="pre">signature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">secret</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">bytes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bytes</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../../../_modules/correspond/channels/github.html#signature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.signature" title="Link to this definition"></a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">X-Hub-Signature-256</span></code> value GitHub sends for <code class="docutils literal notranslate"><span class="pre">body</span></code> under <code class="docutils literal notranslate"><span class="pre">secret</span></code>.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="_http.html" class="btn btn-neutral float-left" title="correspond.channels._http" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="macos.html" class="btn btn-neutral float-right" title="correspond.channels.macos" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p></p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
