@@ -394,3 +394,98 @@ def test_the_native_fields_messages_carry_are_the_ones_capabilities_declare(stor
     declared = set(WebInbox().capabilities.native_fields)
     for message in correspond.read(f"webinbox:{SITE}", registry=_inbox(stores)):
         assert set(message.native) <= declared
+
+
+def _post_from(app, client, header_lines):
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": f"/{SITE}/reports",
+        "client": client,
+        "headers": [(b"origin", ORIGIN.encode()), (b"content-type", b"application/json")]
+        + [(name.encode(), text.encode()) for name, text in header_lines],
+    }
+    incoming = [{"type": "http.request", "body": b'{"text": "hi"}', "more_body": False}]
+    sent = []
+
+    async def receive():
+        return incoming.pop(0) if incoming else {"type": "http.disconnect"}
+
+    async def send(message):
+        sent.append(message)
+
+    asyncio.run(app(scope, receive, send))
+    return sent[0]["status"]
+
+
+def test_forwarded_addresses_are_joined_normalised_and_believed_only_from_a_local_connection(
+    stores,
+):
+    local = ("127.0.0.1", 5000)
+    two_proxies = _app(stores, burst=1, trusted_proxies=2)
+    lines = lambda visitor: [
+        ("x-forwarded-for", visitor),
+        ("x-forwarded-for", "192.0.2.50"),
+    ]
+    assert [
+        _post_from(two_proxies, local, lines(v)) for v in ("198.51.100.7", "198.51.100.8")
+    ] == [201, 201]
+
+    one_proxy = _app(stores, burst=1, trusted_proxies=1)
+    same_visitor = ["198.51.100.20:1111", "198.51.100.20:2222"]
+    assert [
+        _post_from(one_proxy, local, [("x-forwarded-for", v)]) for v in same_visitor
+    ] == [201, 429]
+    same_network = ["[2001:db8::1]:443", "2001:db8::2"]
+    assert [
+        _post_from(one_proxy, local, [("x-forwarded-for", v)]) for v in same_network
+    ] == [201, 429]
+
+    public_peer = ("8.8.8.8", 5000)
+    spoofs = ["192.0.2.1", "192.0.2.2"]
+    assert [
+        _post_from(one_proxy, public_peer, [("x-forwarded-for", v)]) for v in spoofs
+    ] == [201, 429]
+
+
+def test_the_proxy_count_must_be_a_whole_number_and_errors_say_where_it_was_set(
+    monkeypatch, config_file
+):
+    monkeypatch.setenv("CORRESPOND_WEBINBOX_SITES", SITE)
+    for bad in ("-1", "one", "1.0", "1_0"):
+        monkeypatch.setenv("CORRESPOND_WEBINBOX_TRUSTED_PROXIES", bad)
+        with pytest.raises(
+            MissingRequirement, match="CORRESPOND_WEBINBOX_TRUSTED_PROXIES"
+        ):
+            app_from_env()
+    monkeypatch.delenv("CORRESPOND_WEBINBOX_TRUSTED_PROXIES")
+    config_file("[webinbox]\ntrusted_proxies = true\n")
+    with pytest.raises(MissingRequirement, match=r"trusted_proxies under \[webinbox\]"):
+        app_from_env()
+
+
+def test_site_names_are_checked_first_duplicates_collapse_and_requirements_see_what_would_be_refused(
+    monkeypatch,
+):
+    from correspond import settings
+    from correspond.registry import check_requirements
+
+    asked = []
+    monkeypatch.setattr(
+        settings, "keychain_get", lambda service, **kw: asked.append(service) or ""
+    )
+    monkeypatch.setenv("CORRESPOND_WEBINBOX_SITES", "Site_A")
+    with pytest.raises(MissingRequirement, match="Site_A"):
+        app_from_env()
+    assert asked == [], "no secret is looked up for a refused name"
+    monkeypatch.setenv("CORRESPOND_WEBINBOX_SITES", f"{SITE},{SITE}")
+    monkeypatch.setenv("CORRESPOND_WEBINBOX_SECRET", SECRET)
+    app_from_env()
+    assert check_requirements("webinbox")["ok"]
+    monkeypatch.setenv("CORRESPOND_WEBINBOX_SITES", "site-a,site-b")
+    report = check_requirements("webinbox")
+    assert not report["ok"] and any(
+        "CORRESPOND_WEBINBOX_SECRET_SITE_A" in p for p in report["problems"]
+    )
+    monkeypatch.delenv("CORRESPOND_WEBINBOX_SITES")
+    assert check_requirements("webinbox")["ok"], "reading stored reports needs no site"

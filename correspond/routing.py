@@ -3,8 +3,9 @@
 The rules belong to the caller; correspond runs them in a fixed order and reports which
 rule decided and why.
 
-1. **Bindings**, ``pattern → target``. A pattern is a conversation-reference glob,
-   optionally followed by ``?field=glob&…`` conditions on the message: a ``native`` field
+1. **Bindings**, ``pattern → target``. A pattern is a conversation-reference glob (``*``
+   and ``[…]``; ``?`` always starts the conditions), optionally followed by
+   ``?field=glob&…`` conditions on the message (``%``-escapes decoded, ``+`` kept): a ``native`` field
    (``labels``, ``state``, …), ``author`` (handle, native id or address) or ``grade``. A
    pattern without wildcards also matches the conversations under it, so
    ``github:example/app`` matches ``github:example/app#12``.
@@ -34,7 +35,7 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from fnmatch import fnmatchcase
 from typing import Any
-from urllib.parse import parse_qsl
+from urllib.parse import unquote
 
 from correspond.errors import CorrespondError
 from correspond.model import Message
@@ -88,6 +89,16 @@ def _conditions_hold(message: Message, conditions: Iterable[tuple[str, str]]) ->
     )
 
 
+def _conditions(query: str) -> list[tuple[str, str]]:
+    """``field=glob`` pairs split on ``&``, with ``%``-escapes decoded and ``+`` left a plus."""
+    pairs = []
+    for part in query.split("&"):
+        if part:
+            field, _, glob = part.partition("=")
+            pairs.append((unquote(field), unquote(glob)))
+    return pairs
+
+
 def binding_matches(pattern: str, message: Message) -> str | None:
     """The reason ``pattern`` matches ``message``, or ``None``."""
     ref_glob, _, query = pattern.partition("?")
@@ -101,9 +112,7 @@ def binding_matches(pattern: str, message: Message) -> str | None:
         not _WILDCARDS & set(ref_glob)
         and any(conversation.encoded.startswith(ref_glob + sep) for sep in "#/")
     )
-    if not matched or not _conditions_hold(
-        message, parse_qsl(query, keep_blank_values=True)
-    ):
+    if not matched or not _conditions_hold(message, _conditions(query)):
         return None
     return f"{pattern} matched {conversation.encoded}"
 
@@ -179,30 +188,40 @@ def check_binding(
     """What would make a binding never match, found when bindings are loaded instead of by messages quietly going unrouted.
 
     Reports a pattern without a channel, an unknown channel, and a condition on a field the
-    channel's messages never carry (its ``native_fields``, plus ``author`` and ``grade``).
-    A channel written as a wildcard is not checked.
+    channel's messages never carry (its ``native_fields``, plus ``author`` and ``grade``). A
+    channel written as a wildcard, or one that does not declare its fields
+    (``native_fields`` is ``None``), is not checked for fields.
 
-    >>> from correspond.testing import demo_channel
-    >>> check_binding("fake:example/demo?labels=bug", registry={"fake": demo_channel()})
+    >>> from correspond.channels.github import GitHub
+    >>> check_binding("github:example/app?labels=bug", registry={"github": GitHub()})
     []
-    >>> check_binding("fake:example/demo?label=bug", registry={"fake": demo_channel()})
-    ["the condition label=bug never matches: fake messages carry no field 'label' (they carry labels, author, grade)"]
+    >>> check_binding("github:example/app?label=bug", registry={"github": GitHub()})[0].split(":")[0]
+    'the condition label=bug never matches'
     """
     from correspond.ops import get_channel
 
     ref_glob, _, query = pattern.partition("?")
     channel, separator, _ = ref_glob.partition(":")
     if not separator or not channel:
+        if ":" in query:
+            return [
+                f"{pattern!r}: '?' starts a binding's conditions, so it cannot come before the channel's ':'"
+            ]
         return [f"{pattern!r} is not a binding: a binding starts with <channel>:"]
     if _WILDCARDS & set(channel):
         return []
     try:
-        caps = get_channel(channel, registry=registry).capabilities
+        adapter = get_channel(channel, registry=registry)
     except CorrespondError as error:
         return [str(error)]
+    caps = getattr(adapter, "capabilities", None)
+    if caps is None:
+        return [f"{channel} has no capabilities to check the binding against"]
+    if caps.native_fields is None:
+        return []
     carried = (*caps.native_fields, *MESSAGE_FIELDS)
     return [
         f"the condition {field}={glob} never matches: {channel} messages carry no field {field!r} (they carry {', '.join(carried)})"
-        for field, glob in parse_qsl(query, keep_blank_values=True)
+        for field, glob in _conditions(query)
         if field not in carried
     ]

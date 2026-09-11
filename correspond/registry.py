@@ -81,6 +81,7 @@ class ChannelInfo:
     platforms: tuple[str, ...] = ()
     settings: tuple[Setting, ...] = ()
     notes: tuple[str, ...] = ()
+    check: str = ""
     planned: str | None = None
 
     def setting(self, key: str) -> Setting:
@@ -253,6 +254,7 @@ CHANNELS: tuple[ChannelInfo, ...] = (
         name="webinbox",
         summary="Reports posted from web pages to correspond's ASGI collector, and a reader over what it stored",
         factory="correspond.channels.webinbox:WebInbox",
+        check="correspond.channels.webinbox:requirements_problems",
         settings=(
             Setting(
                 key="sites",
@@ -304,8 +306,8 @@ CHANNELS: tuple[ChannelInfo, ...] = (
         ),
         notes=(
             "serve the collector on localhost behind your own server, e.g. `uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1`",
-            "behind a reverse proxy, set CORRESPOND_WEBINBOX_TRUSTED_PROXIES (1 for one proxy), or every visitor shares one rate limit",
-            "several sites on one collector need a secret each, CORRESPOND_WEBINBOX_SECRET_<SITE> (upper case, - as _), so no site's server can sign for another",
+            "for a reverse proxy on another host set CORRESPOND_WEBINBOX_TRUSTED_PROXIES (1 for one proxy), or every visitor shares one rate limit; uvicorn already resolves a proxy on 127.0.0.1",
+            "several sites on one collector need a secret each, CORRESPOND_WEBINBOX_SECRET_<SITE> (upper case, - as _) or the Keychain item correspond-webinbox-secret-<site>, so no site's server can sign for another",
         ),
     ),
     ChannelInfo(
@@ -568,6 +570,9 @@ def check_requirements(
             problems.append(
                 f"{setting.what} is not set: {_fix(channel, setting, config=config)}"
             )
+
+    if entry.check:
+        problems.extend(load_factory(entry.check)())
 
     lines = [f"{channel}: {entry.summary}"]
     lines += [f"problem: {p}" for p in problems]

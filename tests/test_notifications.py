@@ -154,7 +154,8 @@ def test_a_dry_run_reads_no_keychain_and_says_where_it_will_look(monkeypatch):
     assert (
         planned.ok and "Keychain (correspond-ntfy-topic)" in planned.plan["topic_source"]
     )
-    assert planned.plan["authenticated"] == "checked when sending (Keychain)"
+    assert planned.plan["authenticated"] is None
+    assert planned.plan["looked_up_when_sending"] == ["topic", "token"]
     assert correspond.send(
         "ntfy:example-topic", "hello", dry_run=True, registry=_ntfy(FakeHttp(), _no_run)
     ).ok

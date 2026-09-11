@@ -504,7 +504,6 @@ _TUPLE_FIELDS = (
     "listen_modes",
     "reactions",
     "formats",
-    "native_fields",
     "rate_limits",
     "notes",
 )
@@ -519,7 +518,7 @@ class Capabilities:
     (can a draft answer a specific message) and ``priority``. ``history_depth`` says how
     far back ``read`` sees; ``grades`` are the authenticity grades the channel can attest;
     ``native_fields`` are the keys its messages may carry in ``native`` (what a routing
-    condition can test).
+    condition can test), or ``None`` when the channel does not declare them.
     """
 
     channel: str
@@ -543,7 +542,7 @@ class Capabilities:
     reactions_per_message: int | None = None
     max_upload_bytes: int | None = None
     formats: tuple[str, ...] = ("plain",)
-    native_fields: tuple[str, ...] = ()
+    native_fields: tuple[str, ...] | None = None
     rate_limits: tuple[str, ...] = ()
     notes: tuple[str, ...] = ()
 
@@ -554,6 +553,8 @@ class Capabilities:
         object.__setattr__(self, "grades", tuple(Grade(g) for g in self.grades))
         for name in _TUPLE_FIELDS:
             object.__setattr__(self, name, tuple(getattr(self, name)))
+        if self.native_fields is not None:
+            object.__setattr__(self, "native_fields", tuple(self.native_fields))
 
     def supports(self, operation: str) -> Support:
         """The support level for one of :data:`OPERATIONS`."""
@@ -583,6 +584,9 @@ class Capabilities:
         ):
             data[name] = getattr(self, name)
         data.update({name: list(getattr(self, name)) for name in _TUPLE_FIELDS})
+        data["native_fields"] = (
+            None if self.native_fields is None else list(self.native_fields)
+        )
         return data
 
     @classmethod

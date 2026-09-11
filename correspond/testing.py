@@ -68,7 +68,6 @@ class FakeChannel:
             history_depth=HistoryDepth.FULL,
             grades=(Grade.PLATFORM, Grade.CLAIMED),
             max_text_length=10_000,
-            native_fields=("labels",),
             notes=("in memory: nothing leaves the process",),
         )
 

@@ -10,8 +10,8 @@ signs of a leak:
 - a ``github.com/<owner>`` URL, ``owner/repo`` string or ``@handle`` whose owner or handle
   is not a placeholder or one of this project's own orgs;
 - a token (GitHub, Telegram bot, Slack, PyPI, AWS, an ``sk-`` API key, an ntfy ``tk_``
-  token, a literal bearer token), a private key, a phone number, a Telegram supergroup id, a
-  Windows drive path;
+  token, a literal bearer token), a private key, a phone number, a Telegram supergroup id,
+  credentials in a URL;
 - an IPv4 address outside loopback and the documentation ranges.
 
 It cannot catch a real name, a real ntfy topic, or a short chat or user id written as prose; that part is on whoever
@@ -80,7 +80,7 @@ HOME_PATH_RE = re.compile(
     + r"Volumes/[A-Za-z0-9_.-]+|\\\\"
     + r"wsl|/"
     + r"opt/[^\s\"']+/\.env"
-    + r"|\b[A-Za-z]:\\Users\\[A-Za-z0-9_.-]+"
+    + r"|\b[A-Za-z]:(?:\\{1,2}|/)Users(?:\\{1,2}|/)[A-Za-z0-9_.-]+"
 )
 GITHUB_URL_RE = re.compile(
     r"(?<![\w.])github\.com[/:]([A-Za-z0-9][A-Za-z0-9-]{0,38})(?=[/\s\"')\]]|\.git|$)"
@@ -99,15 +99,27 @@ SECRET_RES = {
     "a private key": re.compile(r"-----BEGIN (?:[A-Z]+ )*PRIVATE KEY-----"),
     "a phone number": re.compile(r"(?<![\w/+])\+\d{10,15}\b"),
     "a Telegram supergroup id": re.compile(r"(?<![\w-])-100\d{10}\b"),
-    "an AWS access key": re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
-    "an API key": re.compile(r"\bsk-[A-Za-z0-9_-]{20,}"),
+    "an AWS access key": re.compile(r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b"),
+    "an API key": re.compile(r"\bsk-(?=[A-Za-z0-9_-]*\d)[A-Za-z0-9_-]{20,}"),
     "an ntfy access token": re.compile(r"\btk_[A-Za-z0-9]{24,}"),
-    "a bearer token": re.compile(r"\bBearer [A-Za-z0-9._~+/-]{20,}"),
-    "a Windows drive path": re.compile(r"\b[A-Za-z]:\\[A-Za-z0-9_. -]+\\"),
+    "a bearer token": re.compile(
+        r"\b[Bb]earer (?=[A-Za-z0-9._~+/-]*\d)(?=[A-Za-z0-9._~+/-]*[A-Za-z])[A-Za-z0-9._~+/-]{20,}"
+    ),
+    "credentials in a URL": re.compile(
+        r"\b[a-z][a-z0-9+.-]*://[^\s/:@\"'<>]+:[^\s/@\"'<>]+@"
+    ),
 }
 #: Loopback, "any", and the RFC 5737 documentation ranges are fine in examples.
-ALLOWED_IPV4_PREFIXES = ("127.", "0.0.0.0", "192.0.2.", "198.51.100.", "203.0.113.")
-IPV4_RE = re.compile(r"(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?![\w.])")
+#: Dotted quads of single digits read as versions (1.0.0.0) and are skipped too.
+ALLOWED_IPV4_PREFIXES = (
+    "127.",
+    "0.0.0.0",
+    "192.0.2.",
+    "198.51.100.",
+    "203.0.113.",
+    "255.",
+)
+IPV4_RE = re.compile(r"(?<![\w.])(?:\d{1,3}\.){3}\d{1,3}(?!\.?\d)(?!\w)")
 
 
 def _text_files() -> list[Path]:
@@ -160,6 +172,7 @@ def ips_outside_documentation(text: str) -> list[str]:
         m.group(0)
         for m in IPV4_RE.finditer(text)
         if all(int(part) <= 255 for part in m.group(0).split("."))
+        and any(len(part) > 1 for part in m.group(0).split("."))
         and not m.group(0).startswith(ALLOWED_IPV4_PREFIXES)
     ]
 
@@ -255,10 +268,29 @@ def test_the_guard_actually_catches_leaks():
     assert secrets_in("chat -" + "1001234567890") == ["a Telegram supergroup id"]
     assert secrets_in("react +1, chat -4001, update 1757581200") == []
     assert secrets_in("key " + "AKIA" + "ABCDEFGHIJKLMNOP") == ["an AWS access key"]
-    assert secrets_in("key " + "sk-" + "a" * 24) == ["an API key"]
+    assert secrets_in("key " + "sk-" + "a1" * 12) == ["an API key"]
     assert secrets_in("NTFY_TOKEN=" + "tk_" + "a" * 29) == ["an ntfy access token"]
-    assert secrets_in("Authorization: " + "Bearer " + "a" * 32) == ["a bearer token"]
-    assert secrets_in("D:" + "\\projects\\inbox") == ["a Windows drive path"]
+    assert secrets_in("Authorization: " + "Bearer " + "a1" * 16) == ["a bearer token"]
+    assert secrets_in("key " + "ASIA" + "ABCDEFGHIJKLMNOP") == ["an AWS access key"]
+    assert secrets_in("https://" + "someone:hunter22" + "@example.org/x") == [
+        "credentials in a URL"
+    ]
+    assert HOME_PATH_RE.search("C:" + "\\\\Users\\\\someone") and HOME_PATH_RE.search(
+        "D:" + "/" + "Users/someone"
+    )
+    assert (
+        secrets_in(
+            'print("Q:\\nA\\n"), Bearer authentication/authorization, sk-spinner-bounce-animation-delay'
+        )
+        == []
+    )
+    assert ips_outside_documentation("The server is " + "10.1.2" + ".3.") == [
+        "10.1.2" + ".3"
+    ]
+    assert (
+        ips_outside_documentation("version 1.0.0.0, OID 1.3.6.1.4.1, mask 255.255.255.0")
+        == []
+    )
     assert secrets_in("a task-list, a risk-free desk-top") == []
     assert ips_outside_documentation(
         "server " + "203.0.113.47" + " and " + "10.1.2" + ".3"

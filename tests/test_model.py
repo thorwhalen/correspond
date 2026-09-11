@@ -208,3 +208,11 @@ def test_a_failed_send_keeps_the_error_classification():
         True,
         30.0,
     )
+
+
+def test_native_fields_are_declared_or_none():
+    assert Capabilities(channel="x").native_fields is None
+    declared = Capabilities(channel="x", native_fields=["labels"])
+    assert declared.native_fields == ("labels",)
+    for caps in (Capabilities(channel="x"), declared):
+        assert Capabilities.from_dict(json.loads(json.dumps(caps.to_dict()))) == caps

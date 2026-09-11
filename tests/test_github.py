@@ -581,7 +581,11 @@ def test_polling_a_repository_orders_new_issues_and_comment_activity_and_moves_t
     ]
     assert len({e.delivery_id for e in events}) == 3
     assert events[1].message.conversation.encoded == f"github:{REPO}#3"
-    assert cursors[f"github:{REPO}"] == "2026-09-11T09:59:55Z"
+    assert json.loads(cursors[f"github:{REPO}"]) == {
+        "t": "2026-09-11T09:59:55Z",
+        "l": "2026-09-11T09:59:55Z",
+        "seen": [],
+    }
 
 
 def test_listening_to_a_discussion_is_refused_by_name():
@@ -707,4 +711,208 @@ def test_a_list_cut_short_holds_back_later_events_from_the_other_list(monkeypatc
     assert [e.message.id for e in events] == ["issuecomment-31", "issuecomment-32"], (
         "issue 7 waits: comments after 08:20 were not fetched"
     )
-    assert cursors[f"github:{REPO}"] == "2026-09-11T08:20:00Z"
+    assert json.loads(cursors[f"github:{REPO}"]) == {
+        "t": "2026-09-11T08:20:00Z",
+        "l": "2026-09-11T08:20:00Z",
+        "seen": ["issuecomment-32@2026-09-11T08:20:00Z"],
+    }
+    later = "2026-09-11T08:40:00Z"
+    gh.routes += [
+        (
+            "GET",
+            rf"repos/{REPO}/issues/comments\?sort=updated&direction=asc&since=2026-09-11T08:20:00Z&per_page=2&page=1",
+            (
+                200,
+                [
+                    _comment(32, created="2026-09-11T08:20:00Z"),
+                    _comment(33, created=later),
+                ],
+            ),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since=2026-09-11T08:20:00Z&per_page=2&page=1",
+            (200, [_issue(7, created="2026-09-11T09:30:00Z")]),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/issues/comments\?sort=updated&direction=asc&since={later}&per_page=2&page=1",
+            (200, [_comment(33, created=later)]),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since={later}&per_page=2&page=1",
+            (200, [_issue(7, created="2026-09-11T09:30:00Z")]),
+        ),
+    ]
+    registry = {"github": GitHub(run=gh)}
+    second = [
+        e.message.id
+        for e in correspond.listen(f"github:{REPO}", cursors=cursors, registry=registry)
+    ]
+    third = [
+        e.message.id
+        for e in correspond.listen(f"github:{REPO}", cursors=cursors, registry=registry)
+    ]
+    assert (second, third) == (["issuecomment-33"], ["issue-7"])
+
+
+def _paged_routes(since, *, comments=(), issues=(), page_size=2):
+    return [
+        (
+            "GET",
+            rf"repos/{REPO}/issues/comments\?sort=updated&direction=asc&since={since}&per_page={page_size}&page=1",
+            (200, list(comments)),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since={since}&per_page={page_size}&page=1",
+            (200, list(issues)),
+        ),
+    ]
+
+
+def _issue_at(number, created, updated):
+    return {**_issue(number, created=created), "updated_at": updated}
+
+
+def _polls(gh, times, **kwargs):
+    registry, cursors = (
+        {"github": GitHub(run=gh)},
+        {f"github:{REPO}": "2026-09-11T08:00:00Z"},
+    )
+    return [
+        [
+            e.message.id
+            for e in correspond.listen(
+                f"github:{REPO}", cursors=cursors, registry=registry, **kwargs
+            )
+        ]
+        for _ in range(times)
+    ], cursors
+
+
+@pytest.fixture
+def small_pages(monkeypatch):
+    from correspond.channels import github as github_module
+
+    monkeypatch.setattr(github_module, "PAGE_SIZE", 2)
+    monkeypatch.setattr(github_module, "MAX_PAGES", 1)
+
+
+def test_a_cut_issues_list_with_nothing_new_still_moves_the_cursor(small_pages):
+    old = "2026-09-01T00:00:00Z"
+    comment = _comment(900, created="2026-09-11T09:00:00Z")
+    gh = ScriptedGh(
+        WHOAMI,
+        *_paged_routes(
+            "2026-09-11T08:00:00Z",
+            comments=[comment],
+            issues=[
+                _issue_at(101, old, "2026-09-11T08:01:00Z"),
+                _issue_at(102, old, "2026-09-11T08:02:00Z"),
+            ],
+        ),
+        *_paged_routes(
+            "2026-09-11T08:02:00Z",
+            comments=[comment],
+            issues=[
+                _issue_at(102, old, "2026-09-11T08:02:00Z"),
+                _issue_at(103, old, "2026-09-11T08:03:00Z"),
+            ],
+        ),
+        *_paged_routes(
+            "2026-09-11T08:03:00Z",
+            comments=[comment],
+            issues=[_issue_at(103, old, "2026-09-11T08:03:00Z")],
+        ),
+    )
+    delivered, cursors = _polls(gh, 3)
+    assert delivered == [[], [], ["issuecomment-900"]]
+    assert json.loads(cursors[f"github:{REPO}"])["t"] == "2026-09-11T09:00:00Z"
+
+
+def test_a_limit_takes_each_event_once_even_within_one_second():
+    at = "2026-09-11T08:10:00Z"
+    everything = [
+        _comment(1, created=at),
+        _comment(2, created=at),
+        _comment(3, created="2026-09-11T08:20:00Z"),
+    ]
+    gh = ScriptedGh(
+        WHOAMI,
+        *_paged_routes("2026-09-11T08:00:00Z", comments=everything, page_size=100),
+        *_paged_routes(at, comments=everything, page_size=100),
+        *_paged_routes("2026-09-11T08:20:00Z", comments=everything[2:], page_size=100),
+    )
+    delivered, _ = _polls(gh, 4, limit=1)
+    assert delivered == [["issuecomment-1"], ["issuecomment-2"], ["issuecomment-3"], []]
+
+
+def test_an_issue_created_early_in_a_cut_issues_list_is_not_lost(small_pages):
+    seven = _issue_at(7, "2026-09-11T08:30:00Z", "2026-09-11T08:40:00Z")
+    eight = _issue_at(8, "2026-09-11T08:50:00Z", "2026-09-11T09:00:00Z")
+    nine = _issue_at(9, "2026-09-11T08:10:00Z", "2026-09-11T09:30:00Z")
+    gh = ScriptedGh(
+        WHOAMI,
+        *_paged_routes("2026-09-11T08:00:00Z", issues=[seven, eight]),
+        *_paged_routes("2026-09-11T09:00:00Z", issues=[eight, nine]),
+        *_paged_routes("2026-09-11T09:30:00Z", issues=[nine]),
+    )
+    delivered, _ = _polls(gh, 4)
+    assert delivered[0] == ["issue-7", "issue-8"]
+    assert "issue-9" in delivered[1], (
+        "created before the cut, updated after it: still new"
+    )
+    assert delivered[3] == [], "and delivered for the last time once the list is whole"
+
+
+def test_one_issue_is_listened_to_across_every_page(small_pages):
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        (
+            "GET",
+            rf"repos/{REPO}/issues/1/comments\?since=2026-09-11T08:00:00Z&per_page=2&page=1",
+            (
+                200,
+                [
+                    _comment(
+                        1, created="2026-09-11T07:00:00Z", updated="2026-09-11T09:00:00Z"
+                    ),
+                    _comment(2, created="2026-09-11T08:06:00Z"),
+                ],
+            ),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/issues/1/comments\?since=2026-09-11T08:00:00Z&per_page=2&page=2",
+            (200, [_comment(3, created="2026-09-11T08:30:00Z")]),
+        ),
+    )
+    cursors = {f"github:{REPO}#1": "2026-09-11T08:00:00Z"}
+    events = list(
+        correspond.listen(
+            f"github:{REPO}#1", cursors=cursors, registry={"github": GitHub(run=gh)}
+        )
+    )
+    assert [e.message.id for e in events] == [
+        "issuecomment-2",
+        "issuecomment-3",
+        "issuecomment-1",
+    ]
+    assert [e.kind for e in events][-1] == "message.updated"
+
+
+def test_a_malformed_cursor_is_a_validation_error():
+    gh = ScriptedGh(WHOAMI)
+    for bad in ("yesterday", '{"t": "not a time"}', "{"):
+        with pytest.raises(ChannelError) as caught:
+            list(
+                correspond.listen(
+                    f"github:{REPO}",
+                    cursors={f"github:{REPO}": bad},
+                    registry={"github": GitHub(run=gh)},
+                )
+            )
+        assert caught.value.kind == "validation"

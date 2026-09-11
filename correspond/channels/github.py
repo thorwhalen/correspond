@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import itertools
 import json
 import re
 import subprocess
@@ -42,7 +43,13 @@ from email.utils import parsedate_to_datetime
 from typing import Any
 
 from correspond.channels._http import classify, retry_after_seconds
-from correspond.errors import ChannelError, InvalidRef, MissingRequirement, NotSupported
+from correspond.errors import (
+    ChannelError,
+    CorrespondError,
+    InvalidRef,
+    MissingRequirement,
+    NotSupported,
+)
 from correspond.model import (
     Account,
     Authenticity,
@@ -261,6 +268,41 @@ def _not_found(owner: str, repo: str, number: int) -> ChannelError:
     )
 
 
+def _decode_cursor(
+    cursor: str | None, default: datetime
+) -> tuple[datetime, datetime, frozenset[str]]:
+    """``(position, openings_from, seen)`` from a listen cursor (JSON, or a bare ISO time)."""
+    if not cursor:
+        return default, default, frozenset()
+    try:
+        if cursor.lstrip().startswith("{"):
+            data = json.loads(cursor)
+            position = parse_time(data["t"])
+            openings_from = parse_time(data.get("l") or data["t"])
+            return (
+                position,
+                min(openings_from, position),
+                frozenset(str(key) for key in data.get("seen") or ()),
+            )
+        moment = parse_time(cursor)
+        return moment, moment, frozenset()
+    except (CorrespondError, ValueError, KeyError, TypeError, AttributeError):
+        raise ChannelError(
+            f"{cursor!r} is not a GitHub listen cursor", kind="validation"
+        ) from None
+
+
+def _encode_cursor(position: datetime, openings_from: datetime, seen: set[str]) -> str:
+    return json.dumps(
+        {
+            "t": format_time(position),
+            "l": format_time(openings_from),
+            "seen": sorted(seen),
+        },
+        separators=(",", ":"),
+    )
+
+
 class GitHub:
     """GitHub through ``gh``: read, listen, send, edit, react, and verify webhook deliveries."""
 
@@ -311,6 +353,7 @@ class GitHub:
                 "listen polls issue and comment activity of a repository or of one issue; discussions are read but not listened to",
                 "reply_to works in discussions only; issue and pull request comments are flat",
                 "pull request review comments on diffs are not read",
+                "listen can miss a change only when more than 2,000 issues or comments change within the same second",
             ),
         )
 
@@ -402,12 +445,14 @@ class GitHub:
             )
         return data.get("data") or {}
 
-    def _collect(self, path: str) -> tuple[list[Any], bool, str | None]:
-        """Every item of a paginated list: ``(items, truncated, the server's Date on the last page)``."""
+    def _collect(
+        self, path: str, *, bounded: bool = True
+    ) -> tuple[list[Any], bool, str | None]:
+        """Every item of a paginated list: ``(items, truncated, the server's Date on the last page)``; ``bounded`` stops after ``MAX_PAGES``."""
         separator = "&" if "?" in path else "?"
         items: list[Any] = []
         date = None
-        for page in range(1, MAX_PAGES + 1):
+        for page in range(1, MAX_PAGES + 1) if bounded else itertools.count(1):
             reply = self._api(f"{path}{separator}per_page={PAGE_SIZE}&page={page}")
             date = reply.headers.get("date", date)
             batch = reply.json() or []
@@ -545,7 +590,7 @@ class GitHub:
         path = f"repos/{owner}/{repo}/issues/{number}/comments"
         if since is not None:
             path += f"?since={format_time(since)}"
-        comments, _, _ = self._collect(path)
+        comments, _, _ = self._collect(path, bounded=False)
         return [
             self._opening(conversation, issue),
             *(self._comment(conversation, c) for c in comments),
@@ -678,12 +723,21 @@ class GitHub:
     def poll(
         self, ref: ConversationRef, *, cursor: str | None = None, limit: int | None = None
     ):
-        """Issue and comment activity since ``cursor`` (an ISO time); a first poll looks back a day."""
+        """Issue and comment activity since ``cursor``; a first poll looks back a day.
+
+        The cursor is opaque JSON: the update time the next poll starts from (``t``; GitHub's
+        ``since`` includes it), the creation time from which an issue still counts as new
+        (``l``, which stays behind while the issues list is being read in parts), and the
+        events already delivered at ``t`` (``seen``). So neither ``limit`` nor several changes
+        within one second can make a poll repeat itself, and a list cut short (more than
+        ``MAX_PAGES`` pages changed) is resumed from where it was cut. A bare ISO time is also
+        accepted as a cursor.
+        """
         owner, repo, number = self._parts(ref)
-        since = (
-            parse_time(cursor) if cursor else datetime.now(timezone.utc) - LISTEN_LOOKBACK
+        position, openings_from, seen = _decode_cursor(
+            cursor, (datetime.now(timezone.utc) - LISTEN_LOOKBACK).replace(microsecond=0)
         )
-        stamp = format_time(since)
+        stamp = format_time(position)
         self._whoami()
         repository = ConversationRef(
             channel=NAME, id=f"{owner}/{repo}", kind="repository"
@@ -706,12 +760,15 @@ class GitHub:
                     NAME,
                     alternatives=(f"read github:{owner}/{repo}#{number} again later",),
                 )
+            # One issue's comments come ordered by id, not by update, so a cut list would not be
+            # complete up to any time: read every page (an issue holds a bounded number).
             comments, comments_cut, date = self._collect(
-                f"repos/{owner}/{repo}/issues/{number}/comments?since={stamp}"
+                f"repos/{owner}/{repo}/issues/{number}/comments?since={stamp}",
+                bounded=False,
             )
             issues, issues_cut = [], False
 
-        timed: list[tuple[datetime, Event]] = []
+        candidates: list[tuple[datetime, str, str, Message]] = []
         for comment in comments:
             issue_number = (
                 str(comment.get("issue_url", "")).rstrip("/").rsplit("/", 1)[-1]
@@ -720,58 +777,72 @@ class GitHub:
                 channel=NAME, id=f"{owner}/{repo}#{issue_number}", parent=repository
             )
             changed = comment.get("updated_at") or comment["created_at"]
-            created = parse_time(comment["created_at"]) >= since
-            timed.append(
+            is_new = parse_time(comment["created_at"]) >= openings_from
+            candidates.append(
                 (
                     parse_time(changed),
-                    Event(
-                        kind="message.created" if created else "message.updated",
-                        channel=NAME,
-                        delivery_id=f"github:{owner}/{repo}:issuecomment-{comment['id']}@{changed}",
-                        cursor=changed,
-                        message=self._comment(conversation, comment),
-                    ),
+                    f"issuecomment-{comment['id']}@{changed}",
+                    "message.created" if is_new else "message.updated",
+                    self._comment(conversation, comment),
                 )
             )
         for issue in issues:
-            if parse_time(issue["created_at"]) < since:
+            if parse_time(issue["created_at"]) < openings_from:
                 continue  # an older issue that changed: its comments arrive as their own events
-            timed.append(
+            candidates.append(
                 (
                     parse_time(issue["created_at"]),
-                    Event(
-                        kind="message.created",
-                        channel=NAME,
-                        delivery_id=f"github:{owner}/{repo}:issue-{issue['number']}@{issue['created_at']}",
-                        cursor=issue["created_at"],
-                        message=self._opening(
-                            self._issue_conversation(owner, repo, issue), issue
-                        ),
-                    ),
+                    f"issue-{issue['number']}@{issue['created_at']}",
+                    "message.created",
+                    self._opening(self._issue_conversation(owner, repo, issue), issue),
                 )
             )
-        timed.sort(key=lambda pair: pair[0])
-        # A list cut short (too many changes since the cursor) is complete only up to its last
-        # item. An event from the other list after that point would move the cursor past
-        # changes not fetched yet, so it waits for the next poll.
+        candidates = [c for c in candidates if not (c[0] <= position and c[1] in seen)]
+        # A list cut short is complete only up to its last item: later events wait for the
+        # next poll, which starts from there.
         horizons = [
             parse_time(items[-1].get("updated_at") or items[-1]["created_at"])
             for items, cut in ((comments, comments_cut), (issues, issues_cut))
             if cut and items
         ]
-        if horizons:
-            timed = [pair for pair in timed if pair[0] <= min(horizons)]
-        truncated = comments_cut or issues_cut or (bool(limit) and len(timed) > limit)
+        horizon = min(horizons) if horizons else None
+        if horizon is not None:
+            candidates = [c for c in candidates if c[0] <= horizon]
+        candidates.sort(key=lambda c: (c[0], c[1]))
+        limited = bool(limit) and len(candidates) > limit
         if limit:
-            timed = timed[:limit]
-        final = None
-        server_now = _http_date(date)
-        if not truncated and server_now is not None:
-            candidates = [since, server_now - CLOCK_SKEW] + (
-                [timed[-1][0]] if timed else []
+            candidates = candidates[:limit]
+
+        events = []
+        delivered = set(seen)
+        for moment, key, kind, message in candidates:
+            if moment > position:
+                position, delivered = moment, set()
+            delivered.add(key)
+            events.append(
+                Event(
+                    kind=kind,
+                    channel=NAME,
+                    delivery_id=f"github:{owner}/{repo}:{key}",
+                    cursor=_encode_cursor(position, openings_from, delivered),
+                    message=message,
+                )
             )
-            final = format_time(max(candidates))
-        return with_final_cursor([event for _, event in timed], final)
+        final = None  # when limited, the last event's cursor is where to resume
+        if not limited and horizon is not None:
+            if horizon > position:
+                position, delivered = horizon, set()
+            # While the issues list is read in parts, an issue created before the cut may still
+            # be unread, so issues keep counting as new from where they did.
+            final = _encode_cursor(
+                position, openings_from if issues_cut else position, delivered
+            )
+        elif not limited:
+            server_now = _http_date(date)
+            if server_now is not None and server_now - CLOCK_SKEW > position:
+                position, delivered = server_now - CLOCK_SKEW, set()
+            final = _encode_cursor(position, position, delivered)
+        return with_final_cursor(events, final)
 
     # ------------------------------------------------------------------- writing
 

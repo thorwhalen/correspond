@@ -47,6 +47,7 @@ import binascii
 import functools
 import hashlib
 import hmac
+import ipaddress
 import json
 import math
 import os
@@ -75,7 +76,7 @@ from correspond.model import (
     parse_time,
 )
 from correspond.ops import window, with_final_cursor
-from correspond.registry import value
+from correspond.registry import info, resolve, value
 
 __all__ = [
     "MEDIA_TYPES",
@@ -85,6 +86,7 @@ __all__ = [
     "app_from_env",
     "identity_payload",
     "mk_app",
+    "requirements_problems",
     "sign_identity",
     "site_secret_env",
     "verify_identity",
@@ -394,19 +396,48 @@ async def _read_body(receive, limit: int) -> Any:
             return b"".join(chunks)
 
 
+def _bucket(address: str) -> str:
+    """One rate-limit bucket per IPv4 address and per IPv6 /64, with any port removed."""
+    text = address.strip()
+    if text.startswith("["):
+        text = text[1:].partition("]")[0]
+    elif text.count(":") == 1:
+        text = text.partition(":")[0]
+    try:
+        ip = ipaddress.ip_address(text)
+    except ValueError:
+        return text
+    if ip.version == 6:
+        return str(ipaddress.ip_network(f"{ip}/64", strict=False))
+    return str(ip)
+
+
+def _from_a_proxy(peer: str) -> bool:
+    """Whether a connection could come from one of our proxies: anything but a public address."""
+    try:
+        return not ipaddress.ip_address(_bucket(peer).split("/")[0]).is_global
+    except ValueError:
+        return True
+
+
 def _client(
     scope: Mapping[str, Any], headers: Mapping[str, str], trusted_proxies: int
 ) -> str:
-    """The address to rate-limit: ``trusted_proxies`` hops from the right of X-Forwarded-For, else the connection's.
+    """The rate-limit bucket: the address ``trusted_proxies`` hops from the right of X-Forwarded-For when the connection comes from a proxy, else the connection's own.
 
     Each proxy appends the address it received the request from, so whatever a client wrote
-    into the header itself sits on the left, where nothing looks.
+    into the header itself sits on the left, where nothing looks, and a public address
+    connecting directly is never taken for a proxy. The count assumes the collector can be
+    reached only through those proxies: bind it to a local address.
     """
-    hops = [h.strip() for h in headers.get("x-forwarded-for", "").split(",") if h.strip()]
-    if trusted_proxies and hops:
-        return hops[-trusted_proxies] if len(hops) >= trusted_proxies else hops[0]
     client = scope.get("client") or ("unknown", 0)
-    return str(client[0])
+    peer = str(client[0])
+    hops = [h.strip() for h in headers.get("x-forwarded-for", "").split(",") if h.strip()]
+    if trusted_proxies and hops and _from_a_proxy(peer):
+        return _bucket(
+            hops[-trusted_proxies] if len(hops) >= trusted_proxies else hops[0]
+        )
+    return _bucket(peer)
 
 
 def mk_app(
@@ -454,10 +485,12 @@ def mk_app(
                     return
         if scope["type"] != "http":
             return
-        headers = {
-            k.decode("latin-1").lower(): v.decode("latin-1")
-            for k, v in scope.get("headers") or ()
-        }
+        headers: dict[str, str] = {}
+        for raw_name, raw_value in scope.get("headers") or ():
+            name, text = raw_name.decode("latin-1").lower(), raw_value.decode("latin-1")
+            # Repeated X-Forwarded-For lines form one list, in order (RFC 9110, section 5.3).
+            joined = name == "x-forwarded-for" and name in headers
+            headers[name] = f"{headers[name]}, {text}" if joined else text
         parts = [p for p in str(scope.get("path", "")).split("/") if p]
         site = (
             by_name.get(parts[0]) if len(parts) == 2 and parts[1] == "reports" else None
@@ -554,33 +587,58 @@ def mk_app(
     return app
 
 
-def app_from_env() -> Callable[..., Awaitable[None]]:
-    """The collector configured from the environment and the ``[webinbox]`` config table (for ``uvicorn --factory``)."""
-    names = _csv(value(NAME, "sites"))
+def _proxy_count() -> int:
+    raw, source = resolve(NAME, info(NAME).setting("trusted_proxies"))
+    text = str(raw).strip()
+    if not re.fullmatch(r"[0-9]+", text):
+        where = (
+            "trusted_proxies under [webinbox] in the config file"
+            if source == "config"
+            else "CORRESPOND_WEBINBOX_TRUSTED_PROXIES"
+        )
+        raise MissingRequirement(
+            NAME,
+            f"{where} must be a whole number of proxies, not {raw!r}",
+            fix="set it to how many reverse proxies stand in front of the collector (0, 1, ...)",
+            kind="validation",
+        )
+    return int(text)
+
+
+def _configured() -> tuple[list[Site], int]:
+    """The sites and proxy count the environment and config file describe, or MissingRequirement saying what is wrong."""
+    names = list(dict.fromkeys(_csv(value(NAME, "sites"))))
     if not names:
         raise MissingRequirement(
             NAME,
             "no sites are configured",
             fix="set CORRESPOND_WEBINBOX_SITES (comma-separated site names), or sites under [webinbox] in the config file",
         )
+    refused = [name for name in names if not SITE_RE.match(name)]
+    if refused:
+        raise MissingRequirement(
+            NAME,
+            f"site names are lowercase letters, digits and '-', not {', '.join(refused)}",
+            fix="rename them in CORRESPOND_WEBINBOX_SITES",
+            kind="validation",
+        )
+    origins = _csv(value(NAME, "origins"))
+    max_age_s = int(value(NAME, "max_age_s") or 86_400)
     sites = [
         Site(
             name=name,
-            origins=_csv(value(NAME, "origins")),
+            origins=origins,
             secret=_site_secret(name, several=len(names) > 1),
-            max_age_s=int(value(NAME, "max_age_s") or 86_400),
+            max_age_s=max_age_s,
         )
         for name in names
     ]
-    try:
-        trusted_proxies = int(value(NAME, "trusted_proxies") or 0)
-    except ValueError:
-        raise MissingRequirement(
-            NAME,
-            "CORRESPOND_WEBINBOX_TRUSTED_PROXIES is not a whole number",
-            fix="set it to how many reverse proxies stand in front of the collector (0, 1, ...)",
-            kind="validation",
-        ) from None
+    return sites, _proxy_count()
+
+
+def app_from_env() -> Callable[..., Awaitable[None]]:
+    """The collector configured from the environment and the ``[webinbox]`` config table (for ``uvicorn --factory``)."""
+    sites, trusted_proxies = _configured()
     return mk_app(
         sites,
         rate_per_minute=float(value(NAME, "rate_per_minute") or 10),
@@ -588,6 +646,17 @@ def app_from_env() -> Callable[..., Awaitable[None]]:
         max_body_bytes=int(value(NAME, "max_body_bytes") or 5_000_000),
         trusted_proxies=trusted_proxies,
     )
+
+
+def requirements_problems() -> list[str]:
+    """What would stop the collector starting from this configuration; nothing when no site is configured, since reading stored reports needs none."""
+    if not _csv(value(NAME, "sites")):
+        return []
+    try:
+        _configured()
+    except MissingRequirement as error:
+        return [str(error)]
+    return []
 
 
 def site_secret_env(site: str) -> str:
@@ -600,7 +669,7 @@ def site_secret_env(site: str) -> str:
 
 
 def _site_secret(site: str, *, several: bool) -> str | None:
-    """A site's own secret (its variable, then the Keychain); the shared one only when it is the only site."""
+    """A site's own secret, from its variable or its Keychain item ``correspond-webinbox-secret-<site>``, before the shared one; the shared one only when it is the only site."""
     own = os.environ.get(site_secret_env(site), "").strip() or _settings.keychain_get(
         f"correspond-webinbox-secret-{site}"
     )

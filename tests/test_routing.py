@@ -128,3 +128,23 @@ def test_bindings_are_checked_against_the_fields_a_channel_carries():
     assert check_binding("*:example/demo?anything=x", registry=registry) == []
     assert "unknown channel" in check_binding("nowhere:x", registry=registry)[0]
     assert check_binding("no channel here", registry=registry)
+
+
+def test_conditions_keep_plus_signs_and_undeclared_fields_are_not_checked():
+    from correspond.model import Capabilities, Support
+    from correspond.routing import binding_matches, check_binding
+    from correspond.testing import FakeChannel, demo_channel, demo_message
+
+    assert binding_matches("fake:example/demo?labels=c++", demo_message(labels=["c++"]))
+    assert binding_matches("fake:example/demo?labels=a%26b", demo_message(labels=["a&b"]))
+
+    class External(FakeChannel):
+        @property
+        def capabilities(self):
+            return Capabilities(channel=self.name, read=Support.FULL)
+
+    registry = {"fake": demo_channel(), "ext": External("ext"), "bare": object()}
+    assert check_binding("ext:board?state=open", registry=registry) == []
+    assert check_binding("fake:example/demo?state=open", registry=registry) == []
+    assert "'?' starts" in check_binding("gith?b:example/app", registry=registry)[0]
+    assert "no capabilities" in check_binding("bare:x", registry=registry)[0]

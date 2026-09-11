@@ -97,7 +97,7 @@ export CORRESPOND_WEBINBOX_SECRET=...   # shared with the host application's ser
 uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1 --port 8765
 ```
 
-Behind a reverse proxy, also set `CORRESPOND_WEBINBOX_TRUSTED_PROXIES` to the number of proxies in front (usually `1`), or every visitor shares the proxy's rate limit. Several sites on one collector need a secret each, `CORRESPOND_WEBINBOX_SECRET_<SITE>` (the site name upper-cased, `-` as `_`), so that no site's server can sign identities for another; the shared `CORRESPOND_WEBINBOX_SECRET` serves a single site only.
+The rate limit applies per visitor address. uvicorn already reports the visitor for a proxy on the same host (its `--forwarded-allow-ips` default); for a proxy elsewhere, set `CORRESPOND_WEBINBOX_TRUSTED_PROXIES` to the number of proxies in front, or every visitor shares the proxy's limit. Forwarded addresses are believed only from a non-public connection, and IPv6 visitors are limited per /64. Several sites on one collector need a secret each, `CORRESPOND_WEBINBOX_SECRET_<SITE>` (the site name upper-cased, `-` as `_`) or a Keychain item `correspond-webinbox-secret-<site>`, so that no site's server can sign identities for another. The shared `CORRESPOND_WEBINBOX_SECRET` serves a single site only, and `correspond requirements webinbox` reports a configuration the collector would refuse.
 
 `POST /example-site/reports` takes JSON with a required `text` and optional `name`, `email`, `page`, `context`, `attachments` (base64, stored by SHA-256, referenced rather than inlined) and `identity`. Without `identity` a report is `claimed`. The host application's server can sign its logged-in user, which makes the report `bound`:
 

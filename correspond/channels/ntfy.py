@@ -166,6 +166,10 @@ class Ntfy:
             headers["Priority"] = PRIORITY[draft.priority]
         if token:
             headers["Authorization"] = f"Bearer {token}"
+        deferred = ["topic"] if topic is None else []
+        deferred_token = not token and dry_run and keychain_available()
+        if deferred_token:
+            deferred.append("token")
         plan = {
             "action": "publish",
             "server": server,
@@ -173,15 +177,11 @@ class Ntfy:
             "topic_source": source,
             "title": draft.title,
             "priority": draft.priority,
-            "authenticated": True
-            if token
-            else (
-                "checked when sending (Keychain)"
-                if dry_run and keychain_available()
-                else False
-            ),
+            "authenticated": True if token else (None if deferred_token else False),
             "text": draft.text,
         }
+        if deferred:
+            plan["looked_up_when_sending"] = deferred
         if dry_run:
             return SendResult(
                 ok=True, channel=NAME, conversation=ref.encoded, dry_run=True, plan=plan
