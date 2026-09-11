@@ -14,7 +14,15 @@ keywords = ["channels", "messaging", "notifications", "github", "email", "telegr
 authors = [
     { name = "Thor Whalen" },
 ]
-dependencies = []
+# `xdol` provides the channel registry; `dol` the file stores under the data root (both
+# imported on first use, not at `import correspond`); `cw` builds the CLI from the same
+# functions `correspond.tools` exposes (imported only by `__main__`). Every v0.1 adapter
+# uses the standard library alone.
+dependencies = [
+    "cw>=0.1.1,<0.2",
+    "dol",
+    "xdol",
+]
 
 [project.license]
 text = "mit"
@@ -25,7 +33,15 @@ Repository = "https://github.com/thorwhalen/correspond"
 Documentation = "https://thorwhalen.github.io/correspond"
 Issues = "https://github.com/thorwhalen/correspond/issues"
 
+[project.scripts]
+correspond = "correspond.__main__:main"
+correspond-mcp = "correspond.mcp:main"
+
 [project.optional-dependencies]
+# MCP over stdio is an optional surface, so its dependency is an extra.
+mcp = [
+    "py2mcp",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",

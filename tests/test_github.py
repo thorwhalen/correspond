@@ -1,0 +1,647 @@
+"""GitHub over a scripted gh: reads, discussion fallback, writes on stdin, error classification, polling, webhook signatures."""
+
+import json
+import re
+import subprocess
+
+import pytest
+
+import correspond
+from correspond.channels.github import GitHub, _parse_reply, signature
+from correspond.errors import ChannelError, MissingRequirement, NotSupported
+
+REPO = "octocat/hello-world"
+
+
+def _issue(
+    number=1,
+    *,
+    user="octocat",
+    association="OWNER",
+    pr=False,
+    created="2026-09-11T08:00:00Z",
+    labels=("bug",),
+):
+    data = {
+        "number": number,
+        "title": "The export drops the last row",
+        "body": "Steps: export, count rows.",
+        "user": {"login": user, "id": 1, "type": "User"},
+        "author_association": association,
+        "labels": [{"name": label} for label in labels],
+        "state": "open",
+        "locked": False,
+        "created_at": created,
+        "updated_at": created,
+        "html_url": f"https://github.com/{REPO}/issues/{number}",
+    }
+    if pr:
+        data["pull_request"] = {"url": "https://example.org/pull"}
+    return data
+
+
+def _comment(
+    comment_id,
+    *,
+    user="octocat",
+    issue=1,
+    created="2026-09-11T09:00:00Z",
+    updated=None,
+    association="NONE",
+):
+    return {
+        "id": comment_id,
+        "user": {
+            "login": user,
+            "id": 2,
+            "type": "Bot" if user.endswith("[bot]") else "User",
+        },
+        "body": f"comment {comment_id}",
+        "created_at": created,
+        "updated_at": updated or created,
+        "author_association": association,
+        "html_url": f"https://github.com/{REPO}/issues/{issue}#issuecomment-{comment_id}",
+        "issue_url": f"https://api.github.com/repos/{REPO}/issues/{issue}",
+    }
+
+
+def _post(database_id, *, created="2026-09-11T10:00:00Z", edited=None, replies=()):
+    post = {
+        "id": f"DC_node{database_id}",
+        "databaseId": database_id,
+        "body": f"post {database_id}",
+        "url": f"https://github.com/{REPO}/discussions/5#discussioncomment-{database_id}",
+        "createdAt": created,
+        "lastEditedAt": edited,
+        "authorAssociation": "MEMBER",
+        "isMinimized": False,
+        "author": {"__typename": "User", "login": "octocat", "databaseId": 1},
+    }
+    if replies is not None:
+        post["replies"] = {"totalCount": len(replies), "nodes": list(replies)}
+    return post
+
+
+def _discussion(comments=()):
+    return {
+        "data": {
+            "repository": {
+                "discussion": {
+                    "id": "D_node5",
+                    "number": 5,
+                    "title": "Ideas for the export",
+                    "body": "What should it support?",
+                    "url": f"https://github.com/{REPO}/discussions/5",
+                    "createdAt": "2026-09-11T08:30:00Z",
+                    "lastEditedAt": None,
+                    "authorAssociation": "OWNER",
+                    "locked": False,
+                    "category": {"name": "Ideas"},
+                    "author": {"__typename": "User", "login": "octocat", "databaseId": 1},
+                    "comments": {
+                        "pageInfo": {"hasNextPage": False, "endCursor": None},
+                        "nodes": list(comments),
+                    },
+                }
+            }
+        }
+    }
+
+
+class ScriptedGh:
+    """Answers `gh api -i` like gh does: status line, headers, blank line, body; records every call and its stdin."""
+
+    def __init__(self, *routes):
+        self.routes = list(routes)
+        self.calls = []
+
+    def __call__(self, argv, *, input=None, capture_output=True, text=True, timeout=None):
+        if argv[0] != "gh":
+            raise AssertionError(f"unexpected command {argv}")
+        method = argv[argv.index("--method") + 1]
+        path = argv[argv.index("--method") + 2]
+        payload = json.loads(input) if input else None
+        self.calls.append(
+            {"method": method, "path": path, "payload": payload, "argv": argv}
+        )
+        for route_method, pattern, reply in self.routes:
+            if route_method == method and re.fullmatch(pattern, path):
+                status, body, *headers = reply(payload) if callable(reply) else reply
+                return _completed(argv, status, body, headers[0] if headers else {})
+        raise AssertionError(f"unexpected gh call: {method} {path}")
+
+    def paths(self, method=None):
+        return [c["path"] for c in self.calls if method is None or c["method"] == method]
+
+
+def _completed(argv, status, body, headers):
+    head = "\n".join(
+        [
+            f"HTTP/2.0 {status} X",
+            "Content-Type: application/json",
+            *(f"{k}: {v}" for k, v in headers.items()),
+        ]
+    )
+    return subprocess.CompletedProcess(
+        argv,
+        0 if status < 400 else 1,
+        stdout=f"{head}\n\n{json.dumps(body)}",
+        stderr="" if status < 400 else f"gh: error (HTTP {status})",
+    )
+
+
+WHOAMI = ("GET", "user", (200, {"login": "example-bot"}))
+
+
+def _read(gh, ref, **kwargs):
+    return correspond.read(ref, registry={"github": GitHub(run=gh)}, **kwargs)
+
+
+def test_read_an_issue_with_its_comments():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        (
+            "GET",
+            rf"repos/{REPO}/issues/1/comments\?per_page=100&page=1",
+            (
+                200,
+                [
+                    _comment(11, user="example-bot"),
+                    _comment(
+                        12, created="2026-09-11T09:10:00Z", updated="2026-09-11T09:20:00Z"
+                    ),
+                ],
+            ),
+        ),
+    )
+    messages = _read(gh, "github:OctoCat/Hello-World#1")
+    assert [m.id for m in messages] == ["issue-1", "issuecomment-11", "issuecomment-12"]
+    opening, mine, edited = messages
+    assert (
+        opening.conversation.kind == "issue"
+        and opening.conversation.parent.encoded == f"github:{REPO}"
+    )
+    assert opening.native["title"] == "The export drops the last row" and opening.native[
+        "labels"
+    ] == ["bug"]
+    assert (
+        opening.author.authority == "OWNER"
+        and opening.authenticity.grade.value == "platform"
+    )
+    assert mine.author.is_self and not opening.author.is_self
+    assert edited.edited_at is not None and mine.edited_at is None
+    assert all(c["payload"] is None for c in gh.calls)
+
+
+def test_a_number_that_is_no_issue_is_read_as_a_discussion_with_replies():
+    reply = _post(502, created="2026-09-11T10:05:00Z", replies=None)
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
+        (
+            "POST",
+            "graphql",
+            (
+                200,
+                _discussion([_post(501, edited="2026-09-11T11:00:00Z", replies=[reply])]),
+            ),
+        ),
+    )
+    messages = _read(gh, f"github:{REPO}#5")
+    assert [m.id for m in messages] == [
+        "discussion-5",
+        "discussioncomment-501",
+        "discussioncomment-502",
+    ]
+    assert (
+        messages[0].conversation.kind == "discussion"
+        and messages[0].native["category"] == "Ideas"
+    )
+    assert messages[2].reply_to == messages[2].thread_root == "discussioncomment-501"
+    assert messages[1].edited_at is not None and messages[1].author.authority == "MEMBER"
+
+
+def test_neither_an_issue_nor_a_discussion_is_not_found():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/9", (404, {"message": "Not Found"})),
+        (
+            "POST",
+            "graphql",
+            (
+                200,
+                {
+                    "data": {"repository": {"discussion": None}},
+                    "errors": [{"type": "NOT_FOUND", "message": "Could not resolve"}],
+                },
+            ),
+        ),
+    )
+    with pytest.raises(ChannelError) as caught:
+        _read(gh, f"github:{REPO}#9")
+    assert caught.value.kind == "not_found" and "#9" in str(caught.value)
+
+
+def test_reading_a_repository_lists_its_open_issues_oldest_first():
+    gh = ScriptedGh(
+        WHOAMI,
+        (
+            "GET",
+            rf"repos/{REPO}/issues\?state=open&sort=created&direction=desc&per_page=2",
+            (
+                200,
+                [
+                    _issue(3, created="2026-09-11T09:00:00Z", pr=True),
+                    _issue(2, created="2026-09-11T08:00:00Z"),
+                ],
+            ),
+        ),
+    )
+    messages = _read(gh, f"github:{REPO}", limit=2)
+    assert [m.conversation.encoded for m in messages] == [
+        f"github:{REPO}#2",
+        f"github:{REPO}#3",
+    ]
+    assert messages[1].conversation.kind == "pull_request"
+
+
+def test_dry_runs_run_no_gh_command_at_all():
+    gh = ScriptedGh()
+    registry = {"github": GitHub(run=gh)}
+    results = [
+        correspond.send(f"github:{REPO}#1", "a comment", dry_run=True, registry=registry),
+        correspond.send(
+            f"github:{REPO}", "body", title="A new issue", dry_run=True, registry=registry
+        ),
+        correspond.edit(
+            f"github:{REPO}#1",
+            "issuecomment-11",
+            "new text",
+            dry_run=True,
+            registry=registry,
+        ),
+        correspond.react(
+            f"github:{REPO}#1", "issue-1", "eyes", dry_run=True, registry=registry
+        ),
+    ]
+    assert all(r.ok and r.dry_run for r in results) and gh.calls == []
+    assert (
+        results[1].plan["action"] == "open an issue"
+        and "discussion" in results[0].plan["request"]
+    )
+
+
+def test_a_comment_travels_on_stdin_never_on_the_command_line():
+    text = "a comment with 'quotes' and --flags"
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        (
+            "POST",
+            rf"repos/{REPO}/issues/1/comments",
+            (201, {"id": 99, "html_url": "https://example.org/c99"}),
+        ),
+    )
+    result = correspond.send(
+        f"github:{REPO}#1", text, registry={"github": GitHub(run=gh)}
+    )
+    assert (
+        result.ok
+        and result.message_id == "issuecomment-99"
+        and result.account.id == "example-bot"
+    )
+    post = next(c for c in gh.calls if c["method"] == "POST")
+    assert post["payload"] == {"body": text} and all(
+        text not in arg for arg in post["argv"]
+    )
+
+
+def test_opening_an_issue_needs_a_title():
+    gh = ScriptedGh(
+        WHOAMI,
+        (
+            "POST",
+            rf"repos/{REPO}/issues",
+            (201, {"number": 7, "html_url": "https://example.org/7"}),
+        ),
+    )
+    registry = {"github": GitHub(run=gh)}
+    untitled = correspond.send(f"github:{REPO}", "body", registry=registry)
+    assert (untitled.ok, untitled.error_kind) == (False, "validation") and gh.calls == []
+    opened = correspond.send(
+        f"github:{REPO}", "body", title="Export drops a row", registry=registry
+    )
+    assert opened.conversation == f"github:{REPO}#7" and opened.message_id == "issue-7"
+
+
+def test_commenting_on_a_discussion_and_replying_to_a_comment():
+    def graphql(payload):
+        query = payload["query"]
+        if "addDiscussionComment" in query:
+            return 200, {
+                "data": {
+                    "addDiscussionComment": {
+                        "comment": {"databaseId": 777, "url": "https://example.org/777"}
+                    }
+                }
+            }
+        if "comments(" in query:
+            return 200, _discussion([_post(501, replies=[])])
+        return 200, {"data": {"repository": {"discussion": {"id": "D_node5"}}}}
+
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
+        ("POST", "graphql", graphql),
+    )
+    result = correspond.send(
+        f"github:{REPO}#5",
+        "a reply",
+        reply_to="discussioncomment-501",
+        registry={"github": GitHub(run=gh)},
+    )
+    assert result.ok and result.message_id == "discussioncomment-777"
+    mutation = next(
+        c["payload"]
+        for c in gh.calls
+        if c["payload"] and "addDiscussionComment" in c["payload"]["query"]
+    )
+    assert mutation["variables"] == {
+        "discussionId": "D_node5",
+        "body": "a reply",
+        "replyToId": "DC_node501",
+    }
+
+
+def test_replying_to_an_issue_comment_is_refused_by_name():
+    gh = ScriptedGh(WHOAMI, ("GET", rf"repos/{REPO}/issues/1", (200, _issue())))
+    with pytest.raises(NotSupported, match="reply"):
+        correspond.send(
+            f"github:{REPO}#1",
+            "hi",
+            reply_to="issuecomment-11",
+            registry={"github": GitHub(run=gh)},
+        )
+
+
+def test_edit_and_react_use_the_endpoint_for_each_kind_of_message():
+    gh = ScriptedGh(
+        WHOAMI,
+        (
+            "PATCH",
+            rf"repos/{REPO}/issues/comments/11",
+            (200, {"html_url": "https://example.org/c11"}),
+        ),
+        (
+            "PATCH",
+            rf"repos/{REPO}/issues/1",
+            (200, {"html_url": "https://example.org/i1"}),
+        ),
+        ("POST", rf"repos/{REPO}/issues/comments/11/reactions", (201, {"content": "+1"})),
+        ("POST", rf"repos/{REPO}/issues/1/reactions", (201, {"content": "eyes"})),
+    )
+    registry = {"github": GitHub(run=gh)}
+    assert correspond.edit(
+        f"github:{REPO}#1", "issuecomment-11", "fixed", registry=registry
+    ).url.endswith("c11")
+    assert correspond.edit(
+        f"github:{REPO}#1", "issue-1", "fixed body", registry=registry
+    ).ok
+    assert correspond.react(
+        f"github:{REPO}#1", "issuecomment-11", "+1", registry=registry
+    ).ok
+    assert correspond.react(f"github:{REPO}#1", "issue-1", "eyes", registry=registry).ok
+    assert [c["payload"] for c in gh.calls if c["method"] != "GET"] == [
+        {"body": "fixed"},
+        {"body": "fixed body"},
+        {"content": "+1"},
+        {"content": "eyes"},
+    ]
+    refused = correspond.react(f"github:{REPO}#1", "issue-1", "party", registry=registry)
+    bad_id = correspond.edit(f"github:{REPO}#1", "comment-11", "x", registry=registry)
+    assert (refused.error_kind, bad_id.error_kind) == ("validation", "validation")
+
+
+def test_editing_and_reacting_in_a_discussion_go_through_graphql():
+    def graphql(payload):
+        query = payload["query"]
+        if "updateDiscussionComment" in query:
+            return 200, {
+                "data": {
+                    "updateDiscussionComment": {
+                        "comment": {"url": "https://example.org/501"}
+                    }
+                }
+            }
+        if "addReaction" in query:
+            return 200, {"data": {"addReaction": {"reaction": {"content": "HEART"}}}}
+        return 200, _discussion([_post(501, replies=[])])
+
+    gh = ScriptedGh(WHOAMI, ("POST", "graphql", graphql))
+    registry = {"github": GitHub(run=gh)}
+    assert (
+        correspond.edit(
+            f"github:{REPO}#5", "discussioncomment-501", "fixed", registry=registry
+        ).url
+        == "https://example.org/501"
+    )
+    assert correspond.react(
+        f"github:{REPO}#5", "discussioncomment-501", "heart", registry=registry
+    ).ok
+    reaction = next(
+        c["payload"]
+        for c in gh.calls
+        if c["payload"] and "addReaction" in c["payload"]["query"]
+    )
+    assert reaction["variables"] == {"id": "DC_node501", "content": "HEART"}
+    no_number = correspond.edit(
+        f"github:{REPO}", "discussioncomment-501", "x", registry=registry
+    )
+    assert no_number.error_kind == "validation"
+
+
+@pytest.mark.parametrize(
+    "status, body, headers, kind, retry_after",
+    [
+        (
+            403,
+            {"message": "You have exceeded a secondary rate limit"},
+            {},
+            "rate_limited",
+            60.0,
+        ),
+        (429, {"message": "Too many"}, {"Retry-After": "7"}, "rate_limited", 7.0),
+        (401, {"message": "Bad credentials"}, {}, "auth", None),
+        (403, {"message": "Resource not accessible"}, {}, "permission", None),
+        (404, {"message": "Not Found"}, {}, "not_found", None),
+        (422, {"message": "Validation Failed"}, {}, "validation", None),
+        (502, {"message": "Bad gateway"}, {}, "unavailable", None),
+    ],
+)
+def test_platform_errors_become_classified_results(
+    status, body, headers, kind, retry_after
+):
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        ("POST", rf"repos/{REPO}/issues/1/comments", (status, body, headers)),
+    )
+    result = correspond.send(
+        f"github:{REPO}#1", "hello", registry={"github": GitHub(run=gh)}
+    )
+    assert (result.ok, result.error_kind) == (False, kind)
+    assert result.retryable == (kind in ("rate_limited", "unavailable"))
+    assert result.retry_after == retry_after
+
+
+def test_an_exhausted_primary_rate_limit_waits_until_the_reset(monkeypatch):
+    monkeypatch.setattr("time.time", lambda: 1_000.0)
+    gh = ScriptedGh(
+        WHOAMI,
+        (
+            "GET",
+            rf"repos/{REPO}/issues/1",
+            (
+                403,
+                {"message": "API rate limit exceeded"},
+                {"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "1090"},
+            ),
+        ),
+    )
+    with pytest.raises(ChannelError) as caught:
+        GitHub(run=gh).read(GitHub().parse_ref(f"{REPO}#1"))
+    assert caught.value.kind == "rate_limited" and caught.value.retry_after == 90.0
+
+
+def test_a_missing_or_logged_out_gh_says_what_to_do():
+    def missing(argv, **kwargs):
+        raise FileNotFoundError("gh")
+
+    def logged_out(argv, **kwargs):
+        return subprocess.CompletedProcess(
+            argv,
+            4,
+            stdout="",
+            stderr="To get started with GitHub CLI, please run:  gh auth login",
+        )
+
+    result = correspond.send(
+        f"github:{REPO}#1", "hi", registry={"github": GitHub(run=missing)}
+    )
+    assert result.error_kind == "unavailable" and "cli.github.com" in result.error
+    with pytest.raises(ChannelError) as caught:
+        GitHub(run=logged_out).read(GitHub().parse_ref(f"{REPO}#1"))
+    assert caught.value.kind == "auth" and "gh auth login" in str(caught.value)
+
+
+def test_polling_a_repository_orders_new_issues_and_comment_activity_and_moves_the_cursor():
+    date = {"Date": "Fri, 11 Sep 2026 10:00:00 GMT"}
+    gh = ScriptedGh(
+        WHOAMI,
+        (
+            "GET",
+            rf"repos/{REPO}/issues/comments\?sort=updated&direction=asc&since=2026-09-11T08:00:00Z&per_page=100&page=1",
+            (
+                200,
+                [
+                    _comment(21, issue=3, created="2026-09-11T09:00:00Z"),
+                    _comment(
+                        22,
+                        issue=2,
+                        created="2026-09-11T07:00:00Z",
+                        updated="2026-09-11T09:30:00Z",
+                    ),
+                ],
+                date,
+            ),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since=2026-09-11T08:00:00Z&per_page=100&page=1",
+            (
+                200,
+                [
+                    _issue(4, created="2026-09-11T08:30:00Z"),
+                    _issue(2, created="2026-09-11T07:00:00Z"),
+                ],
+            ),
+        ),
+    )
+    cursors = {f"github:{REPO}": "2026-09-11T08:00:00Z"}
+    events = list(
+        correspond.listen(
+            f"github:{REPO}", cursors=cursors, registry={"github": GitHub(run=gh)}
+        )
+    )
+    assert [(e.kind, e.message.id) for e in events] == [
+        ("message.created", "issue-4"),
+        ("message.created", "issuecomment-21"),
+        ("message.updated", "issuecomment-22"),
+    ]
+    assert len({e.delivery_id for e in events}) == 3
+    assert events[1].message.conversation.encoded == f"github:{REPO}#3"
+    assert cursors[f"github:{REPO}"] == "2026-09-11T09:59:55Z"
+
+
+def test_listening_to_a_discussion_is_refused_by_name():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
+        (
+            "POST",
+            "graphql",
+            (200, {"data": {"repository": {"discussion": {"id": "D_node5"}}}}),
+        ),
+    )
+    with pytest.raises(NotSupported, match="listen to a discussion"):
+        correspond.listen(
+            f"github:{REPO}#5", cursors={}, registry={"github": GitHub(run=gh)}
+        )
+
+
+def test_webhook_deliveries_are_crypto_when_the_signature_matches(monkeypatch):
+    body = b'{"action": "opened"}'
+    registry = {"github": GitHub(run=ScriptedGh())}
+    with pytest.raises(MissingRequirement, match="GITHUB_WEBHOOK_SECRET"):
+        correspond.verify(
+            "github", {"X-Hub-Signature-256": "sha256=00"}, body, registry=registry
+        )
+    monkeypatch.setenv("GITHUB_WEBHOOK_SECRET", "an-example-webhook-secret")
+    good = {
+        "X-Hub-Signature-256": signature("an-example-webhook-secret", body),
+        "X-GitHub-Delivery": "d-1",
+    }
+    assert (
+        correspond.verify("github", good, body, registry=registry).grade.value == "crypto"
+    )
+    tampered = correspond.verify("github", good, body + b" ", registry=registry)
+    assert (
+        tampered.grade.value == "forged" and tampered.evidence["signature"] == "mismatch"
+    )
+    missing = correspond.verify("github", {}, body, registry=registry)
+    assert missing.grade.value == "forged" and missing.evidence["signature"] == "missing"
+    assert (
+        correspond.verify(
+            "github", {"x-hub-signature-256": "sha256=é"}, body, registry=registry
+        ).grade.value
+        == "forged"
+    )
+
+
+def test_replies_are_parsed_whatever_the_line_endings():
+    reply = _parse_reply('HTTP/2.0 200 OK\r\nDate: today\r\n\r\n{"body": "a\\n\\nb"}')
+    assert (
+        reply.status == 200
+        and reply.headers["date"] == "today"
+        and reply.json() == {"body": "a\n\nb"}
+    )
+    assert _parse_reply("not http") is None
+
+
+def test_references_are_validated_and_normalised():
+    github = GitHub()
+    assert github.parse_ref("OctoCat/Hello-World").kind == "repository"
+    for bad in ("octocat", "octocat/hello-world#0", "-bad/repo", "octocat/hello world"):
+        with pytest.raises(correspond.InvalidRef):
+            github.parse_ref(bad)
