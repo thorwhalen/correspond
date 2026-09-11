@@ -104,7 +104,9 @@ The rate limit applies per visitor address. uvicorn already reports the visitor 
 ```python
 from correspond.channels.webinbox import sign_identity
 
-identity = sign_identity(secret, "example-site", user_id, name=display_name)  # put this in the page
+identity = sign_identity(
+    secret, "example-site", user_id, name=display_name
+)  # put this in the page
 ```
 
 Any server language can do the same: HMAC-SHA256, hex, over the lines `v1`, site, issued-at (Unix seconds), user id, name, email. An invalid or expired signature is refused (401) and nothing is stored. The collector also enforces the origin allowlist (with CORS preflight), a per-client rate limit, and size and media-type limits.
@@ -116,10 +118,12 @@ from correspond import metadata_rule, route
 
 decision = route(
     message,
-    bindings={"github:example/app?labels=partner:*": "subject:app"},  # 1. where it arrived
-    threads={"github:example/app#12": "case:7"},                      # 2. what it continues
-    rules=[metadata_rule("queue:urgent", labels="priority:high")],     # 3. what it carries
-    classifier=None,                                                   # 4. optional, last
+    bindings={
+        "github:example/app?labels=partner:*": "subject:app"
+    },  # 1. where it arrived
+    threads={"github:example/app#12": "case:7"},  # 2. what it continues
+    rules=[metadata_rule("queue:urgent", labels="priority:high")],  # 3. what it carries
+    classifier=None,  # 4. optional, last
 )
 decision.target, decision.rule, decision.reason
 ```
@@ -134,13 +138,17 @@ import correspond
 messages = correspond.read("github:octocat/hello-world#1")
 messages[0].author.handle, messages[0].authenticity.grade
 
-result = correspond.send("email:someone@example.org", "It is fixed.", title="The export", dry_run=True)
+result = correspond.send(
+    "email:someone@example.org", "It is fixed.", title="The export", dry_run=True
+)
 result.plan
 
 for event in correspond.listen("webinbox:example-site"):
     ...
 
-correspond.register_channel(MyChannel())  # anything with name, capabilities, parse_ref and the operations it has
+correspond.register_channel(
+    MyChannel()
+)  # anything with name, capabilities, parse_ref and the operations it has
 ```
 
 `correspond.testing.FakeChannel` is an in-memory channel for tests, and `python -m correspond.testing` runs the CLI with it registered as `fake`.
