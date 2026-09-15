@@ -581,7 +581,9 @@ def edit(
         before_send=before_send,
         registry=registry,
         message_id=str(message_id),
-        write=lambda rehearse: adapter.edit(ref, str(message_id), draft, dry_run=rehearse),
+        write=lambda rehearse: adapter.edit(
+            ref, str(message_id), draft, dry_run=rehearse
+        ),
     )
 
 
