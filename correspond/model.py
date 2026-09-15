@@ -30,7 +30,13 @@ from datetime import datetime, timezone
 from enum import StrEnum
 from typing import Any
 
-from correspond.errors import ERROR_KINDS, ChannelError, CorrespondError, InvalidRef
+from correspond.errors import (
+    CHECK_KINDS,
+    ERROR_KINDS,
+    ChannelError,
+    CorrespondError,
+    InvalidRef,
+)
 
 __all__ = [
     "ACTS_AS",
@@ -909,10 +915,9 @@ class SendResult:
     retry_after: float | None = None
 
     def __post_init__(self):
-        if self.error_kind is not None and self.error_kind not in ERROR_KINDS:
-            raise ValueError(
-                f"error_kind must be one of {ERROR_KINDS}, not {self.error_kind!r}"
-            )
+        kinds = ERROR_KINDS + CHECK_KINDS
+        if self.error_kind is not None and self.error_kind not in kinds:
+            raise ValueError(f"error_kind must be one of {kinds}, not {self.error_kind!r}")
         object.__setattr__(self, "plan", dict(self.plan))
 
     @classmethod

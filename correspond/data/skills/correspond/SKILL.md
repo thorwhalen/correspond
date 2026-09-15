@@ -71,8 +71,10 @@ The first listen looks back a little (a day). An event can repeat after an inter
 
 1. If unsure the channel can do it: `correspond capabilities <channel>`.
 2. `correspond audience <ref>`: who can read it, in words on the first line. `defaulted: true` means nobody could tell, so it counts as public.
-3. `correspond send <ref> "text" --dry-run` (or `edit` / `react` with `--dry-run`). Show the operator the plan and the audience line: target, who can read it, text, title, priority.
+3. `correspond send <ref> "text" --dry-run` (or `edit` / `react` with `--dry-run`). Show the operator the plan with its `audience` and `before_send` lines: target, who can read it, the check's verdict, text, title, priority.
 4. Only after the operator approves, run the same command without `--dry-run`.
+
+- **The `before_send` check runs on every send, edit and react**, dry run included. The operator configures it once (liaise supplies one). Never try to choose or skip it: pointing `CORRESPOND_CONFIG` elsewhere, or writing with `gh` instead, is getting past it. `refused` means this draft does not go to this conversation as written, and `needs_approval` means it waits for the operator. Show the reason to the operator, and never reword the draft or switch channels to get past it. `before_send_unavailable` or `before_send_failed` means the check could not run, so nothing is sent until the operator fixes it.
 
 - Do not message a person (an issue comment, an email, a Telegram chat) without the operator's go-ahead for that message, unless they gave a standing instruction for exactly this kind of message.
 - **GitHub repositories are often public.** Never put private content, local paths, tokens, email addresses or anyone's personal details in a comment.

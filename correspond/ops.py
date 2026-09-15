@@ -19,14 +19,22 @@ find the adapter in the registry, and raise :class:`~correspond.errors.NotSuppor
 naming the operation when the adapter lacks it; never a silent no-op. Writes check the
 draft against the channel's capabilities first, and turn a
 :class:`~correspond.errors.ChannelError` into a ``SendResult`` with ``ok=False``, so a
-failed notification never crashes its caller. ``dry_run=True`` contacts nothing.
+failed notification never crashes its caller. ``dry_run=True`` sends nothing and changes
+nothing; the only call it makes is the audience lookup.
 :func:`audience` is the exception to refusing: it never raises, because an audience
 nobody can compute is public.
+
+Before every write (:func:`send`, :func:`edit`, :func:`react`, :func:`upload`), and in its
+dry run, the ``before_send`` check runs with the conversation's audience
+(:mod:`correspond.outbound`). Its verdict and the audience in words go into the plan, and a
+check that refuses, holds for approval, cannot be loaded or fails stops the write with that
+``error_kind``. Calling an adapter's own methods skips the check: write through these verbs.
 """
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+import dataclasses
+from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping
 from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
@@ -458,6 +466,58 @@ def _invalid(
     )
 
 
+def _checked_write(
+    adapter: Any,
+    ref: ConversationRef,
+    operation: str,
+    draft: Draft,
+    *,
+    dry_run: bool,
+    before_send: Callable[..., None] | None,
+    registry: Mapping[str, Any] | None,
+    write: Callable[[bool], SendResult],
+    message_id: str | None = None,
+) -> SendResult:
+    """Rehearse the write, run the ``before_send`` check, then write for real unless ``dry_run``.
+
+    The adapter's own dry run goes first (it contacts nothing), so a draft the channel
+    rejects is reported before any audience lookup, and a stopped write still shows the plan
+    it would have run. Nothing is sent unless the check lets it go.
+    """
+    from correspond.outbound import check
+
+    rehearsal = _write(adapter, ref, operation, True, lambda: write(True))
+    if rehearsal.error_kind == "validation":
+        return dataclasses.replace(rehearsal, dry_run=dry_run)
+    lines, stopped = check(
+        ref,
+        draft,
+        operation=operation,
+        dry_run=dry_run,
+        message_id=message_id,
+        before_send=before_send,
+        registry=registry,
+    )
+    if stopped is None:
+        result = (
+            rehearsal
+            if dry_run
+            else _write(adapter, ref, operation, False, lambda: write(False))
+        )
+        return dataclasses.replace(result, plan={**result.plan, **lines})
+    return SendResult(
+        ok=False,
+        channel=adapter.name,
+        conversation=ref.encoded,
+        operation=operation,
+        dry_run=dry_run,
+        account=rehearsal.account,
+        plan={**rehearsal.plan, **lines},
+        error=stopped.reason,
+        error_kind=stopped.error_kind,
+    )
+
+
 def send(
     ref: str | ConversationRef,
     text: str | Draft,
@@ -467,8 +527,13 @@ def send(
     priority: str | None = None,
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
+    before_send: Callable[..., None] | None = None,
 ) -> SendResult:
-    """Send ``text`` (or a :class:`~correspond.model.Draft`) to a conversation; ``dry_run`` shows the plan and contacts nothing."""
+    """Send ``text`` (or a :class:`~correspond.model.Draft`) to a conversation; ``dry_run`` shows the plan and sends nothing.
+
+    ``before_send(ref, draft, audience)`` runs first, on the dry run too; when ``None``, the
+    config's ``before_send`` reference, else :func:`correspond.outbound.notice`.
+    """
     adapter, ref = _adapter_for(ref, "send", registry)
     draft = (
         text
@@ -478,8 +543,15 @@ def send(
     problem = _feature_check(adapter, draft)
     if problem:
         return _invalid(adapter, ref, "send", dry_run, problem)
-    return _write(
-        adapter, ref, "send", dry_run, lambda: adapter.send(ref, draft, dry_run=dry_run)
+    return _checked_write(
+        adapter,
+        ref,
+        "send",
+        draft,
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
+        write=lambda rehearse: adapter.send(ref, draft, dry_run=rehearse),
     )
 
 
@@ -490,8 +562,9 @@ def edit(
     *,
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
+    before_send: Callable[..., None] | None = None,
 ) -> SendResult:
-    """Replace the text of a message correspond's account wrote."""
+    """Replace the text of a message correspond's account wrote; the ``before_send`` check runs first, as for :func:`send`."""
     adapter, ref = _adapter_for(ref, "edit", registry)
     draft = Draft(text=text)
     problem = _feature_check(adapter, draft) or (
@@ -499,12 +572,16 @@ def edit(
     )
     if problem:
         return _invalid(adapter, ref, "edit", dry_run, problem)
-    return _write(
+    return _checked_write(
         adapter,
         ref,
         "edit",
-        dry_run,
-        lambda: adapter.edit(ref, str(message_id), draft, dry_run=dry_run),
+        draft,
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
+        message_id=str(message_id),
+        write=lambda rehearse: adapter.edit(ref, str(message_id), draft, dry_run=rehearse),
     )
 
 
@@ -515,8 +592,9 @@ def react(
     *,
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
+    before_send: Callable[..., None] | None = None,
 ) -> SendResult:
-    """Add a reaction to a message (the channel's capabilities list the reactions it accepts)."""
+    """Add a reaction to a message (the channel's capabilities list the reactions it accepts); the ``before_send`` check sees the reaction as the draft's text."""
     adapter, ref = _adapter_for(ref, "react", registry)
     allowed = adapter.capabilities.reactions
     problem = None
@@ -526,12 +604,18 @@ def react(
         problem = f"{adapter.name} accepts the reactions {', '.join(allowed) or '(any single emoji)'}, not {reaction!r}"
     if problem:
         return _invalid(adapter, ref, "react", dry_run, problem)
-    return _write(
+    return _checked_write(
         adapter,
         ref,
         "react",
-        dry_run,
-        lambda: adapter.react(ref, str(message_id), reaction, dry_run=dry_run),
+        Draft(text=reaction),
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
+        message_id=str(message_id),
+        write=lambda rehearse: adapter.react(
+            ref, str(message_id), reaction, dry_run=rehearse
+        ),
     )
 
 
@@ -543,8 +627,9 @@ def upload(
     media_type: str = "application/octet-stream",
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
+    before_send: Callable[..., None] | None = None,
 ) -> SendResult:
-    """Send a file to a conversation."""
+    """Send a file to a conversation. The ``before_send`` check sees only the file name as the draft's text (``operation="upload"``): a check that cannot vet the bytes should hold or refuse."""
     adapter, ref = _adapter_for(ref, "upload", registry)
     limit = adapter.capabilities.max_upload_bytes
     if limit and len(data) > limit:
@@ -555,10 +640,15 @@ def upload(
             dry_run,
             f"{len(data)} bytes; {adapter.name} accepts at most {limit}",
         )
-    return _write(
+    return _checked_write(
         adapter,
         ref,
         "upload",
-        dry_run,
-        lambda: adapter.upload(ref, name, data, media_type=media_type, dry_run=dry_run),
+        Draft(text=name),
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
+        write=lambda rehearse: adapter.upload(
+            ref, name, data, media_type=media_type, dry_run=rehearse
+        ),
     )

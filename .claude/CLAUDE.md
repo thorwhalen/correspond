@@ -1,4 +1,4 @@
-Seams: (1) adapters `registry=` = lazily built `xdol.Registry` of stdlib adapters · (2) platform transport `run=` / `http=` / `imap=` + `smtp=` = subprocess / urllib / imaplib + smtplib · (3) state `cursors=` / `store=` / `blobs=` = dol files under the data root · (4) last routing rule `classifier=` = none (the rule chain decides).
+Seams: (1) adapters `registry=` = lazily built `xdol.Registry` of stdlib adapters · (2) platform transport `run=` / `http=` / `imap=` + `smtp=` = subprocess / urllib / imaplib + smtplib · (3) state `cursors=` / `store=` / `blobs=` = dol files under the data root · (4) last routing rule `classifier=` = none (the rule chain decides) · (5) outbound check `before_send=` = the config's `module:attr`, else `correspond.outbound:notice` (the audience in the plan).
 Surfaces planned for v0.1: CLI (`cw` over `correspond.tools`), shipped `correspond` skill, MCP over stdio (`py2mcp` string refs, `[mcp]` extra). Asked, not built: Claude Code channel server, remote MCP / HTTP.
 Rationale and the provisional defaults: the "v0.1 architecture: seams and surfaces" Discussion.
 
@@ -12,6 +12,7 @@ Rationale and the provisional defaults: the "v0.1 architecture: seams and surfac
 | 2 | how an adapter reaches its platform: `run=` (gh, macOS notifiers), `http=` (ntfy, Telegram), `imap=` / `smtp=` (email) | `subprocess.run`, `urllib.request`, `imaplib` / `smtplib` | the scripted fakes in the tests; `imap-tools` behind `imap=` / `smtp=` (the GitHub adapter parses `gh api` output, so a GitHub App through `githubkit` is a second GitHub adapter added at seam 1, not a `run=` swap) |
 | 3 | where state lives: `cursors=` (listen), `store=` / `blobs=` (web inbox, Telegram log) | `dol` files under `~/.local/share/correspond/<kind>/` (`CORRESPOND_DATA_DIR` overrides the root) | a `dict` (tests); `s3dol` for a server's web inbox |
 | 4 | the last routing rule: `classifier=` on `route` | none: bindings → thread continuity → metadata decide, otherwise the message is unrouted | liaise's "is this message about subject X?" classifier |
+| 5 | the check every write runs before it leaves: `before_send=` on `send` / `edit` / `react` / `upload`, called as `(ref, draft, audience, *, operation, dry_run, message_id)` (added by liaise discussion 32, slice C3) | the config's top-level `before_send = "module:attr"`, imported lazily; unset → `correspond.outbound:notice` (lets it go, the audience in the plan); unloadable → every write stops (`before_send_unavailable`) | `liaise.vet:before_send` (liaise slice L4) |
 
 ```
 Surfaces for v0.1: CLI + shipped skill + MCP stdio (write tools only with --allow-send); Claude Code channel server and remote MCP/HTTP asked, not built
