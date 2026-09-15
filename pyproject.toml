@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "correspond"
-version = "0.0.4"
+version = "0.0.5"
 description = "A channel facade for AI agents: read, listen, write and identify the sender over GitHub, email, push notifications, Telegram and a web inbox."
 readme = "README.md"
 requires-python = ">=3.11"
