@@ -64,7 +64,10 @@
       CorrespondError
       InvalidRef
       MissingRequirement
+      NeedsApproval
       NotSupported
+      Refused
+      Stopped
       UnknownChannel
    
 .. rubric:: Modules
@@ -78,6 +81,7 @@
    mcp
    model
    ops
+   outbound
    registry
    render
    routing

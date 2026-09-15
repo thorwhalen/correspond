@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="_static/documentation_options.js?v=8c5712d9"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.2" />
+  <meta name="docsearch:version" content="0.0.4" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -777,12 +777,18 @@ window.runMermaid = runMermaid;</script>
 <h2 id="B">B</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_autosummary/correspond.outbound.html#correspond.outbound.BeforeSend">BeforeSend (in module correspond.outbound)</a>
+</li>
+      <li><a href="_autosummary/correspond.errors.html#correspond.errors.BeforeSendFailed">BeforeSendFailed</a>
+</li>
+      <li><a href="_autosummary/correspond.errors.html#correspond.errors.BeforeSendUnavailable">BeforeSendUnavailable</a>
+</li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/correspond.routing.html#correspond.routing.binding_matches">binding_matches() (in module correspond.routing)</a>
 </li>
       <li><a href="_autosummary/correspond.channels.webinbox.html#correspond.channels.webinbox.WebInbox.blobs">blobs (correspond.channels.webinbox.WebInbox property)</a>
 </li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/correspond.registry.html#correspond.registry.build_registry">build_registry() (in module correspond.registry)</a>
 </li>
       <li><a href="_autosummary/correspond.stores.html#correspond.stores.bytes_store">bytes_store() (in module correspond.stores)</a>
@@ -846,13 +852,19 @@ window.runMermaid = runMermaid;</script>
 </li>
       </ul></li>
       <li><a href="_autosummary/correspond.stores.html#correspond.stores.SafeKeys.check">check() (correspond.stores.SafeKeys static method)</a>
+
+      <ul>
+        <li><a href="_autosummary/correspond.outbound.html#correspond.outbound.check">(in module correspond.outbound)</a>
 </li>
+      </ul></li>
       <li><a href="_autosummary/correspond.html#correspond.check_binding">check_binding() (in module correspond)</a>
 
       <ul>
         <li><a href="_autosummary/correspond.routing.html#correspond.routing.check_binding">(in module correspond.routing)</a>
 </li>
       </ul></li>
+      <li><a href="_autosummary/correspond.errors.html#correspond.errors.CHECK_KINDS">CHECK_KINDS (in module correspond.errors)</a>
+</li>
       <li><a href="_autosummary/correspond.html#correspond.check_requirements">check_requirements() (in module correspond)</a>
 
       <ul>
@@ -860,6 +872,8 @@ window.runMermaid = runMermaid;</script>
 </li>
       </ul></li>
       <li><a href="_autosummary/correspond.model.html#correspond.model.CLASS_WORDS">CLASS_WORDS (in module correspond.model)</a>
+</li>
+      <li><a href="_autosummary/correspond.outbound.html#correspond.outbound.CONFIG_KEY">CONFIG_KEY (in module correspond.outbound)</a>
 </li>
       <li><a href="_autosummary/correspond.settings.html#correspond.settings.config_path">config_path() (in module correspond.settings)</a>
 </li>
@@ -962,6 +976,13 @@ window.runMermaid = runMermaid;</script>
 </li>
       </ul></li>
       <li>
+    correspond.outbound
+
+      <ul>
+        <li><a href="_autosummary/correspond.outbound.html#module-correspond.outbound">module</a>
+</li>
+      </ul></li>
+      <li>
     correspond.registry
 
       <ul>
@@ -1022,12 +1043,14 @@ window.runMermaid = runMermaid;</script>
   <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/correspond.settings.html#correspond.settings.data_dir">data_dir() (in module correspond.settings)</a>
 </li>
-      <li><a href="_autosummary/correspond.testing.html#correspond.testing.demo_channel">demo_channel() (in module correspond.testing)</a>
+      <li><a href="_autosummary/correspond.outbound.html#correspond.outbound.DEFAULT">DEFAULT (in module correspond.outbound)</a>
 </li>
-      <li><a href="_autosummary/correspond.testing.html#correspond.testing.demo_message">demo_message() (in module correspond.testing)</a>
+      <li><a href="_autosummary/correspond.testing.html#correspond.testing.demo_channel">demo_channel() (in module correspond.testing)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_autosummary/correspond.testing.html#correspond.testing.demo_message">demo_message() (in module correspond.testing)</a>
+</li>
       <li><a href="_autosummary/correspond.html#correspond.Draft">Draft (class in correspond)</a>
 
       <ul>
@@ -1324,6 +1347,8 @@ window.runMermaid = runMermaid;</script>
 </li>
         <li><a href="_autosummary/correspond.ops.html#module-correspond.ops">correspond.ops</a>
 </li>
+        <li><a href="_autosummary/correspond.outbound.html#module-correspond.outbound">correspond.outbound</a>
+</li>
         <li><a href="_autosummary/correspond.registry.html#module-correspond.registry">correspond.registry</a>
 </li>
         <li><a href="_autosummary/correspond.render.html#module-correspond.render">correspond.render</a>
@@ -1345,10 +1370,14 @@ window.runMermaid = runMermaid;</script>
 <h2 id="N">N</h2>
 <table style="width: 100%" class="indextable genindextable"><tr>
   <td style="width: 33%; vertical-align: top;"><ul>
-      <li><a href="_autosummary/correspond.errors.html#correspond.errors.NotSupported">NotSupported</a>, <a href="_autosummary/correspond.html#correspond.NotSupported">[1]</a>
+      <li><a href="_autosummary/correspond.errors.html#correspond.errors.NeedsApproval">NeedsApproval</a>, <a href="_autosummary/correspond.html#correspond.NeedsApproval">[1]</a>
+</li>
+      <li><a href="_autosummary/correspond.outbound.html#correspond.outbound.notice">notice() (in module correspond.outbound)</a>
 </li>
   </ul></td>
   <td style="width: 33%; vertical-align: top;"><ul>
+      <li><a href="_autosummary/correspond.errors.html#correspond.errors.NotSupported">NotSupported</a>, <a href="_autosummary/correspond.html#correspond.NotSupported">[1]</a>
+</li>
       <li><a href="_autosummary/correspond.channels.ntfy.html#correspond.channels.ntfy.Ntfy">Ntfy (class in correspond.channels.ntfy)</a>
 </li>
   </ul></td>
@@ -1469,17 +1498,19 @@ window.runMermaid = runMermaid;</script>
         <li><a href="_autosummary/correspond.tools.html#correspond.tools.read">(in module correspond.tools)</a>
 </li>
       </ul></li>
-  </ul></td>
-  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/correspond.html#correspond.Reader">Reader (class in correspond)</a>
 
       <ul>
         <li><a href="_autosummary/correspond.ops.html#correspond.ops.Reader">(class in correspond.ops)</a>
 </li>
       </ul></li>
+  </ul></td>
+  <td style="width: 33%; vertical-align: top;"><ul>
       <li><a href="_autosummary/correspond.tools.html#correspond.tools.ref">ref() (in module correspond.tools)</a>
 </li>
       <li><a href="_autosummary/correspond.mcp.html#correspond.mcp.refs">refs() (in module correspond.mcp)</a>
+</li>
+      <li><a href="_autosummary/correspond.errors.html#correspond.errors.Refused">Refused</a>, <a href="_autosummary/correspond.html#correspond.Refused">[1]</a>
 </li>
       <li><a href="_autosummary/correspond.html#correspond.register_channel">register_channel() (in module correspond)</a>
 
@@ -1495,8 +1526,12 @@ window.runMermaid = runMermaid;</script>
 </li>
       <li><a href="_autosummary/correspond.channels.webinbox.html#correspond.channels.webinbox.requirements_problems">requirements_problems() (in module correspond.channels.webinbox)</a>
 </li>
-      <li><a href="_autosummary/correspond.registry.html#correspond.registry.resolve">resolve() (in module correspond.registry)</a>
+      <li><a href="_autosummary/correspond.outbound.html#correspond.outbound.resolve">resolve() (in module correspond.outbound)</a>
+
+      <ul>
+        <li><a href="_autosummary/correspond.registry.html#correspond.registry.resolve">(in module correspond.registry)</a>
 </li>
+      </ul></li>
       <li><a href="_autosummary/correspond.html#correspond.route">route() (in module correspond)</a>
 
       <ul>
@@ -1566,6 +1601,8 @@ window.runMermaid = runMermaid;</script>
       <li><a href="_autosummary/correspond.channels.webinbox.html#correspond.channels.webinbox.Site">Site (class in correspond.channels.webinbox)</a>
 </li>
       <li><a href="_autosummary/correspond.channels.webinbox.html#correspond.channels.webinbox.site_secret_env">site_secret_env() (in module correspond.channels.webinbox)</a>
+</li>
+      <li><a href="_autosummary/correspond.errors.html#correspond.errors.Stopped">Stopped</a>, <a href="_autosummary/correspond.html#correspond.Stopped">[1]</a>
 </li>
       <li><a href="_autosummary/correspond.channels.webinbox.html#correspond.channels.webinbox.WebInbox.store">store (correspond.channels.webinbox.WebInbox property)</a>
 </li>

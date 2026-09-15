@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="../../_static/documentation_options.js?v=8c5712d9"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.2" />
+  <meta name="docsearch:version" content="0.0.4" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1058,10 +1058,23 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"react"</span><span class="p">:</span> <span class="s2">"reacted to </span><span class="si">{id}</span><span class="s2"> in </span><span class="si">{target}</span><span class="s2">"</span><span class="p">,</span>
 <span class="p">}</span>
 
+<span class="c1">#: How a write the ``before_send`` check stopped is summarised, by ``error_kind``.</span>
+<span class="n">_STOPPED</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"refused"</span><span class="p">:</span> <span class="s2">"refused by the before_send check"</span><span class="p">,</span>
+    <span class="s2">"needs_approval"</span><span class="p">:</span> <span class="s2">"held for the operator's approval by the before_send check"</span><span class="p">,</span>
+    <span class="s2">"before_send_unavailable"</span><span class="p">:</span> <span class="s2">"not attempted: the before_send check is unavailable"</span><span class="p">,</span>
+    <span class="s2">"before_send_failed"</span><span class="p">:</span> <span class="s2">"not attempted: the before_send check failed"</span><span class="p">,</span>
+<span class="p">}</span>
+
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_write_result</span><span class="p">(</span><span class="n">result</span><span class="p">:</span> <span class="n">SendResult</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
     <span class="n">target</span><span class="p">,</span> <span class="n">operation</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">conversation</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">operation</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">ok</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">error_kind</span> <span class="ow">in</span> <span class="n">_STOPPED</span><span class="p">:</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'dry run: '</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">result</span><span class="o">.</span><span class="n">dry_run</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">''</span><span class="si">}{</span><span class="n">operation</span><span class="si">}</span><span class="s2"> on </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2"> "</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_STOPPED</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">error_kind</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
         <span class="n">hint</span> <span class="o">=</span> <span class="s2">""</span>
         <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">retryable</span><span class="p">:</span>
             <span class="n">hint</span> <span class="o">=</span> <span class="p">(</span>
@@ -1073,9 +1086,11 @@ window.runMermaid = runMermaid;</script>
             <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2"> on </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2"> failed (</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">error_kind</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">error</span><span class="si">}{</span><span class="n">hint</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
     <span class="k">elif</span> <span class="n">result</span><span class="o">.</span><span class="n">dry_run</span><span class="p">:</span>
-        <span class="n">summary</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"dry run: would </span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2"> on </span><span class="si">{</span><span class="n">target</span><span class="si">}</span><span class="s2">; nothing was contacted or changed"</span>
-        <span class="p">)</span>
+        <span class="n">audience</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">plan</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"audience"</span><span class="p">)</span>
+        <span class="n">readers</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">" (</span><span class="si">{</span><span class="n">audience</span><span class="si">}</span><span class="s2">)"</span> <span class="k">if</span> <span class="n">audience</span> <span class="k">else</span> <span class="s2">""</span>
+        <span class="n">summary</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"dry run: would </span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2"> on </span><span class="si">{</span><span class="n">target</span><span class="si">}{</span><span class="n">readers</span><span class="si">}</span><span class="s2">; nothing was contacted or changed"</span>
+        <span class="k">if</span> <span class="n">audience</span><span class="p">:</span>
+            <span class="n">summary</span> <span class="o">+=</span> <span class="s2">" beyond reading who can see it"</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">summary</span> <span class="o">=</span> <span class="n">_DONE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">operation</span> <span class="o">+</span> <span class="s2">" on </span><span class="si">{target}</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
             <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">message_id</span>
@@ -1108,7 +1123,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">priority</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Send a message to a conversation. Run it with `dry_run` first and show the plan: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities."""</span>
+<span class="w">    </span><span class="sd">"""Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""</span>
     <span class="k">return</span> <span class="n">_write_result</span><span class="p">(</span>
         <span class="n">ops</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
             <span class="n">ref</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span> <span class="n">reply_to</span><span class="o">=</span><span class="n">reply_to</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span>
@@ -1121,7 +1136,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../_autosummary/correspond.tools.html#correspond.tools.edit">[docs]</a>
 <span class="nd">@_as_result</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">edit</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Replace the text of a message this account wrote (`message_id` as `read` shows it). Run it with `dry_run` first."""</span>
+<span class="w">    </span><span class="sd">"""Replace the text of a message this account wrote (`message_id` as `read` shows it). Run it with `dry_run` first. The new text passes the before_send check, as for `send`."""</span>
     <span class="k">return</span> <span class="n">_write_result</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">message_id</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">))</span></div>
 
 
@@ -1130,7 +1145,7 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../_autosummary/correspond.tools.html#correspond.tools.react">[docs]</a>
 <span class="nd">@_as_result</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">react</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">reaction</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Add a reaction to a message (`capabilities` lists the reactions a channel accepts). Run it with `dry_run` first."""</span>
+<span class="w">    </span><span class="sd">"""Add a reaction to a message (`capabilities` lists the reactions a channel accepts). Run it with `dry_run` first. It passes the before_send check, as for `send`."""</span>
     <span class="k">return</span> <span class="n">_write_result</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">react</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">message_id</span><span class="p">,</span> <span class="n">reaction</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">))</span></div>
 
 

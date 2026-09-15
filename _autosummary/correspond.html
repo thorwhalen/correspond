@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="../_static/documentation_options.js?v=8c5712d9"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,7 +55,7 @@
     <link rel="prev" title="API reference" href="../api.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.2" />
+  <meta name="docsearch:version" content="0.0.4" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -330,6 +330,7 @@
 <li class="toctree-l2"><a class="reference internal" href="correspond.mcp.html">correspond.mcp</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.model.html">correspond.model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.ops.html">correspond.ops</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.outbound.html">correspond.outbound</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.registry.html">correspond.registry</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.render.html">correspond.render</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.routing.html">correspond.routing</a></li>
@@ -439,7 +440,7 @@ the same verbs, through <a class="reference internal" href="correspond.tools.htm
 <td><p>What a channel needs and what is missing: the install command, binaries, platform, and every setting's source.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#correspond.edit" title="correspond.edit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">edit</span></code></a>(ref, message_id, text, *[, dry_run, ...])</p></td>
-<td><p>Replace the text of a message correspond's account wrote.</p></td>
+<td><p>Replace the text of a message correspond's account wrote; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check runs first, as for <a class="reference internal" href="#correspond.send" title="correspond.send"><code class="xref py py-func docutils literal notranslate"><span class="pre">send()</span></code></a>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.get_channel" title="correspond.get_channel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_channel</span></code></a>(name, *[, registry])</p></td>
 <td><p>The adapter registered under <code class="docutils literal notranslate"><span class="pre">name</span></code>; <a class="reference internal" href="correspond.errors.html#correspond.errors.UnknownChannel" title="correspond.errors.UnknownChannel"><code class="xref py py-class docutils literal notranslate"><span class="pre">UnknownChannel</span></code></a> says what to do if there is none.</p></td>
@@ -454,7 +455,7 @@ the same verbs, through <a class="reference internal" href="correspond.tools.htm
 <td><p>A reference normalised by its channel's adapter (kind and parent filled in, the id validated).</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.react" title="correspond.react"><code class="xref py py-obj docutils literal notranslate"><span class="pre">react</span></code></a>(ref, message_id, reaction, *[, ...])</p></td>
-<td><p>Add a reaction to a message (the channel's capabilities list the reactions it accepts).</p></td>
+<td><p>Add a reaction to a message (the channel's capabilities list the reactions it accepts); the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees the reaction as the draft's text.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#correspond.read" title="correspond.read"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read</span></code></a>(ref, *[, since, limit, registry])</p></td>
 <td><p>The messages of a conversation, oldest first (<code class="docutils literal notranslate"><span class="pre">limit</span></code> keeps the most recent ones).</p></td>
@@ -466,7 +467,7 @@ the same verbs, through <a class="reference internal" href="correspond.tools.htm
 <td><p>Run the chain (bindings, thread continuity, metadata rules, classifier) and return the first decision, or <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.send" title="correspond.send"><code class="xref py py-obj docutils literal notranslate"><span class="pre">send</span></code></a>(ref, text, *[, title, reply_to, ...])</p></td>
-<td><p>Send <code class="docutils literal notranslate"><span class="pre">text</span></code> (or a <a class="reference internal" href="correspond.model.html#correspond.model.Draft" title="correspond.model.Draft"><code class="xref py py-class docutils literal notranslate"><span class="pre">Draft</span></code></a>) to a conversation; <code class="docutils literal notranslate"><span class="pre">dry_run</span></code> shows the plan and contacts nothing.</p></td>
+<td><p>Send <code class="docutils literal notranslate"><span class="pre">text</span></code> (or a <a class="reference internal" href="correspond.model.html#correspond.model.Draft" title="correspond.model.Draft"><code class="xref py py-class docutils literal notranslate"><span class="pre">Draft</span></code></a>) to a conversation; <code class="docutils literal notranslate"><span class="pre">dry_run</span></code> shows the plan and sends nothing.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#correspond.unregister_channel" title="correspond.unregister_channel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unregister_channel</span></code></a>(name, *[, registry])</p></td>
 <td><p>Remove a channel from the registry.</p></td>
@@ -573,10 +574,19 @@ the same verbs, through <a class="reference internal" href="correspond.tools.htm
 <tr class="row-even"><td><p><a class="reference internal" href="#correspond.MissingRequirement" title="correspond.MissingRequirement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MissingRequirement</span></code></a>(channel, missing, *, fix)</p></td>
 <td><p>Something the channel needs is not here: a credential, a binary, an extra, an OS.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.NotSupported" title="correspond.NotSupported"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NotSupported</span></code></a>(operation, channel, *[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.NeedsApproval" title="correspond.NeedsApproval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeedsApproval</span></code></a>(reason, **details)</p></td>
+<td><p>Draft to operator: the write waits for the operator's approval.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.NotSupported" title="correspond.NotSupported"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NotSupported</span></code></a>(operation, channel, *[, ...])</p></td>
 <td><p>The channel does not have this operation (or this feature of it).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.UnknownChannel" title="correspond.UnknownChannel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UnknownChannel</span></code></a>(channel, *[, known, hint])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.Refused" title="correspond.Refused"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Refused</span></code></a>(reason, **details)</p></td>
+<td><p>Block: this draft does not go to this conversation as written.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.Stopped" title="correspond.Stopped"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Stopped</span></code></a>(reason, **details)</p></td>
+<td><p>A write the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check did not let leave: <code class="docutils literal notranslate"><span class="pre">error_kind</span></code> says how, <code class="docutils literal notranslate"><span class="pre">reason</span></code> says why.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.UnknownChannel" title="correspond.UnknownChannel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UnknownChannel</span></code></a>(channel, *[, known, hint])</p></td>
 <td><p>A channel name that no registered adapter answers to.</p></td>
 </tr>
 </tbody>
@@ -1111,6 +1121,15 @@ raises, because <code class="docutils literal notranslate"><span class="pre">dom
 </dd></dl>
 
 <dl class="py exception">
+<dt class="sig sig-object py" id="correspond.NeedsApproval">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">NeedsApproval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reason</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">details</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/errors.html#NeedsApproval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.NeedsApproval" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="correspond.errors.html#correspond.errors.Stopped" title="correspond.errors.Stopped"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stopped</span></code></a></p>
+<p>Draft to operator: the write waits for the operator’s approval. Raised by a <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py exception">
 <dt class="sig sig-object py" id="correspond.NotSupported">
 <span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">NotSupported</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">alternatives</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/errors.html#NotSupported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.NotSupported" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="correspond.errors.html#correspond.errors.CorrespondError" title="correspond.errors.CorrespondError"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorrespondError</span></code></a></p>
@@ -1131,6 +1150,15 @@ raises, because <code class="docutils literal notranslate"><span class="pre">dom
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">Reader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#Reader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.Reader" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
 <p>Messages of a conversation, oldest first; <code class="docutils literal notranslate"><span class="pre">limit</span></code> keeps the most recent.</p>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="correspond.Refused">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">Refused</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reason</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">details</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/errors.html#Refused"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.Refused" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="correspond.errors.html#correspond.errors.Stopped" title="correspond.errors.Stopped"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stopped</span></code></a></p>
+<p>Block: this draft does not go to this conversation as written. Raised by a <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check.</p>
+<dl class="field-list simple">
+</dl>
 </dd></dl>
 
 <dl class="py class">
@@ -1207,6 +1235,17 @@ raises, because <code class="docutils literal notranslate"><span class="pre">dom
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="correspond.Stopped">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">Stopped</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reason</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">details</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/errors.html#Stopped"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.Stopped" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="correspond.errors.html#correspond.errors.CorrespondError" title="correspond.errors.CorrespondError"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorrespondError</span></code></a></p>
+<p>A write the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check did not let leave: <code class="docutils literal notranslate"><span class="pre">error_kind</span></code> says how, <code class="docutils literal notranslate"><span class="pre">reason</span></code> says why.</p>
+<p>Keyword <code class="docutils literal notranslate"><span class="pre">details</span></code> (an approval id, a draft hash) travel with the result, in the
+plan’s <code class="docutils literal notranslate"><span class="pre">before_send_details</span></code>.</p>
+<dl class="field-list simple">
+</dl>
 </dd></dl>
 
 <dl class="py class">
@@ -1318,8 +1357,8 @@ channel written as a wildcard, or one that does not declare its fields
 
 <dl class="py function">
 <dt class="sig sig-object py" id="correspond.edit">
-<span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.edit" title="Link to this definition">#</a></dt>
-<dd><p>Replace the text of a message correspond’s account wrote.</p>
+<span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.edit" title="Link to this definition">#</a></dt>
+<dd><p>Replace the text of a message correspond’s account wrote; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check runs first, as for <a class="reference internal" href="#correspond.send" title="correspond.send"><code class="xref py py-func docutils literal notranslate"><span class="pre">send()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
@@ -1381,8 +1420,8 @@ early <code class="docutils literal notranslate"><span class="pre">break</span><
 
 <dl class="py function">
 <dt class="sig sig-object py" id="correspond.react">
-<span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">react</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reaction</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#react"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.react" title="Link to this definition">#</a></dt>
-<dd><p>Add a reaction to a message (the channel’s capabilities list the reactions it accepts).</p>
+<span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">react</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reaction</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#react"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.react" title="Link to this definition">#</a></dt>
+<dd><p>Add a reaction to a message (the channel’s capabilities list the reactions it accepts); the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees the reaction as the draft’s text.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
@@ -1425,8 +1464,10 @@ early <code class="docutils literal notranslate"><span class="pre">break</span><
 
 <dl class="py function">
 <dt class="sig sig-object py" id="correspond.send">
-<span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reply_to</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.send" title="Link to this definition">#</a></dt>
-<dd><p>Send <code class="docutils literal notranslate"><span class="pre">text</span></code> (or a <a class="reference internal" href="correspond.model.html#correspond.model.Draft" title="correspond.model.Draft"><code class="xref py py-class docutils literal notranslate"><span class="pre">Draft</span></code></a>) to a conversation; <code class="docutils literal notranslate"><span class="pre">dry_run</span></code> shows the plan and contacts nothing.</p>
+<span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reply_to</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.send" title="Link to this definition">#</a></dt>
+<dd><p>Send <code class="docutils literal notranslate"><span class="pre">text</span></code> (or a <a class="reference internal" href="correspond.model.html#correspond.model.Draft" title="correspond.model.Draft"><code class="xref py py-class docutils literal notranslate"><span class="pre">Draft</span></code></a>) to a conversation; <code class="docutils literal notranslate"><span class="pre">dry_run</span></code> shows the plan and sends nothing.</p>
+<p><code class="docutils literal notranslate"><span class="pre">before_send(ref,</span> <span class="pre">draft,</span> <span class="pre">audience)</span></code> runs first, on the dry run too; when <code class="docutils literal notranslate"><span class="pre">None</span></code>, the
+config’s <code class="docutils literal notranslate"><span class="pre">before_send</span></code> reference, else <a class="reference internal" href="correspond.outbound.html#correspond.outbound.notice" title="correspond.outbound.notice"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.outbound.notice()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
@@ -1447,8 +1488,8 @@ early <code class="docutils literal notranslate"><span class="pre">break</span><
 
 <dl class="py function">
 <dt class="sig sig-object py" id="correspond.upload">
-<span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">upload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">media_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'application/octet-stream'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#upload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.upload" title="Link to this definition">#</a></dt>
-<dd><p>Send a file to a conversation.</p>
+<span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">upload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">media_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'application/octet-stream'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#upload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.upload" title="Link to this definition">#</a></dt>
+<dd><p>Send a file to a conversation. The <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees only the file name as the draft’s text (<code class="docutils literal notranslate"><span class="pre">operation=&quot;upload&quot;</span></code>): a check that cannot vet the bytes should hold or refuse.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
@@ -1485,25 +1526,28 @@ early <code class="docutils literal notranslate"><span class="pre">break</span><
 <tr class="row-odd"><td><p><a class="reference internal" href="correspond.ops.html#module-correspond.ops" title="correspond.ops"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ops</span></code></a></p></td>
 <td><p>The operations: small protocols an adapter implements a subset of, and the verbs that call them.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="correspond.registry.html#module-correspond.registry" title="correspond.registry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">registry</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="correspond.outbound.html#module-correspond.outbound" title="correspond.outbound"><code class="xref py py-obj docutils literal notranslate"><span class="pre">outbound</span></code></a></p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check: what every write runs, with the conversation's audience, before anything leaves.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="correspond.registry.html#module-correspond.registry" title="correspond.registry"><code class="xref py py-obj docutils literal notranslate"><span class="pre">registry</span></code></a></p></td>
 <td><p>Which channels exist: the built-in channel table, the registry built from it, and what each channel needs.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="correspond.render.html#module-correspond.render" title="correspond.render"><code class="xref py py-obj docutils literal notranslate"><span class="pre">render</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="correspond.render.html#module-correspond.render" title="correspond.render"><code class="xref py py-obj docutils literal notranslate"><span class="pre">render</span></code></a></p></td>
 <td><p>Turning a tool's result into terminal output: <code class="docutils literal notranslate"><span class="pre">(stdout,</span> <span class="pre">stderr,</span> <span class="pre">exit</span> <span class="pre">code)</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="correspond.routing.html#module-correspond.routing" title="correspond.routing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">routing</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="correspond.routing.html#module-correspond.routing" title="correspond.routing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">routing</span></code></a></p></td>
 <td><p>Deciding what a message is about: a transparent rule chain.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="correspond.settings.html#module-correspond.settings" title="correspond.settings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">settings</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="correspond.settings.html#module-correspond.settings" title="correspond.settings"><code class="xref py py-obj docutils literal notranslate"><span class="pre">settings</span></code></a></p></td>
 <td><p>Where correspond keeps state and reads configuration, and how it finds a secret.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="correspond.stores.html#module-correspond.stores" title="correspond.stores"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stores</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="correspond.stores.html#module-correspond.stores" title="correspond.stores"><code class="xref py py-obj docutils literal notranslate"><span class="pre">stores</span></code></a></p></td>
 <td><p>The state stores: listen cursors, the web inbox's reports and blobs, the Telegram log.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="correspond.testing.html#module-correspond.testing" title="correspond.testing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">testing</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="correspond.testing.html#module-correspond.testing" title="correspond.testing"><code class="xref py py-obj docutils literal notranslate"><span class="pre">testing</span></code></a></p></td>
 <td><p>An in-memory channel for tests and rehearsals, and <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">correspond.testing</span></code>: the CLI with it registered.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="correspond.tools.html#module-correspond.tools" title="correspond.tools"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tools</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="correspond.tools.html#module-correspond.tools" title="correspond.tools"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tools</span></code></a></p></td>
 <td><p>The single source of truth for every surface: plain functions, flat arguments in, JSON-ready dicts out.</p></td>
 </tr>
 </tbody>
@@ -1626,9 +1670,11 @@ early <code class="docutils literal notranslate"><span class="pre">break</span><
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.MissingRequirement"><code class="docutils literal notranslate"><span class="pre">MissingRequirement</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.NeedsApproval"><code class="docutils literal notranslate"><span class="pre">NeedsApproval</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.NotSupported"><code class="docutils literal notranslate"><span class="pre">NotSupported</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.Reactor"><code class="docutils literal notranslate"><span class="pre">Reactor</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.Reader"><code class="docutils literal notranslate"><span class="pre">Reader</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.Refused"><code class="docutils literal notranslate"><span class="pre">Refused</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.RouteDecision"><code class="docutils literal notranslate"><span class="pre">RouteDecision</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.RouteDecision.to_dict"><code class="docutils literal notranslate"><span class="pre">RouteDecision.to_dict()</span></code></a></li>
 </ul>
@@ -1640,6 +1686,7 @@ early <code class="docutils literal notranslate"><span class="pre">break</span><
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.SendResult.to_dict"><code class="docutils literal notranslate"><span class="pre">SendResult.to_dict()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.Stopped"><code class="docutils literal notranslate"><span class="pre">Stopped</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.Support"><code class="docutils literal notranslate"><span class="pre">Support</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.UnknownChannel"><code class="docutils literal notranslate"><span class="pre">UnknownChannel</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.Uploader"><code class="docutils literal notranslate"><span class="pre">Uploader</span></code></a></li>

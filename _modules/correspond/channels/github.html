@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../../_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="../../../_static/documentation_options.js?v=8c5712d9"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.2" />
+  <meta name="docsearch:version" content="0.0.4" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -882,7 +882,12 @@ window.runMermaid = runMermaid;</script>
 <span class="n">APPS_AND_WEBHOOKS</span> <span class="o">=</span> <span class="s2">"apps and webhooks with access to the repository, which can copy its conversations elsewhere"</span>
 <span class="c1">#: GitHub lists a repository's collaborators only to accounts with one of these permissions.</span>
 <span class="n">LISTING_PERMISSIONS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"admin"</span><span class="p">,</span> <span class="s2">"maintain"</span><span class="p">,</span> <span class="s2">"push"</span><span class="p">)</span>
-<span class="n">PUBLIC_DURABILITY</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"indexed"</span><span class="p">,</span> <span class="s2">"archived_by_others"</span><span class="p">,</span> <span class="s2">"copies_pushed"</span><span class="p">,</span> <span class="s2">"edit_history_visible"</span><span class="p">)</span>
+<span class="n">PUBLIC_DURABILITY</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"indexed"</span><span class="p">,</span>
+    <span class="s2">"archived_by_others"</span><span class="p">,</span>
+    <span class="s2">"copies_pushed"</span><span class="p">,</span>
+    <span class="s2">"edit_history_visible"</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="n">PRIVATE_DURABILITY</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"copies_pushed"</span><span class="p">,</span> <span class="s2">"edit_history_visible"</span><span class="p">)</span>
 <span class="n">PUBLIC_WIDENING</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"forks"</span><span class="p">,</span> <span class="s2">"visibility_flip"</span><span class="p">)</span>
 <span class="n">PRIVATE_WIDENING</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"joiners_read_history"</span><span class="p">,</span> <span class="s2">"forks"</span><span class="p">,</span> <span class="s2">"visibility_flip"</span><span class="p">)</span>
@@ -1558,7 +1563,9 @@ window.runMermaid = runMermaid;</script>
                 <span class="o">*</span><span class="n">evidence</span><span class="p">,</span>
                 <span class="sa">f</span><span class="s2">"visibility </span><span class="si">{</span><span class="n">visibility</span><span class="si">!r}</span><span class="s2"> is not public, private or internal"</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_restricted_audience</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">visibility</span><span class="o">=</span><span class="n">visibility</span><span class="p">,</span> <span class="n">evidence</span><span class="o">=</span><span class="n">evidence</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_restricted_audience</span><span class="p">(</span>
+            <span class="n">ref</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">visibility</span><span class="o">=</span><span class="n">visibility</span><span class="p">,</span> <span class="n">evidence</span><span class="o">=</span><span class="n">evidence</span>
+        <span class="p">)</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_restricted_audience</span><span class="p">(</span>
@@ -1643,7 +1650,11 @@ window.runMermaid = runMermaid;</script>
             <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"rate_limited"</span><span class="p">:</span>
                 <span class="k">raise</span> <span class="n">error</span>
         <span class="n">found</span> <span class="o">=</span> <span class="n">reply</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">status</span> <span class="o">&lt;</span> <span class="mi">400</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="n">base</span> <span class="o">=</span> <span class="n">found</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"default_repository_permission"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">found</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">found</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"default_repository_permission"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">found</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
+            <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="n">base</span> <span class="o">==</span> <span class="s2">"none"</span><span class="p">:</span>
             <span class="n">evidence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"GET </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">: base permission none, so membership alone reads nothing"</span>

@@ -1,0 +1,22 @@
+correspond.outbound
+===================
+
+.. automodule:: correspond.outbound
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      BeforeSend
+      CONFIG_KEY
+      DEFAULT
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      check
+      notice
+      resolve
+   

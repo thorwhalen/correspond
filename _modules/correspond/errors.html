@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="../../_static/documentation_options.js?v=8c5712d9"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.2" />
+  <meta name="docsearch:version" content="0.0.4" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -723,24 +723,38 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">  ``retry_after``. Reads let them propagate; the write verbs turn them into a</span>
 <span class="sd">  ``SendResult`` with ``ok=False``, so a notifier never crashes its caller.</span>
 
+<span class="sd">A third family stops a write before it leaves: the ``before_send`` check (see</span>
+<span class="sd">:mod:`correspond.outbound`) raises :class:`Refused` or :class:`NeedsApproval`, and the write</span>
+<span class="sd">verbs report it as a ``SendResult`` whose ``error_kind`` is one of :data:`CHECK_KINDS`.</span>
+
 <span class="sd">&gt;&gt;&gt; str(NotSupported("react", "ntfy"))</span>
 <span class="sd">'ntfy does not support react'</span>
 <span class="sd">&gt;&gt;&gt; error = ChannelError("slow down", kind="rate_limited", retryable=True, retry_after=30)</span>
 <span class="sd">&gt;&gt;&gt; error.kind, error.retryable, error.retry_after</span>
 <span class="sd">('rate_limited', True, 30.0)</span>
+<span class="sd">&gt;&gt;&gt; held = NeedsApproval("public audience")</span>
+<span class="sd">&gt;&gt;&gt; held.error_kind, held.reason</span>
+<span class="sd">('needs_approval', 'public audience')</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"CHECK_KINDS"</span><span class="p">,</span>
     <span class="s2">"ERROR_KINDS"</span><span class="p">,</span>
+    <span class="s2">"BeforeSendFailed"</span><span class="p">,</span>
+    <span class="s2">"BeforeSendUnavailable"</span><span class="p">,</span>
     <span class="s2">"ChannelError"</span><span class="p">,</span>
     <span class="s2">"CorrespondError"</span><span class="p">,</span>
     <span class="s2">"InvalidRef"</span><span class="p">,</span>
     <span class="s2">"MissingRequirement"</span><span class="p">,</span>
+    <span class="s2">"NeedsApproval"</span><span class="p">,</span>
     <span class="s2">"NotSupported"</span><span class="p">,</span>
+    <span class="s2">"Refused"</span><span class="p">,</span>
+    <span class="s2">"Stopped"</span><span class="p">,</span>
     <span class="s2">"UnknownChannel"</span><span class="p">,</span>
 <span class="p">]</span>
 
@@ -753,6 +767,14 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"network"</span><span class="p">,</span>  <span class="c1"># the platform could not be reached</span>
     <span class="s2">"validation"</span><span class="p">,</span>  <span class="c1"># the input was rejected (by the platform, or by correspond on its behalf)</span>
     <span class="s2">"unavailable"</span><span class="p">,</span>  <span class="c1"># the platform failed, or something local (a binary, the OS) is missing</span>
+<span class="p">)</span>
+
+<span class="c1">#: Why the ``before_send`` check stopped a write. Nothing was sent; a retry of the same draft changes nothing.</span>
+<span class="n">CHECK_KINDS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"refused"</span><span class="p">,</span>  <span class="c1"># the check blocks this draft on this conversation: change the text or the destination</span>
+    <span class="s2">"needs_approval"</span><span class="p">,</span>  <span class="c1"># the check holds the draft until the operator approves it</span>
+    <span class="s2">"before_send_unavailable"</span><span class="p">,</span>  <span class="c1"># the configured check could not be loaded, so no write goes ahead (fail closed)</span>
+    <span class="s2">"before_send_failed"</span><span class="p">,</span>  <span class="c1"># the check crashed or answered outside its contract, so the write did not go ahead</span>
 <span class="p">)</span>
 
 
@@ -824,6 +846,60 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">retryable</span> <span class="o">=</span> <span class="n">retryable</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">retry_after</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">retry_after</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">float</span><span class="p">(</span><span class="n">retry_after</span><span class="p">)</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">message</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Stopped">
+<a class="viewcode-back" href="../../_autosummary/correspond.errors.html#correspond.Stopped">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Stopped</span><span class="p">(</span><span class="n">CorrespondError</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A write the ``before_send`` check did not let leave: ``error_kind`` says how, ``reason`` says why.</span>
+
+<span class="sd">    Keyword ``details`` (an approval id, a draft hash) travel with the result, in the</span>
+<span class="sd">    plan's ``before_send_details``.</span>
+<span class="sd">    """</span>
+
+    <span class="n">error_kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"before_send_failed"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">details</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reason</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">reason</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">details</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">details</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reason</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Refused">
+<a class="viewcode-back" href="../../_autosummary/correspond.errors.html#correspond.Refused">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Refused</span><span class="p">(</span><span class="n">Stopped</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Block: this draft does not go to this conversation as written. Raised by a ``before_send`` check."""</span>
+
+    <span class="n">error_kind</span> <span class="o">=</span> <span class="s2">"refused"</span></div>
+
+
+
+<div class="viewcode-block" id="NeedsApproval">
+<a class="viewcode-back" href="../../_autosummary/correspond.errors.html#correspond.NeedsApproval">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">NeedsApproval</span><span class="p">(</span><span class="n">Stopped</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Draft to operator: the write waits for the operator's approval. Raised by a ``before_send`` check."""</span>
+
+    <span class="n">error_kind</span> <span class="o">=</span> <span class="s2">"needs_approval"</span></div>
+
+
+
+<div class="viewcode-block" id="BeforeSendUnavailable">
+<a class="viewcode-back" href="../../_autosummary/correspond.errors.html#correspond.BeforeSendUnavailable">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BeforeSendUnavailable</span><span class="p">(</span><span class="n">Stopped</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The configured ``before_send`` check could not be loaded, so nothing is sent."""</span>
+
+    <span class="n">error_kind</span> <span class="o">=</span> <span class="s2">"before_send_unavailable"</span></div>
+
+
+
+<div class="viewcode-block" id="BeforeSendFailed">
+<a class="viewcode-back" href="../../_autosummary/correspond.errors.html#correspond.BeforeSendFailed">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">BeforeSendFailed</span><span class="p">(</span><span class="n">Stopped</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The ``before_send`` check raised something else, or returned a value, so nothing is sent."""</span>
+
+    <span class="n">error_kind</span> <span class="o">=</span> <span class="s2">"before_send_failed"</span></div>
 
 
 

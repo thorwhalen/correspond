@@ -7,9 +7,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="alternate" type="text/markdown" href="render.html.md">
+<link rel="alternate" type="text/markdown" href="outbound.html.md">
 <link rel="describedby" href="../../llms.txt" type="text/markdown">
-    <title>correspond.render &#8212; correspond</title>
+    <title>correspond.outbound &#8212; correspond</title>
   
   
   
@@ -404,7 +404,7 @@ mermaid.initialize(
 
 window.addEventListener("load", load);
 window.runMermaid = runMermaid;</script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/correspond/render';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/correspond/outbound';</script>
     <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
@@ -693,7 +693,7 @@ window.runMermaid = runMermaid;</script>
     
     <li class="breadcrumb-item"><a href="../index.html" class="nav-link">Module code</a></li>
     
-    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">correspond.render</span></li>
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">correspond.outbound</span></li>
   </ul>
 </nav>
 </div>
@@ -710,60 +710,226 @@ window.runMermaid = runMermaid;</script>
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <h1>Source code for correspond.render</h1><div class="highlight"><pre>
-<span></span><span class="sd">"""Turning a tool's result into terminal output: ``(stdout, stderr, exit code)``.</span>
+  <h1>Source code for correspond.outbound</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""The ``before_send`` check: what every write runs, with the conversation's audience, before anything leaves.</span>
 
-<span class="sd">Used by the CLI only. The rules, in order: a result with a ``value`` prints just the value</span>
-<span class="sd">(one line per item, so it pipes); otherwise its ``text``, else its ``summary``. A result</span>
-<span class="sd">with ``ok: False`` exits 1 and puts its summary on stderr.</span>
+<span class="sd">A check is a callable::</span>
 
-<span class="sd">&gt;&gt;&gt; render({"ok": True, "value": "github:octocat/hello-world#1", "summary": "…"})</span>
-<span class="sd">('github:octocat/hello-world#1', '', 0)</span>
-<span class="sd">&gt;&gt;&gt; render({"ok": False, "summary": "ntfy does not support react"})</span>
-<span class="sd">('', 'ntfy does not support react', 1)</span>
+<span class="sd">    before_send(ref, draft, audience, *, operation, dry_run, message_id, **context) -&gt; None</span>
+
+<span class="sd">``operation`` is ``send``, ``edit``, ``react`` or ``upload``; ``message_id`` is the message</span>
+<span class="sd">an edit or a reaction targets (``None`` otherwise); a reaction's draft text is the reaction,</span>
+<span class="sd">an upload's is the file name. Accept ``**context``: later versions may pass more. Returning</span>
+<span class="sd">lets the write go ahead; raising :class:`~correspond.errors.Refused` blocks it; raising</span>
+<span class="sd">:class:`~correspond.errors.NeedsApproval` holds it for the operator; either may carry keyword</span>
+<span class="sd">details, which go into the plan. The write verbs of :mod:`correspond.ops` compute the</span>
+<span class="sd">audience, run the check once on the real path or on the dry run, and put both into the plan,</span>
+<span class="sd">so a dry run shows the verdict a send would get.</span>
+
+<span class="sd">Which check runs:</span>
+
+<span class="sd">1. the ``before_send=`` argument, when a Python caller passes one;</span>
+<span class="sd">2. else ``before_send = "module:attr"`` at the top of the config file, imported when a write</span>
+<span class="sd">   first needs it. A value that does not import, or is not callable, stops every write</span>
+<span class="sd">   (``before_send_unavailable``): a configured check that cannot run is never skipped. So</span>
+<span class="sd">   does a ``before_send`` key inside a table, where TOML puts a line written after one;</span>
+<span class="sd">3. else :func:`notice`, which lets the write go ahead: the audience line it adds to the plan</span>
+<span class="sd">   is the whole of it.</span>
+
+<span class="sd">Anything else the check does (raise another exception, exit, return a value, stop with an</span>
+<span class="sd">``error_kind`` outside :data:`~correspond.errors.CHECK_KINDS`) also stops the write</span>
+<span class="sd">(``before_send_failed``). liaise supplies a real check (``liaise.vet.before_send``).</span>
+
+<span class="sd">The command line and the MCP tools take no ``before_send`` argument. The check guards</span>
+<span class="sd">drafts, not the process running correspond: whoever sets its environment or edits the</span>
+<span class="sd">config file (``$CORRESPOND_CONFIG`` can name another file) chooses the check, and a write</span>
+<span class="sd">made without correspond never meets it. liaise's hook covers those.</span>
+
+<span class="sd">&gt;&gt;&gt; resolve(None, config={})[1]</span>
+<span class="sd">'correspond.outbound:notice'</span>
+<span class="sd">&gt;&gt;&gt; resolve(None, config={"before_send": "no.such.module:check"})</span>
+<span class="sd">Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">correspond.errors.BeforeSendUnavailable: before_send = 'no.such.module:check' in the config does not import (ModuleNotFoundError: No module named 'no'), so nothing is sent</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"render"</span><span class="p">]</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CHECK_KINDS</span><span class="p">,</span>
+    <span class="n">BeforeSendFailed</span><span class="p">,</span>
+    <span class="n">BeforeSendUnavailable</span><span class="p">,</span>
+    <span class="n">CorrespondError</span><span class="p">,</span>
+    <span class="n">Stopped</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Audience</span><span class="p">,</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">Draft</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"CONFIG_KEY"</span><span class="p">,</span> <span class="s2">"DEFAULT"</span><span class="p">,</span> <span class="s2">"BeforeSend"</span><span class="p">,</span> <span class="s2">"check"</span><span class="p">,</span> <span class="s2">"notice"</span><span class="p">,</span> <span class="s2">"resolve"</span><span class="p">]</span>
+
+<span class="c1">#: A ``before_send`` check, called ``(ref, draft, audience, *, operation, dry_run, message_id)``: returns ``None`` to let the write go ahead, raises ``Refused`` or ``NeedsApproval`` to stop it.</span>
+<span class="n">BeforeSend</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+<span class="c1">#: The top-level key of the config file naming the check, as ``"module:attr"``.</span>
+<span class="n">CONFIG_KEY</span> <span class="o">=</span> <span class="s2">"before_send"</span>
+<span class="c1">#: The check that runs when neither the argument nor the config names one.</span>
+<span class="n">DEFAULT</span> <span class="o">=</span> <span class="s2">"correspond.outbound:notice"</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_scalar</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
-    <span class="k">return</span> <span class="n">value</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<div class="viewcode-block" id="notice">
+<a class="viewcode-back" href="../../_autosummary/correspond.outbound.html#correspond.outbound.notice">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">notice</span><span class="p">(</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="n">audience</span><span class="p">:</span> <span class="n">Audience</span><span class="p">,</span> <span class="o">**</span><span class="n">context</span><span class="p">:</span> <span class="n">Any</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The default check: every write goes ahead, and its plan and summary say who can read it."""</span>
+    <span class="k">return</span> <span class="kc">None</span></div>
 
 
-<div class="viewcode-block" id="render">
-<a class="viewcode-back" href="../../_autosummary/correspond.render.html#correspond.render.render">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="n">result</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""``(stdout, stderr, exit_code)`` for one tool result."""</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">(</span><span class="s2">""</span> <span class="k">if</span> <span class="n">result</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">),</span> <span class="s2">""</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-    <span class="n">ok</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ok"</span><span class="p">,</span> <span class="kc">True</span><span class="p">))</span>
-    <span class="n">warnings</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="sa">f</span><span class="s2">"warning: </span><span class="si">{</span><span class="n">w</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"warnings"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
-    <span class="p">]</span>
-    <span class="k">if</span> <span class="n">ok</span> <span class="ow">and</span> <span class="s2">"value"</span> <span class="ow">in</span> <span class="n">result</span><span class="p">:</span>
-        <span class="n">found</span> <span class="o">=</span> <span class="n">result</span><span class="p">[</span><span class="s2">"value"</span><span class="p">]</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_scalar</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">found</span><span class="p">)</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">found</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span>
-            <span class="k">else</span> <span class="n">_scalar</span><span class="p">(</span><span class="n">found</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_name_of</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">module</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="s2">"__module__"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"?"</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">module</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="n">func</span><span class="p">,</span><span class="w"> </span><span class="s1">'__qualname__'</span><span class="p">,</span><span class="w"> </span><span class="nb">type</span><span class="p">(</span><span class="n">func</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_load</span><span class="p">(</span><span class="n">reference</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BeforeSend</span><span class="p">:</span>
+    <span class="n">where</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"before_send = </span><span class="si">{</span><span class="n">reference</span><span class="si">!r}</span><span class="s2"> in the config"</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">reference</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="n">reference</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s2">":"</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">BeforeSendUnavailable</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">'</span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s1"> is not a "module:attr" reference, so nothing is sent'</span>
         <span class="p">)</span>
-    <span class="k">elif</span> <span class="n">ok</span><span class="p">:</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">)</span>
-            <span class="ow">or</span> <span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"summary"</span><span class="p">)</span>
-            <span class="ow">or</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">ensure_ascii</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">module_name</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">attr</span> <span class="o">=</span> <span class="n">reference</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">":"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">found</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">module_name</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">attr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">):</span>
+            <span class="n">found</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">found</span><span class="p">,</span> <span class="n">part</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>  <span class="c1"># an import can fail in any way; each one means no check</span>
+        <span class="k">raise</span> <span class="n">BeforeSendUnavailable</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2"> does not import (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">), so nothing is sent"</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">found</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">BeforeSendUnavailable</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2"> names a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">found</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">, not a callable, so nothing is sent"</span>
         <span class="p">)</span>
-    <span class="k">else</span><span class="p">:</span>
-        <span class="n">summary</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"summary"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"failed"</span><span class="p">)</span>
-        <span class="n">text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="s2">""</span> <span class="k">if</span> <span class="n">text</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">""</span><span class="p">,</span> <span class="n">summary</span><span class="p">)</span> <span class="k">else</span> <span class="n">text</span><span class="o">.</span><span class="n">removeprefix</span><span class="p">(</span><span class="n">summary</span><span class="p">)</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
-        <span class="n">warnings</span> <span class="o">=</span> <span class="p">[</span><span class="n">summary</span><span class="p">,</span> <span class="o">*</span><span class="n">warnings</span><span class="p">]</span>
-    <span class="k">return</span> <span class="p">(</span><span class="n">out</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">),</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">warnings</span><span class="p">),</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">ok</span> <span class="k">else</span> <span class="mi">1</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">found</span>
+
+
+<div class="viewcode-block" id="resolve">
+<a class="viewcode-back" href="../../_autosummary/correspond.outbound.html#correspond.outbound.resolve">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span>
+    <span class="n">before_send</span><span class="p">:</span> <span class="n">BeforeSend</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">BeforeSend</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The check to run and the name it is reported by: the argument, else the config's, else :func:`notice`.</span>
+
+<span class="sd">    Raises :class:`~correspond.errors.BeforeSendUnavailable` when the config names a check</span>
+<span class="sd">    that cannot be loaded, or cannot itself be read.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">before_send</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">before_send</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">BeforeSendUnavailable</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"before_send must be callable, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">before_send</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">, so nothing is sent"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">before_send</span><span class="p">,</span> <span class="n">_name_of</span><span class="p">(</span><span class="n">before_send</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">config</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">CorrespondError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BeforeSendUnavailable</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">; the before_send check it may name is unknown, so nothing is sent"</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">if</span> <span class="n">CONFIG_KEY</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">config</span><span class="p">:</span>
+        <span class="n">misplaced</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="n">name</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">table</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">table</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)</span> <span class="ow">and</span> <span class="n">CONFIG_KEY</span> <span class="ow">in</span> <span class="n">table</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">misplaced</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BeforeSendUnavailable</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"before_send is under [</span><span class="si">{</span><span class="n">misplaced</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">] in the config, where it counts for nothing: "</span>
+                <span class="s2">"move it to the top of the file, before any table; until then nothing is sent"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">notice</span><span class="p">,</span> <span class="n">DEFAULT</span>
+    <span class="n">reference</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="n">CONFIG_KEY</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">_load</span><span class="p">(</span><span class="n">reference</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">reference</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_verdict_line</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stopped</span><span class="p">:</span> <span class="n">Stopped</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">stopped</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">stopped</span><span class="o">.</span><span class="n">error_kind</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">stopped</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">"</span> <span class="o">+</span> <span class="p">(</span><span class="sa">f</span><span class="s2">" (</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">)"</span> <span class="k">if</span> <span class="n">name</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">DEFAULT</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">"no check configured (</span><span class="si">{</span><span class="n">DEFAULT</span><span class="si">}</span><span class="s2"> shows the audience and lets the write go ahead)"</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"passed (</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">)"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_plain</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">value</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="kc">None</span><span class="p">)))</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="check">
+<a class="viewcode-back" href="../../_autosummary/correspond.outbound.html#correspond.outbound.check">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check</span><span class="p">(</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"send"</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">before_send</span><span class="p">:</span> <span class="n">BeforeSend</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">Stopped</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Compute the audience, run the check, and return the plan lines with what stopped the write (``None``: it may go ahead).</span>
+
+<span class="sd">    The audience is computed first, so a write that cannot be checked still shows who it</span>
+<span class="sd">    would have reached. Never raises for anything the check does (``KeyboardInterrupt``</span>
+<span class="sd">    aside, which stops everything).</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">audience</span> <span class="k">as</span> <span class="n">compute_audience</span>
+
+    <span class="n">found</span> <span class="o">=</span> <span class="n">compute_audience</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">)</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># known once the check is resolved</span>
+    <span class="n">stopped</span><span class="p">:</span> <span class="n">Stopped</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">func</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">resolve</span><span class="p">(</span><span class="n">before_send</span><span class="p">)</span>
+        <span class="n">answer</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span>
+            <span class="n">ref</span><span class="p">,</span>
+            <span class="n">draft</span><span class="p">,</span>
+            <span class="n">found</span><span class="p">,</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">operation</span><span class="p">,</span>
+            <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+            <span class="n">message_id</span><span class="o">=</span><span class="n">message_id</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">answer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">BeforeSendFailed</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"the check returned </span><span class="si">{</span><span class="n">answer</span><span class="si">!r}</span><span class="s2">; a check returns None to let the write go ahead, "</span>
+                <span class="s2">"or raises Refused or NeedsApproval"</span>
+            <span class="p">)</span>
+    <span class="k">except</span> <span class="n">Stopped</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="n">stopped</span> <span class="o">=</span> <span class="n">error</span>
+        <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">error_kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CHECK_KINDS</span><span class="p">:</span>
+            <span class="n">stopped</span> <span class="o">=</span> <span class="n">BeforeSendFailed</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"the check stopped the write with error_kind </span><span class="si">{</span><span class="n">error</span><span class="o">.</span><span class="n">error_kind</span><span class="si">!r}</span><span class="s2">, "</span>
+                <span class="sa">f</span><span class="s2">"which is not one of </span><span class="si">{</span><span class="n">CHECK_KINDS</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="o">.</span><span class="n">reason</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">error</span><span class="o">.</span><span class="n">details</span><span class="p">,</span>
+            <span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span>
+        <span class="ne">Exception</span><span class="p">,</span>
+        <span class="ne">SystemExit</span><span class="p">,</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>  <span class="c1"># a check that crashes or exits let nothing through</span>
+        <span class="n">stopped</span> <span class="o">=</span> <span class="n">BeforeSendFailed</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the check raised </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+    <span class="n">lines</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"audience"</span><span class="p">:</span> <span class="n">found</span><span class="o">.</span><span class="n">in_words</span><span class="p">(),</span>
+        <span class="s2">"audience_hash"</span><span class="p">:</span> <span class="n">found</span><span class="o">.</span><span class="n">hash</span><span class="p">,</span>
+        <span class="s2">"before_send"</span><span class="p">:</span> <span class="n">_verdict_line</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">stopped</span><span class="p">),</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="n">stopped</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">stopped</span><span class="o">.</span><span class="n">details</span><span class="p">:</span>
+        <span class="n">lines</span><span class="p">[</span><span class="s2">"before_send_details"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="n">_plain</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">stopped</span><span class="o">.</span><span class="n">details</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="k">return</span> <span class="n">lines</span><span class="p">,</span> <span class="n">stopped</span></div>
 
 </pre></div>
 

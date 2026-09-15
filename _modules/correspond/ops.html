@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="../../_static/documentation_options.js?v=8c5712d9"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.2" />
+  <meta name="docsearch:version" content="0.0.4" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -732,14 +732,22 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">naming the operation when the adapter lacks it; never a silent no-op. Writes check the</span>
 <span class="sd">draft against the channel's capabilities first, and turn a</span>
 <span class="sd">:class:`~correspond.errors.ChannelError` into a ``SendResult`` with ``ok=False``, so a</span>
-<span class="sd">failed notification never crashes its caller. ``dry_run=True`` contacts nothing.</span>
+<span class="sd">failed notification never crashes its caller. ``dry_run=True`` sends nothing and changes</span>
+<span class="sd">nothing; the only call it makes is the audience lookup.</span>
 <span class="sd">:func:`audience` is the exception to refusing: it never raises, because an audience</span>
 <span class="sd">nobody can compute is public.</span>
+
+<span class="sd">Before every write (:func:`send`, :func:`edit`, :func:`react`, :func:`upload`), and in its</span>
+<span class="sd">dry run, the ``before_send`` check runs with the conversation's audience</span>
+<span class="sd">(:mod:`correspond.outbound`). Its verdict and the audience in words go into the plan, and a</span>
+<span class="sd">check that refuses, holds for approval, cannot be loaded or fails stops the write with that</span>
+<span class="sd">``error_kind``. Calling an adapter's own methods skips the check: write through these verbs.</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
 
@@ -1169,7 +1177,9 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">'s audience reader answered for </span><span class="si">{</span><span class="n">found</span><span class="o">.</span><span class="n">ref</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">found</span>
-    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>  <span class="c1"># an audience nobody could compute is public, whatever failed</span>
+    <span class="k">except</span> <span class="p">(</span>
+        <span class="ne">Exception</span>
+    <span class="p">)</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>  <span class="c1"># an audience nobody could compute is public, whatever failed</span>
         <span class="k">return</span> <span class="n">Audience</span><span class="o">.</span><span class="n">unknown</span><span class="p">(</span>
             <span class="n">label</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"computing the audience failed (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">): </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span></div>
@@ -1226,6 +1236,58 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_checked_write</span><span class="p">(</span>
+    <span class="n">adapter</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">before_send</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">write</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">SendResult</span><span class="p">],</span>
+    <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Rehearse the write, run the ``before_send`` check, then write for real unless ``dry_run``.</span>
+
+<span class="sd">    The adapter's own dry run goes first (it contacts nothing), so a draft the channel</span>
+<span class="sd">    rejects is reported before any audience lookup, and a stopped write still shows the plan</span>
+<span class="sd">    it would have run. Nothing is sent unless the check lets it go.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.outbound</span><span class="w"> </span><span class="kn">import</span> <span class="n">check</span>
+
+    <span class="n">rehearsal</span> <span class="o">=</span> <span class="n">_write</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">operation</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">write</span><span class="p">(</span><span class="kc">True</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">rehearsal</span><span class="o">.</span><span class="n">error_kind</span> <span class="o">==</span> <span class="s2">"validation"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">rehearsal</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
+    <span class="n">lines</span><span class="p">,</span> <span class="n">stopped</span> <span class="o">=</span> <span class="n">check</span><span class="p">(</span>
+        <span class="n">ref</span><span class="p">,</span>
+        <span class="n">draft</span><span class="p">,</span>
+        <span class="n">operation</span><span class="o">=</span><span class="n">operation</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="n">message_id</span><span class="o">=</span><span class="n">message_id</span><span class="p">,</span>
+        <span class="n">before_send</span><span class="o">=</span><span class="n">before_send</span><span class="p">,</span>
+        <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">stopped</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">rehearsal</span>
+            <span class="k">if</span> <span class="n">dry_run</span>
+            <span class="k">else</span> <span class="n">_write</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">operation</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">write</span><span class="p">(</span><span class="kc">False</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">result</span><span class="o">.</span><span class="n">plan</span><span class="p">,</span> <span class="o">**</span><span class="n">lines</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+        <span class="n">ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="n">channel</span><span class="o">=</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+        <span class="n">operation</span><span class="o">=</span><span class="n">operation</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="n">account</span><span class="o">=</span><span class="n">rehearsal</span><span class="o">.</span><span class="n">account</span><span class="p">,</span>
+        <span class="n">plan</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">rehearsal</span><span class="o">.</span><span class="n">plan</span><span class="p">,</span> <span class="o">**</span><span class="n">lines</span><span class="p">},</span>
+        <span class="n">error</span><span class="o">=</span><span class="n">stopped</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
+        <span class="n">error_kind</span><span class="o">=</span><span class="n">stopped</span><span class="o">.</span><span class="n">error_kind</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
 <div class="viewcode-block" id="send">
 <a class="viewcode-back" href="../../_autosummary/correspond.ops.html#correspond.send">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
@@ -1237,8 +1299,13 @@ window.runMermaid = runMermaid;</script>
     <span class="n">priority</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">before_send</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Send ``text`` (or a :class:`~correspond.model.Draft`) to a conversation; ``dry_run`` shows the plan and contacts nothing."""</span>
+<span class="w">    </span><span class="sd">"""Send ``text`` (or a :class:`~correspond.model.Draft`) to a conversation; ``dry_run`` shows the plan and sends nothing.</span>
+
+<span class="sd">    ``before_send(ref, draft, audience)`` runs first, on the dry run too; when ``None``, the</span>
+<span class="sd">    config's ``before_send`` reference, else :func:`correspond.outbound.notice`.</span>
+<span class="sd">    """</span>
     <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
     <span class="n">draft</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">text</span>
@@ -1248,8 +1315,15 @@ window.runMermaid = runMermaid;</script>
     <span class="n">problem</span> <span class="o">=</span> <span class="n">_feature_check</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">problem</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">_write</span><span class="p">(</span>
-        <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_checked_write</span><span class="p">(</span>
+        <span class="n">adapter</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">,</span>
+        <span class="s2">"send"</span><span class="p">,</span>
+        <span class="n">draft</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="n">before_send</span><span class="o">=</span><span class="n">before_send</span><span class="p">,</span>
+        <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>
+        <span class="n">write</span><span class="o">=</span><span class="k">lambda</span> <span class="n">rehearse</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">rehearse</span><span class="p">),</span>
     <span class="p">)</span></div>
 
 
@@ -1263,8 +1337,9 @@ window.runMermaid = runMermaid;</script>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">before_send</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Replace the text of a message correspond's account wrote."""</span>
+<span class="w">    </span><span class="sd">"""Replace the text of a message correspond's account wrote; the ``before_send`` check runs first, as for :func:`send`."""</span>
     <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"edit"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
     <span class="n">draft</span> <span class="o">=</span> <span class="n">Draft</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">)</span>
     <span class="n">problem</span> <span class="o">=</span> <span class="n">_feature_check</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
@@ -1272,12 +1347,18 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
     <span class="k">if</span> <span class="n">problem</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"edit"</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">_write</span><span class="p">(</span>
+    <span class="k">return</span> <span class="n">_checked_write</span><span class="p">(</span>
         <span class="n">adapter</span><span class="p">,</span>
         <span class="n">ref</span><span class="p">,</span>
         <span class="s2">"edit"</span><span class="p">,</span>
-        <span class="n">dry_run</span><span class="p">,</span>
-        <span class="k">lambda</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">),</span> <span class="n">draft</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">),</span>
+        <span class="n">draft</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="n">before_send</span><span class="o">=</span><span class="n">before_send</span><span class="p">,</span>
+        <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>
+        <span class="n">message_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">),</span>
+        <span class="n">write</span><span class="o">=</span><span class="k">lambda</span> <span class="n">rehearse</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span>
+            <span class="n">ref</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">),</span> <span class="n">draft</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">rehearse</span>
+        <span class="p">),</span>
     <span class="p">)</span></div>
 
 
@@ -1291,8 +1372,9 @@ window.runMermaid = runMermaid;</script>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">before_send</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Add a reaction to a message (the channel's capabilities list the reactions it accepts)."""</span>
+<span class="w">    </span><span class="sd">"""Add a reaction to a message (the channel's capabilities list the reactions it accepts); the ``before_send`` check sees the reaction as the draft's text."""</span>
     <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"react"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
     <span class="n">allowed</span> <span class="o">=</span> <span class="n">adapter</span><span class="o">.</span><span class="n">capabilities</span><span class="o">.</span><span class="n">reactions</span>
     <span class="n">problem</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1302,12 +1384,18 @@ window.runMermaid = runMermaid;</script>
         <span class="n">problem</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> accepts the reactions </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">allowed</span><span class="p">)</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'(any single emoji)'</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="n">reaction</span><span class="si">!r}</span><span class="s2">"</span>
     <span class="k">if</span> <span class="n">problem</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"react"</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">_write</span><span class="p">(</span>
+    <span class="k">return</span> <span class="n">_checked_write</span><span class="p">(</span>
         <span class="n">adapter</span><span class="p">,</span>
         <span class="n">ref</span><span class="p">,</span>
         <span class="s2">"react"</span><span class="p">,</span>
-        <span class="n">dry_run</span><span class="p">,</span>
-        <span class="k">lambda</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">react</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">),</span> <span class="n">reaction</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">),</span>
+        <span class="n">Draft</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">reaction</span><span class="p">),</span>
+        <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="n">before_send</span><span class="o">=</span><span class="n">before_send</span><span class="p">,</span>
+        <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>
+        <span class="n">message_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">),</span>
+        <span class="n">write</span><span class="o">=</span><span class="k">lambda</span> <span class="n">rehearse</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">react</span><span class="p">(</span>
+            <span class="n">ref</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">message_id</span><span class="p">),</span> <span class="n">reaction</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">rehearse</span>
+        <span class="p">),</span>
     <span class="p">)</span></div>
 
 
@@ -1322,8 +1410,9 @@ window.runMermaid = runMermaid;</script>
     <span class="n">media_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"application/octet-stream"</span><span class="p">,</span>
     <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">before_send</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Send a file to a conversation."""</span>
+<span class="w">    </span><span class="sd">"""Send a file to a conversation. The ``before_send`` check sees only the file name as the draft's text (``operation="upload"``): a check that cannot vet the bytes should hold or refuse."""</span>
     <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"upload"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
     <span class="n">limit</span> <span class="o">=</span> <span class="n">adapter</span><span class="o">.</span><span class="n">capabilities</span><span class="o">.</span><span class="n">max_upload_bytes</span>
     <span class="k">if</span> <span class="n">limit</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">limit</span><span class="p">:</span>
@@ -1334,12 +1423,17 @@ window.runMermaid = runMermaid;</script>
             <span class="n">dry_run</span><span class="p">,</span>
             <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2"> bytes; </span><span class="si">{</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> accepts at most </span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="k">return</span> <span class="n">_write</span><span class="p">(</span>
+    <span class="k">return</span> <span class="n">_checked_write</span><span class="p">(</span>
         <span class="n">adapter</span><span class="p">,</span>
         <span class="n">ref</span><span class="p">,</span>
         <span class="s2">"upload"</span><span class="p">,</span>
-        <span class="n">dry_run</span><span class="p">,</span>
-        <span class="k">lambda</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="n">media_type</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">),</span>
+        <span class="n">Draft</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">name</span><span class="p">),</span>
+        <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="n">before_send</span><span class="o">=</span><span class="n">before_send</span><span class="p">,</span>
+        <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>
+        <span class="n">write</span><span class="o">=</span><span class="k">lambda</span> <span class="n">rehearse</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span>
+            <span class="n">ref</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="n">media_type</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">rehearse</span>
+        <span class="p">),</span>
     <span class="p">)</span></div>
 
 </pre></div>

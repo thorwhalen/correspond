@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="../_static/documentation_options.js?v=8c5712d9"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,7 +55,7 @@
     <link rel="prev" title="correspond.channels.webinbox" href="correspond.channels.webinbox.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.2" />
+  <meta name="docsearch:version" content="0.0.4" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -330,6 +330,7 @@
 <li class="toctree-l2"><a class="reference internal" href="correspond.mcp.html">correspond.mcp</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.model.html">correspond.model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.ops.html">correspond.ops</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.outbound.html">correspond.outbound</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.registry.html">correspond.registry</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.render.html">correspond.render</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.routing.html">correspond.routing</a></li>
@@ -415,11 +416,17 @@ adapter, carrying an <code class="docutils literal notranslate"><span class="pre
 <code class="docutils literal notranslate"><span class="pre">retry_after</span></code>. Reads let them propagate; the write verbs turn them into a
 <code class="docutils literal notranslate"><span class="pre">SendResult</span></code> with <code class="docutils literal notranslate"><span class="pre">ok=False</span></code>, so a notifier never crashes its caller.</p></li>
 </ul>
+<p>A third family stops a write before it leaves: the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check (see
+<a class="reference internal" href="correspond.outbound.html#module-correspond.outbound" title="correspond.outbound"><code class="xref py py-mod docutils literal notranslate"><span class="pre">correspond.outbound</span></code></a>) raises <a class="reference internal" href="#correspond.errors.Refused" title="correspond.errors.Refused"><code class="xref py py-class docutils literal notranslate"><span class="pre">Refused</span></code></a> or <a class="reference internal" href="#correspond.errors.NeedsApproval" title="correspond.errors.NeedsApproval"><code class="xref py py-class docutils literal notranslate"><span class="pre">NeedsApproval</span></code></a>, and the write
+verbs report it as a <code class="docutils literal notranslate"><span class="pre">SendResult</span></code> whose <code class="docutils literal notranslate"><span class="pre">error_kind</span></code> is one of <a class="reference internal" href="#correspond.errors.CHECK_KINDS" title="correspond.errors.CHECK_KINDS"><code class="xref py py-data docutils literal notranslate"><span class="pre">CHECK_KINDS</span></code></a>.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">str</span><span class="p">(</span><span class="n">NotSupported</span><span class="p">(</span><span class="s2">"react"</span><span class="p">,</span> <span class="s2">"ntfy"</span><span class="p">))</span>
 <span class="go">'ntfy does not support react'</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">error</span> <span class="o">=</span> <span class="n">ChannelError</span><span class="p">(</span><span class="s2">"slow down"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"rate_limited"</span><span class="p">,</span> <span class="n">retryable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">retry_after</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">error</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="n">retryable</span><span class="p">,</span> <span class="n">error</span><span class="o">.</span><span class="n">retry_after</span>
 <span class="go">('rate_limited', True, 30.0)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">held</span> <span class="o">=</span> <span class="n">NeedsApproval</span><span class="p">(</span><span class="s2">"public audience"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">held</span><span class="o">.</span><span class="n">error_kind</span><span class="p">,</span> <span class="n">held</span><span class="o">.</span><span class="n">reason</span>
+<span class="go">('needs_approval', 'public audience')</span>
 </pre></div>
 </div>
 <p class="rubric">Module Attributes</p>
@@ -428,12 +435,21 @@ adapter, carrying an <code class="docutils literal notranslate"><span class="pre
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.errors.ERROR_KINDS" title="correspond.errors.ERROR_KINDS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ERROR_KINDS</span></code></a></p></td>
 <td><p>Why a platform call failed, for a caller deciding whether to retry, fix the draft, or ask a human.</p></td>
 </tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.errors.CHECK_KINDS" title="correspond.errors.CHECK_KINDS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CHECK_KINDS</span></code></a></p></td>
+<td><p>Why the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check stopped a write.</p></td>
+</tr>
 </tbody>
 </table>
 </div>
 <p class="rubric">Exceptions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.errors.BeforeSendFailed" title="correspond.errors.BeforeSendFailed"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BeforeSendFailed</span></code></a>(reason, **details)</p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check raised something else, or returned a value, so nothing is sent.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.errors.BeforeSendUnavailable" title="correspond.errors.BeforeSendUnavailable"><code class="xref py py-obj docutils literal notranslate"><span class="pre">BeforeSendUnavailable</span></code></a>(reason, **details)</p></td>
+<td><p>The configured <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check could not be loaded, so nothing is sent.</p></td>
+</tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.errors.ChannelError" title="correspond.errors.ChannelError"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ChannelError</span></code></a>(message, *, kind[, retryable, ...])</p></td>
 <td><p>A platform call that failed, classified so the caller can decide what to do.</p></td>
 </tr>
@@ -446,15 +462,48 @@ adapter, carrying an <code class="docutils literal notranslate"><span class="pre
 <tr class="row-even"><td><p><a class="reference internal" href="#correspond.errors.MissingRequirement" title="correspond.errors.MissingRequirement"><code class="xref py py-obj docutils literal notranslate"><span class="pre">MissingRequirement</span></code></a>(channel, missing, *, fix)</p></td>
 <td><p>Something the channel needs is not here: a credential, a binary, an extra, an OS.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.errors.NotSupported" title="correspond.errors.NotSupported"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NotSupported</span></code></a>(operation, channel, *[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.errors.NeedsApproval" title="correspond.errors.NeedsApproval"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NeedsApproval</span></code></a>(reason, **details)</p></td>
+<td><p>Draft to operator: the write waits for the operator's approval.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.errors.NotSupported" title="correspond.errors.NotSupported"><code class="xref py py-obj docutils literal notranslate"><span class="pre">NotSupported</span></code></a>(operation, channel, *[, ...])</p></td>
 <td><p>The channel does not have this operation (or this feature of it).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.errors.UnknownChannel" title="correspond.errors.UnknownChannel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UnknownChannel</span></code></a>(channel, *[, known, hint])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.errors.Refused" title="correspond.errors.Refused"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Refused</span></code></a>(reason, **details)</p></td>
+<td><p>Block: this draft does not go to this conversation as written.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.errors.Stopped" title="correspond.errors.Stopped"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Stopped</span></code></a>(reason, **details)</p></td>
+<td><p>A write the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check did not let leave: <code class="docutils literal notranslate"><span class="pre">error_kind</span></code> says how, <code class="docutils literal notranslate"><span class="pre">reason</span></code> says why.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.errors.UnknownChannel" title="correspond.errors.UnknownChannel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">UnknownChannel</span></code></a>(channel, *[, known, hint])</p></td>
 <td><p>A channel name that no registered adapter answers to.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<dl class="py exception">
+<dt class="sig sig-object py" id="correspond.errors.BeforeSendFailed">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.errors.</span></span><span class="sig-name descname"><span class="pre">BeforeSendFailed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reason</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">details</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/errors.html#BeforeSendFailed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.errors.BeforeSendFailed" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#correspond.errors.Stopped" title="correspond.errors.Stopped"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stopped</span></code></a></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check raised something else, or returned a value, so nothing is sent.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="correspond.errors.BeforeSendUnavailable">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.errors.</span></span><span class="sig-name descname"><span class="pre">BeforeSendUnavailable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reason</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">details</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/errors.html#BeforeSendUnavailable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.errors.BeforeSendUnavailable" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#correspond.errors.Stopped" title="correspond.errors.Stopped"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stopped</span></code></a></p>
+<p>The configured <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check could not be loaded, so nothing is sent.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="correspond.errors.CHECK_KINDS">
+<span class="sig-prename descclassname"><span class="pre">correspond.errors.</span></span><span class="sig-name descname"><span class="pre">CHECK_KINDS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('refused',</span> <span class="pre">'needs_approval',</span> <span class="pre">'before_send_unavailable',</span> <span class="pre">'before_send_failed')</span></span><a class="headerlink" href="#correspond.errors.CHECK_KINDS" title="Link to this definition">#</a></dt>
+<dd><p>Why the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check stopped a write. Nothing was sent; a retry of the same draft changes nothing.</p>
+</dd></dl>
+
 <dl class="py exception">
 <dt class="sig sig-object py" id="correspond.errors.ChannelError">
 <span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.errors.</span></span><span class="sig-name descname"><span class="pre">ChannelError</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">message</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retryable</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retry_after</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/errors.html#ChannelError"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.errors.ChannelError" title="Link to this definition">#</a></dt>
@@ -494,10 +543,39 @@ adapter, carrying an <code class="docutils literal notranslate"><span class="pre
 </dd></dl>
 
 <dl class="py exception">
+<dt class="sig sig-object py" id="correspond.errors.NeedsApproval">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.errors.</span></span><span class="sig-name descname"><span class="pre">NeedsApproval</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reason</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">details</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/errors.html#NeedsApproval"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.errors.NeedsApproval" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#correspond.errors.Stopped" title="correspond.errors.Stopped"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stopped</span></code></a></p>
+<p>Draft to operator: the write waits for the operator’s approval. Raised by a <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py exception">
 <dt class="sig sig-object py" id="correspond.errors.NotSupported">
 <span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.errors.</span></span><span class="sig-name descname"><span class="pre">NotSupported</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">operation</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">alternatives</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/errors.html#NotSupported"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.errors.NotSupported" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#correspond.errors.CorrespondError" title="correspond.errors.CorrespondError"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorrespondError</span></code></a></p>
 <p>The channel does not have this operation (or this feature of it). Never a silent no-op.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="correspond.errors.Refused">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.errors.</span></span><span class="sig-name descname"><span class="pre">Refused</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reason</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">details</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/errors.html#Refused"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.errors.Refused" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#correspond.errors.Stopped" title="correspond.errors.Stopped"><code class="xref py py-class docutils literal notranslate"><span class="pre">Stopped</span></code></a></p>
+<p>Block: this draft does not go to this conversation as written. Raised by a <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py exception">
+<dt class="sig sig-object py" id="correspond.errors.Stopped">
+<span class="property"><span class="k"><span class="pre">exception</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.errors.</span></span><span class="sig-name descname"><span class="pre">Stopped</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reason</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">details</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/errors.html#Stopped"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.errors.Stopped" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#correspond.errors.CorrespondError" title="correspond.errors.CorrespondError"><code class="xref py py-class docutils literal notranslate"><span class="pre">CorrespondError</span></code></a></p>
+<p>A write the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check did not let leave: <code class="docutils literal notranslate"><span class="pre">error_kind</span></code> says how, <code class="docutils literal notranslate"><span class="pre">reason</span></code> says why.</p>
+<p>Keyword <code class="docutils literal notranslate"><span class="pre">details</span></code> (an approval id, a draft hash) travel with the result, in the
+plan’s <code class="docutils literal notranslate"><span class="pre">before_send_details</span></code>.</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
@@ -560,12 +638,18 @@ adapter, carrying an <code class="docutils literal notranslate"><span class="pre
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.BeforeSendFailed"><code class="docutils literal notranslate"><span class="pre">BeforeSendFailed</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.BeforeSendUnavailable"><code class="docutils literal notranslate"><span class="pre">BeforeSendUnavailable</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.CHECK_KINDS"><code class="docutils literal notranslate"><span class="pre">CHECK_KINDS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.ChannelError"><code class="docutils literal notranslate"><span class="pre">ChannelError</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.CorrespondError"><code class="docutils literal notranslate"><span class="pre">CorrespondError</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.ERROR_KINDS"><code class="docutils literal notranslate"><span class="pre">ERROR_KINDS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.InvalidRef"><code class="docutils literal notranslate"><span class="pre">InvalidRef</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.MissingRequirement"><code class="docutils literal notranslate"><span class="pre">MissingRequirement</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.NeedsApproval"><code class="docutils literal notranslate"><span class="pre">NeedsApproval</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.NotSupported"><code class="docutils literal notranslate"><span class="pre">NotSupported</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.Refused"><code class="docutils literal notranslate"><span class="pre">Refused</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.Stopped"><code class="docutils literal notranslate"><span class="pre">Stopped</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.errors.UnknownChannel"><code class="docutils literal notranslate"><span class="pre">UnknownChannel</span></code></a></li>
 </ul>
   </nav></div>

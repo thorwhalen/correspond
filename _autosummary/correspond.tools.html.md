@@ -65,7 +65,7 @@ List the channels correspond knows: available, missing a module, planned (with i
 
 ### correspond.tools.edit(ref, message_id, text, , dry_run=False)
 
-Replace the text of a message this account wrote (`message_id` as `read` shows it). Run it with `dry_run` first.
+Replace the text of a message this account wrote (`message_id` as `read` shows it). Run it with `dry_run` first. The new text passes the before_send check, as for `send`.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -79,7 +79,7 @@ New activity on a conversation since the last listen (a first listen looks back 
 
 ### correspond.tools.react(ref, message_id, reaction, , dry_run=False)
 
-Add a reaction to a message (`capabilities` lists the reactions a channel accepts). Run it with `dry_run` first.
+Add a reaction to a message (`capabilities` lists the reactions a channel accepts). Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -107,7 +107,7 @@ What a channel needs (install command, binaries, platform, each setting and wher
 
 ### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, dry_run=False)
 
-Send a message to a conversation. Run it with `dry_run` first and show the plan: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities.
+Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

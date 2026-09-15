@@ -42,7 +42,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="../_static/documentation_options.js?v=8c5712d9"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,7 +55,7 @@
     <link rel="prev" title="correspond.testing" href="correspond.testing.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.2" />
+  <meta name="docsearch:version" content="0.0.4" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -330,6 +330,7 @@
 <li class="toctree-l2"><a class="reference internal" href="correspond.mcp.html">correspond.mcp</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.model.html">correspond.model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.ops.html">correspond.ops</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.outbound.html">correspond.outbound</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.registry.html">correspond.registry</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.render.html">correspond.render</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.routing.html">correspond.routing</a></li>
@@ -511,7 +512,7 @@ locally); <code class="docutils literal notranslate"><span class="pre">external<
 <dl class="py function">
 <dt class="sig sig-object py" id="correspond.tools.edit">
 <span class="sig-prename descclassname"><span class="pre">correspond.tools.</span></span><span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/tools.html#edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.tools.edit" title="Link to this definition">#</a></dt>
-<dd><p>Replace the text of a message this account wrote (<code class="code docutils literal notranslate"><span class="pre">message_id</span></code> as <code class="code docutils literal notranslate"><span class="pre">read</span></code> shows it). Run it with <code class="code docutils literal notranslate"><span class="pre">dry_run</span></code> first.</p>
+<dd><p>Replace the text of a message this account wrote (<code class="code docutils literal notranslate"><span class="pre">message_id</span></code> as <code class="code docutils literal notranslate"><span class="pre">read</span></code> shows it). Run it with <code class="code docutils literal notranslate"><span class="pre">dry_run</span></code> first. The new text passes the before_send check, as for <code class="code docutils literal notranslate"><span class="pre">send</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
@@ -533,7 +534,7 @@ locally); <code class="docutils literal notranslate"><span class="pre">external<
 <dl class="py function">
 <dt class="sig sig-object py" id="correspond.tools.react">
 <span class="sig-prename descclassname"><span class="pre">correspond.tools.</span></span><span class="sig-name descname"><span class="pre">react</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reaction</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/tools.html#react"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.tools.react" title="Link to this definition">#</a></dt>
-<dd><p>Add a reaction to a message (<code class="code docutils literal notranslate"><span class="pre">capabilities</span></code> lists the reactions a channel accepts). Run it with <code class="code docutils literal notranslate"><span class="pre">dry_run</span></code> first.</p>
+<dd><p>Add a reaction to a message (<code class="code docutils literal notranslate"><span class="pre">capabilities</span></code> lists the reactions a channel accepts). Run it with <code class="code docutils literal notranslate"><span class="pre">dry_run</span></code> first. It passes the before_send check, as for <code class="code docutils literal notranslate"><span class="pre">send</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
@@ -577,7 +578,7 @@ locally); <code class="docutils literal notranslate"><span class="pre">external<
 <dl class="py function">
 <dt class="sig sig-object py" id="correspond.tools.send">
 <span class="sig-prename descclassname"><span class="pre">correspond.tools.</span></span><span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reply_to</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/tools.html#send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.tools.send" title="Link to this definition">#</a></dt>
-<dd><p>Send a message to a conversation. Run it with <code class="code docutils literal notranslate"><span class="pre">dry_run</span></code> first and show the plan: a real send reaches people and cannot be unsent. <code class="code docutils literal notranslate"><span class="pre">priority</span></code> is low, normal, high or urgent, on channels that have priorities.</p>
+<dd><p>Send a message to a conversation. Run it with <code class="code docutils literal notranslate"><span class="pre">dry_run</span></code> first and show the plan, with who can read it: a real send reaches people and cannot be unsent. <code class="code docutils literal notranslate"><span class="pre">priority</span></code> is low, normal, high or urgent, on channels that have priorities. Every send passes the operator’s before_send check first; <code class="code docutils literal notranslate"><span class="pre">refused</span></code> or <code class="code docutils literal notranslate"><span class="pre">needs_approval</span></code> is the answer for this draft: show the reason to the user, never reword the draft to get past it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>

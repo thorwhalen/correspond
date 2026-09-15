@@ -9,15 +9,21 @@ correspond.errors
    .. autosummary::
    
       ERROR_KINDS
+      CHECK_KINDS
    
    .. rubric:: Exceptions
 
    .. autosummary::
    
+      BeforeSendFailed
+      BeforeSendUnavailable
       ChannelError
       CorrespondError
       InvalidRef
       MissingRequirement
+      NeedsApproval
       NotSupported
+      Refused
+      Stopped
       UnknownChannel
    

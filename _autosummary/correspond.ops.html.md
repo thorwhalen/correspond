@@ -20,9 +20,16 @@ find the adapter in the registry, and raise [`NotSupported`](correspond.errors.h
 naming the operation when the adapter lacks it; never a silent no-op. Writes check the
 draft against the channel’s capabilities first, and turn a
 [`ChannelError`](correspond.errors.html.md#correspond.errors.ChannelError) into a `SendResult` with `ok=False`, so a
-failed notification never crashes its caller. `dry_run=True` contacts nothing.
+failed notification never crashes its caller. `dry_run=True` sends nothing and changes
+nothing; the only call it makes is the audience lookup.
 [`audience()`](#correspond.ops.audience) is the exception to refusing: it never raises, because an audience
 nobody can compute is public.
+
+Before every write ([`send()`](#correspond.ops.send), [`edit()`](#correspond.ops.edit), [`react()`](#correspond.ops.react), [`upload()`](#correspond.ops.upload)), and in its
+dry run, the `before_send` check runs with the conversation’s audience
+([`correspond.outbound`](correspond.outbound.html.md#module-correspond.outbound)). Its verdict and the audience in words go into the plan, and a
+check that refuses, holds for approval, cannot be loaded or fails stops the write with that
+`error_kind`. Calling an adapter’s own methods skips the check: write through these verbs.
 
 ### Module Attributes
 
@@ -34,14 +41,14 @@ nobody can compute is public.
 | [`audience`](#correspond.ops.audience)(ref[, draft, registry])                | Who can read a conversation, asked of its channel now.                                                                                                                  |
 |--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`capabilities`](#correspond.ops.capabilities)(channel, \*[, registry])           | What a channel can do, graded, with its limits.                                                                                                                         |
-| [`edit`](#correspond.ops.edit)(ref, message_id, text, \*[, dry_run, ...]) | Replace the text of a message correspond's account wrote.                                                                                                               |
+| [`edit`](#correspond.ops.edit)(ref, message_id, text, \*[, dry_run, ...]) | Replace the text of a message correspond's account wrote; the `before_send` check runs first, as for [`send()`](#correspond.ops.send).           |
 | [`get_channel`](#correspond.ops.get_channel)(name, \*[, registry])               | The adapter registered under `name`; [`UnknownChannel`](correspond.errors.html.md#correspond.errors.UnknownChannel) says what to do if there is none. |
 | [`implemented`](#correspond.ops.implemented)(adapter)                            | The operations an adapter implements, in [`OPERATIONS`](correspond.model.html.md#correspond.model.OPERATIONS) order.                                 |
 | [`listen`](#correspond.ops.listen)(ref, \*[, cursors, limit, commit, ...])  | Events since the cursor stored for `ref`; each cursor is stored once the consumer moves past its event.                                                                 |
 | [`parse_ref`](#correspond.ops.parse_ref)(ref, \*[, registry])                  | A reference normalised by its channel's adapter (kind and parent filled in, the id validated).                                                                          |
-| [`react`](#correspond.ops.react)(ref, message_id, reaction, \*[, ...])     | Add a reaction to a message (the channel's capabilities list the reactions it accepts).                                                                                 |
+| [`react`](#correspond.ops.react)(ref, message_id, reaction, \*[, ...])     | Add a reaction to a message (the channel's capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft's text.                  |
 | [`read`](#correspond.ops.read)(ref, \*[, since, limit, registry])         | The messages of a conversation, oldest first (`limit` keeps the most recent ones).                                                                                      |
-| [`send`](#correspond.ops.send)(ref, text, \*[, title, reply_to, ...])     | Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and contacts nothing.      |
+| [`send`](#correspond.ops.send)(ref, text, \*[, title, reply_to, ...])     | Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.         |
 | [`upload`](#correspond.ops.upload)(ref, name, data, \*[, media_type, ...])  | Send a file to a conversation.                                                                                                                                          |
 | [`verify`](#correspond.ops.verify)(channel, headers, body, \*[, registry])  | Grade an inbound delivery on `channel` from its headers and raw body.                                                                                                   |
 | [`window`](#correspond.ops.window)(messages, \*[, since, limit])            | Messages sent or edited at or after `since`, oldest first, keeping the last `limit`.                                                                                    |
@@ -137,9 +144,9 @@ What a channel can do, graded, with its limits.
 * **Return type:**
   [`Capabilities`](correspond.model.html.md#correspond.model.Capabilities)
 
-### correspond.ops.edit(ref, message_id, text, , dry_run=False, registry=None)
+### correspond.ops.edit(ref, message_id, text, , dry_run=False, registry=None, before_send=None)
 
-Replace the text of a message correspond’s account wrote.
+Replace the text of a message correspond’s account wrote; the `before_send` check runs first, as for [`send()`](#correspond.ops.send).
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
@@ -175,9 +182,9 @@ A reference normalised by its channel’s adapter (kind and parent filled in, th
 * **Return type:**
   [`ConversationRef`](correspond.model.html.md#correspond.model.ConversationRef)
 
-### correspond.ops.react(ref, message_id, reaction, , dry_run=False, registry=None)
+### correspond.ops.react(ref, message_id, reaction, , dry_run=False, registry=None, before_send=None)
 
-Add a reaction to a message (the channel’s capabilities list the reactions it accepts).
+Add a reaction to a message (the channel’s capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft’s text.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
@@ -189,16 +196,19 @@ The messages of a conversation, oldest first (`limit` keeps the most recent ones
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Message`](correspond.model.html.md#correspond.model.Message)]
 
-### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, dry_run=False, registry=None)
+### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, dry_run=False, registry=None, before_send=None)
 
-Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and contacts nothing.
+Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
+
+`before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
+config’s `before_send` reference, else [`correspond.outbound.notice()`](correspond.outbound.html.md#correspond.outbound.notice).
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, registry=None)
+### correspond.ops.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, registry=None, before_send=None)
 
-Send a file to a conversation.
+Send a file to a conversation. The `before_send` check sees only the file name as the draft’s text (`operation="upload"`): a check that cannot vet the bytes should hold or refuse.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
