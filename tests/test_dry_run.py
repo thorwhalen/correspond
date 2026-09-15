@@ -1,6 +1,6 @@
 """A dry run sends nothing: no network, no subprocess, no Keychain, no store, on every write of every built-in channel.
 
-The one read a dry run of ``send`` or ``edit`` attempts is the audience lookup; here it is
+The one read a dry run attempts is the audience lookup of the ``before_send`` check; here it is
 refused like everything else, so the plan shows the audience as public (defaulted).
 """
 
@@ -107,5 +107,4 @@ def test_every_write_of_every_built_in_channel_dry_runs_without_reaching_anythin
     for write in writes:
         result = write()
         assert result.ok and result.dry_run, result
-        if result.operation in ("send", "edit"):
-            assert result.plan["audience"] and result.plan["before_send"], result
+        assert result.plan["audience"] and result.plan["before_send"], result

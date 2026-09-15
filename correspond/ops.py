@@ -24,10 +24,11 @@ nothing; the only call it makes is the audience lookup.
 :func:`audience` is the exception to refusing: it never raises, because an audience
 nobody can compute is public.
 
-Before :func:`send` or :func:`edit` writes, and in their dry runs, the ``before_send`` check
-runs with the conversation's audience (:mod:`correspond.outbound`). Its verdict and the
-audience in words go into the plan, and a check that refuses, holds for approval, cannot be
-loaded or fails stops the write with that ``error_kind``.
+Before every write (:func:`send`, :func:`edit`, :func:`react`, :func:`upload`), and in its
+dry run, the ``before_send`` check runs with the conversation's audience
+(:mod:`correspond.outbound`). Its verdict and the audience in words go into the plan, and a
+check that refuses, holds for approval, cannot be loaded or fails stops the write with that
+``error_kind``. Calling an adapter's own methods skips the check: write through these verbs.
 """
 
 from __future__ import annotations
@@ -475,6 +476,7 @@ def _checked_write(
     before_send: Callable[..., None] | None,
     registry: Mapping[str, Any] | None,
     write: Callable[[bool], SendResult],
+    message_id: str | None = None,
 ) -> SendResult:
     """Rehearse the write, run the ``before_send`` check, then write for real unless ``dry_run``.
 
@@ -487,7 +489,15 @@ def _checked_write(
     rehearsal = _write(adapter, ref, operation, True, lambda: write(True))
     if rehearsal.error_kind == "validation":
         return dataclasses.replace(rehearsal, dry_run=dry_run)
-    lines, stopped = check(ref, draft, before_send=before_send, registry=registry)
+    lines, stopped = check(
+        ref,
+        draft,
+        operation=operation,
+        dry_run=dry_run,
+        message_id=message_id,
+        before_send=before_send,
+        registry=registry,
+    )
     if stopped is None:
         result = (
             rehearsal
@@ -570,6 +580,7 @@ def edit(
         dry_run=dry_run,
         before_send=before_send,
         registry=registry,
+        message_id=str(message_id),
         write=lambda rehearse: adapter.edit(ref, str(message_id), draft, dry_run=rehearse),
     )
 
@@ -581,8 +592,9 @@ def react(
     *,
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
+    before_send: Callable[..., None] | None = None,
 ) -> SendResult:
-    """Add a reaction to a message (the channel's capabilities list the reactions it accepts)."""
+    """Add a reaction to a message (the channel's capabilities list the reactions it accepts); the ``before_send`` check sees the reaction as the draft's text."""
     adapter, ref = _adapter_for(ref, "react", registry)
     allowed = adapter.capabilities.reactions
     problem = None
@@ -592,12 +604,18 @@ def react(
         problem = f"{adapter.name} accepts the reactions {', '.join(allowed) or '(any single emoji)'}, not {reaction!r}"
     if problem:
         return _invalid(adapter, ref, "react", dry_run, problem)
-    return _write(
+    return _checked_write(
         adapter,
         ref,
         "react",
-        dry_run,
-        lambda: adapter.react(ref, str(message_id), reaction, dry_run=dry_run),
+        Draft(text=reaction),
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
+        message_id=str(message_id),
+        write=lambda rehearse: adapter.react(
+            ref, str(message_id), reaction, dry_run=rehearse
+        ),
     )
 
 
@@ -609,8 +627,9 @@ def upload(
     media_type: str = "application/octet-stream",
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
+    before_send: Callable[..., None] | None = None,
 ) -> SendResult:
-    """Send a file to a conversation."""
+    """Send a file to a conversation. The ``before_send`` check sees only the file name as the draft's text (``operation="upload"``): a check that cannot vet the bytes should hold or refuse."""
     adapter, ref = _adapter_for(ref, "upload", registry)
     limit = adapter.capabilities.max_upload_bytes
     if limit and len(data) > limit:
@@ -621,10 +640,15 @@ def upload(
             dry_run,
             f"{len(data)} bytes; {adapter.name} accepts at most {limit}",
         )
-    return _write(
+    return _checked_write(
         adapter,
         ref,
         "upload",
-        dry_run,
-        lambda: adapter.upload(ref, name, data, media_type=media_type, dry_run=dry_run),
+        Draft(text=name),
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
+        write=lambda rehearse: adapter.upload(
+            ref, name, data, media_type=media_type, dry_run=rehearse
+        ),
     )

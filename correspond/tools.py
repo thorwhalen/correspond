@@ -403,7 +403,7 @@ def edit(ref: str, message_id: str, text: str, *, dry_run: bool = False) -> dict
 
 @_as_result
 def react(ref: str, message_id: str, reaction: str, *, dry_run: bool = False) -> dict:
-    """Add a reaction to a message (`capabilities` lists the reactions a channel accepts). Run it with `dry_run` first."""
+    """Add a reaction to a message (`capabilities` lists the reactions a channel accepts). Run it with `dry_run` first. It passes the before_send check, as for `send`."""
     return _write_result(ops.react(ref, message_id, reaction, dry_run=dry_run))
 
 

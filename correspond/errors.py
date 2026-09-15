@@ -27,6 +27,7 @@ verbs report it as a ``SendResult`` whose ``error_kind`` is one of :data:`CHECK_
 from __future__ import annotations
 
 from collections.abc import Iterable
+from typing import Any
 
 __all__ = [
     "CHECK_KINDS",
@@ -121,12 +122,17 @@ class ChannelError(CorrespondError):
 
 
 class Stopped(CorrespondError):
-    """A write the ``before_send`` check did not let leave: ``error_kind`` says how, ``reason`` says why."""
+    """A write the ``before_send`` check did not let leave: ``error_kind`` says how, ``reason`` says why.
+
+    Keyword ``details`` (an approval id, a draft hash) travel with the result, in the
+    plan's ``before_send_details``.
+    """
 
     error_kind: str = "before_send_failed"
 
-    def __init__(self, reason: str):
+    def __init__(self, reason: str, **details: Any):
         self.reason = str(reason)
+        self.details = dict(details)
         super().__init__(self.reason)
 
 

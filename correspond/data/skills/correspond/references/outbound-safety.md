@@ -47,11 +47,12 @@ Discord and Slack follow the same logic when their adapters land. A Discord chan
 
 ## Built: the `before_send` check
 
-- Every `send` and `edit` computes the audience and runs the operator's check, `before_send(ref, draft, audience)`, before anything leaves, on the dry run too. Both go into the plan.
-- The check is named once in correspond's config (`before_send = "module:attr"`); liaise supplies it. Without one, the default only shows the audience.
+- Every write through correspond (send, edit, react, upload) computes the audience and runs the operator's check, `before_send(ref, draft, audience, *, operation, dry_run, message_id)`, before anything leaves, on the dry run too. Both go into the plan.
+- The check is named once in correspond's config (`before_send = "module:attr"`, at the top of the file); liaise supplies it. Without one, the default only shows the audience.
 - It answers by raising `Refused` (block) or `NeedsApproval` (draft to the operator); the write then sends nothing and reports `refused` or `needs_approval` with the reason.
 - It fails closed: a configured check that cannot be loaded (`before_send_unavailable`), or that crashes (`before_send_failed`), stops the write.
 - The MCP write tools go through it even when the server runs with `--allow-send`.
+- It guards drafts, not the process: the environment and the config file decide which check runs, and a write made without correspond (`gh`) never meets it. liaise's hook covers those.
 
 ## Proposed in the report, not built yet
 

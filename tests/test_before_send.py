@@ -19,10 +19,10 @@ CHECKS_MODULE = "c3_invented_checks"
 CHECKS = """
 from correspond.errors import NeedsApproval, Refused
 
-def refuse(ref, draft, audience):
+def refuse(ref, draft, audience, **context):
     raise Refused("a token")
 
-def hold(ref, draft, audience):
+def hold(ref, draft, audience, **context):
     raise NeedsApproval("public audience")
 
 not_callable = 42
@@ -30,24 +30,36 @@ not_callable = 42
 
 
 class EditableFake(FakeChannel):
-    """The fake channel, with an edit that records what it replaced."""
+    """The fake channel, with an edit, a reaction and an upload that record what they did."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.edited = []
+        self.edited, self.reacted, self.uploaded = [], [], []
 
-    def edit(self, ref, message_id, draft, *, dry_run=False):
+    def _done(self, ref, operation, dry_run, record, **plan):
         if not dry_run:
-            self.edited.append((ref, message_id, draft))
+            record.append((ref, plan))
         return SendResult(
             ok=True,
             channel=self.name,
             conversation=ref.encoded,
-            operation="edit",
+            operation=operation,
             dry_run=dry_run,
-            message_id=message_id,
-            plan={"action": "replace a message", "text": draft.text},
+            plan=plan,
         )
+
+    def edit(self, ref, message_id, draft, *, dry_run=False):
+        return self._done(
+            ref, "edit", dry_run, self.edited, message_id=message_id, text=draft.text
+        )
+
+    def react(self, ref, message_id, reaction, *, dry_run=False):
+        return self._done(
+            ref, "react", dry_run, self.reacted, message_id=message_id, reaction=reaction
+        )
+
+    def upload(self, ref, name, data, *, media_type="", dry_run=False):
+        return self._done(ref, "upload", dry_run, self.uploaded, name=name)
 
 
 @pytest.fixture
@@ -94,7 +106,7 @@ def test_the_check_receives_the_reference_the_draft_and_the_audience_before_the_
 ):
     seen = []
 
-    def check(ref, draft, audience):
+    def check(ref, draft, audience, **context):
         seen.append((ref, draft, audience, len(fake.sent)))
 
     for dry_run in (True, False):
@@ -121,7 +133,7 @@ def test_the_check_receives_the_reference_the_draft_and_the_audience_before_the_
 def test_refused_and_needs_approval_send_nothing_on_either_path(
     fake, check, kind, reason
 ):
-    def before_send(ref, draft, audience):
+    def before_send(ref, draft, audience, **context):
         raise check(reason)
 
     for dry_run in (True, False):
@@ -138,15 +150,30 @@ def test_refused_and_needs_approval_send_nothing_on_either_path(
 
 
 def test_a_check_that_crashes_or_answers_a_value_stops_the_write(fake):
-    def crashes(ref, draft, audience):
+    def crashes(ref, draft, audience, **context):
         raise ValueError("bug in the check")
 
-    def answers(ref, draft, audience):
+    def answers(ref, draft, audience, **context):
         return False
+
+    def exits(ref, draft, audience, **context):
+        raise SystemExit(0)
+
+    class Invented(Refused):
+        error_kind = "invented"
+
+    def invents_a_kind(ref, draft, audience, **context):
+        raise Invented("strange", ticket="t-1")
+
+    def takes_three_arguments(ref, draft, audience):
+        return None
 
     for check, words in (
         (crashes, "ValueError: bug in the check"),
         (answers, "returned False"),
+        (exits, "SystemExit"),
+        (invents_a_kind, "'invented'"),
+        (takes_three_arguments, "TypeError"),
     ):
         result = correspond.send("fake:example/demo", "x", before_send=check)
         assert (result.ok, result.error_kind) == (False, "before_send_failed")
@@ -154,15 +181,63 @@ def test_a_check_that_crashes_or_answers_a_value_stops_the_write(fake):
     assert fake.sent == []
 
 
-def test_edit_runs_the_check_too(editable):
-    def refuse(ref, draft, audience):
+def test_edit_react_and_upload_run_the_check_too(editable):
+    def refuse(ref, draft, audience, **context):
         raise Refused("a token")
 
-    result = correspond.edit("fake:example/demo", "m1", "new text", before_send=refuse)
-    assert (result.ok, result.error_kind, result.operation) == (False, "refused", "edit")
-    assert editable.edited == []
-    assert correspond.edit("fake:example/demo", "m1", "new text").ok
-    assert len(editable.edited) == 1
+    writes = {
+        "edit": lambda **kw: correspond.edit("fake:example/demo", "m1", "new", **kw),
+        "react": lambda **kw: correspond.react("fake:example/demo", "m1", "eyes", **kw),
+        "upload": lambda **kw: correspond.upload(
+            "fake:example/demo", "a.txt", b"x", **kw
+        ),
+    }
+    for operation, write in writes.items():
+        result = write(before_send=refuse)
+        assert (result.ok, result.error_kind, result.operation) == (
+            False,
+            "refused",
+            operation,
+        )
+    assert editable.edited == editable.reacted == editable.uploaded == []
+    for write in writes.values():
+        assert write().ok
+    assert len(editable.edited) == len(editable.reacted) == len(editable.uploaded) == 1
+
+
+def test_the_check_is_told_the_operation_the_dry_run_and_the_message(editable):
+    seen = []
+
+    def check(ref, draft, audience, *, operation, dry_run, message_id, **context):
+        seen.append((operation, dry_run, message_id, draft.text))
+
+    correspond.send("fake:example/demo", "x", dry_run=True, before_send=check)
+    correspond.edit("fake:example/demo", "m1", "y", before_send=check)
+    correspond.react("fake:example/demo", "m2", "eyes", dry_run=True, before_send=check)
+    correspond.upload("fake:example/demo", "a.txt", b"x", before_send=check)
+    assert seen == [
+        ("send", True, None, "x"),
+        ("edit", False, "m1", "y"),
+        ("react", True, "m2", "eyes"),
+        ("upload", False, None, "a.txt"),
+    ]
+
+
+def test_details_a_check_attaches_travel_in_the_plan(fake):
+    def hold(ref, draft, audience, **context):
+        raise NeedsApproval("public audience", approval="a-1", draft_hash=b"x")
+
+    result = correspond.send("fake:example/demo", "x", before_send=hold)
+    assert result.error_kind == "needs_approval"
+    assert result.plan["before_send_details"] == {"approval": "a-1", "draft_hash": "b'x'"}
+    json.dumps(tools._write_result(result))
+
+
+def test_a_before_send_key_inside_a_table_is_refused_not_ignored(fake, config_file):
+    config_file(f'[ntfy]\nbefore_send = "{CHECKS_MODULE}:refuse"\n')
+    result = correspond.send("fake:example/demo", "x")
+    assert (result.ok, result.error_kind) == (False, "before_send_unavailable")
+    assert "[ntfy]" in result.error and fake.sent == []
 
 
 def test_with_no_configuration_the_default_shows_the_audience_and_lets_the_write_go(fake):
@@ -277,9 +352,10 @@ def test_mcp_send_and_edit_pass_through_the_check_with_allow_send(editable, conf
     exposed = {r.split(":", 1)[1]: _without(_resolve(r)) for r in refs(allow_send=True)}
     sent = exposed["send"](ref="fake:example/demo", text="x")
     edited = exposed["edit"](ref="fake:example/demo", message_id="m1", text="x")
-    for result in (sent, edited):
+    reacted = exposed["react"](ref="fake:example/demo", message_id="m1", reaction="eyes")
+    for result in (sent, edited, reacted):
         assert (result["ok"], result["error_kind"]) == (False, "refused"), result
-    assert editable.sent == [] and editable.edited == []
+    assert editable.sent == editable.edited == editable.reacted == []
 
 
 def test_the_mcp_server_itself_passes_through_the_check(editable, configure):
