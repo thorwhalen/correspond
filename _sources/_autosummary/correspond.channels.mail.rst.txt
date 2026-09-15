@@ -1,0 +1,18 @@
+correspond.channels.mail
+========================
+
+.. automodule:: correspond.channels.mail
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      authenticity
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Email
+   

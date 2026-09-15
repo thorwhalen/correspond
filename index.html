@@ -1,377 +1,663 @@
 
-
 <!DOCTYPE html>
-<html class="writer-html5" lang="en" data-content_root="./">
-<head>
-  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Welcome to correspond’s documentation! &mdash; correspond 0.0.1 documentation</title>
-      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=9edc463e" />
-      <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
-      <link rel="stylesheet" type="text/css" href="_static/graphviz.css?v=4ae1632d" />
 
+<html lang="en" data-content_root="./" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="alternate" type="text/markdown" href="index.html.md">
+<link rel="describedby" href="llms.txt" type="text/markdown">
+    <title>correspond &#8212; correspond</title>
   
-      <script src="_static/jquery.js?v=5d32c60e"></script>
-      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
-      <script src="_static/documentation_options.js?v=d45e8c67"></script>
-      <script src="_static/doctools.js?v=fd6eb6e6"></script>
-      <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
-      <script src="_static/toggleprompt.js?v=d7ede5d2"></script>
-      <script src="_static/clipboard.min.js?v=a7894cd8"></script>
-      <script src="_static/copybutton.js?v=f281be69"></script>
-    <script src="_static/js/theme.js"></script>
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="_static/epythet.css?v=c6155191" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+
+    <script src="_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="_static/copybutton.js?v=fd10adb8"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'index';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="correspond" href="module_docs/correspond.html" /> 
-</head>
+    <link rel="next" title="API reference" href="api.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.2" />
+  
+    
+    <script src="_static/searchtools.js"></script>
+    <script src="_static/language_data.js"></script>
+    <script src="searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
 
-<body class="wy-body-for-nav"> 
-  <div class="wy-grid-for-nav">
-    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
-      <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
 
-          
-          
-          <a href="#" class="icon icon-home">
-            correspond
-          </a>
-<div role="search">
-  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
-    <input type="hidden" name="check_keywords" value="yes" />
-    <input type="hidden" name="area" value="default" />
-  </form>
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
 </div>
-        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond.html">correspond</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/__main__.html">correspond.__main__</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels.html">correspond.channels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/_http.html">correspond.channels._http</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/github.html">correspond.channels.github</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/macos.html">correspond.channels.macos</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/mail.html">correspond.channels.mail</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/ntfy.html">correspond.channels.ntfy</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/telegram.html">correspond.channels.telegram</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/webinbox.html">correspond.channels.webinbox</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/errors.html">correspond.errors</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/mcp.html">correspond.mcp</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/model.html">correspond.model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/ops.html">correspond.ops</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/registry.html">correspond.registry</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/render.html">correspond.render</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/routing.html">correspond.routing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/settings.html">correspond.settings</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/stores.html">correspond.stores</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/testing.html">correspond.testing</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/tools.html">correspond.tools</a></li>
-</ul>
 
-        </div>
-      </div>
-    </nav>
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
-          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-          <a href="#">correspond</a>
-      </nav>
+  
+    
+  
 
-      <div class="wy-nav-content">
-        <div class="rst-content">
-          <div role="navigation" aria-label="Page navigation">
-  <ul class="wy-breadcrumbs">
-      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Welcome to correspond’s documentation!</li>
-      <li class="wy-breadcrumbs-aside">
-            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
-      </li>
+<a class="navbar-brand logo" href="#">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">correspond</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
   </ul>
-  <hr/>
-</div>
-          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
-           <div itemprop="articleBody">
-             
-  <section id="welcome-to-correspond-s-documentation">
-<h1>Welcome to correspond’s documentation!<a class="headerlink" href="#welcome-to-correspond-s-documentation" title="Link to this heading"></a></h1>
-<div class="toctree-wrapper compound">
-<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond.html">correspond</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Account"><code class="docutils literal notranslate"><span class="pre">Account</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Attachment"><code class="docutils literal notranslate"><span class="pre">Attachment</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Authenticity"><code class="docutils literal notranslate"><span class="pre">Authenticity</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Capabilities"><code class="docutils literal notranslate"><span class="pre">Capabilities</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.ChannelError"><code class="docutils literal notranslate"><span class="pre">ChannelError</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.ChannelIdentity"><code class="docutils literal notranslate"><span class="pre">ChannelIdentity</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.ConversationRef"><code class="docutils literal notranslate"><span class="pre">ConversationRef</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.CorrespondError"><code class="docutils literal notranslate"><span class="pre">CorrespondError</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Draft"><code class="docutils literal notranslate"><span class="pre">Draft</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Editor"><code class="docutils literal notranslate"><span class="pre">Editor</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Event"><code class="docutils literal notranslate"><span class="pre">Event</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Grade"><code class="docutils literal notranslate"><span class="pre">Grade</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.HistoryDepth"><code class="docutils literal notranslate"><span class="pre">HistoryDepth</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.InvalidRef"><code class="docutils literal notranslate"><span class="pre">InvalidRef</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Listener"><code class="docutils literal notranslate"><span class="pre">Listener</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Message"><code class="docutils literal notranslate"><span class="pre">Message</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.MissingRequirement"><code class="docutils literal notranslate"><span class="pre">MissingRequirement</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.NotSupported"><code class="docutils literal notranslate"><span class="pre">NotSupported</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Reactor"><code class="docutils literal notranslate"><span class="pre">Reactor</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Reader"><code class="docutils literal notranslate"><span class="pre">Reader</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.RouteDecision"><code class="docutils literal notranslate"><span class="pre">RouteDecision</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.SendResult"><code class="docutils literal notranslate"><span class="pre">SendResult</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Support"><code class="docutils literal notranslate"><span class="pre">Support</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.UnknownChannel"><code class="docutils literal notranslate"><span class="pre">UnknownChannel</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Uploader"><code class="docutils literal notranslate"><span class="pre">Uploader</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Verifier"><code class="docutils literal notranslate"><span class="pre">Verifier</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.Writer"><code class="docutils literal notranslate"><span class="pre">Writer</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.capabilities"><code class="docutils literal notranslate"><span class="pre">capabilities()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.channel_registry"><code class="docutils literal notranslate"><span class="pre">channel_registry()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.check_binding"><code class="docutils literal notranslate"><span class="pre">check_binding()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.check_requirements"><code class="docutils literal notranslate"><span class="pre">check_requirements()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.edit"><code class="docutils literal notranslate"><span class="pre">edit()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.get_channel"><code class="docutils literal notranslate"><span class="pre">get_channel()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.listen"><code class="docutils literal notranslate"><span class="pre">listen()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.metadata_rule"><code class="docutils literal notranslate"><span class="pre">metadata_rule()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.parse_ref"><code class="docutils literal notranslate"><span class="pre">parse_ref()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.react"><code class="docutils literal notranslate"><span class="pre">react()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.read"><code class="docutils literal notranslate"><span class="pre">read()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.register_channel"><code class="docutils literal notranslate"><span class="pre">register_channel()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.route"><code class="docutils literal notranslate"><span class="pre">route()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.send"><code class="docutils literal notranslate"><span class="pre">send()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.unregister_channel"><code class="docutils literal notranslate"><span class="pre">unregister_channel()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.upload"><code class="docutils literal notranslate"><span class="pre">upload()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond.html#correspond.verify"><code class="docutils literal notranslate"><span class="pre">verify()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/__main__.html">correspond.__main__</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/__main__.html#correspond.__main__.HELP"><code class="docutils literal notranslate"><span class="pre">HELP</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/__main__.html#correspond.__main__.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels.html">correspond.channels</a></li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/_http.html">correspond.channels._http</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/_http.html#correspond.channels._http.Response"><code class="docutils literal notranslate"><span class="pre">Response</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/_http.html#correspond.channels._http.classify"><code class="docutils literal notranslate"><span class="pre">classify()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/_http.html#correspond.channels._http.retry_after_seconds"><code class="docutils literal notranslate"><span class="pre">retry_after_seconds()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/_http.html#correspond.channels._http.urllib_http"><code class="docutils literal notranslate"><span class="pre">urllib_http()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/github.html">correspond.channels.github</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/github.html#correspond.channels.github.GitHub"><code class="docutils literal notranslate"><span class="pre">GitHub</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/github.html#correspond.channels.github.signature"><code class="docutils literal notranslate"><span class="pre">signature()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/macos.html">correspond.channels.macos</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/macos.html#correspond.channels.macos.MacOS"><code class="docutils literal notranslate"><span class="pre">MacOS</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/mail.html">correspond.channels.mail</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/mail.html#correspond.channels.mail.Email"><code class="docutils literal notranslate"><span class="pre">Email</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/mail.html#correspond.channels.mail.authenticity"><code class="docutils literal notranslate"><span class="pre">authenticity()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/ntfy.html">correspond.channels.ntfy</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/ntfy.html#correspond.channels.ntfy.Ntfy"><code class="docutils literal notranslate"><span class="pre">Ntfy</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/ntfy.html#correspond.channels.ntfy.PRIORITY"><code class="docutils literal notranslate"><span class="pre">PRIORITY</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/telegram.html">correspond.channels.telegram</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/telegram.html#correspond.channels.telegram.Telegram"><code class="docutils literal notranslate"><span class="pre">Telegram</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/channels/webinbox.html">correspond.channels.webinbox</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.Site"><code class="docutils literal notranslate"><span class="pre">Site</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.TokenBucket"><code class="docutils literal notranslate"><span class="pre">TokenBucket</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.WebInbox"><code class="docutils literal notranslate"><span class="pre">WebInbox</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.app_from_env"><code class="docutils literal notranslate"><span class="pre">app_from_env()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.identity_payload"><code class="docutils literal notranslate"><span class="pre">identity_payload()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.mk_app"><code class="docutils literal notranslate"><span class="pre">mk_app()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.requirements_problems"><code class="docutils literal notranslate"><span class="pre">requirements_problems()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.sign_identity"><code class="docutils literal notranslate"><span class="pre">sign_identity()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.site_secret_env"><code class="docutils literal notranslate"><span class="pre">site_secret_env()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/channels/webinbox.html#correspond.channels.webinbox.verify_identity"><code class="docutils literal notranslate"><span class="pre">verify_identity()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/errors.html">correspond.errors</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/errors.html#correspond.errors.ChannelError"><code class="docutils literal notranslate"><span class="pre">ChannelError</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/errors.html#correspond.errors.CorrespondError"><code class="docutils literal notranslate"><span class="pre">CorrespondError</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/errors.html#correspond.errors.ERROR_KINDS"><code class="docutils literal notranslate"><span class="pre">ERROR_KINDS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/errors.html#correspond.errors.InvalidRef"><code class="docutils literal notranslate"><span class="pre">InvalidRef</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/errors.html#correspond.errors.MissingRequirement"><code class="docutils literal notranslate"><span class="pre">MissingRequirement</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/errors.html#correspond.errors.NotSupported"><code class="docutils literal notranslate"><span class="pre">NotSupported</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/errors.html#correspond.errors.UnknownChannel"><code class="docutils literal notranslate"><span class="pre">UnknownChannel</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/mcp.html">correspond.mcp</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/mcp.html#correspond.mcp.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/mcp.html#correspond.mcp.mk_server"><code class="docutils literal notranslate"><span class="pre">mk_server()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/mcp.html#correspond.mcp.refs"><code class="docutils literal notranslate"><span class="pre">refs()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/model.html">correspond.model</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.ACTS_AS"><code class="docutils literal notranslate"><span class="pre">ACTS_AS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.Account"><code class="docutils literal notranslate"><span class="pre">Account</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.Attachment"><code class="docutils literal notranslate"><span class="pre">Attachment</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.Authenticity"><code class="docutils literal notranslate"><span class="pre">Authenticity</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.Capabilities"><code class="docutils literal notranslate"><span class="pre">Capabilities</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.ChannelIdentity"><code class="docutils literal notranslate"><span class="pre">ChannelIdentity</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.ConversationRef"><code class="docutils literal notranslate"><span class="pre">ConversationRef</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.Draft"><code class="docutils literal notranslate"><span class="pre">Draft</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.EVENT_KINDS"><code class="docutils literal notranslate"><span class="pre">EVENT_KINDS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.Event"><code class="docutils literal notranslate"><span class="pre">Event</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.Grade"><code class="docutils literal notranslate"><span class="pre">Grade</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.HistoryDepth"><code class="docutils literal notranslate"><span class="pre">HistoryDepth</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.Message"><code class="docutils literal notranslate"><span class="pre">Message</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.OPERATIONS"><code class="docutils literal notranslate"><span class="pre">OPERATIONS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.PRIORITIES"><code class="docutils literal notranslate"><span class="pre">PRIORITIES</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.SendResult"><code class="docutils literal notranslate"><span class="pre">SendResult</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.Support"><code class="docutils literal notranslate"><span class="pre">Support</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.format_time"><code class="docutils literal notranslate"><span class="pre">format_time()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/model.html#correspond.model.parse_time"><code class="docutils literal notranslate"><span class="pre">parse_time()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/ops.html">correspond.ops</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.Channel"><code class="docutils literal notranslate"><span class="pre">Channel</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.Editor"><code class="docutils literal notranslate"><span class="pre">Editor</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.Listener"><code class="docutils literal notranslate"><span class="pre">Listener</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.PROTOCOLS"><code class="docutils literal notranslate"><span class="pre">PROTOCOLS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.Reactor"><code class="docutils literal notranslate"><span class="pre">Reactor</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.Reader"><code class="docutils literal notranslate"><span class="pre">Reader</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.Uploader"><code class="docutils literal notranslate"><span class="pre">Uploader</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.Verifier"><code class="docutils literal notranslate"><span class="pre">Verifier</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.Writer"><code class="docutils literal notranslate"><span class="pre">Writer</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.capabilities"><code class="docutils literal notranslate"><span class="pre">capabilities()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.edit"><code class="docutils literal notranslate"><span class="pre">edit()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.get_channel"><code class="docutils literal notranslate"><span class="pre">get_channel()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.implemented"><code class="docutils literal notranslate"><span class="pre">implemented()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.listen"><code class="docutils literal notranslate"><span class="pre">listen()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.parse_ref"><code class="docutils literal notranslate"><span class="pre">parse_ref()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.react"><code class="docutils literal notranslate"><span class="pre">react()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.read"><code class="docutils literal notranslate"><span class="pre">read()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.send"><code class="docutils literal notranslate"><span class="pre">send()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.upload"><code class="docutils literal notranslate"><span class="pre">upload()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.verify"><code class="docutils literal notranslate"><span class="pre">verify()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.window"><code class="docutils literal notranslate"><span class="pre">window()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/ops.html#correspond.ops.with_final_cursor"><code class="docutils literal notranslate"><span class="pre">with_final_cursor()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/registry.html">correspond.registry</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/registry.html#correspond.registry.ChannelInfo"><code class="docutils literal notranslate"><span class="pre">ChannelInfo</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/registry.html#correspond.registry.Setting"><code class="docutils literal notranslate"><span class="pre">Setting</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/registry.html#correspond.registry.build_registry"><code class="docutils literal notranslate"><span class="pre">build_registry()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/registry.html#correspond.registry.channels"><code class="docutils literal notranslate"><span class="pre">channels()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/registry.html#correspond.registry.check_requirements"><code class="docutils literal notranslate"><span class="pre">check_requirements()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/registry.html#correspond.registry.info"><code class="docutils literal notranslate"><span class="pre">info()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/registry.html#correspond.registry.load_factory"><code class="docutils literal notranslate"><span class="pre">load_factory()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/registry.html#correspond.registry.register_channel"><code class="docutils literal notranslate"><span class="pre">register_channel()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/registry.html#correspond.registry.require"><code class="docutils literal notranslate"><span class="pre">require()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/registry.html#correspond.registry.resolve"><code class="docutils literal notranslate"><span class="pre">resolve()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/registry.html#correspond.registry.unregister_channel"><code class="docutils literal notranslate"><span class="pre">unregister_channel()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/registry.html#correspond.registry.value"><code class="docutils literal notranslate"><span class="pre">value()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/render.html">correspond.render</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/render.html#correspond.render.render"><code class="docutils literal notranslate"><span class="pre">render()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/routing.html">correspond.routing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/routing.html#correspond.routing.MESSAGE_FIELDS"><code class="docutils literal notranslate"><span class="pre">MESSAGE_FIELDS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/routing.html#correspond.routing.RULES"><code class="docutils literal notranslate"><span class="pre">RULES</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/routing.html#correspond.routing.RouteDecision"><code class="docutils literal notranslate"><span class="pre">RouteDecision</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/routing.html#correspond.routing.binding_matches"><code class="docutils literal notranslate"><span class="pre">binding_matches()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/routing.html#correspond.routing.check_binding"><code class="docutils literal notranslate"><span class="pre">check_binding()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/routing.html#correspond.routing.metadata_rule"><code class="docutils literal notranslate"><span class="pre">metadata_rule()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/routing.html#correspond.routing.route"><code class="docutils literal notranslate"><span class="pre">route()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/settings.html">correspond.settings</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/settings.html#correspond.settings.channel_config"><code class="docutils literal notranslate"><span class="pre">channel_config()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/settings.html#correspond.settings.config_path"><code class="docutils literal notranslate"><span class="pre">config_path()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/settings.html#correspond.settings.data_dir"><code class="docutils literal notranslate"><span class="pre">data_dir()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/settings.html#correspond.settings.keychain_available"><code class="docutils literal notranslate"><span class="pre">keychain_available()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/settings.html#correspond.settings.keychain_get"><code class="docutils literal notranslate"><span class="pre">keychain_get()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/settings.html#correspond.settings.keychain_service"><code class="docutils literal notranslate"><span class="pre">keychain_service()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/settings.html#correspond.settings.load_config"><code class="docutils literal notranslate"><span class="pre">load_config()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/settings.html#correspond.settings.mask"><code class="docutils literal notranslate"><span class="pre">mask()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/stores.html">correspond.stores</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/stores.html#correspond.stores.QuotedKeys"><code class="docutils literal notranslate"><span class="pre">QuotedKeys</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/stores.html#correspond.stores.SafeKeys"><code class="docutils literal notranslate"><span class="pre">SafeKeys</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/stores.html#correspond.stores.bytes_store"><code class="docutils literal notranslate"><span class="pre">bytes_store()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/stores.html#correspond.stores.cursor_store"><code class="docutils literal notranslate"><span class="pre">cursor_store()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/stores.html#correspond.stores.json_store"><code class="docutils literal notranslate"><span class="pre">json_store()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/stores.html#correspond.stores.kind_dir"><code class="docutils literal notranslate"><span class="pre">kind_dir()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/stores.html#correspond.stores.text_store"><code class="docutils literal notranslate"><span class="pre">text_store()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/testing.html">correspond.testing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/testing.html#correspond.testing.FakeChannel"><code class="docutils literal notranslate"><span class="pre">FakeChannel</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/testing.html#correspond.testing.demo_channel"><code class="docutils literal notranslate"><span class="pre">demo_channel()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/testing.html#correspond.testing.demo_message"><code class="docutils literal notranslate"><span class="pre">demo_message()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/testing.html#correspond.testing.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="module_docs/correspond/tools.html">correspond.tools</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/tools.html#correspond.tools.SIDE_EFFECTS"><code class="docutils literal notranslate"><span class="pre">SIDE_EFFECTS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/tools.html#correspond.tools.TOOLS"><code class="docutils literal notranslate"><span class="pre">TOOLS</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/tools.html#correspond.tools.capabilities"><code class="docutils literal notranslate"><span class="pre">capabilities()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/tools.html#correspond.tools.channels"><code class="docutils literal notranslate"><span class="pre">channels()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/tools.html#correspond.tools.edit"><code class="docutils literal notranslate"><span class="pre">edit()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/tools.html#correspond.tools.listen"><code class="docutils literal notranslate"><span class="pre">listen()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/tools.html#correspond.tools.react"><code class="docutils literal notranslate"><span class="pre">react()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/tools.html#correspond.tools.read"><code class="docutils literal notranslate"><span class="pre">read()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/tools.html#correspond.tools.ref"><code class="docutils literal notranslate"><span class="pre">ref()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/tools.html#correspond.tools.requirements"><code class="docutils literal notranslate"><span class="pre">requirements()</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="module_docs/correspond/tools.html#correspond.tools.send"><code class="docutils literal notranslate"><span class="pre">send()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</div>
-</section>
-<section id="indices-and-tables">
-<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h1>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
-<p>Release: 0.0.1</p>
-<p>Last change: Sep 11, 2026</p>
-</section>
-
-
-           </div>
-          </div>
-          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="module_docs/correspond.html" class="btn btn-neutral float-right" title="correspond" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+</nav></div>
+      
     </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
 
-  <hr/>
-
-  <div role="contentinfo">
-    <p></p>
-  </div>
-
-  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
-    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
-    provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
-
-</footer>
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
         </div>
-      </div>
-    </section>
-  </div>
-  <script>
-      jQuery(function () {
-          SphinxRtdTheme.Navigation.enable(true);
-      });
-  </script> 
+      
+      
+        <div class="navbar-item">
 
-</body>
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/correspond" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/correspond" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none"></div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <!-- generated by epythet -->
+<section id="correspond">
+<h1>correspond<a class="headerlink" href="#correspond" title="Link to this heading">#</a></h1>
+<p>A channel facade for AI agents: read, listen, write and identify the sender over GitHub, email, push notifications, Telegram and a web inbox, through one model and one set of verbs.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>correspond
+
+correspond<span class="w"> </span><span class="nb">read</span><span class="w"> </span>github:octocat/hello-world#1<span class="w">        </span><span class="c1"># an issue and its comments, through your gh login</span>
+correspond<span class="w"> </span>send<span class="w"> </span>ntfy:<span class="w"> </span><span class="s2">"backup finished"</span><span class="w"> </span>--dry-run<span class="w">    </span><span class="c1"># the plan; nothing is contacted</span>
+correspond<span class="w"> </span>capabilities<span class="w"> </span>telegram<span class="w">                     </span><span class="c1"># what a channel can do, graded</span>
+correspond<span class="w"> </span>requirements<span class="w"> </span>email<span class="w">                        </span><span class="c1"># what it needs, and where to get it</span>
+</pre></div>
+</div>
+<p>Every channel gets the same shape. A <strong>reference</strong> names a conversation: <code class="docutils literal notranslate"><span class="pre">&lt;channel&gt;:&lt;id&gt;</span></code>. The same verbs (<code class="docutils literal notranslate"><span class="pre">read</span></code>, <code class="docutils literal notranslate"><span class="pre">listen</span></code>, <code class="docutils literal notranslate"><span class="pre">send</span></code>, <code class="docutils literal notranslate"><span class="pre">edit</span></code>, <code class="docutils literal notranslate"><span class="pre">react</span></code>) work wherever a channel allows them, and an operation a channel does not have is refused by name (<code class="docutils literal notranslate"><span class="pre">NotSupported</span></code>), never skipped quietly. Every message carries the identity the platform reports for its author and <strong>how sure the channel is</strong> of it (an authenticity grade).</p>
+<p>correspond knows no people. Linking <code class="docutils literal notranslate"><span class="pre">github:someone</span></code> to a person is a people registry’s job, for example <a class="reference external" href="https://github.com/thorwhalen/acquaint">acquaint</a>.</p>
+<section id="channels">
+<h2>Channels<a class="headerlink" href="#channels" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Channel</p></th>
+<th class="head"><p>References</p></th>
+<th class="head"><p>Operations</p></th>
+<th class="head"><p>Built on</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">github</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo</span></code>, <code class="docutils literal notranslate"><span class="pre">github:owner/repo#12</span></code></p></td>
+<td><p>read, listen (issues and comments), send, edit, react, verify (webhooks), audience</p></td>
+<td><p>the <code class="docutils literal notranslate"><span class="pre">gh</span></code> CLI and its login; correspond holds no token</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">email</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">email:</span></code> (the folder), <code class="docutils literal notranslate"><span class="pre">email:someone&#64;example.org</span></code></p></td>
+<td><p>read, listen, send</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">imaplib</span></code>, <code class="docutils literal notranslate"><span class="pre">smtplib</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ntfy</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ntfy:</span></code> (the default topic), <code class="docutils literal notranslate"><span class="pre">ntfy:&lt;topic&gt;</span></code></p></td>
+<td><p>send</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">urllib</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">macos</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">macos:</span></code></p></td>
+<td><p>send</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">terminal-notifier</span></code> or <code class="docutils literal notranslate"><span class="pre">osascript</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">telegram</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">telegram:</span></code>, <code class="docutils literal notranslate"><span class="pre">telegram:&lt;chat</span> <span class="pre">id&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">telegram:&lt;chat</span> <span class="pre">id&gt;/&lt;topic</span> <span class="pre">id&gt;</span></code></p></td>
+<td><p>listen, read (what listening logged), send, edit, react</p></td>
+<td><p>the Bot API over <code class="docutils literal notranslate"><span class="pre">urllib</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">webinbox</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">webinbox:&lt;site&gt;</span></code></p></td>
+<td><p>read, listen</p></td>
+<td><p>the ASGI collector below, and <code class="docutils literal notranslate"><span class="pre">dol</span></code> stores</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Every v0.1 adapter uses the Python standard library. Discord (<a class="reference external" href="https://github.com/thorwhalen/correspond/issues/2">#2</a>), Slack (<a class="reference external" href="https://github.com/thorwhalen/correspond/issues/3">#3</a>), Signal (<a class="reference external" href="https://github.com/thorwhalen/correspond/issues/4">#4</a>) and Apprise (<a class="reference external" href="https://github.com/thorwhalen/correspond/issues/5">#5</a>) are planned as extras; <code class="docutils literal notranslate"><span class="pre">correspond</span> <span class="pre">channels</span></code> lists them with their issues.</p>
+<p><code class="docutils literal notranslate"><span class="pre">correspond</span> <span class="pre">ref</span> <span class="pre">&lt;reference&gt;</span></code> prints a reference’s canonical form (GitHub names lower-cased, for example), which is the form to store and compare.</p>
+</section>
+<section id="authenticity">
+<h2>Authenticity<a class="headerlink" href="#authenticity" title="Link to this heading">#</a></h2>
+<div class="pst-scrollable-table-container"><table class="table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Grade</p></th>
+<th class="head"><p>Means</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">platform</span></code></p></td>
+<td><p>the platform authenticated the account (GitHub, Telegram)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">crypto</span></code></p></td>
+<td><p>a signed delivery checked with its secret (a GitHub webhook’s <code class="docutils literal notranslate"><span class="pre">X-Hub-Signature-256</span></code>)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bound</span></code></p></td>
+<td><p>the host application signed an assertion about its logged-in user (the web inbox)</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">domain</span></code></p></td>
+<td><p>email whose topmost <code class="docutils literal notranslate"><span class="pre">Authentication-Results</span></code>, added by a server you trust, records DMARC passing for the From domain</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">claimed</span></code></p></td>
+<td><p>nothing verified: a typed name, an ordinary From header, an anonymous report</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">forged</span></code></p></td>
+<td><p>verification was attempted and failed</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Grades are a vocabulary, not a ranking. A policy lists the grades it accepts for a permission (<code class="docutils literal notranslate"><span class="pre">{&quot;platform&quot;,</span> <span class="pre">&quot;bound&quot;,</span> <span class="pre">&quot;crypto&quot;}</span></code>, say), and comparing two grades with <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> raises. Each grade carries its evidence (<code class="docutils literal notranslate"><span class="pre">author_association</span></code> on GitHub, the authserv-id on email, the signing method on the web inbox).</p>
+</section>
+<section id="capabilities">
+<h2>Capabilities<a class="headerlink" href="#capabilities" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">correspond</span> <span class="pre">capabilities</span> <span class="pre">github</span></code> grades each operation <code class="docutils literal notranslate"><span class="pre">full</span></code>, <code class="docutils literal notranslate"><span class="pre">partial</span></code> or <code class="docutils literal notranslate"><span class="pre">none</span></code>, plus whether a write can start a conversation (<code class="docutils literal notranslate"><span class="pre">initiate</span></code>; a Telegram bot cannot), answer a specific message (<code class="docutils literal notranslate"><span class="pre">reply</span></code>) or carry a <code class="docutils literal notranslate"><span class="pre">priority</span></code>, how far back <code class="docutils literal notranslate"><span class="pre">read</span></code> sees (<code class="docutils literal notranslate"><span class="pre">history_depth</span></code>), the limits (text length, reactions), the fields its messages carry in <code class="docutils literal notranslate"><span class="pre">native</span></code> (<code class="docutils literal notranslate"><span class="pre">native_fields</span></code>), the rate limits and notes. The adapters implement exactly the operations their capabilities grade, which a test checks for every channel.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ correspond react ntfy:example-topic m1 eyes
+ntfy does not support react
+</pre></div>
+</div>
+</section>
+<section id="who-can-read-it">
+<h2>Who can read it<a class="headerlink" href="#who-can-read-it" title="Link to this heading">#</a></h2>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>$ correspond audience github:example/app#12
+world-readable; emailed to watchers and participants; archived by others; edits keep a visible history; not retractable
+scope: public
+...
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">correspond</span> <span class="pre">audience</span> <span class="pre">&lt;reference&gt;</span></code> says who can read a conversation, now and plausibly later, before anything is written to it. The first line is the answer in words; the rest is the record (<code class="docutils literal notranslate"><span class="pre">--json</span></code> prints it under <code class="docutils literal notranslate"><span class="pre">audience</span></code>, beside <code class="docutils literal notranslate"><span class="pre">hash</span></code> and <code class="docutils literal notranslate"><span class="pre">words</span></code>): a <code class="docutils literal notranslate"><span class="pre">scope</span></code> (<code class="docutils literal notranslate"><span class="pre">operator</span></code>, <code class="docutils literal notranslate"><span class="pre">named</span></code>, <code class="docutils literal notranslate"><span class="pre">group</span></code>, <code class="docutils literal notranslate"><span class="pre">org</span></code>, <code class="docutils literal notranslate"><span class="pre">public</span></code>), the <code class="docutils literal notranslate"><span class="pre">readers</span></code> known to read it with whether that list is <code class="docutils literal notranslate"><span class="pre">complete</span></code>, the reader <code class="docutils literal notranslate"><span class="pre">classes</span></code> that cannot be listed, whether <code class="docutils literal notranslate"><span class="pre">external</span></code> readers exist, what a send leaves behind (<code class="docutils literal notranslate"><span class="pre">durability</span></code>), how the readership can grow (<code class="docutils literal notranslate"><span class="pre">widening</span></code>), the <code class="docutils literal notranslate"><span class="pre">evidence</span></code> behind each value, and a <code class="docutils literal notranslate"><span class="pre">hash</span></code> that changes when the audience does (and only then, not with the time or the evidence).</p>
+<p><strong>Unknown resolves to public.</strong> A failed or forbidden lookup, a channel without an audience reader and a planned channel all answer <code class="docutils literal notranslate"><span class="pre">public</span></code> with <code class="docutils literal notranslate"><span class="pre">defaulted:</span> <span class="pre">true</span></code> and the reason in <code class="docutils literal notranslate"><span class="pre">evidence</span></code>. Nothing is cached: ask again right before sending. GitHub computes it from the repository’s visibility, its collaborators when the <code class="docutils literal notranslate"><span class="pre">gh</span></code> account may list them, and the organisation’s base permission when the account may read it (otherwise the documented default, read). A GitHub audience is never <code class="docutils literal notranslate"><span class="pre">complete</span></code>: installed apps, webhooks and an organisation’s security managers read without being listable. Every other channel answers public, defaulted, until its audience reader lands (<a class="reference external" href="https://github.com/thorwhalen/correspond/issues/29">#29</a>).</p>
+</section>
+<section id="writing-dry-run-first">
+<h2>Writing: dry run first<a class="headerlink" href="#writing-dry-run-first" title="Link to this heading">#</a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--dry-run</span></code> on <code class="docutils literal notranslate"><span class="pre">send</span></code>, <code class="docutils literal notranslate"><span class="pre">edit</span></code> and <code class="docutils literal notranslate"><span class="pre">react</span></code> contacts nothing and changes nothing. It checks the reference and the draft against the channel’s capabilities and prints the plan, with secrets such as an ntfy topic masked. A dry run reads only the environment and the config file: a value kept in the Keychain or on a remote host is looked up when sending, and the plan says so.</p></li>
+<li><p>A write that fails is a result, not an exception: <code class="docutils literal notranslate"><span class="pre">ok:</span> <span class="pre">false</span></code>, an <code class="docutils literal notranslate"><span class="pre">error_kind</span></code> (<code class="docutils literal notranslate"><span class="pre">auth</span></code>, <code class="docutils literal notranslate"><span class="pre">permission</span></code>, <code class="docutils literal notranslate"><span class="pre">not_found</span></code>, <code class="docutils literal notranslate"><span class="pre">rate_limited</span></code>, <code class="docutils literal notranslate"><span class="pre">network</span></code>, <code class="docutils literal notranslate"><span class="pre">validation</span></code>, <code class="docutils literal notranslate"><span class="pre">unavailable</span></code>), and whether a retry can help (<code class="docutils literal notranslate"><span class="pre">retryable</span></code>, <code class="docutils literal notranslate"><span class="pre">retry_after</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-</span></code> as the text reads it from stdin; <code class="docutils literal notranslate"><span class="pre">--json</span></code> prints the whole result.</p></li>
+</ul>
+</section>
+<section id="listening">
+<h2>Listening<a class="headerlink" href="#listening" title="Link to this heading">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>correspond<span class="w"> </span>listen<span class="w"> </span>github:owner/repo<span class="w">    </span><span class="c1"># issue and comment activity since the last listen</span>
+correspond<span class="w"> </span>listen<span class="w"> </span>email:<span class="w"> </span>--peek<span class="w">        </span><span class="c1"># look without moving the cursor</span>
+</pre></div>
+</div>
+<p>Cursors live under the data root, one per reference. A cursor is stored only after the event before it was handed over, so delivery is at-least-once: deduplicate on <code class="docutils literal notranslate"><span class="pre">delivery_id</span></code>. The first listen looks back a day. Telegram listens account-wide (<code class="docutils literal notranslate"><span class="pre">telegram:</span></code>), because <code class="docutils literal notranslate"><span class="pre">getUpdates</span></code> confirms updates for every chat at once, and logs what it receives: the Bot API has no history.</p>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading">#</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">correspond</span> <span class="pre">requirements</span> <span class="pre">&lt;channel&gt;</span></code> lists everything a channel reads: each setting’s environment variable, what it is, where to get it, and where its value currently comes from (<code class="docutils literal notranslate"><span class="pre">env</span></code>, <code class="docutils literal notranslate"><span class="pre">keychain</span></code>, <code class="docutils literal notranslate"><span class="pre">config</span></code>, <code class="docutils literal notranslate"><span class="pre">default</span></code>, <code class="docutils literal notranslate"><span class="pre">missing</span></code>), never the value.</p>
+<ul>
+<li><p><strong>Secrets</strong> (tokens, passwords, the ntfy topic) come from their environment variable or, on macOS, a Keychain item (<code class="docutils literal notranslate"><span class="pre">security</span> <span class="pre">add-generic-password</span> <span class="pre">-s</span> <span class="pre">correspond-telegram-token</span> <span class="pre">-a</span> <span class="pre">correspond</span> <span class="pre">-w</span></code>). They are never read from the config file.</p></li>
+<li><p><strong>Other settings</strong> may also go in <code class="docutils literal notranslate"><span class="pre">~/.config/correspond/config.toml</span></code> (or <code class="docutils literal notranslate"><span class="pre">$CORRESPOND_CONFIG</span></code>), one table per channel:</p>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[email]</span>
+<span class="n">imap_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"imap.example.org"</span>
+<span class="n">smtp_host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"smtp.example.org"</span>
+<span class="n">trusted_authserv_ids</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"mx.example.org"</span><span class="p">]</span>
+
+<span class="k">[ntfy]</span>
+<span class="n">topic_keychain_service</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"my-ntfy-topic"</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>State</strong> (cursors, the Telegram log, web inbox reports) lives under <code class="docutils literal notranslate"><span class="pre">~/.local/share/correspond/</span></code> (or <code class="docutils literal notranslate"><span class="pre">$CORRESPOND_DATA_DIR</span></code>), one folder per kind, never in a repository.</p></li>
+</ul>
+</section>
+<section id="the-web-inbox">
+<h2>The web inbox<a class="headerlink" href="#the-web-inbox" title="Link to this heading">#</a></h2>
+<p>A web page posts feedback to a small ASGI collector; <code class="docutils literal notranslate"><span class="pre">webinbox:&lt;site&gt;</span></code> reads what it stored. The app binds nothing itself: run it on localhost behind your own server.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>uvicorn
+<span class="nb">export</span><span class="w"> </span><span class="nv">CORRESPOND_WEBINBOX_SITES</span><span class="o">=</span>example-site<span class="w"> </span><span class="nv">CORRESPOND_WEBINBOX_ORIGINS</span><span class="o">=</span>https://app.example.org
+<span class="nb">export</span><span class="w"> </span><span class="nv">CORRESPOND_WEBINBOX_SECRET</span><span class="o">=</span>...<span class="w">   </span><span class="c1"># shared with the host application's server</span>
+uvicorn<span class="w"> </span>--factory<span class="w"> </span>correspond.channels.webinbox:app_from_env<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">8765</span>
+</pre></div>
+</div>
+<p>The rate limit applies per visitor address. uvicorn already reports the visitor for a proxy on the same host (its <code class="docutils literal notranslate"><span class="pre">--forwarded-allow-ips</span></code> default); for a proxy elsewhere, set <code class="docutils literal notranslate"><span class="pre">CORRESPOND_WEBINBOX_TRUSTED_PROXIES</span></code> to the number of proxies in front, or every visitor shares the proxy’s limit. Forwarded addresses are believed only from a non-public connection, and IPv6 visitors are limited per /64. Several sites on one collector need a secret each, <code class="docutils literal notranslate"><span class="pre">CORRESPOND_WEBINBOX_SECRET_&lt;SITE&gt;</span></code> (the site name upper-cased, <code class="docutils literal notranslate"><span class="pre">-</span></code> as <code class="docutils literal notranslate"><span class="pre">_</span></code>) or a Keychain item <code class="docutils literal notranslate"><span class="pre">correspond-webinbox-secret-&lt;site&gt;</span></code>, so that no site’s server can sign identities for another. The shared <code class="docutils literal notranslate"><span class="pre">CORRESPOND_WEBINBOX_SECRET</span></code> serves a single site only, and <code class="docutils literal notranslate"><span class="pre">correspond</span> <span class="pre">requirements</span> <span class="pre">webinbox</span></code> reports a configuration the collector would refuse.</p>
+<p><code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/example-site/reports</span></code> takes JSON with a required <code class="docutils literal notranslate"><span class="pre">text</span></code> and optional <code class="docutils literal notranslate"><span class="pre">name</span></code>, <code class="docutils literal notranslate"><span class="pre">email</span></code>, <code class="docutils literal notranslate"><span class="pre">page</span></code>, <code class="docutils literal notranslate"><span class="pre">context</span></code>, <code class="docutils literal notranslate"><span class="pre">attachments</span></code> (base64, stored by SHA-256, referenced rather than inlined) and <code class="docutils literal notranslate"><span class="pre">identity</span></code>. Without <code class="docutils literal notranslate"><span class="pre">identity</span></code> a report is <code class="docutils literal notranslate"><span class="pre">claimed</span></code>. The host application’s server can sign its logged-in user, which makes the report <code class="docutils literal notranslate"><span class="pre">bound</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">correspond.channels.webinbox</span><span class="w"> </span><span class="kn">import</span> <span class="n">sign_identity</span>
+
+<span class="n">identity</span> <span class="o">=</span> <span class="n">sign_identity</span><span class="p">(</span>
+    <span class="n">secret</span><span class="p">,</span> <span class="s2">"example-site"</span><span class="p">,</span> <span class="n">user_id</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">display_name</span>
+<span class="p">)</span>  <span class="c1"># put this in the page</span>
+</pre></div>
+</div>
+<p>Any server language can do the same: HMAC-SHA256, hex, over the lines <code class="docutils literal notranslate"><span class="pre">v1</span></code>, site, issued-at (Unix seconds), user id, name, email. An invalid or expired signature is refused (401) and nothing is stored. The collector also enforces the origin allowlist (with CORS preflight), a per-client rate limit, and size and media-type limits.</p>
+</section>
+<section id="routing">
+<h2>Routing<a class="headerlink" href="#routing" title="Link to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">correspond</span><span class="w"> </span><span class="kn">import</span> <span class="n">metadata_rule</span><span class="p">,</span> <span class="n">route</span>
+
+<span class="n">decision</span> <span class="o">=</span> <span class="n">route</span><span class="p">(</span>
+    <span class="n">message</span><span class="p">,</span>
+    <span class="n">bindings</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"github:example/app?labels=partner:*"</span><span class="p">:</span> <span class="s2">"subject:app"</span>
+    <span class="p">},</span>  <span class="c1"># 1. where it arrived</span>
+    <span class="n">threads</span><span class="o">=</span><span class="p">{</span><span class="s2">"github:example/app#12"</span><span class="p">:</span> <span class="s2">"case:7"</span><span class="p">},</span>  <span class="c1"># 2. what it continues</span>
+    <span class="n">rules</span><span class="o">=</span><span class="p">[</span><span class="n">metadata_rule</span><span class="p">(</span><span class="s2">"queue:urgent"</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="s2">"priority:high"</span><span class="p">)],</span>  <span class="c1"># 3. what it carries</span>
+    <span class="n">classifier</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># 4. optional, last</span>
+<span class="p">)</span>
+<span class="n">decision</span><span class="o">.</span><span class="n">target</span><span class="p">,</span> <span class="n">decision</span><span class="o">.</span><span class="n">rule</span><span class="p">,</span> <span class="n">decision</span><span class="o">.</span><span class="n">reason</span>
+</pre></div>
+</div>
+<p>The rules are yours; correspond runs them in that order and says which one decided. Nothing matched returns <code class="docutils literal notranslate"><span class="pre">None</span></code>: the message is unrouted. Check bindings when you load them: <code class="docutils literal notranslate"><span class="pre">check_binding(pattern)</span></code> lists what would make one never match, such as an unknown channel, or <code class="docutils literal notranslate"><span class="pre">?label=</span></code> where GitHub messages carry <code class="docutils literal notranslate"><span class="pre">labels</span></code>.</p>
+</section>
+<section id="python">
+<h2>Python<a class="headerlink" href="#python" title="Link to this heading">#</a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">correspond</span>
+
+<span class="n">messages</span> <span class="o">=</span> <span class="n">correspond</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">"github:octocat/hello-world#1"</span><span class="p">)</span>
+<span class="n">messages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">author</span><span class="o">.</span><span class="n">handle</span><span class="p">,</span> <span class="n">messages</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">authenticity</span><span class="o">.</span><span class="n">grade</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">correspond</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
+    <span class="s2">"email:someone@example.org"</span><span class="p">,</span> <span class="s2">"It is fixed."</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">"The export"</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+<span class="n">result</span><span class="o">.</span><span class="n">plan</span>
+
+<span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">correspond</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="s2">"webinbox:example-site"</span><span class="p">):</span>
+    <span class="o">...</span>
+
+<span class="n">correspond</span><span class="o">.</span><span class="n">register_channel</span><span class="p">(</span>
+    <span class="n">MyChannel</span><span class="p">()</span>
+<span class="p">)</span>  <span class="c1"># anything with name, capabilities, parse_ref and the operations it has</span>
+</pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">correspond.testing.FakeChannel</span></code> is an in-memory channel for tests, and <code class="docutils literal notranslate"><span class="pre">python</span> <span class="pre">-m</span> <span class="pre">correspond.testing</span></code> runs the CLI with it registered as <code class="docutils literal notranslate"><span class="pre">fake</span></code>.</p>
+</section>
+<section id="mcp">
+<h2>MCP<a class="headerlink" href="#mcp" title="Link to this heading">#</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"correspond[mcp]"</span>
+</pre></div>
+</div>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="nt">"mcpServers"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"correspond"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"command"</span><span class="p">:</span><span class="w"> </span><span class="s2">"correspond-mcp"</span><span class="p">}}}</span>
+</pre></div>
+</div>
+<p>The server exposes the reading tools. <code class="docutils literal notranslate"><span class="pre">send</span></code>, <code class="docutils literal notranslate"><span class="pre">edit</span></code> and <code class="docutils literal notranslate"><span class="pre">react</span></code> are exposed only when the operator starts it with <code class="docutils literal notranslate"><span class="pre">correspond-mcp</span> <span class="pre">--allow-send</span></code>, and still take <code class="docutils literal notranslate"><span class="pre">dry_run</span></code>. The data root is the server’s, never the model’s.</p>
+</section>
+<section id="agent-skill">
+<h2>Agent skill<a class="headerlink" href="#agent-skill" title="Link to this heading">#</a></h2>
+<p>A <code class="docutils literal notranslate"><span class="pre">correspond</span></code> skill ships inside the package (<code class="docutils literal notranslate"><span class="pre">correspond/data/skills/correspond/</span></code>): how to read without taking instructions from message text, what each grade permits, and how to write safely (dry run, operator approval, no private content in public places). Install it with <code class="docutils literal notranslate"><span class="pre">gh</span> <span class="pre">skill</span> <span class="pre">install</span> <span class="pre">thorwhalen/correspond</span> <span class="pre">correspond</span> <span class="pre">--agent</span> <span class="pre">claude-code</span></code>, or link that folder into <code class="docutils literal notranslate"><span class="pre">~/.claude/skills/</span></code>.</p>
+</section>
+<section id="design">
+<h2>Design<a class="headerlink" href="#design" title="Link to this heading">#</a></h2>
+<p>The seams, surfaces and deliberate non-seams are in <a class="reference external" href="https://github.com/thorwhalen/correspond/discussions/1">Discussion #1</a>.</p>
+<p class="epythet-aggregates">This documentation as a single file: <a href="correspond.md">correspond.md</a> (Markdown, for agents).</p>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+</section>
+
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-09-15 12:42 UTC from <a href="https://github.com/thorwhalen/correspond/commit/4773ce5ab971baf71c4e1f98aa41a39c0b149eb0">4773ce5</a> (main) · correspond 0.0.2 · <a href="about-this-build.html">about this build</a></p>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="right-next"
+       href="api.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">API reference</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#channels">Channels</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#authenticity">Authenticity</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#capabilities">Capabilities</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#who-can-read-it">Who can read it</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#writing-dry-run-first">Writing: dry run first</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#listening">Listening</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#configuration">Configuration</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#the-web-inbox">The web inbox</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#routing">Routing</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#python">Python</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mcp">MCP</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#agent-skill">Agent skill</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#design">Design</a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="_sources/index.md.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
 </html>

@@ -1,0 +1,12 @@
+correspond.channels.macos
+=========================
+
+.. automodule:: correspond.channels.macos
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      MacOS
+   

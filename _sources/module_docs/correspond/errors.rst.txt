@@ -1,4 +1,0 @@
-correspond.errors
-=================
-.. automodule:: correspond.errors
-   :members:

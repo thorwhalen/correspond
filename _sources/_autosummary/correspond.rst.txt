@@ -1,0 +1,87 @@
+﻿correspond
+==========
+
+.. automodule:: correspond
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      audience
+      capabilities
+      channel_registry
+      check_binding
+      check_requirements
+      edit
+      get_channel
+      listen
+      metadata_rule
+      parse_ref
+      react
+      read
+      register_channel
+      route
+      send
+      unregister_channel
+      upload
+      verify
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Account
+      Attachment
+      Audience
+      AudienceReader
+      Authenticity
+      Capabilities
+      ChannelIdentity
+      ConversationRef
+      Draft
+      Editor
+      Event
+      Grade
+      HistoryDepth
+      Listener
+      Message
+      Reactor
+      Reader
+      RouteDecision
+      Scope
+      SendResult
+      Support
+      Uploader
+      Verifier
+      Writer
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      ChannelError
+      CorrespondError
+      InvalidRef
+      MissingRequirement
+      NotSupported
+      UnknownChannel
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   channels
+   errors
+   mcp
+   model
+   ops
+   registry
+   render
+   routing
+   settings
+   stores
+   testing
+   tools

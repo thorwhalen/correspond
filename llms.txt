@@ -1,0 +1,38 @@
+# correspond
+
+> A channel facade for AI agents: read, listen, write and identify the sender over GitHub, email, push notifications, Telegram and a web inbox.
+
+
+## Pages
+
+- [correspond](index.html.md): A channel facade for AI agents: read, listen, write and identify the sender over GitHub, email, push...
+- [API reference](api.html.md): | [`correspond`](_autosummary/correspond.html.md#module-correspond)   | correspond: a channel facade...
+- [correspond](_autosummary/correspond.html.md): correspond: a channel facade for AI agents.
+- [correspond.channels](_autosummary/correspond.channels.html.md): The built-in channel adapters, one module each.
+- [correspond.channels.github](_autosummary/correspond.channels.github.html.md): GitHub: issues, pull request conversations and discussions, through the `gh` CLI.
+- [correspond.channels.macos](_autosummary/correspond.channels.macos.html.md): macOS Notification Centre: a banner on this Mac (send only).
+- [correspond.channels.mail](_autosummary/correspond.channels.mail.html.md): Email: IMAP to read and listen, SMTP to send, with the standard library.
+- [correspond.channels.ntfy](_autosummary/correspond.channels.ntfy.html.md): ntfy: push notifications to a phone or a desktop through an ntfy server (send only).
+- [correspond.channels.telegram](_autosummary/correspond.channels.telegram.html.md): Telegram: a bot over the Bot API, with the standard library.
+- [correspond.channels.webinbox](_autosummary/correspond.channels.webinbox.html.md): The web inbox: a small ASGI collector web pages post reports to, and the channel that reads them.
+- [correspond.errors](_autosummary/correspond.errors.html.md): What correspond raises, and the vocabulary a failed write reports.
+- [correspond.mcp](_autosummary/correspond.mcp.html.md): MCP over stdio: the same tools, for Claude Desktop and other local MCP clients.
+- [correspond.model](_autosummary/correspond.model.html.md): The data model every channel is described in.
+- [correspond.ops](_autosummary/correspond.ops.html.md): The operations: small protocols an adapter implements a subset of, and the verbs that call them.
+- [correspond.registry](_autosummary/correspond.registry.html.md): Which channels exist: the built-in channel table, the registry built from it, and what each channel ...
+- [correspond.render](_autosummary/correspond.render.html.md): Turning a tool’s result into terminal output: `(stdout, stderr, exit code)`.
+- [correspond.routing](_autosummary/correspond.routing.html.md): Deciding what a message is about: a transparent rule chain.
+- [correspond.settings](_autosummary/correspond.settings.html.md): Where correspond keeps state and reads configuration, and how it finds a secret.
+- [correspond.stores](_autosummary/correspond.stores.html.md): The state stores: listen cursors, the web inbox’s reports and blobs, the Telegram log.
+- [correspond.testing](_autosummary/correspond.testing.html.md): An in-memory channel for tests and rehearsals, and `python -m correspond.testing`: the CLI with it r...
+- [correspond.tools](_autosummary/correspond.tools.html.md): The single source of truth for every surface: plain functions, flat arguments in, JSON-ready dicts o...
+- [For AI agents](ai-agents.html.md): `correspond` ships artifacts for coding agents alongside its code. This page lists
+- [About this build](about-this-build.html.md): This documentation was built on **2026-09-15 12:42 UTC** from commit <a href="https://github.com/tho...
+
+---
+
+For more comprehensive documentation, see [correspond.md](correspond.md)
+
+## Build
+
+- [build_info.json](build_info.json): build provenance (commit, version, tool versions, whether the docs match the package)

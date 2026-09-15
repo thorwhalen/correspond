@@ -1,0 +1,28 @@
+correspond.registry
+===================
+
+.. automodule:: correspond.registry
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      build_registry
+      channels
+      check_requirements
+      info
+      load_factory
+      register_channel
+      require
+      resolve
+      unregister_channel
+      value
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ChannelInfo
+      Setting
+   

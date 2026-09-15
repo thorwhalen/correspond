@@ -1,4 +1,0 @@
-correspond.stores
-=================
-.. automodule:: correspond.stores
-   :members:

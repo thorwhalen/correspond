@@ -1,4 +1,0 @@
-correspond.testing
-==================
-.. automodule:: correspond.testing
-   :members:

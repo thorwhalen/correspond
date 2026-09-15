@@ -1,0 +1,781 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="alternate" type="text/markdown" href="correspond.channels.webinbox.html.md">
+<link rel="describedby" href="../llms.txt" type="text/markdown">
+    <title>correspond.channels.webinbox &#8212; correspond</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=c6155191" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+
+    <script src="../_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=fd10adb8"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/correspond.channels.webinbox';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="correspond.errors" href="correspond.errors.html" />
+    <link rel="prev" title="correspond.channels.telegram" href="correspond.channels.telegram.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.2" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">correspond</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/correspond" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/correspond" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="correspond.html">correspond</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="correspond.channels.html">correspond.channels</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.github.html">correspond.channels.github</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">correspond.channels.webinbox</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.errors.html">correspond.errors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.mcp.html">correspond.mcp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.model.html">correspond.model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.ops.html">correspond.ops</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.registry.html">correspond.registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.render.html">correspond.render</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.routing.html">correspond.routing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.settings.html">correspond.settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.stores.html">correspond.stores</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.testing.html">correspond.testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.tools.html">correspond.tools</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="correspond.html" class="nav-link">correspond</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="correspond.channels.html" class="nav-link">correspond.channels</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">correspond.channels.webinbox</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-correspond.channels.webinbox">
+<span id="correspond-channels-webinbox"></span><h1>correspond.channels.webinbox<a class="headerlink" href="#module-correspond.channels.webinbox" title="Link to this heading">#</a></h1>
+<p>The web inbox: a small ASGI collector web pages post reports to, and the channel that reads them.</p>
+<p><strong>The collector</strong> (<a class="reference internal" href="#correspond.channels.webinbox.mk_app" title="correspond.channels.webinbox.mk_app"><code class="xref py py-func docutils literal notranslate"><span class="pre">mk_app()</span></code></a>; or <code class="docutils literal notranslate"><span class="pre">uvicorn</span> <span class="pre">--factory</span> <span class="pre">correspond.channels.webinbox:app_from_env</span></code>)
+accepts <code class="docutils literal notranslate"><span class="pre">POST</span> <span class="pre">/&lt;site&gt;/reports</span></code> with a JSON body:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"The export drops the last row."</span><span class="p">,</span>
+ <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Ada"</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="s2">"ada@example.org"</span><span class="p">,</span>
+ <span class="s2">"page"</span><span class="p">:</span> <span class="s2">"https://app.example.org/export"</span><span class="p">,</span>
+ <span class="s2">"context"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"viewport"</span><span class="p">:</span> <span class="s2">"1280x800"</span><span class="p">},</span>
+ <span class="s2">"identity"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"user"</span><span class="p">:</span> <span class="s2">"u-42"</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Ada"</span><span class="p">,</span> <span class="s2">"email"</span><span class="p">:</span> <span class="n">null</span><span class="p">,</span> <span class="s2">"issued_at"</span><span class="p">:</span> <span class="mi">1757592000</span><span class="p">,</span> <span class="s2">"sig"</span><span class="p">:</span> <span class="s2">"&lt;hex&gt;"</span><span class="p">},</span>
+ <span class="s2">"attachments"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"screen.png"</span><span class="p">,</span> <span class="s2">"media_type"</span><span class="p">:</span> <span class="s2">"image/png"</span><span class="p">,</span> <span class="s2">"data"</span><span class="p">:</span> <span class="s2">"&lt;base64&gt;"</span><span class="p">}]}</span>
+</pre></div>
+</div>
+<p>Only <code class="docutils literal notranslate"><span class="pre">text</span></code> is required.</p>
+<ul class="simple">
+<li><p><strong>Identity.</strong> Without <code class="docutils literal notranslate"><span class="pre">identity</span></code> a report is <code class="docutils literal notranslate"><span class="pre">claimed</span></code> (<code class="docutils literal notranslate"><span class="pre">name</span></code> and <code class="docutils literal notranslate"><span class="pre">email</span></code> are
+whatever was typed). With one, the host application’s <em>server</em> has signed its logged-in
+user with the site’s secret (<a class="reference internal" href="#correspond.channels.webinbox.sign_identity" title="correspond.channels.webinbox.sign_identity"><code class="xref py py-func docutils literal notranslate"><span class="pre">sign_identity()</span></code></a>); a valid, fresh signature makes the
+report <code class="docutils literal notranslate"><span class="pre">bound</span></code>. An invalid or expired signature is refused with 401 and nothing is
+stored.</p></li>
+<li><p><strong>Origins.</strong> A browser’s <code class="docutils literal notranslate"><span class="pre">Origin</span></code> must be on the site’s allowlist (403 otherwise); a
+request without one is refused unless the site allows server-to-server posts. CORS
+preflight is answered for allowed origins only. An origin check stops other pages from
+posting through a visitor’s browser; it authenticates no one.</p></li>
+<li><p><strong>Limits.</strong> A per-client token bucket (429 with <code class="docutils literal notranslate"><span class="pre">Retry-After</span></code>), the body size (413),
+caps on text, context and attachments, and a media-type allowlist.</p></li>
+<li><p><strong>Storage.</strong> A report is JSON in <code class="docutils literal notranslate"><span class="pre">store</span></code> under <code class="docutils literal notranslate"><span class="pre">&lt;site&gt;/&lt;sortable</span> <span class="pre">id&gt;.json</span></code>;
+attachments are bytes in <code class="docutils literal notranslate"><span class="pre">blobs</span></code> under their SHA-256, referenced and never inlined.</p></li>
+</ul>
+<p>The app binds nothing: run it on localhost behind your own server, and tell it how many
+reverse proxies stand in front (<code class="docutils literal notranslate"><span class="pre">trusted_proxies</span></code>) so the rate limit applies per visitor
+rather than to the proxy. The limiter lives in memory, per process. Each site has its own
+secret, so a server that can sign for one site cannot sign for another.</p>
+<p><strong>The channel</strong> (<a class="reference internal" href="#correspond.channels.webinbox.WebInbox" title="correspond.channels.webinbox.WebInbox"><code class="xref py py-class docutils literal notranslate"><span class="pre">WebInbox</span></code></a>): <code class="docutils literal notranslate"><span class="pre">webinbox:&lt;site&gt;</span></code> reads and listens to what the
+collector stored. It has no writer: a reply to a reporter goes out on another channel.</p>
+<p>The identity payload is plain lines, so any server language can sign it:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">identity_payload</span><span class="p">(</span><span class="s2">"example-site"</span><span class="p">,</span> <span class="s2">"u-42"</span><span class="p">,</span> <span class="mi">1757592000</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Ada"</span><span class="p">)</span>
+<span class="go">b'v1\nexample-site\n1757592000\nu-42\nAda\n'</span>
+</pre></div>
+</div>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.webinbox.app_from_env" title="correspond.channels.webinbox.app_from_env"><code class="xref py py-obj docutils literal notranslate"><span class="pre">app_from_env</span></code></a>()</p></td>
+<td><p>The collector configured from the environment and the <code class="docutils literal notranslate"><span class="pre">[webinbox]</span></code> config table (for <code class="docutils literal notranslate"><span class="pre">uvicorn</span> <span class="pre">--factory</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channels.webinbox.identity_payload" title="correspond.channels.webinbox.identity_payload"><code class="xref py py-obj docutils literal notranslate"><span class="pre">identity_payload</span></code></a>(site, user, issued_at, *[, ...])</p></td>
+<td><p>The bytes a host application signs for its logged-in user: <code class="docutils literal notranslate"><span class="pre">v1</span></code>, site, issued-at, user, name, email, one per line.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.webinbox.mk_app" title="correspond.channels.webinbox.mk_app"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mk_app</span></code></a>(sites, *[, store, blobs, ...])</p></td>
+<td><p>The collector as an ASGI app, storing reports in <code class="docutils literal notranslate"><span class="pre">store</span></code> and attachments in <code class="docutils literal notranslate"><span class="pre">blobs</span></code> (files under the data root by default).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channels.webinbox.requirements_problems" title="correspond.channels.webinbox.requirements_problems"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requirements_problems</span></code></a>()</p></td>
+<td><p>What would stop the collector starting from this configuration; nothing when no site is configured, since reading stored reports needs none.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.webinbox.sign_identity" title="correspond.channels.webinbox.sign_identity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sign_identity</span></code></a>(secret, site, user, *[, name, ...])</p></td>
+<td><p>What a host application's server gives its page for the logged-in user; the page sends it as <code class="docutils literal notranslate"><span class="pre">identity</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channels.webinbox.site_secret_env" title="correspond.channels.webinbox.site_secret_env"><code class="xref py py-obj docutils literal notranslate"><span class="pre">site_secret_env</span></code></a>(site)</p></td>
+<td><p>The environment variable holding one site's own secret.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.webinbox.verify_identity" title="correspond.channels.webinbox.verify_identity"><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify_identity</span></code></a>(identity, *, site, now)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">bound</span></code> for a valid, fresh signature from the site's host application; <code class="docutils literal notranslate"><span class="pre">forged</span></code> with the reason otherwise.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.webinbox.Site" title="correspond.channels.webinbox.Site"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Site</span></code></a>(*, name[, origins, secret, ...])</p></td>
+<td><p>One inbox the collector accepts reports for: who may post from where, and the key signed identities are checked with.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channels.webinbox.TokenBucket" title="correspond.channels.webinbox.TokenBucket"><code class="xref py py-obj docutils literal notranslate"><span class="pre">TokenBucket</span></code></a>(*, rate_per_minute, burst[, clock])</p></td>
+<td><p>Per-key token buckets: <code class="docutils literal notranslate"><span class="pre">rate_per_minute</span></code> sustained, <code class="docutils literal notranslate"><span class="pre">burst</span></code> at once.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.webinbox.WebInbox" title="correspond.channels.webinbox.WebInbox"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WebInbox</span></code></a>(*[, store, blobs])</p></td>
+<td><p>Reports the collector stored, as a channel: read and listen per site.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.Site">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.webinbox.</span></span><span class="sig-name descname"><span class="pre">Site</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">secret</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_no_origin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_age_s</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">86400</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#Site"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.Site" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One inbox the collector accepts reports for: who may post from where, and the key signed identities are checked with.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.TokenBucket">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.webinbox.</span></span><span class="sig-name descname"><span class="pre">TokenBucket</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate_per_minute</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">burst</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">monotonic&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#TokenBucket"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.TokenBucket" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Per-key token buckets: <code class="docutils literal notranslate"><span class="pre">rate_per_minute</span></code> sustained, <code class="docutils literal notranslate"><span class="pre">burst</span></code> at once. In memory, one process.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">bucket</span> <span class="o">=</span> <span class="n">TokenBucket</span><span class="p">(</span><span class="n">rate_per_minute</span><span class="o">=</span><span class="mi">60</span><span class="p">,</span> <span class="n">burst</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">clock</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bucket</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="s2">"client"</span><span class="p">),</span> <span class="n">bucket</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="s2">"client"</span><span class="p">)</span>
+<span class="go">(None, 1.0)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.TokenBucket.take">
+<span class="sig-name descname"><span class="pre">take</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#TokenBucket.take"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.TokenBucket.take" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">None</span></code> when a token was available (and is now spent); otherwise the seconds until one is.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#float" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.WebInbox">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.webinbox.</span></span><span class="sig-name descname"><span class="pre">WebInbox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">store</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#WebInbox"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.WebInbox" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Reports the collector stored, as a channel: read and listen per site.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.WebInbox.blobs">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">blobs</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping" title="(in Python v3.14)"><span class="pre">MutableMapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.14)"><span class="pre">bytes</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#correspond.channels.webinbox.WebInbox.blobs" title="Link to this definition">#</a></dt>
+<dd><p>The attachment store, keyed by SHA-256.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.WebInbox.capabilities">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">capabilities</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="correspond.model.html#correspond.model.Capabilities" title="correspond.model.Capabilities"><span class="pre">Capabilities</span></a></span><a class="headerlink" href="#correspond.channels.webinbox.WebInbox.capabilities" title="Link to this definition">#</a></dt>
+<dd><p>Read and listen; no writer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.WebInbox.parse_ref">
+<span class="sig-name descname"><span class="pre">parse_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#WebInbox.parse_ref"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.WebInbox.parse_ref" title="Link to this definition">#</a></dt>
+<dd><p>A site name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConversationRef</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.WebInbox.poll">
+<span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#WebInbox.poll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.WebInbox.poll" title="Link to this definition">#</a></dt>
+<dd><p>Reports stored after the one <code class="docutils literal notranslate"><span class="pre">cursor</span></code> names (a report id).</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.WebInbox.read">
+<span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">since</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#WebInbox.read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.WebInbox.read" title="Link to this definition">#</a></dt>
+<dd><p>The site’s reports, oldest first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="correspond.model.html#correspond.model.Message" title="correspond.model.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.WebInbox.store">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">store</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping" title="(in Python v3.14)"><span class="pre">MutableMapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#correspond.channels.webinbox.WebInbox.store" title="Link to this definition">#</a></dt>
+<dd><p>The report store (JSON files under the data root by default).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.app_from_env">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.webinbox.</span></span><span class="sig-name descname"><span class="pre">app_from_env</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#app_from_env"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.app_from_env" title="Link to this definition">#</a></dt>
+<dd><p>The collector configured from the environment and the <code class="docutils literal notranslate"><span class="pre">[webinbox]</span></code> config table (for <code class="docutils literal notranslate"><span class="pre">uvicorn</span> <span class="pre">--factory</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.identity_payload">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.webinbox.</span></span><span class="sig-name descname"><span class="pre">identity_payload</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">issued_at</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">email</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#identity_payload"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.identity_payload" title="Link to this definition">#</a></dt>
+<dd><p>The bytes a host application signs for its logged-in user: <code class="docutils literal notranslate"><span class="pre">v1</span></code>, site, issued-at, user, name, email, one per line.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#bytes" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.mk_app">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.webinbox.</span></span><span class="sig-name descname"><span class="pre">mk_app</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sites</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">store</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">blobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rate_per_minute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">burst</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_body_bytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5000000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trusted_proxies</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">time&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#mk_app"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.mk_app" title="Link to this definition">#</a></dt>
+<dd><p>The collector as an ASGI app, storing reports in <code class="docutils literal notranslate"><span class="pre">store</span></code> and attachments in <code class="docutils literal notranslate"><span class="pre">blobs</span></code> (files under the data root by default).</p>
+<p>Behind reverse proxies of your own, set <code class="docutils literal notranslate"><span class="pre">trusted_proxies</span></code> to how many stand in front,
+or every visitor shares the proxy’s rate limit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.14)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.14)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.requirements_problems">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.webinbox.</span></span><span class="sig-name descname"><span class="pre">requirements_problems</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#requirements_problems"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.requirements_problems" title="Link to this definition">#</a></dt>
+<dd><p>What would stop the collector starting from this configuration; nothing when no site is configured, since reading stored reports needs none.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.sign_identity">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.webinbox.</span></span><span class="sig-name descname"><span class="pre">sign_identity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">secret</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">site</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">user</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">email</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">issued_at</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#sign_identity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.sign_identity" title="Link to this definition">#</a></dt>
+<dd><p>What a host application’s server gives its page for the logged-in user; the page sends it as <code class="docutils literal notranslate"><span class="pre">identity</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.site_secret_env">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.webinbox.</span></span><span class="sig-name descname"><span class="pre">site_secret_env</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">site</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#site_secret_env"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.site_secret_env" title="Link to this definition">#</a></dt>
+<dd><p>The environment variable holding one site’s own secret.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">site_secret_env</span><span class="p">(</span><span class="s2">"example-site"</span><span class="p">)</span>
+<span class="go">'CORRESPOND_WEBINBOX_SECRET_EXAMPLE_SITE'</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.webinbox.verify_identity">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.webinbox.</span></span><span class="sig-name descname"><span class="pre">verify_identity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">identity</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">site</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">now</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/webinbox.html#verify_identity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.webinbox.verify_identity" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">bound</span></code> for a valid, fresh signature from the site’s host application; <code class="docutils literal notranslate"><span class="pre">forged</span></code> with the reason otherwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.Authenticity" title="correspond.model.Authenticity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Authenticity</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="correspond.channels.telegram.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">correspond.channels.telegram</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="correspond.errors.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">correspond.errors</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.Site"><code class="docutils literal notranslate"><span class="pre">Site</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.TokenBucket"><code class="docutils literal notranslate"><span class="pre">TokenBucket</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.TokenBucket.take"><code class="docutils literal notranslate"><span class="pre">TokenBucket.take()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.WebInbox"><code class="docutils literal notranslate"><span class="pre">WebInbox</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.WebInbox.blobs"><code class="docutils literal notranslate"><span class="pre">WebInbox.blobs</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.WebInbox.capabilities"><code class="docutils literal notranslate"><span class="pre">WebInbox.capabilities</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.WebInbox.parse_ref"><code class="docutils literal notranslate"><span class="pre">WebInbox.parse_ref()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.WebInbox.poll"><code class="docutils literal notranslate"><span class="pre">WebInbox.poll()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.WebInbox.read"><code class="docutils literal notranslate"><span class="pre">WebInbox.read()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.WebInbox.store"><code class="docutils literal notranslate"><span class="pre">WebInbox.store</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.app_from_env"><code class="docutils literal notranslate"><span class="pre">app_from_env()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.identity_payload"><code class="docutils literal notranslate"><span class="pre">identity_payload()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.mk_app"><code class="docutils literal notranslate"><span class="pre">mk_app()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.requirements_problems"><code class="docutils literal notranslate"><span class="pre">requirements_problems()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.sign_identity"><code class="docutils literal notranslate"><span class="pre">sign_identity()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.site_secret_env"><code class="docutils literal notranslate"><span class="pre">site_secret_env()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.webinbox.verify_identity"><code class="docutils literal notranslate"><span class="pre">verify_identity()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/_autosummary/correspond.channels.webinbox.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

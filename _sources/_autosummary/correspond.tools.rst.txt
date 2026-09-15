@@ -1,0 +1,28 @@
+correspond.tools
+================
+
+.. automodule:: correspond.tools
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      TOOLS
+      SIDE_EFFECTS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      audience
+      capabilities
+      channels
+      edit
+      listen
+      react
+      read
+      ref
+      requirements
+      send
+   

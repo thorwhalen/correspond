@@ -1,0 +1,19 @@
+correspond.settings
+===================
+
+.. automodule:: correspond.settings
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      channel_config
+      config_path
+      data_dir
+      keychain_available
+      keychain_get
+      keychain_service
+      load_config
+      mask
+   

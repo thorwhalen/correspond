@@ -1,0 +1,23 @@
+correspond.errors
+=================
+
+.. automodule:: correspond.errors
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      ERROR_KINDS
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      ChannelError
+      CorrespondError
+      InvalidRef
+      MissingRequirement
+      NotSupported
+      UnknownChannel
+   

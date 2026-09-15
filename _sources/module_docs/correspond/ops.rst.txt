@@ -1,4 +1,0 @@
-correspond.ops
-==============
-.. automodule:: correspond.ops
-   :members:

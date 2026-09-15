@@ -1,0 +1,24 @@
+correspond.channels.github
+==========================
+
+.. automodule:: correspond.channels.github
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      WATCHERS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      signature
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      GitHub
+   

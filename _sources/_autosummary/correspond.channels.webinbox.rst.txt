@@ -1,0 +1,26 @@
+correspond.channels.webinbox
+============================
+
+.. automodule:: correspond.channels.webinbox
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      app_from_env
+      identity_payload
+      mk_app
+      requirements_problems
+      sign_identity
+      site_secret_env
+      verify_identity
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Site
+      TokenBucket
+      WebInbox
+   

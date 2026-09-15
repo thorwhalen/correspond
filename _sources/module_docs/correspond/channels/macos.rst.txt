@@ -1,4 +1,0 @@
-correspond.channels.macos
-=========================
-.. automodule:: correspond.channels.macos
-   :members:

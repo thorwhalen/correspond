@@ -1,4 +1,0 @@
-correspond
-==========
-.. automodule:: correspond
-   :members:

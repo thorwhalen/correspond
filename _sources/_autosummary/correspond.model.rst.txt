@@ -1,0 +1,46 @@
+correspond.model
+================
+
+.. automodule:: correspond.model
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      OPERATIONS
+      ACTS_AS
+      EVENT_KINDS
+      PRIORITIES
+      DURABILITY
+      WIDENING
+      CLASS_WORDS
+      AUDIENCE_UNHASHED
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      format_time
+      parse_time
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Account
+      Attachment
+      Audience
+      Authenticity
+      Capabilities
+      ChannelIdentity
+      ConversationRef
+      Draft
+      Event
+      Grade
+      HistoryDepth
+      Message
+      Scope
+      SendResult
+      Support
+   

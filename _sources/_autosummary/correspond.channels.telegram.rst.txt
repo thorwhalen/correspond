@@ -1,0 +1,12 @@
+correspond.channels.telegram
+============================
+
+.. automodule:: correspond.channels.telegram
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Telegram
+   

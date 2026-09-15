@@ -1,4 +1,0 @@
-correspond.channels.github
-==========================
-.. automodule:: correspond.channels.github
-   :members:

@@ -1,0 +1,18 @@
+correspond.channels.ntfy
+========================
+
+.. automodule:: correspond.channels.ntfy
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      PRIORITY
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Ntfy
+   

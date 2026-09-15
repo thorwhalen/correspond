@@ -1,4 +1,0 @@
-correspond.routing
-==================
-.. automodule:: correspond.routing
-   :members:

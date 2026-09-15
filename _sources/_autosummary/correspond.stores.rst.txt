@@ -1,0 +1,23 @@
+correspond.stores
+=================
+
+.. automodule:: correspond.stores
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      bytes_store
+      cursor_store
+      json_store
+      kind_dir
+      text_store
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      QuotedKeys
+      SafeKeys
+   

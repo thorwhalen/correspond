@@ -1,4 +1,0 @@
-correspond.channels.mail
-========================
-.. automodule:: correspond.channels.mail
-   :members:

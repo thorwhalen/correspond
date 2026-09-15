@@ -1,0 +1,45 @@
+correspond.ops
+==============
+
+.. automodule:: correspond.ops
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      PROTOCOLS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      audience
+      capabilities
+      edit
+      get_channel
+      implemented
+      listen
+      parse_ref
+      react
+      read
+      send
+      upload
+      verify
+      window
+      with_final_cursor
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      AudienceReader
+      Channel
+      Editor
+      Listener
+      Reactor
+      Reader
+      Uploader
+      Verifier
+      Writer
+   

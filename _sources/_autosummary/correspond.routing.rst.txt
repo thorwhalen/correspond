@@ -1,0 +1,28 @@
+correspond.routing
+==================
+
+.. automodule:: correspond.routing
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      RULES
+      MESSAGE_FIELDS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      binding_matches
+      check_binding
+      metadata_rule
+      route
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      RouteDecision
+   

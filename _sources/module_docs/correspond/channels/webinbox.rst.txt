@@ -1,4 +1,0 @@
-correspond.channels.webinbox
-============================
-.. automodule:: correspond.channels.webinbox
-   :members:

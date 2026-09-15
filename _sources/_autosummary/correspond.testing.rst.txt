@@ -1,0 +1,20 @@
+correspond.testing
+==================
+
+.. automodule:: correspond.testing
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      demo_channel
+      demo_message
+      main
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      FakeChannel
+   

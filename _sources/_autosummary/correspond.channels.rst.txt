@@ -1,0 +1,18 @@
+correspond.channels
+===================
+
+.. automodule:: correspond.channels
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   github
+   macos
+   mail
+   ntfy
+   telegram
+   webinbox

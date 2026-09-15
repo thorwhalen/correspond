@@ -1,4 +1,0 @@
-correspond.channels
-===================
-.. automodule:: correspond.channels
-   :members:

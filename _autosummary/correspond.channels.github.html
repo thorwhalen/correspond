@@ -1,0 +1,720 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="alternate" type="text/markdown" href="correspond.channels.github.html.md">
+<link rel="describedby" href="../llms.txt" type="text/markdown">
+    <title>correspond.channels.github &#8212; correspond</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=cb8930eaaf36d9849b67" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=c6155191" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=cb8930eaaf36d9849b67"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
+
+    <script src="../_static/documentation_options.js?v=e3a6060d"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=fd10adb8"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/correspond.channels.github';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="correspond.channels.macos" href="correspond.channels.macos.html" />
+    <link rel="prev" title="correspond.channels" href="correspond.channels.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.2" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">correspond</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/correspond" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/correspond" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="correspond.html">correspond</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active has-children"><a class="reference internal" href="correspond.channels.html">correspond.channels</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l3 current active"><a class="current reference internal" href="#">correspond.channels.github</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.webinbox.html">correspond.channels.webinbox</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.errors.html">correspond.errors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.mcp.html">correspond.mcp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.model.html">correspond.model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.ops.html">correspond.ops</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.registry.html">correspond.registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.render.html">correspond.render</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.routing.html">correspond.routing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.settings.html">correspond.settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.stores.html">correspond.stores</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.testing.html">correspond.testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.tools.html">correspond.tools</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="correspond.html" class="nav-link">correspond</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="correspond.channels.html" class="nav-link">correspond.channels</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">correspond.channels.github</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-correspond.channels.github">
+<span id="correspond-channels-github"></span><h1>correspond.channels.github<a class="headerlink" href="#module-correspond.channels.github" title="Link to this heading">#</a></h1>
+<p>GitHub: issues, pull request conversations and discussions, through the <code class="docutils literal notranslate"><span class="pre">gh</span></code> CLI.</p>
+<p>correspond never holds a GitHub token: every call is <code class="docutils literal notranslate"><span class="pre">gh</span> <span class="pre">api</span></code>, authenticated as whatever
+account <code class="docutils literal notranslate"><span class="pre">gh</span></code> is logged in as on this machine, so writes act as that user. Request bodies
+go to <code class="docutils literal notranslate"><span class="pre">gh</span></code> on stdin, never on its command line, so a long comment cannot hit the argument
+limit and never shows in the process table.</p>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo</span></code>: the repository. <code class="docutils literal notranslate"><span class="pre">read</span></code> lists recent open issues and pull
+requests, <code class="docutils literal notranslate"><span class="pre">listen</span></code> polls its issue and comment activity, <code class="docutils literal notranslate"><span class="pre">send</span></code> opens an issue (a
+title is required).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo#N</span></code>: an issue, a pull request, or a discussion. GitHub numbers the
+three in one sequence; correspond asks which.</p></li>
+</ul>
+<p>Message ids match the anchors in GitHub’s own URLs: <code class="docutils literal notranslate"><span class="pre">issue-N</span></code> (the opening post of issue
+or pull request N), <code class="docutils literal notranslate"><span class="pre">issuecomment-ID</span></code>, <code class="docutils literal notranslate"><span class="pre">discussion-N</span></code>, <code class="docutils literal notranslate"><span class="pre">discussioncomment-ID</span></code>.</p>
+<p>Messages read through the API are <code class="docutils literal notranslate"><span class="pre">platform</span></code> (GitHub authenticated the account), with the
+author’s <code class="docutils literal notranslate"><span class="pre">author_association</span></code> (<code class="docutils literal notranslate"><span class="pre">OWNER</span></code>, <code class="docutils literal notranslate"><span class="pre">MEMBER</span></code>, <code class="docutils literal notranslate"><span class="pre">CONTRIBUTOR</span></code>, <code class="docutils literal notranslate"><span class="pre">NONE</span></code>, …) as
+<code class="docutils literal notranslate"><span class="pre">authority</span></code>. A webhook delivery is graded by <a class="reference internal" href="#correspond.channels.github.GitHub.verify" title="correspond.channels.github.GitHub.verify"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GitHub.verify()</span></code></a>: <code class="docutils literal notranslate"><span class="pre">crypto</span></code> when its
+<code class="docutils literal notranslate"><span class="pre">X-Hub-Signature-256</span></code> matches the configured secret, <code class="docutils literal notranslate"><span class="pre">forged</span></code> otherwise.</p>
+<p><a class="reference internal" href="#correspond.channels.github.GitHub.audience" title="correspond.channels.github.GitHub.audience"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GitHub.audience()</span></code></a> says who can read a conversation: the repository’s readership,
+from its visibility, and its collaborators when the account may list them.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">GitHub</span><span class="p">()</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="s2">"OctoCat/Hello-World#1"</span><span class="p">)</span><span class="o">.</span><span class="n">encoded</span>
+<span class="go">'github:octocat/hello-world#1'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">signature</span><span class="p">(</span><span class="s2">"a-secret"</span><span class="p">,</span> <span class="sa">b</span><span class="s2">"</span><span class="si">{}</span><span class="s2">"</span><span class="p">)</span>
+<span class="go">'sha256=...'</span>
+</pre></div>
+</div>
+<p class="rubric">Module Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.github.WATCHERS" title="correspond.channels.github.WATCHERS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WATCHERS</span></code></a></p></td>
+<td><p>Reader classes of a repository that cannot be listed, as <a class="reference internal" href="#correspond.channels.github.GitHub.audience" title="correspond.channels.github.GitHub.audience"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GitHub.audience()</span></code></a> words them.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.github.signature" title="correspond.channels.github.signature"><code class="xref py py-obj docutils literal notranslate"><span class="pre">signature</span></code></a>(secret, body)</p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">X-Hub-Signature-256</span></code> value GitHub sends for <code class="docutils literal notranslate"><span class="pre">body</span></code> under <code class="docutils literal notranslate"><span class="pre">secret</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.github.GitHub" title="correspond.channels.github.GitHub"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GitHub</span></code></a>(*[, run, gh])</p></td>
+<td><p>GitHub through <code class="docutils literal notranslate"><span class="pre">gh</span></code>: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.github.</span></span><span class="sig-name descname"><span class="pre">GitHub</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gh'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>GitHub through <code class="docutils literal notranslate"><span class="pre">gh</span></code>: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.audience">
+<span class="sig-name descname"><span class="pre">audience</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.audience"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.audience" title="Link to this definition">#</a></dt>
+<dd><p>Who can read a repository’s issues, pull requests and discussions, asked of GitHub now.</p>
+<p>Every conversation in a repository has the repository’s readership. A draft changes
+nothing: a mention decides who is notified, not who can read. One
+<code class="docutils literal notranslate"><span class="pre">gh</span> <span class="pre">api</span> <span class="pre">repos/{owner}/{repo}</span></code> call gives the visibility and the owner’s type:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">public</span></code>: scope <code class="docutils literal notranslate"><span class="pre">public</span></code>; readers are not listed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">private</span></code>: scope <code class="docutils literal notranslate"><span class="pre">named</span></code> when a user owns it, <code class="docutils literal notranslate"><span class="pre">org</span></code> otherwise.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">internal</span></code>: scope <code class="docutils literal notranslate"><span class="pre">org</span></code>, with every member of the enterprise as a class.</p></li>
+<li><p>a 404 or a 403: <code class="docutils literal notranslate"><span class="pre">public</span></code>, defaulted. GitHub answers 404 both for a repository
+that does not exist and for one the account cannot see.</p></li>
+</ul>
+<p>For a private or internal repository, collaborators (team members, members reading
+through the base permission, and owners included) are listed only when the account
+can write to it, since GitHub lists them to no one else. The list is a lower bound
+and the audience is never <code class="docutils literal notranslate"><span class="pre">complete</span></code>: installed apps and webhooks read the
+repository without being listable through <code class="docutils literal notranslate"><span class="pre">gh</span></code>, and an organisation’s
+security-manager teams read every repository. An organisation’s base permission is
+read when the account may see it (owners only), and otherwise assumed to be the
+documented default, read; <code class="docutils literal notranslate"><span class="pre">read</span></code>, <code class="docutils literal notranslate"><span class="pre">write</span></code> and <code class="docutils literal notranslate"><span class="pre">admin</span></code> reach the same readers
+and give the same class. The <code class="docutils literal notranslate"><span class="pre">gh</span></code> account itself is never consulted, so the answer,
+and its hash, do not depend on who asks. Every repository emails bodies to watchers
+and participants, and nothing sent is retractable. Nothing is cached. A rate limit or
+a transport failure raises; <a class="reference internal" href="correspond.ops.html#correspond.ops.audience" title="correspond.ops.audience"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.ops.audience()</span></code></a> resolves it to public.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.Audience" title="correspond.model.Audience"><code class="xref py py-class docutils literal notranslate"><span class="pre">Audience</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.capabilities">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">capabilities</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="correspond.model.html#correspond.model.Capabilities" title="correspond.model.Capabilities"><span class="pre">Capabilities</span></a></span><a class="headerlink" href="#correspond.channels.github.GitHub.capabilities" title="Link to this definition">#</a></dt>
+<dd><p>Issues, pull request conversations and discussions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.edit">
+<span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.edit" title="Link to this definition">#</a></dt>
+<dd><p>Replace the body of an issue, a comment, a discussion or a discussion comment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.parse_ref">
+<span class="sig-name descname"><span class="pre">parse_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.parse_ref"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.parse_ref" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">owner/repo</span></code> or <code class="docutils literal notranslate"><span class="pre">owner/repo#N</span></code>, lower-cased (GitHub names are case-insensitive).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConversationRef</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.poll">
+<span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.poll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.poll" title="Link to this definition">#</a></dt>
+<dd><p>Issue and comment activity since <code class="docutils literal notranslate"><span class="pre">cursor</span></code>; a first poll looks back a day.</p>
+<p>The cursor is opaque JSON: the update time the next poll starts from (<code class="docutils literal notranslate"><span class="pre">t</span></code>; GitHub’s
+<code class="docutils literal notranslate"><span class="pre">since</span></code> includes it), the creation time from which an issue still counts as new
+(<code class="docutils literal notranslate"><span class="pre">l</span></code>, which stays behind while the issues list is being read in parts), and the
+events already delivered at <code class="docutils literal notranslate"><span class="pre">t</span></code> (<code class="docutils literal notranslate"><span class="pre">seen</span></code>). So neither <code class="docutils literal notranslate"><span class="pre">limit</span></code> nor several changes
+within one second can make a poll repeat itself, and a list cut short (more than
+<code class="docutils literal notranslate"><span class="pre">MAX_PAGES</span></code> pages changed) is resumed from where it was cut. A bare ISO time is also
+accepted as a cursor.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.react">
+<span class="sig-name descname"><span class="pre">react</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reaction</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.react"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.react" title="Link to this definition">#</a></dt>
+<dd><p>Add one of <code class="xref py py-data docutils literal notranslate"><span class="pre">REACTIONS</span></code> to an issue, a comment, a discussion or a discussion comment.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.read">
+<span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">since</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.read" title="Link to this definition">#</a></dt>
+<dd><p>An issue, pull request or discussion with its comments; for a repository, recent open issues and pull requests.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="correspond.model.html#correspond.model.Message" title="correspond.model.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.send">
+<span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.send" title="Link to this definition">#</a></dt>
+<dd><p>Comment on an issue, pull request or discussion; on a repository, open an issue (<code class="docutils literal notranslate"><span class="pre">title</span></code> required).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.verify">
+<span class="sig-name descname"><span class="pre">verify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">headers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.verify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.verify" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">crypto</span></code> when <code class="docutils literal notranslate"><span class="pre">X-Hub-Signature-256</span></code> matches the webhook secret, <code class="docutils literal notranslate"><span class="pre">forged</span></code> otherwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.Authenticity" title="correspond.model.Authenticity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Authenticity</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="correspond.channels.github.WATCHERS">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.github.</span></span><span class="sig-name descname"><span class="pre">WATCHERS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'watchers</span> <span class="pre">and</span> <span class="pre">participants</span> <span class="pre">receive</span> <span class="pre">the</span> <span class="pre">body</span> <span class="pre">by</span> <span class="pre">email'</span></span><a class="headerlink" href="#correspond.channels.github.WATCHERS" title="Link to this definition">#</a></dt>
+<dd><p>Reader classes of a repository that cannot be listed, as <a class="reference internal" href="#correspond.channels.github.GitHub.audience" title="correspond.channels.github.GitHub.audience"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GitHub.audience()</span></code></a> words them.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.github.signature">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.github.</span></span><span class="sig-name descname"><span class="pre">signature</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">secret</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#signature"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.signature" title="Link to this definition">#</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">X-Hub-Signature-256</span></code> value GitHub sends for <code class="docutils literal notranslate"><span class="pre">body</span></code> under <code class="docutils literal notranslate"><span class="pre">secret</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="correspond.channels.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">correspond.channels</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="correspond.channels.macos.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">correspond.channels.macos</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub"><code class="docutils literal notranslate"><span class="pre">GitHub</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.audience"><code class="docutils literal notranslate"><span class="pre">GitHub.audience()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.capabilities"><code class="docutils literal notranslate"><span class="pre">GitHub.capabilities</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.edit"><code class="docutils literal notranslate"><span class="pre">GitHub.edit()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.parse_ref"><code class="docutils literal notranslate"><span class="pre">GitHub.parse_ref()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.poll"><code class="docutils literal notranslate"><span class="pre">GitHub.poll()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.react"><code class="docutils literal notranslate"><span class="pre">GitHub.react()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.read"><code class="docutils literal notranslate"><span class="pre">GitHub.read()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.send"><code class="docutils literal notranslate"><span class="pre">GitHub.send()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.verify"><code class="docutils literal notranslate"><span class="pre">GitHub.verify()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.WATCHERS"><code class="docutils literal notranslate"><span class="pre">WATCHERS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.signature"><code class="docutils literal notranslate"><span class="pre">signature()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/_autosummary/correspond.channels.github.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.21.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

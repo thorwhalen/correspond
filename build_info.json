@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "built_at": "2026-09-15T12:42:21Z",
+  "package": {
+    "name": "correspond",
+    "version": "0.0.2",
+    "display_name": "correspond",
+    "source": "pyproject.toml"
+  },
+  "git": {
+    "available": true,
+    "commit": "4773ce5ab971baf71c4e1f98aa41a39c0b149eb0",
+    "short_commit": "4773ce5",
+    "branch": "main",
+    "tags": [],
+    "dirty": false,
+    "remote_url": "https://github.com/thorwhalen/correspond",
+    "commit_url": "https://github.com/thorwhalen/correspond/commit/4773ce5ab971baf71c4e1f98aa41a39c0b149eb0",
+    "error": null
+  },
+  "ci": {
+    "provider": "github",
+    "repository": "thorwhalen/correspond",
+    "sha": "4773ce5ab971baf71c4e1f98aa41a39c0b149eb0",
+    "sha_in_history": true,
+    "ref": "refs/heads/main",
+    "ref_name": "main",
+    "run_id": "34970289262",
+    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/34970289262",
+    "server_url": "https://github.com"
+  },
+  "tools": {
+    "epythet": "0.2.12",
+    "sphinx": "9.1.0",
+    "docutils": "0.22.4",
+    "python": "3.12.14"
+  },
+  "config": {
+    "theme": "auto",
+    "html_theme": "pydata_sphinx_theme",
+    "accent": "#5f5c00",
+    "mode": "auto",
+    "api_generator": "autosummary",
+    "ignore": [
+      "tests/",
+      "scrap/",
+      "examples/"
+    ],
+    "agent_outputs": true,
+    "aggregates": [
+      "md"
+    ],
+    "ai_artifacts": true,
+    "provenance": true,
+    "docs_dir": "docsrc"
+  },
+  "site": {
+    "modules_documented": 19,
+    "objects_documented": 284
+  },
+  "pypi": {
+    "checked": true,
+    "latest": "0.0.3",
+    "relation": "behind",
+    "error": null
+  },
+  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout 4773ce5ab971baf71c4e1f98aa41a39c0b149eb0\npip install \"epythet==0.2.12\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "warnings": [],
+  "alignment": {
+    "aligned": false,
+    "notes": [
+      "The documented version (0.0.2) is behind the latest release on PyPI (0.0.3): `pip install correspond` gives newer code than these docs describe."
+    ]
+  }
+}

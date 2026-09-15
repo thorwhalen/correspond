@@ -1,4 +1,0 @@
-correspond.channels.ntfy
-========================
-.. automodule:: correspond.channels.ntfy
-   :members:
