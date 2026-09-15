@@ -166,7 +166,9 @@ def test_send_edit_and_react_payloads_and_the_log_of_what_was_sent(token):
         and sent.account.id == "@example_bot"
         and sent.account.acts_as == "bot"
     )
-    assert api.calls[0] == (
+    # Each write asks getChat first, for its audience; these are the writes.
+    writes = lambda: [c for c in api.calls if c[0] != "getChat"]  # noqa: E731
+    assert writes()[0] == (
         "sendMessage",
         {
             "chat_id": -4001,
@@ -179,12 +181,12 @@ def test_send_edit_and_react_payloads_and_the_log_of_what_was_sent(token):
     assert correspond.edit(
         "telegram:-4001", "50", "the fix is live (v2)", registry=registry
     ).ok
-    assert api.calls[1] == (
+    assert writes()[1] == (
         "editMessageText",
         {"chat_id": -4001, "message_id": 50, "text": "the fix is live (v2)"},
     )
     assert correspond.react("telegram:-4001", "50", "👍", registry=registry).ok
-    assert api.calls[2] == (
+    assert writes()[2] == (
         "setMessageReaction",
         {
             "chat_id": -4001,

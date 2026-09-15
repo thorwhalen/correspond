@@ -390,7 +390,7 @@ def audience(
             if generic.channel in planned:
                 return Audience.unknown(
                     label,
-                    f"{generic.channel} is planned, not built ({planned[generic.channel]}), so nothing can tell who reads it",
+                    f"{generic.channel} is planned, not built ({planned[generic.channel]}): a channel not built cannot tell who reads it",
                 )
             return Audience.unknown(label, str(error))
         label = adapter.parse_ref(generic.id).encoded
@@ -428,6 +428,10 @@ def _feature_check(adapter: Any, draft: Draft) -> str | None:
         )
     if draft.reply_to and caps.reply is Support.NONE:
         raise NotSupported("reply", adapter.name, alternatives=("send without reply_to",))
+    if (draft.cc or draft.bcc) and caps.cc is Support.NONE:
+        raise NotSupported(
+            "cc", adapter.name, alternatives=("send to each recipient separately",)
+        )
     if not draft.text.strip():
         return "nothing to send: the text is empty"
     if caps.max_text_length and len(draft.text) > caps.max_text_length:
@@ -525,20 +529,35 @@ def send(
     title: str | None = None,
     reply_to: str | None = None,
     priority: str | None = None,
+    cc: Iterable[str] = (),
+    bcc: Iterable[str] = (),
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
 ) -> SendResult:
     """Send ``text`` (or a :class:`~correspond.model.Draft`) to a conversation; ``dry_run`` shows the plan and sends nothing.
 
+    ``cc`` and ``bcc`` copy further recipients, on channels that grade ``cc`` (email).
     ``before_send(ref, draft, audience)`` runs first, on the dry run too; when ``None``, the
     config's ``before_send`` reference, else :func:`correspond.outbound.notice`.
     """
+    cc, bcc = tuple(cc), tuple(bcc)
+    if isinstance(text, Draft) and (title or reply_to or priority or cc or bcc):
+        raise ValueError(
+            "pass a Draft or title/reply_to/priority/cc/bcc, not both: the Draft already carries them"
+        )
     adapter, ref = _adapter_for(ref, "send", registry)
     draft = (
         text
         if isinstance(text, Draft)
-        else Draft(text=text, title=title, reply_to=reply_to, priority=priority)
+        else Draft(
+            text=text,
+            title=title,
+            reply_to=reply_to,
+            priority=priority,
+            cc=tuple(cc),
+            bcc=tuple(bcc),
+        )
     )
     problem = _feature_check(adapter, draft)
     if problem:

@@ -28,7 +28,7 @@ Add `--json` to any command for the full result. A result with `ok: false` exits
 | `email:` | the mail folder (INBOX); `email:someone@example.org` the correspondence with one address |
 | `ntfy:` | the operator's default notification topic; `ntfy:<topic>` a named one |
 | `macos:` | a banner on this Mac |
-| `telegram:` | the bot's update stream (listen); `telegram:<chat id>` or `telegram:<chat id>/<topic id>` a chat |
+| `telegram:` | the bot's update stream (listen); `telegram:<chat id>`, `telegram:@name` or `telegram:<chat id>/<topic id>` a chat |
 | `webinbox:<site>` | reports posted from a web page to the collector |
 
 `correspond ref <reference>` prints the canonical form, which is what to store or compare.
@@ -70,15 +70,15 @@ The first listen looks back a little (a day). An event can repeat after an inter
 ## Writing: the dry run first, every time
 
 1. If unsure the channel can do it: `correspond capabilities <channel>`.
-2. `correspond audience <ref>`: who can read it, in words on the first line. `defaulted: true` means nobody could tell, so it counts as public.
-3. `correspond send <ref> "text" --dry-run` (or `edit` / `react` with `--dry-run`). Show the operator the plan with its `audience` and `before_send` lines: target, who can read it, the check's verdict, text, title, priority.
+2. `correspond audience <ref>` (with the same `--cc` / `--bcc` as the send): who can read it, in words on the first line. `defaulted: true` means nobody could tell, so it counts as public.
+3. `correspond send <ref> "text" --dry-run` (or `edit` / `react` with `--dry-run`). Show the operator the plan with its `audience` and `before_send` lines: target, copies, who can read it, the check's verdict, text, title, priority.
 4. Only after the operator approves, run the same command without `--dry-run`.
 
 - **The `before_send` check runs on every send, edit and react**, dry run included. The operator configures it once (liaise supplies one). Never try to choose or skip it: pointing `CORRESPOND_CONFIG` elsewhere, or writing with `gh` instead, is getting past it. `refused` means this draft does not go to this conversation as written, and `needs_approval` means it waits for the operator. Show the reason to the operator, and never reword the draft or switch channels to get past it. `before_send_unavailable` or `before_send_failed` means the check could not run, so nothing is sent until the operator fixes it.
 
 - Do not message a person (an issue comment, an email, a Telegram chat) without the operator's go-ahead for that message, unless they gave a standing instruction for exactly this kind of message.
 - **GitHub repositories are often public.** Never put private content, local paths, tokens, email addresses or anyone's personal details in a comment.
-- **Know who will read it, not only who it is for.** A conversation's real audience is often wider than its recipient: anyone on a public repository, every organisation member on a private one by default, everyone behind a list address, a public Telegram chat, anyone who knows an ntfy topic. When you cannot tell, treat it as public. `correspond audience <ref>` computes it for GitHub and answers public (defaulted) for channels that cannot tell yet; `--json` adds a `hash` that changes when the audience does, so ask again right before sending. [references/outbound-safety.md](references/outbound-safety.md) has the per-channel facts.
+- **Know who will read it, not only who it is for.** A conversation's real audience is often wider than its recipient: anyone on a public repository, every organisation member on a private one by default, everyone behind a list address, a public Telegram chat, anyone who knows an ntfy topic. When you cannot tell, treat it as public. `correspond audience <ref>` computes it for every built channel, and answers public (defaulted) whenever it cannot tell. An email's audience includes every `--cc` and `--bcc`, and a list address (`team@`, `all@`…) has members nobody can list. `--json` adds a `hash` that changes when the audience does, so ask again right before sending. [references/outbound-safety.md](references/outbound-safety.md) has the per-channel facts.
 - `-` as the text reads it from stdin: `printf '%s' "$BODY" | correspond send github:owner/repo#12 - --dry-run`.
 - A failed write says `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`) and whether a retry can help (`retryable`, `retry_after`). Wait `retry_after` before retrying; never loop on a rate limit.
 - `does not support X` (`not_supported`) is final for that channel. Use the alternative it names or another channel; do not imitate the operation (no "editing" by posting a copy without saying so).

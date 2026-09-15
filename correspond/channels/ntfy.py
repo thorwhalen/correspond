@@ -27,9 +27,11 @@ from correspond.channels._http import classify, urllib_http
 from correspond.errors import ChannelError, InvalidRef, MissingRequirement
 from correspond.model import (
     Account,
+    Audience,
     Capabilities,
     ConversationRef,
     Draft,
+    Scope,
     SendResult,
     Support,
 )
@@ -75,6 +77,7 @@ class Ntfy:
         return Capabilities(
             channel=NAME,
             send=Support.FULL,
+            audience=Support.PARTIAL,
             initiate=Support.FULL,
             priority=Support.FULL,
             max_title_length=MAX_TITLE_CHARS,
@@ -84,7 +87,56 @@ class Ntfy:
                 "the server turns a message over 4,096 bytes into an attachment",
                 "ntfy: (no topic) uses NTFY_TOPIC, the Keychain, or topic_remote",
                 "a dry run reads only the environment and the config file",
+                "audience comes from the config (denies_anonymous_read, cache_duration), not from the server",
             ),
+        )
+
+    def audience(self, ref: ConversationRef, *, draft: Draft | None = None) -> Audience:
+        """Who reads a topic: anyone who knows its name, unless the config says the server denies anonymous reads.
+
+        Nothing is asked of the server. Its cache keeps each message for subscribers who
+        connect later (``cache_duration``, 12h by default), and every subscriber's device
+        gets a copy.
+        """
+        server = (value(NAME, "url") or "https://ntfy.sh").rstrip("/")
+        cache = value(NAME, "cache_duration") or "12h"
+        denies = (value(NAME, "denies_anonymous_read") or "").strip().lower()
+        evidence = [
+            f"{'the default topic' if not ref.id else 'a topic'} on {server}; nothing was asked of the server",
+            f"subscribers who connect within cache_duration ({cache}) still receive it",
+        ]
+        cached = "subscribers who connect within the server's cache window"
+        operators = f"whoever runs {server}"
+        common = dict(
+            ref=ref.encoded,
+            complete=False,
+            retractable=False,
+            durability=("copies_pushed",),
+        )
+        if denies in ("1", "true", "yes", "on"):
+            return Audience(
+                scope=Scope.GROUP,
+                classes=(
+                    f"accounts {server} grants read access to the topic",
+                    cached,
+                    operators,
+                ),
+                external=None,
+                evidence=(
+                    *evidence,
+                    "denies_anonymous_read in the config: only granted accounts read, unless the server grants this topic to everyone",
+                ),
+                **common,
+            )
+        return Audience(
+            scope=Scope.PUBLIC,
+            classes=("anyone who knows the topic name", cached, operators),
+            external=True,
+            evidence=(
+                *evidence,
+                "anonymous reads are not known to be denied (denies_anonymous_read unset)",
+            ),
+            **common,
         )
 
     def parse_ref(self, id: str) -> ConversationRef:

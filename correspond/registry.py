@@ -173,6 +173,16 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 what="comma-separated authserv-ids of your own receiving server; only their Authentication-Results can make a sender `domain`",
                 where="the topmost Authentication-Results header of a message your provider delivered (for Gmail: mx.google.com)",
             ),
+            Setting(
+                key="own_domains",
+                env="CORRESPOND_EMAIL_OWN_DOMAINS",
+                what="comma-separated mail domains that are your own (and their subdomains); a recipient anywhere else makes an email's audience external",
+            ),
+            Setting(
+                key="lists",
+                env="CORRESPOND_EMAIL_LISTS",
+                what="comma-separated mailing-list addresses, or @domain for a whole list server; local parts such as list, all, team, dev, announce and info count as lists anyway",
+            ),
         ),
     ),
     ChannelInfo(
@@ -209,6 +219,17 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 key="topic_remote_file",
                 env="CORRESPOND_NTFY_TOPIC_REMOTE_FILE",
                 what="the file on that host holding a NTFY_TOPIC=... line",
+            ),
+            Setting(
+                key="denies_anonymous_read",
+                env="CORRESPOND_NTFY_DENIES_ANONYMOUS_READ",
+                what="true when the server denies anonymous reads (its auth-default-access), so only the accounts it grants can read a topic; unset, anyone who knows a topic can",
+            ),
+            Setting(
+                key="cache_duration",
+                env="CORRESPOND_NTFY_CACHE_DURATION",
+                what="how long the server keeps a message for subscribers who connect later (its cache-duration)",
+                default="12h",
             ),
         ),
         notes=(

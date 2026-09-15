@@ -20,11 +20,11 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 | Channel | References | Operations | Built on |
 |---|---|---|---|
 | `github` | `github:owner/repo`, `github:owner/repo#12` | read, listen (issues and comments), send, edit, react, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
-| `email` | `email:` (the folder), `email:someone@example.org` | read, listen, send | `imaplib`, `smtplib` |
-| `ntfy` | `ntfy:` (the default topic), `ntfy:<topic>` | send | `urllib` |
-| `macos` | `macos:` | send | `terminal-notifier` or `osascript` |
-| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react | the Bot API over `urllib` |
-| `webinbox` | `webinbox:<site>` | read, listen | the ASGI collector below, and `dol` stores |
+| `email` | `email:` (the folder), `email:someone@example.org` | read, listen, send (with cc and bcc), audience | `imaplib`, `smtplib` |
+| `ntfy` | `ntfy:` (the default topic), `ntfy:<topic>` | send, audience | `urllib` |
+| `macos` | `macos:` | send, audience | `terminal-notifier` or `osascript` |
+| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience | the Bot API over `urllib` |
+| `webinbox` | `webinbox:<site>` | read, listen, audience | the ASGI collector below, and `dol` stores |
 
 Every v0.1 adapter uses the Python standard library. Discord ([#2](https://github.com/thorwhalen/correspond/issues/2)), Slack ([#3](https://github.com/thorwhalen/correspond/issues/3)), Signal ([#4](https://github.com/thorwhalen/correspond/issues/4)) and Apprise ([#5](https://github.com/thorwhalen/correspond/issues/5)) are planned as extras; `correspond channels` lists them with their issues.
 
@@ -45,7 +45,7 @@ Grades are a vocabulary, not a ranking. A policy lists the grades it accepts for
 
 ## Capabilities
 
-`correspond capabilities github` grades each operation `full`, `partial` or `none`, plus whether a write can start a conversation (`initiate`; a Telegram bot cannot), answer a specific message (`reply`) or carry a `priority`, how far back `read` sees (`history_depth`), the limits (text length, reactions), the fields its messages carry in `native` (`native_fields`), the rate limits and notes. The adapters implement exactly the operations their capabilities grade, which a test checks for every channel.
+`correspond capabilities github` grades each operation `full`, `partial` or `none`, plus whether a write can start a conversation (`initiate`; a Telegram bot cannot), answer a specific message (`reply`), carry a `priority` or copy further recipients (`cc`), how far back `read` sees (`history_depth`), the limits (text length, reactions), the fields its messages carry in `native` (`native_fields`), the rate limits and notes. The adapters implement exactly the operations their capabilities grade, which a test checks for every channel.
 
 ```text
 $ correspond react ntfy:example-topic m1 eyes
@@ -63,11 +63,20 @@ scope: public
 
 `correspond audience <reference>` says who can read a conversation, now and plausibly later, before anything is written to it. The first line is the answer in words; the rest is the record (`--json` prints it under `audience`, beside `hash` and `words`): a `scope` (`operator`, `named`, `group`, `org`, `public`), the `readers` known to read it with whether that list is `complete`, the reader `classes` that cannot be listed, whether `external` readers exist, what a send leaves behind (`durability`), how the readership can grow (`widening`), the `evidence` behind each value, and a `hash` that changes when the audience does (and only then, not with the time or the evidence).
 
-**Unknown resolves to public.** A failed or forbidden lookup, a channel without an audience reader and a planned channel all answer `public` with `defaulted: true` and the reason in `evidence`. Nothing is cached: ask again right before sending. GitHub computes it from the repository's visibility, its collaborators when the `gh` account may list them, and the organisation's base permission when the account may read it (otherwise the documented default, read). A GitHub audience is never `complete`: installed apps, webhooks and an organisation's security managers read without being listable. Every other channel answers public, defaulted, until its audience reader lands ([#29](https://github.com/thorwhalen/correspond/issues/29)).
+**Unknown resolves to public.** A failed or forbidden lookup, a channel without an audience reader and a planned channel (Discord, Slack, Signal, Apprise) all answer `public` with `defaulted: true` and the reason in `evidence`. Nothing is cached: ask again right before sending. `correspond capabilities <channel>` grades how much each reader can tell.
+
+| Channel | How the audience is computed |
+|---|---|
+| `github` (full) | The repository's visibility; its collaborators, when the `gh` account may list them; the organisation's base permission, when the account may read it (otherwise the documented default, read). Never `complete`: installed apps, webhooks and an organisation's security managers read without being listable. |
+| `email` (full) | Scope `named`: the address plus `--cc` and `--bcc`, never `complete` (any address may be an alias, a shared mailbox or an auto-forward). A recipient outside the config's `own_domains` makes it `external`. A list-shaped address (under `lists` in the config, or a local part such as `list`, `all`, `team`, `dev`, `announce`, `info`) adds a class for its unlistable members and `list_expansion`, and leaves `external` unknown when every address is internal. A Bcc address is a class of its own. Always `forwarding`, never retractable. |
+| `telegram` (partial) | `getChat`. A private chat is `named`, its reader identified by account id. A chat with a public username is `public`. A group, or a channel without a username, is `group`, and members are never listed. A linked discussion group or channel is read too, and makes the audience public when it is. New members read the history unless the chat hides it; forwards widen it unless its content is protected. A chat `getChat` cannot read is public, defaulted. |
+| `ntfy` (partial) | `public`, with the classes "anyone who knows the topic name" and whoever runs the server, unless the config says `denies_anonymous_read`. The cache window is a class; its length is evidence. Nothing is asked of the server. |
+| `macos`, `webinbox` (full) | `operator`, retractable. |
 
 ## Writing: dry run first
 
-- `--dry-run` on `send`, `edit` and `react` sends nothing and changes nothing. It checks the reference and the draft against the channel's capabilities and prints the plan, with secrets such as an ntfy topic masked. A dry run reads only the environment and the config file, plus, for `send` and `edit`, the audience lookup: a value kept in the Keychain or on a remote host is looked up when sending, and the plan says so.
+- `--dry-run` on `send`, `edit` and `react` sends nothing and changes nothing. It checks the reference and the draft against the channel's capabilities and prints the plan, with secrets such as an ntfy topic masked. A dry run reads only the environment and the config file, plus the audience lookup (a `gh api` call for GitHub, `getChat` with the bot token for Telegram): a value kept in the Keychain or on a remote host is otherwise looked up when sending, and the plan says so.
+- `--cc` and `--bcc` (comma-separated) copy further recipients on channels that grade `cc` (email); elsewhere they are refused by name. Bcc addresses go on the envelope only, never in a header, and they count in the audience.
 - **Every write (`send`, `edit`, `react`, and `upload` in Python) passes the `before_send` check first**, on the dry run too. The plan shows `audience` (who can read it, in words), `audience_hash`, and `before_send` (the verdict). With nothing configured the check lets the write go ahead, so the audience line is all it adds. A check can stop the write: `refused` (not as written, not here) or `needs_approval` (wait for the operator), with any details it attached in `before_send_details`. A configured check that does not load stops every write (`before_send_unavailable`), and one that crashes stops that write (`before_send_failed`). Nothing is sent in any of these cases, and `--allow-send` on the MCP server does not skip the check.
 - The check guards drafts, not the process running correspond: whoever sets its environment or edits the config file (`$CORRESPOND_CONFIG` can point at another file) chooses the check. Commands that write without correspond (`gh issue comment`, say) are covered by liaise's hook, not by this check.
 - A write that fails is a result, not an exception: `ok: false`, an `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`, or one of the four check kinds above), and whether a retry can help (`retryable`, `retry_after`).
@@ -94,9 +103,13 @@ Cursors live under the data root, one per reference. A cursor is stored only aft
   imap_host = "imap.example.org"
   smtp_host = "smtp.example.org"
   trusted_authserv_ids = ["mx.example.org"]
+  own_domains = ["example.org"]           # recipients elsewhere are external
+  lists = ["@lists.example.org"]          # list addresses, or a whole list server
 
   [ntfy]
   topic_keychain_service = "my-ntfy-topic"
+  denies_anonymous_read = true            # only if your server's auth-default-access denies reads
+  cache_duration = "12h"
   ```
 
 - **`before_send`**, at the top of the config file (before any table), names the check every write runs, as `"module:attr"`. The check is a callable `before_send(ref, draft, audience, *, operation, dry_run, message_id, **context)`. It returns to let the write go ahead, or raises `correspond.errors.Refused(reason, **details)` or `correspond.errors.NeedsApproval(reason, **details)`. Accept `**context`, so that later context keys do not break it. liaise supplies one:

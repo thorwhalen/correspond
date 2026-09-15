@@ -29,9 +29,11 @@ from correspond.errors import (
 from correspond.model import (
     OPERATIONS,
     Audience,
+    Draft,
     HistoryDepth,
     Message,
     SendResult,
+    Support,
     format_time,
 )
 from correspond.registry import CHANNELS, check_requirements
@@ -183,7 +185,7 @@ def capabilities(channel: str) -> dict:
     data = caps.to_dict()
     lines = [
         f"{name + ':':<10}{data[name]}"
-        for name in (*OPERATIONS, "initiate", "reply", "priority", "history_depth")
+        for name in (*OPERATIONS, "initiate", "reply", "priority", "cc", "history_depth")
     ]
     if caps.grades:
         lines.append(f"{'grades:':<10}{', '.join(data['grades'])}")
@@ -301,10 +303,32 @@ def _audience_text(found: Audience) -> str:
     return "\n".join(lines)
 
 
+def _addresses(text: str | None) -> tuple[str, ...]:
+    """A comma-separated list of recipients, as a tuple."""
+    return tuple(part.strip() for part in (text or "").split(",") if part.strip())
+
+
 @_as_result
-def audience(ref: str) -> dict:
-    """Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does."""
-    found = ops.audience(ref)
+def audience(ref: str, *, cc: str | None = None, bcc: str | None = None) -> dict:
+    """Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does."""
+    copies = {"cc": _addresses(cc), "bcc": _addresses(bcc)}
+    draft = None
+    if any(copies.values()):
+        channel = ref.partition(":")[0]
+        try:
+            copies_graded = ops.capabilities(channel).cc
+        except (
+            CorrespondError
+        ):  # an unknown channel's audience is answered below, as public
+            copies_graded = None
+        if copies_graded is Support.NONE:
+            raise NotSupported(
+                "cc",
+                channel,
+                alternatives=("ask about each recipient's channel separately",),
+            )
+        draft = Draft(text="", **copies)
+    found = ops.audience(ref, draft)
     words = found.in_words()
     return {
         "ok": True,
@@ -385,12 +409,21 @@ def send(
     title: str | None = None,
     reply_to: str | None = None,
     priority: str | None = None,
+    cc: str | None = None,
+    bcc: str | None = None,
     dry_run: bool = False,
 ) -> dict:
-    """Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""
+    """Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""
     return _write_result(
         ops.send(
-            ref, text, title=title, reply_to=reply_to, priority=priority, dry_run=dry_run
+            ref,
+            text,
+            title=title,
+            reply_to=reply_to,
+            priority=priority,
+            cc=_addresses(cc),
+            bcc=_addresses(bcc),
+            dry_run=dry_run,
         )
     )
 

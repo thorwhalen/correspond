@@ -63,14 +63,17 @@ from correspond import settings as _settings
 from correspond.errors import InvalidRef, MissingRequirement
 from correspond.model import (
     Attachment,
+    Audience,
     Authenticity,
     Capabilities,
     ChannelIdentity,
     ConversationRef,
     Event,
     Grade,
+    Draft,
     HistoryDepth,
     Message,
+    Scope,
     Support,
     format_time,
     parse_time,
@@ -728,6 +731,7 @@ class WebInbox:
             channel=NAME,
             read=Support.FULL,
             listen=Support.FULL,
+            audience=Support.FULL,
             history_depth=HistoryDepth.FULL,
             listen_modes=("poll",),
             grades=(Grade.CLAIMED, Grade.BOUND),
@@ -746,6 +750,19 @@ class WebInbox:
                 f"webinbox references name a site, webinbox:<site>, not webinbox:{id}"
             )
         return ConversationRef(channel=NAME, id=id, kind="inbox")
+
+    def audience(self, ref: ConversationRef, *, draft: Draft | None = None) -> Audience:
+        """Only the operator: reports are stored where the collector runs, and nothing is sent back to a page."""
+        return Audience(
+            ref=ref.encoded,
+            scope=Scope.OPERATOR,
+            complete=True,
+            external=False,
+            retractable=True,
+            evidence=(
+                "reports are kept in the operator's store; the web inbox sends nothing to reporters",
+            ),
+        )
 
     def _keys(self, site: str) -> list[str]:
         prefix = f"{site}/"

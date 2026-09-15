@@ -30,6 +30,7 @@ from correspond.channels._http import urllib_http
 from correspond.errors import ChannelError, InvalidRef, NotSupported
 from correspond.model import (
     Account,
+    Audience,
     Authenticity,
     Capabilities,
     ChannelIdentity,
@@ -39,6 +40,7 @@ from correspond.model import (
     Grade,
     HistoryDepth,
     Message,
+    Scope,
     SendResult,
     Support,
 )
@@ -128,6 +130,7 @@ class Telegram:
             send=Support.FULL,
             edit=Support.FULL,
             react=Support.FULL,
+            audience=Support.PARTIAL,
             initiate=Support.NONE,
             reply=Support.FULL,
             history_depth=HistoryDepth.BUFFER_24H,
@@ -146,6 +149,7 @@ class Telegram:
                 "reading telegram:@name first resolves the name with getChat, over the network",
                 "a bot cannot start a conversation: someone must write to it first",
                 "a title is prepended to the text: Telegram messages have none",
+                "audience comes from getChat: a public username, the chat type, history visibility; members are never listed",
             ),
         )
 
@@ -336,6 +340,104 @@ class Telegram:
                 messages.append(message)
         messages.sort(key=lambda m: (m.sent_at, int(m.id) if m.id.isdigit() else 0))
         return window(messages, since=since, limit=limit)
+
+    def audience(self, ref: ConversationRef, *, draft: Draft | None = None) -> Audience:
+        """Who reads a chat, from ``getChat``; a topic has its chat's readers.
+
+        - A private chat: ``named``, the other account (by its id only, so a rename keeps
+          the hash) as its reader.
+        - A chat with a public username: ``public``.
+        - A group or supergroup without one: ``group``; a channel without one: ``group``
+          of its subscribers. Members are never listed.
+        - A linked chat (a channel's discussion group, or the channel a group discusses)
+          is read too: posts are copied into it. A public linked chat makes the audience
+          public; one that cannot be read makes it unknown.
+
+        Joiners read the history unless ``getChat`` says the history is hidden from them.
+        Forwarding widens every chat unless its content is protected. A failed ``getChat``
+        raises, so the audience resolves to public, defaulted.
+        """
+        if not ref.id:
+            return Audience.unknown(
+                ref.encoded, "telegram: is the bot's update stream, not a chat: name one"
+            )
+        chat_id = self._target(ref.parent or ref)["chat_id"]
+        chat = self._call("getChat", {"chat_id": chat_id})
+        chat = chat if isinstance(chat, dict) else {}
+        kind, username = chat.get("type"), chat.get("username")
+        evidence = [
+            f"getChat {chat_id}: type {kind or 'not given'}, "
+            + (f"public username @{username}" if username else "no public username")
+        ]
+        widening = ["forwarding"]
+        if chat.get("has_protected_content"):
+            widening = []
+            evidence.append("content is protected: members cannot forward or save it")
+        if kind != "private" and chat.get("has_visible_history") is not False:
+            widening.append("joiners_read_history")
+            if kind in ("group", "supergroup"):
+                evidence.append(
+                    "new members see the history"
+                    if chat.get("has_visible_history")
+                    else "history visibility not given: assumed visible to new members"
+                )
+        common = dict(
+            ref=ref.encoded,
+            retractable=False,
+            durability=("copies_pushed",),
+            widening=tuple(widening),
+        )
+        if kind == "private":
+            name = " ".join(
+                p for p in (chat.get("first_name"), chat.get("last_name")) if p
+            )
+            reader = ChannelIdentity(channel=NAME, native_id=str(chat.get("id", chat_id)))
+            return Audience(
+                scope=Scope.NAMED,
+                readers=(reader,),
+                complete=True,
+                external=None,
+                evidence=(
+                    *evidence,
+                    f"a private chat: the bot and one account ({name or 'no name'})",
+                ),
+                **common,
+            )
+        if kind not in ("group", "supergroup", "channel"):
+            return Audience.unknown(
+                ref.encoded, *evidence, f"chat type {kind!r} is not known"
+            )
+        whom = "subscriber of the channel" if kind == "channel" else "member of the group"
+        classes = [f"every {whom}, and anyone who joins"]
+        public = bool(username)
+        linked_id = chat.get("linked_chat_id")
+        if linked_id:
+            try:
+                linked = self._call("getChat", {"chat_id": linked_id})
+            except ChannelError as error:
+                return Audience.unknown(
+                    ref.encoded,
+                    *evidence,
+                    f"linked chat {linked_id} could not be read ({error.kind}): {error}",
+                )
+            linked = linked if isinstance(linked, dict) else {}
+            classes.append(
+                f"every member of the linked chat {linked_id}, where posts are copied"
+            )
+            evidence.append(
+                f"getChat {linked_id} (linked): type {linked.get('type') or 'not given'}, "
+                + ("public username" if linked.get("username") else "no public username")
+            )
+            public = public or bool(linked.get("username"))
+        if public:
+            classes.insert(0, "anyone who finds the chat by its public username")
+        return Audience(
+            scope=Scope.PUBLIC if public else Scope.GROUP,
+            classes=tuple(classes),
+            external=True if public else None,
+            evidence=(*evidence, "the Bot API does not list members"),
+            **common,
+        )
 
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
