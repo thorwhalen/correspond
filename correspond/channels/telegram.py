@@ -344,35 +344,29 @@ class Telegram:
     def audience(self, ref: ConversationRef, *, draft: Draft | None = None) -> Audience:
         """Who reads a chat, from ``getChat``; a topic has its chat's readers.
 
-        - A private chat: ``named``, the other account as its reader.
-        - A chat with a public username (``telegram:@name`` always has one): ``public``.
-          A ``@name`` whose ``getChat`` fails is still public.
+        - A private chat: ``named``, the other account (by its id only, so a rename keeps
+          the hash) as its reader.
+        - A chat with a public username: ``public``.
         - A group or supergroup without one: ``group``; a channel without one: ``group``
           of its subscribers. Members are never listed.
+        - A linked chat (a channel's discussion group, or the channel a group discusses)
+          is read too: posts are copied into it. A public linked chat makes the audience
+          public; one that cannot be read makes it unknown.
 
         Joiners read the history unless ``getChat`` says the history is hidden from them.
         Forwarding widens every chat unless its content is protected. A failed ``getChat``
-        on a numeric id raises (so the audience resolves to public).
+        raises, so the audience resolves to public, defaulted.
         """
         if not ref.id:
             return Audience.unknown(
                 ref.encoded, "telegram: is the bot's update stream, not a chat: name one"
             )
         chat_id = self._target(ref.parent or ref)["chat_id"]
-        by_name = isinstance(chat_id, str)
-        try:
-            chat = self._call("getChat", {"chat_id": chat_id})
-        except ChannelError as error:
-            if not by_name:
-                raise
-            chat, failed = {}, f"getChat {chat_id} failed ({error.kind}): {error}"
-        else:
-            failed = None
+        chat = self._call("getChat", {"chat_id": chat_id})
         chat = chat if isinstance(chat, dict) else {}
         kind, username = chat.get("type"), chat.get("username")
         evidence = [
-            failed
-            or f"getChat {chat_id}: type {kind or 'not given'}, "
+            f"getChat {chat_id}: type {kind or 'not given'}, "
             + (f"public username @{username}" if username else "no public username")
         ]
         widening = ["forwarding"]
@@ -394,42 +388,56 @@ class Telegram:
             widening=tuple(widening),
         )
         if kind == "private":
-            name = " ".join(p for p in (chat.get("first_name"), chat.get("last_name")) if p)
-            reader = ChannelIdentity(
-                channel=NAME,
-                native_id=str(chat.get("id", chat_id)),
-                handle=username,
-                display_name=name or None,
+            name = " ".join(
+                p for p in (chat.get("first_name"), chat.get("last_name")) if p
             )
+            reader = ChannelIdentity(channel=NAME, native_id=str(chat.get("id", chat_id)))
             return Audience(
                 scope=Scope.NAMED,
                 readers=(reader,),
                 complete=True,
                 external=None,
-                evidence=(*evidence, "a private chat: the bot and one account"),
-                **common,
-            )
-        if username or by_name:
-            return Audience(
-                scope=Scope.PUBLIC,
-                classes=("anyone who finds the chat by its public username",),
-                external=True,
                 evidence=(
                     *evidence,
-                    f"{f'@{username}' if username else chat_id} is a public username, so anyone can read the chat",
+                    f"a private chat: the bot and one account ({name or 'no name'})",
                 ),
                 **common,
             )
-        if kind in ("group", "supergroup", "channel"):
-            whom = "subscriber of the channel" if kind == "channel" else "member of the group"
-            return Audience(
-                scope=Scope.GROUP,
-                classes=(f"every {whom}, and anyone who joins",),
-                external=None,
-                evidence=(*evidence, "the Bot API does not list members"),
-                **common,
+        if kind not in ("group", "supergroup", "channel"):
+            return Audience.unknown(
+                ref.encoded, *evidence, f"chat type {kind!r} is not known"
             )
-        return Audience.unknown(ref.encoded, *evidence, f"chat type {kind!r} is not known")
+        whom = "subscriber of the channel" if kind == "channel" else "member of the group"
+        classes = [f"every {whom}, and anyone who joins"]
+        public = bool(username)
+        linked_id = chat.get("linked_chat_id")
+        if linked_id:
+            try:
+                linked = self._call("getChat", {"chat_id": linked_id})
+            except ChannelError as error:
+                return Audience.unknown(
+                    ref.encoded,
+                    *evidence,
+                    f"linked chat {linked_id} could not be read ({error.kind}): {error}",
+                )
+            linked = linked if isinstance(linked, dict) else {}
+            classes.append(
+                f"every member of the linked chat {linked_id}, where posts are copied"
+            )
+            evidence.append(
+                f"getChat {linked_id} (linked): type {linked.get('type') or 'not given'}, "
+                + ("public username" if linked.get("username") else "no public username")
+            )
+            public = public or bool(linked.get("username"))
+        if public:
+            classes.insert(0, "anyone who finds the chat by its public username")
+        return Audience(
+            scope=Scope.PUBLIC if public else Scope.GROUP,
+            classes=tuple(classes),
+            external=True if public else None,
+            evidence=(*evidence, "the Bot API does not list members"),
+            **common,
+        )
 
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False

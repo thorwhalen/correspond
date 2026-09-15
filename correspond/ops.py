@@ -541,6 +541,11 @@ def send(
     ``before_send(ref, draft, audience)`` runs first, on the dry run too; when ``None``, the
     config's ``before_send`` reference, else :func:`correspond.outbound.notice`.
     """
+    cc, bcc = tuple(cc), tuple(bcc)
+    if isinstance(text, Draft) and (title or reply_to or priority or cc or bcc):
+        raise ValueError(
+            "pass a Draft or title/reply_to/priority/cc/bcc, not both: the Draft already carries them"
+        )
     adapter, ref = _adapter_for(ref, "send", registry)
     draft = (
         text

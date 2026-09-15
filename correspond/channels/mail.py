@@ -590,25 +590,29 @@ class Email:
     def audience(self, ref: ConversationRef, *, draft: Draft | None = None) -> Audience:
         """Who reads an email: its address plus the draft's ``cc`` and ``bcc``, asked of nothing but the config.
 
-        Scope ``named``. A recipient whose domain is not in ``own_domains`` makes it
-        ``external``. A list-shaped address (under ``lists`` in the config, or a local part
-        naming a group, see :data:`LIST_LOCAL_PARTS`) has members nobody can list: it adds a
-        class, ``list_expansion``, and makes the list of readers incomplete. Every email is
-        pushed to its recipients, can be forwarded, and cannot be recalled.
+        Scope ``named``, never ``complete``: any address may be an alias, a shared mailbox or
+        an auto-forward, which nothing here can see. A recipient whose domain is not in
+        ``own_domains`` makes it ``external``; a list-shaped address (under ``lists`` in the
+        config, or a local part naming a group, see :data:`LIST_LOCAL_PARTS`) adds a class
+        and ``list_expansion``, and, when every address is in an own domain, leaves
+        ``external`` unknown, since a list can have outside members. A Bcc address is a
+        class of its own, so moving it to Cc changes the hash. Every email is pushed to its
+        recipients, can be forwarded, and cannot be recalled.
         """
         if not ref.id:
             return Audience.unknown(
                 ref.encoded, "email: is the folder, not a correspondence: name an address"
             )
         copies = {"cc": draft.cc if draft else (), "bcc": draft.bcc if draft else ()}
-        malformed = [a for a in (*copies["cc"], *copies["bcc"]) if not ADDRESS_RE.match(a)]
+        malformed = [
+            a for a in (*copies["cc"], *copies["bcc"]) if not ADDRESS_RE.match(a)
+        ]
         if malformed:
             return Audience.unknown(
                 ref.encoded, f"not an email address: {', '.join(malformed)}"
             )
-        recipients = list(
-            dict.fromkeys(a.lower() for a in (ref.id, *copies["cc"], *copies["bcc"]))
-        )
+        # Exact addresses: a local part may be case-sensitive, and SMTP receives each as given.
+        recipients = list(dict.fromkeys((ref.id, *copies["cc"], *copies["bcc"])))
         own, lists = _csv(value(NAME, "own_domains")), _csv(value(NAME, "lists"))
         evidence = [
             f"to {ref.id}"
@@ -619,23 +623,35 @@ class Email:
             if own
             else "no own_domains in the config, so every recipient counts as external"
         )
-        classes, widening = [], ["forwarding"]
+        classes = [
+            "whoever a recipient's mailbox delivers or forwards to (aliases, shared mailboxes, auto-forwards)"
+        ]
+        classes += [
+            f"{a} is copied blind: the other recipients do not see it"
+            for a in copies["bcc"]
+        ]
+        widening, listed = ["forwarding"], False
         for address in recipients:
             reason = _list_reason(address, lists)
             if reason:
+                listed = True
                 classes.append(f"everyone behind {address}, which may be a mailing list")
                 evidence.append(f"{address} may be a mailing list: {reason}")
-        if classes:
+        if listed:
             widening.append("list_expansion")
+        if any(not _is_own(a, own) for a in recipients):
+            external = True
+        else:
+            external = None if listed else False
         return Audience(
             ref=ref.encoded,
             scope=Scope.NAMED,
             readers=tuple(
                 ChannelIdentity(channel=NAME, native_id=a, handle=a) for a in recipients
             ),
-            complete=not classes,
+            complete=False,
             classes=tuple(classes),
-            external=any(not _is_own(a, own) for a in recipients),
+            external=external,
             retractable=False,
             durability=("copies_pushed",),
             widening=tuple(widening),
@@ -700,9 +716,7 @@ class Email:
             )
         with self._smtp() as server:
             if draft.bcc:  # never in a header: only the envelope names them
-                server.send_message(
-                    message, to_addrs=[ref.id, *draft.cc, *draft.bcc]
-                )
+                server.send_message(message, to_addrs=[ref.id, *draft.cc, *draft.bcc])
             else:
                 server.send_message(message)
         return SendResult(

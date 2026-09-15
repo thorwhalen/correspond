@@ -103,9 +103,10 @@ class Ntfy:
         denies = (value(NAME, "denies_anonymous_read") or "").strip().lower()
         evidence = [
             f"{'the default topic' if not ref.id else 'a topic'} on {server}; nothing was asked of the server",
-            f"cache_duration {cache}",
+            f"subscribers who connect within cache_duration ({cache}) still receive it",
         ]
-        cached = f"subscribers who connect within the server's cache window ({cache})"
+        cached = "subscribers who connect within the server's cache window"
+        operators = f"whoever runs {server}"
         common = dict(
             ref=ref.encoded,
             complete=False,
@@ -115,14 +116,21 @@ class Ntfy:
         if denies in ("1", "true", "yes", "on"):
             return Audience(
                 scope=Scope.GROUP,
-                classes=("accounts the server grants read access to the topic", cached),
+                classes=(
+                    f"accounts {server} grants read access to the topic",
+                    cached,
+                    operators,
+                ),
                 external=None,
-                evidence=(*evidence, "denies_anonymous_read in the config: only granted accounts read"),
+                evidence=(
+                    *evidence,
+                    "denies_anonymous_read in the config: only granted accounts read, unless the server grants this topic to everyone",
+                ),
                 **common,
             )
         return Audience(
             scope=Scope.PUBLIC,
-            classes=("anyone who knows the topic name", cached),
+            classes=("anyone who knows the topic name", cached, operators),
             external=True,
             evidence=(
                 *evidence,

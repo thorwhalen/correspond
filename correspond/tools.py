@@ -33,6 +33,7 @@ from correspond.model import (
     HistoryDepth,
     Message,
     SendResult,
+    Support,
     format_time,
 )
 from correspond.registry import CHANNELS, check_requirements
@@ -311,7 +312,22 @@ def _addresses(text: str | None) -> tuple[str, ...]:
 def audience(ref: str, *, cc: str | None = None, bcc: str | None = None) -> dict:
     """Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does."""
     copies = {"cc": _addresses(cc), "bcc": _addresses(bcc)}
-    draft = Draft(text="", **copies) if any(copies.values()) else None
+    draft = None
+    if any(copies.values()):
+        channel = ref.partition(":")[0]
+        try:
+            copies_graded = ops.capabilities(channel).cc
+        except (
+            CorrespondError
+        ):  # an unknown channel's audience is answered below, as public
+            copies_graded = None
+        if copies_graded is Support.NONE:
+            raise NotSupported(
+                "cc",
+                channel,
+                alternatives=("ask about each recipient's channel separately",),
+            )
+        draft = Draft(text="", **copies)
     found = ops.audience(ref, draft)
     words = found.in_words()
     return {

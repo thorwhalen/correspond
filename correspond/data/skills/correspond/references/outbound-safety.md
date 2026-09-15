@@ -44,8 +44,8 @@ Discord and Slack follow the same logic when their adapters land. A Discord chan
   - a `hash` over everything but the time and the evidence, which changes when the audience does.
 - Every built channel computes it:
   - GitHub: visibility, collaborators when the account may list them, the organisation's base permission when the account may read it.
-  - Email: the address plus Cc and Bcc; external against the config's own domains; a list-shaped address makes the readers incomplete.
-  - Telegram: from `getChat`; a public username is public, a group is a group, a private chat is named.
+  - Email: the address plus Cc and Bcc, never complete; external against the config's own domains; a list-shaped address adds its unlistable members.
+  - Telegram: from `getChat`; a public username (its own or a linked chat's) is public, a group is a group, a private chat is named.
   - ntfy: public unless the config says the server denies anonymous reads.
   - macOS and the web inbox: the operator.
 - Planned channels (Discord, Slack, Signal, Apprise) answer public, defaulted.
