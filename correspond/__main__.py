@@ -20,6 +20,8 @@ _REF = {
 _DRY_RUN = {
     "help": "show the plan, who can read it and the before_send verdict; contact nothing but the audience lookup, and change nothing"
 }
+_CC = {"help": "comma-separated addresses to copy (email)"}
+_BCC = {"help": "comma-separated addresses to copy blind (email): they count in the audience"}
 #: Per-parameter help for the command line (the tools' docstrings are the command help).
 HELP = {
     "requirements": {"channel": {"help": "a channel name, e.g. telegram"}},
@@ -36,13 +38,15 @@ HELP = {
         "peek": {"help": "show new events without moving the cursor"},
         "data_dir": {"help": "where cursors are kept (default: the data root)"},
     },
-    "audience": {"ref": _REF},
+    "audience": {"ref": _REF, "cc": _CC, "bcc": _BCC},
     "send": {
         "ref": _REF,
         "text": {"help": "the message, or - to read it from stdin"},
         "title": {"help": "a title; on github:owner/repo it opens an issue"},
         "reply_to": {"help": "the id of the message this answers"},
         "priority": {"help": "low, normal, high or urgent (channels with priorities)"},
+        "cc": _CC,
+        "bcc": _BCC,
         "dry_run": _DRY_RUN,
     },
     "edit": {

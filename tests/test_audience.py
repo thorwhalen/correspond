@@ -10,6 +10,8 @@ import pytest
 
 import correspond
 from correspond import ops, registry, tools
+from correspond.channels._http import Response
+from correspond.channels.telegram import Telegram
 from correspond.errors import ChannelError
 from correspond.mcp import refs
 from correspond.model import (
@@ -165,18 +167,30 @@ def test_a_planned_channel_says_it_is_planned_and_where():
     )
 
 
-def test_only_github_reads_audiences_so_far():
+#: How honestly each built channel can say who reads it.
+AUDIENCE_GRADES = {
+    "github": "full",
+    "email": "full",
+    "telegram": "partial",
+    "ntfy": "partial",
+    "macos": "full",
+    "webinbox": "full",
+}
+
+
+def test_every_built_channel_grades_its_audience_reader():
     built = build_registry()
     grading = {
-        c.name
+        c.name: built[c.name].capabilities.audience.value
         for c in CHANNELS
-        if not c.planned and built[c.name].capabilities.audience is not Support.NONE
+        if not c.planned and c.name in built
     }
-    assert grading == {"github"}
-    github = tools.capabilities("github")
-    assert github["capabilities"]["audience"] == "full"
-    assert "audience" in github["operations"]
-    assert "audience: full" in github["text"].splitlines()
+    assert {"github", "email", "ntfy", "telegram"} <= set(grading)
+    assert grading == {k: v for k, v in AUDIENCE_GRADES.items() if k in grading}
+    for name, grade in grading.items():
+        shown = tools.capabilities(name)
+        assert "audience" in shown["operations"]
+        assert f"audience: {grade}" in shown["text"].splitlines()
 
 
 def test_the_tool_result_holds_the_record_its_hash_and_words(monkeypatch):
@@ -226,3 +240,195 @@ def test_the_cli_answers_in_words_first_and_with_the_record_on_request():
 def test_mcp_exposes_audience_as_a_read():
     assert tools.SIDE_EFFECTS["audience"] == "external-read"
     assert "correspond.tools:audience" in refs()
+
+
+# ------------------------------------------------------------ the other channels (C2)
+
+
+def _cli_here(capsys, *args):
+    """The CLI in this process, where the conftest keeps the Keychain and real settings out: ``(exit code, stdout)``."""
+    from correspond.testing import main
+
+    with pytest.raises(SystemExit) as exited:
+        main(list(args))
+    return exited.value.code, capsys.readouterr().out
+
+
+def test_the_acceptance_lines_on_the_command_line(capsys):
+    code, out = _cli_here(capsys, "audience", "email:ada@example.org", "--cc", "list@example.org")
+    lines = out.splitlines()
+    assert code == 0 and {
+        "scope: named",
+        "complete: false",
+        "external: true",
+        "widening: forwarding, list_expansion",
+        "readers: ada@example.org, list@example.org",
+    } <= set(lines)
+    assert "class: everyone behind list@example.org, which may be a mailing list" in lines
+
+    code, out = _cli_here(
+        capsys, "send", "email:ada@example.org", "hi", "--cc", "bob@example.org", "--dry-run"
+    )
+    assert code == 0
+    assert {"  to: ada@example.org", "  cc: bob@example.org"} <= set(out.splitlines())
+    assert "  audience: named readers; exactly 2 readers; not retractable" in out.splitlines()
+
+    code, out = _cli_here(capsys, "audience", "telegram:@somechannel")
+    assert code == 0 and "scope: public" in out.splitlines()
+    assert "defaulted: true" not in out.splitlines()
+
+    code, out = _cli_here(capsys, "audience", "ntfy:some-topic")
+    assert {"scope: public", "class: anyone who knows the topic name"} <= set(out.splitlines())
+
+    for ref in ("macos:", "webinbox:example-site"):
+        code, out = _cli_here(capsys, "audience", ref, "--json")
+        record = json.loads(out)["audience"]
+        assert (code, record["scope"], record["retractable"]) == (0, "operator", True)
+
+    code, out = _cli_here(capsys, "audience", "discord:123", "--json")
+    record = json.loads(out)["audience"]
+    assert (record["scope"], record["defaulted"]) == ("public", True)
+    assert any("channel not built" in line for line in record["evidence"])
+
+
+def test_an_email_reaches_its_address_and_every_copy():
+    found = tools.audience("email:ada@example.org", cc="list@example.org")["audience"]
+    assert found["scope"] == "named" and found["complete"] is False
+    assert [r["handle"] for r in found["readers"]] == ["ada@example.org", "list@example.org"]
+    assert "list_expansion" in found["widening"] and found["external"] is True
+    blind = ops.audience(
+        "email:ada@example.org", correspond.Draft(text="", bcc=("cy@example.net",))
+    )
+    assert [r.handle for r in blind.readers] == ["ada@example.org", "cy@example.net"]
+    assert blind.complete and blind.widening == ("forwarding",)
+    malformed = ops.audience(
+        "email:ada@example.org", correspond.Draft(text="", cc=("not an address",))
+    )
+    assert malformed.defaulted
+    assert ops.audience("email:").defaulted
+
+
+def test_recipients_in_the_operators_own_domains_are_internal(config_file):
+    config_file('[email]\nown_domains = ["example.org"]\nlists = ["@lists.example.org"]\n')
+    inside = ops.audience(
+        "email:ada@example.org", correspond.Draft(text="", cc=("bob@mail.example.org",))
+    )
+    assert (inside.external, inside.complete) == (False, True)
+    listed = ops.audience(
+        "email:ada@example.org", correspond.Draft(text="", cc=("x@lists.example.org",))
+    )
+    assert listed.external is False and listed.complete is False
+    assert any("under lists in the config" in e for e in listed.evidence)
+    outside = ops.audience("email:ada@example.net")
+    assert outside.external is True
+
+
+def test_the_mail_writer_puts_cc_in_a_header_and_bcc_only_on_the_envelope(monkeypatch):
+    from correspond.channels.mail import Email
+
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    sent = []
+
+    class Smtp:
+        def send_message(self, message, to_addrs=None):
+            sent.append((message, to_addrs))
+
+        def quit(self):
+            pass
+
+    channels = {"email": Email(smtp=Smtp)}
+    result = correspond.send(
+        "email:ada@example.org",
+        "hi",
+        cc=["bob@example.org"],
+        bcc=["cy@example.org"],
+        registry=channels,
+    )
+    assert result.ok, result
+    [(message, to_addrs)] = sent
+    assert message["Cc"] == "bob@example.org" and message["Bcc"] is None
+    assert "cy@example.org" not in message.as_string()
+    assert to_addrs == ["ada@example.org", "bob@example.org", "cy@example.org"]
+    assert result.plan["bcc"] == "cy@example.org"
+    assert "exactly 3 readers" in result.plan["audience"]
+    bad = correspond.send(
+        "email:ada@example.org", "hi", cc=["not an address"], registry=channels
+    )
+    assert bad.error_kind == "validation" and len(sent) == 1
+
+
+def test_copies_on_a_channel_without_them_are_refused(fake):
+    result = tools.send("fake:example/demo", "hi", cc="bob@example.org", dry_run=True)
+    assert (result["ok"], result["error_kind"], result["operation"]) == (
+        False,
+        "not_supported",
+        "cc",
+    )
+    assert fake.sent == []
+
+
+class _BotApi:
+    """``getChat`` answering one chat, or failing."""
+
+    def __init__(self, chat=None, *, error=None):
+        self.chat, self.error, self.calls = chat, error, []
+
+    def __call__(self, method, url, *, headers=None, body=None, timeout=None):
+        self.calls.append((url.rsplit("/", 1)[1], json.loads(body)))
+        if self.error:
+            raise self.error
+        return Response(200, {}, json.dumps({"ok": True, "result": self.chat}).encode())
+
+
+@pytest.fixture
+def bot_token(monkeypatch):
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123456:example-token-for-tests")
+
+
+def _telegram(ref, api):
+    return ops.audience(ref, registry={"telegram": Telegram(http=api, log={})})
+
+
+def test_a_telegram_audience_follows_the_chat(bot_token):
+    group = _BotApi({"id": -4001, "type": "supergroup", "title": "Example group"})
+    found = _telegram("telegram:-4001", group)
+    assert (found.scope, found.complete, found.defaulted) == (Scope.GROUP, False, False)
+    assert set(found.widening) == {"forwarding", "joiners_read_history"}
+    assert group.calls == [("getChat", {"chat_id": -4001})]
+    topic = _telegram("telegram:-4001/7", group)
+    assert (topic.ref, topic.scope) == ("telegram:-4001/7", Scope.GROUP)
+
+    closed = _BotApi(
+        {"id": -4001, "type": "supergroup", "has_visible_history": False, "has_protected_content": True}
+    )
+    assert _telegram("telegram:-4001", closed).widening == ()
+
+    channel = _BotApi({"id": -1004002, "type": "channel", "username": "examplechannel"})
+    public = _telegram("telegram:-1004002", channel)
+    assert (public.scope, public.external) == (Scope.PUBLIC, True)
+
+    private = _BotApi({"id": 42, "type": "private", "username": "ada", "first_name": "Ada"})
+    named = _telegram("telegram:42", private)
+    assert (named.scope, named.complete) == (Scope.NAMED, True)
+    assert [r.handle for r in named.readers] == ["ada"]
+    assert "joiners_read_history" not in named.widening
+
+
+def test_a_telegram_chat_nobody_could_ask_about_is_public(bot_token):
+    failing = _BotApi(error=ChannelError("offline", kind="network"))
+    by_id = _telegram("telegram:-4001", failing)
+    assert by_id.defaulted and any("offline" in e for e in by_id.evidence)
+    by_name = _telegram("telegram:@examplechannel", failing)
+    assert (by_name.scope, by_name.defaulted) == (Scope.PUBLIC, False)
+    assert _telegram("telegram:", failing).defaulted
+
+
+def test_ntfy_is_public_unless_the_server_denies_anonymous_reads(config_file):
+    open_topic = ops.audience("ntfy:some-topic")
+    assert open_topic.scope is Scope.PUBLIC and open_topic.external is True
+    assert "anyone who knows the topic name" in open_topic.classes
+    assert any("(12h)" in c for c in open_topic.classes)
+    config_file('[ntfy]\ndenies_anonymous_read = true\ncache_duration = "1h"\n')
+    closed = ops.audience("ntfy:")
+    assert (closed.scope, closed.external) == (Scope.GROUP, None)
+    assert any("(1h)" in c for c in closed.classes)

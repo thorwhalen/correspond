@@ -43,6 +43,7 @@ from correspond.errors import ChannelError, InvalidRef
 from correspond.model import (
     Account,
     Attachment,
+    Audience,
     Authenticity,
     Capabilities,
     ChannelIdentity,
@@ -52,19 +53,23 @@ from correspond.model import (
     Grade,
     HistoryDepth,
     Message,
+    Scope,
     SendResult,
     Support,
 )
 from correspond.ops import window, with_final_cursor
 from correspond.registry import require, value
 
-__all__ = ["Email", "authenticity"]
+__all__ = ["LIST_LOCAL_PARTS", "Email", "authenticity"]
 
 NAME = "email"
 ADDRESS_RE = re.compile(
     r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$"
 )
 MESSAGE_ID_RE = re.compile(r"^<[^<>\s]+@[^<>\s]+>$")
+#: Words that, as a part of an address's local part (``dev-team@``), mark it as a possible mailing list.
+LIST_LOCAL_PARTS = ("list", "all", "team", "dev", "announce", "info")
+_LOCAL_PART_SPLIT = re.compile(r"[-._+]")
 FETCH_BATCH = 50
 DEFAULT_READ_LIMIT = 50
 LISTEN_LOOKBACK = timedelta(days=1)
@@ -96,6 +101,31 @@ def _imap_date(moment: datetime) -> str:
 
 def _csv(text: str | None) -> set[str]:
     return {part.strip().lower() for part in (text or "").split(",") if part.strip()}
+
+
+def _domain(address: str) -> str:
+    return address.rpartition("@")[2].lower()
+
+
+def _is_own(address: str, own_domains: set[str]) -> bool:
+    domain = _domain(address)
+    return any(domain == own or domain.endswith(f".{own}") for own in own_domains)
+
+
+def _list_reason(address: str, lists: set[str]) -> str | None:
+    """Why ``address`` may be a mailing list, or ``None``.
+
+    >>> _list_reason("dev-team@example.org", set())
+    "its local part names a group ('team')"
+    >>> _list_reason("ada@example.org", {"@example.org"}) is None
+    False
+    """
+    address = address.lower()
+    if address in lists or f"@{_domain(address)}" in lists:
+        return "it is under lists in the config"
+    words = set(_LOCAL_PART_SPLIT.split(address.rpartition("@")[0]))
+    found = [w for w in LIST_LOCAL_PARTS if w in words]
+    return f"its local part names a group ({found[0]!r})" if found else None
 
 
 def _last(response: Any) -> str | None:
@@ -219,9 +249,11 @@ class Email:
             read=Support.FULL,
             listen=Support.FULL,
             send=Support.FULL,
+            audience=Support.FULL,
             initiate=Support.FULL,
             reply=Support.FULL,
             priority=Support.PARTIAL,
+            cc=Support.FULL,
             history_depth=HistoryDepth.FULL,
             listen_modes=("poll",),
             grades=(Grade.DOMAIN, Grade.CLAIMED),
@@ -231,6 +263,7 @@ class Email:
                 "read and listen look at one folder (INBOX by default); your own sent mail is in another",
                 "listen polls by UID; IMAP IDLE is not used",
                 "priority sets Importance and X-Priority, which mail clients may ignore",
+                "audience: the address plus cc and bcc; a list-shaped address has members nobody can list",
             ),
         )
 
@@ -554,10 +587,65 @@ class Email:
                 final = f"{validity}:{uidnext - 1}"
         return with_final_cursor(events, final)
 
+    def audience(self, ref: ConversationRef, *, draft: Draft | None = None) -> Audience:
+        """Who reads an email: its address plus the draft's ``cc`` and ``bcc``, asked of nothing but the config.
+
+        Scope ``named``. A recipient whose domain is not in ``own_domains`` makes it
+        ``external``. A list-shaped address (under ``lists`` in the config, or a local part
+        naming a group, see :data:`LIST_LOCAL_PARTS`) has members nobody can list: it adds a
+        class, ``list_expansion``, and makes the list of readers incomplete. Every email is
+        pushed to its recipients, can be forwarded, and cannot be recalled.
+        """
+        if not ref.id:
+            return Audience.unknown(
+                ref.encoded, "email: is the folder, not a correspondence: name an address"
+            )
+        copies = {"cc": draft.cc if draft else (), "bcc": draft.bcc if draft else ()}
+        malformed = [a for a in (*copies["cc"], *copies["bcc"]) if not ADDRESS_RE.match(a)]
+        if malformed:
+            return Audience.unknown(
+                ref.encoded, f"not an email address: {', '.join(malformed)}"
+            )
+        recipients = list(
+            dict.fromkeys(a.lower() for a in (ref.id, *copies["cc"], *copies["bcc"]))
+        )
+        own, lists = _csv(value(NAME, "own_domains")), _csv(value(NAME, "lists"))
+        evidence = [
+            f"to {ref.id}"
+            + "".join(f"; {k} {', '.join(v)}" for k, v in copies.items() if v)
+        ]
+        evidence.append(
+            f"own domains: {', '.join(sorted(own))}"
+            if own
+            else "no own_domains in the config, so every recipient counts as external"
+        )
+        classes, widening = [], ["forwarding"]
+        for address in recipients:
+            reason = _list_reason(address, lists)
+            if reason:
+                classes.append(f"everyone behind {address}, which may be a mailing list")
+                evidence.append(f"{address} may be a mailing list: {reason}")
+        if classes:
+            widening.append("list_expansion")
+        return Audience(
+            ref=ref.encoded,
+            scope=Scope.NAMED,
+            readers=tuple(
+                ChannelIdentity(channel=NAME, native_id=a, handle=a) for a in recipients
+            ),
+            complete=not classes,
+            classes=tuple(classes),
+            external=any(not _is_own(a, own) for a in recipients),
+            retractable=False,
+            durability=("copies_pushed",),
+            widening=tuple(widening),
+            evidence=tuple(evidence),
+        )
+
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
     ) -> SendResult:
-        """Send to ``ref``'s address, with ``In-Reply-To`` and ``References`` when replying."""
+        """Send to ``ref``'s address, with ``In-Reply-To`` and ``References`` when replying; ``cc`` in a header, ``bcc`` only on the envelope."""
         if not ref.id:
             raise ChannelError("send to an address: email:<address>", kind="validation")
         if draft.reply_to and not MESSAGE_ID_RE.match(draft.reply_to):
@@ -565,12 +653,19 @@ class Email:
                 f"reply_to is a Message-ID such as <abc@example.org>, not {draft.reply_to!r}",
                 kind="validation",
             )
+        malformed = [a for a in (*draft.cc, *draft.bcc) if not ADDRESS_RE.match(a)]
+        if malformed:
+            raise ChannelError(
+                f"not an email address: {', '.join(malformed)}", kind="validation"
+            )
         user = value(NAME, "user") if dry_run else require(NAME, "user", run=self.run)
         sender = value(NAME, "from_address") or user or "(not set)"
         message = EmailMessage()
         try:
             message["From"] = sender
             message["To"] = ref.id
+            if draft.cc:
+                message["Cc"] = ", ".join(draft.cc)
             if draft.title:
                 message["Subject"] = " ".join(draft.title.split())
             message["Date"] = formatdate(usegmt=True)
@@ -591,6 +686,8 @@ class Email:
             "action": "send an email",
             "from": sender,
             "to": ref.id,
+            "cc": ", ".join(draft.cc) or None,
+            "bcc": ", ".join(draft.bcc) or None,
             "subject": draft.title,
             "in_reply_to": draft.reply_to,
             "priority": draft.priority,
@@ -602,7 +699,12 @@ class Email:
                 ok=True, channel=NAME, conversation=ref.encoded, dry_run=True, plan=plan
             )
         with self._smtp() as server:
-            server.send_message(message)
+            if draft.bcc:  # never in a header: only the envelope names them
+                server.send_message(
+                    message, to_addrs=[ref.id, *draft.cc, *draft.bcc]
+                )
+            else:
+                server.send_message(message)
         return SendResult(
             ok=True,
             channel=NAME,

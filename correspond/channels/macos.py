@@ -20,9 +20,11 @@ from typing import Any
 from correspond.errors import ChannelError, InvalidRef, MissingRequirement
 from correspond.model import (
     Account,
+    Audience,
     Capabilities,
     ConversationRef,
     Draft,
+    Scope,
     SendResult,
     Support,
 )
@@ -54,6 +56,7 @@ class MacOS:
         return Capabilities(
             channel=NAME,
             send=Support.FULL,
+            audience=Support.FULL,
             initiate=Support.FULL,
             notes=(
                 "send only, to the Mac correspond runs on",
@@ -66,6 +69,19 @@ class MacOS:
         if id:
             raise InvalidRef(f"macos takes no id: use macos:, not macos:{id}")
         return ConversationRef(channel=NAME, id="", kind="device")
+
+    def audience(self, ref: ConversationRef, *, draft: Draft | None = None) -> Audience:
+        """Only the operator: a banner on this Mac, which can be cleared."""
+        return Audience(
+            ref=ref.encoded,
+            scope=Scope.OPERATOR,
+            complete=True,
+            external=False,
+            retractable=True,
+            evidence=(
+                "a banner in this Mac's Notification Centre: only someone at this Mac sees it",
+            ),
+        )
 
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
