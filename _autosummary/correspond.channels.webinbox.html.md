@@ -94,6 +94,13 @@ Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 Reports the collector stored, as a channel: read and listen per site.
 
+#### audience(ref, , draft=None)
+
+Only the operator: reports are stored where the collector runs, and nothing is sent back to a page.
+
+* **Return type:**
+  [`Audience`](correspond.model.html.md#correspond.model.Audience)
+
 #### *property* blobs *: [MutableMapping](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [bytes](https://docs.python.org/3/builtins/stdtypes.html#bytes)]*
 
 The attachment store, keyed by SHA-256.

@@ -57,7 +57,7 @@ the same verbs, through [`correspond.tools`](correspond.tools.html.md#module-cor
 | [`Capabilities`](#correspond.Capabilities)(\*, channel[, read, listen, ...])     | What a channel can do, graded, with its limits.                                                                                              |
 | [`ChannelIdentity`](#correspond.ChannelIdentity)(\*, channel, native_id[, ...])     | Who a channel says sent something: its native id and what the platform attests about it.                                                     |
 | [`ConversationRef`](#correspond.ConversationRef)(\*, channel[, id, kind, parent])   | Where a conversation lives: a channel and that channel's own id, encoded `<channel>:<id>`.                                                   |
-| [`Draft`](#correspond.Draft)(\*, text[, title, reply_to, priority])       | What to write: the text, and the few things channels share (a title, the message answered, a priority).                                      |
+| [`Draft`](#correspond.Draft)(\*, text[, title, reply_to, priority, ...])  | What to write: the text, and the few things channels share (a title, the message answered, a priority, copies).                              |
 | [`Editor`](#correspond.Editor)(\*args, \*\*kwargs)                         | Replace the text of a message correspond's account wrote.                                                                                    |
 | [`Event`](#correspond.Event)(\*, kind, channel, delivery_id[, ...])       | Something that happened on a channel, as a listener reports it: dedupe on `delivery_id`, resume from `cursor`.                               |
 | [`Grade`](#correspond.Grade)(\*values)                                    | How sure the channel is about who sent a message: a vocabulary, not a ranking.                                                               |
@@ -232,16 +232,17 @@ JSON-ready.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 What a channel can do, graded, with its limits.
 
 One `Support` per operation in `OPERATIONS` (`audience`: can the channel say
-who reads a conversation), plus three features of writing:
+who reads a conversation), plus four features of writing:
 `initiate` (can a write start a conversation; Telegram bots cannot), `reply`
-(can a draft answer a specific message) and `priority`. `history_depth` says how
+(can a draft answer a specific message), `priority`, and `cc` (can a draft copy
+further recipients, `Draft.cc` and `Draft.bcc`). `history_depth` says how
 far back `read` sees; `grades` are the authenticity grades the channel can attest;
 `native_fields` are the keys its messages may carry in `native` (what a routing
 condition can test), or `None` when the channel does not declare them.
@@ -366,11 +367,19 @@ Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exceptio
 
 An expected failure, with a message meant for the person or agent that asked.
 
-### *class* correspond.Draft(, text, title=None, reply_to=None, priority=None)
+### *class* correspond.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
-What to write: the text, and the few things channels share (a title, the message answered, a priority).
+What to write: the text, and the few things channels share (a title, the message answered, a priority, copies).
+
+`cc` and `bcc` are further recipients, on channels whose capabilities grade `cc`
+(email). They count in the conversation’s audience.
+
+```pycon
+>>> Draft(text="hi", cc=["bob@example.org", " "]).cc
+('bob@example.org',)
+```
 
 #### to_dict()
 
@@ -719,10 +728,11 @@ Run the chain (bindings, thread continuity, metadata rules, classifier) and retu
 * **Return type:**
   [`RouteDecision`](correspond.routing.html.md#correspond.routing.RouteDecision) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.send(ref, text, , title=None, reply_to=None, priority=None, dry_run=False, registry=None, before_send=None)
+### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), dry_run=False, registry=None, before_send=None)
 
 Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
+`cc` and `bcc` copy further recipients, on channels that grade `cc` (email).
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](correspond.outbound.html.md#correspond.outbound.notice).
 

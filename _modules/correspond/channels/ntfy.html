@@ -740,9 +740,11 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span><span class="p">,</span> <span class="n">MissingRequirement</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Account</span><span class="p">,</span>
+    <span class="n">Audience</span><span class="p">,</span>
     <span class="n">Capabilities</span><span class="p">,</span>
     <span class="n">ConversationRef</span><span class="p">,</span>
     <span class="n">Draft</span><span class="p">,</span>
+    <span class="n">Scope</span><span class="p">,</span>
     <span class="n">SendResult</span><span class="p">,</span>
     <span class="n">Support</span><span class="p">,</span>
 <span class="p">)</span>
@@ -790,6 +792,7 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="n">Capabilities</span><span class="p">(</span>
             <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
             <span class="n">send</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">audience</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
             <span class="n">initiate</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">priority</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">max_title_length</span><span class="o">=</span><span class="n">MAX_TITLE_CHARS</span><span class="p">,</span>
@@ -799,8 +802,60 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"the server turns a message over 4,096 bytes into an attachment"</span><span class="p">,</span>
                 <span class="s2">"ntfy: (no topic) uses NTFY_TOPIC, the Keychain, or topic_remote"</span><span class="p">,</span>
                 <span class="s2">"a dry run reads only the environment and the config file"</span><span class="p">,</span>
+                <span class="s2">"audience comes from the config (denies_anonymous_read, cache_duration), not from the server"</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span>
+
+<div class="viewcode-block" id="Ntfy.audience">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.ntfy.html#correspond.channels.ntfy.Ntfy.audience">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">audience</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Audience</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Who reads a topic: anyone who knows its name, unless the config says the server denies anonymous reads.</span>
+
+<span class="sd">        Nothing is asked of the server. Its cache keeps each message for subscribers who</span>
+<span class="sd">        connect later (``cache_duration``, 12h by default), and every subscriber's device</span>
+<span class="sd">        gets a copy.</span>
+<span class="sd">        """</span>
+        <span class="n">server</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"url"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"https://ntfy.sh"</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+        <span class="n">cache</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"cache_duration"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"12h"</span>
+        <span class="n">denies</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"denies_anonymous_read"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">evidence</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'the default topic'</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="ow">not</span><span class="w"> </span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">'a topic'</span><span class="si">}</span><span class="s2"> on </span><span class="si">{</span><span class="n">server</span><span class="si">}</span><span class="s2">; nothing was asked of the server"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"subscribers who connect within cache_duration (</span><span class="si">{</span><span class="n">cache</span><span class="si">}</span><span class="s2">) still receive it"</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="n">cached</span> <span class="o">=</span> <span class="s2">"subscribers who connect within the server's cache window"</span>
+        <span class="n">operators</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"whoever runs </span><span class="si">{</span><span class="n">server</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">common</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">complete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">retractable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">durability</span><span class="o">=</span><span class="p">(</span><span class="s2">"copies_pushed"</span><span class="p">,),</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">denies</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"1"</span><span class="p">,</span> <span class="s2">"true"</span><span class="p">,</span> <span class="s2">"yes"</span><span class="p">,</span> <span class="s2">"on"</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Audience</span><span class="p">(</span>
+                <span class="n">scope</span><span class="o">=</span><span class="n">Scope</span><span class="o">.</span><span class="n">GROUP</span><span class="p">,</span>
+                <span class="n">classes</span><span class="o">=</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"accounts </span><span class="si">{</span><span class="n">server</span><span class="si">}</span><span class="s2"> grants read access to the topic"</span><span class="p">,</span>
+                    <span class="n">cached</span><span class="p">,</span>
+                    <span class="n">operators</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="n">external</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">evidence</span><span class="o">=</span><span class="p">(</span>
+                    <span class="o">*</span><span class="n">evidence</span><span class="p">,</span>
+                    <span class="s2">"denies_anonymous_read in the config: only granted accounts read, unless the server grants this topic to everyone"</span><span class="p">,</span>
+                <span class="p">),</span>
+                <span class="o">**</span><span class="n">common</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Audience</span><span class="p">(</span>
+            <span class="n">scope</span><span class="o">=</span><span class="n">Scope</span><span class="o">.</span><span class="n">PUBLIC</span><span class="p">,</span>
+            <span class="n">classes</span><span class="o">=</span><span class="p">(</span><span class="s2">"anyone who knows the topic name"</span><span class="p">,</span> <span class="n">cached</span><span class="p">,</span> <span class="n">operators</span><span class="p">),</span>
+            <span class="n">external</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">evidence</span><span class="o">=</span><span class="p">(</span>
+                <span class="o">*</span><span class="n">evidence</span><span class="p">,</span>
+                <span class="s2">"anonymous reads are not known to be denied (denies_anonymous_read unset)"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="o">**</span><span class="n">common</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
 
 <div class="viewcode-block" id="Ntfy.parse_ref">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.ntfy.html#correspond.channels.ntfy.Ntfy.parse_ref">[docs]</a>

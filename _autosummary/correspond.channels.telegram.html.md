@@ -33,6 +33,26 @@ Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 A Telegram bot: listen, read the local log, send, edit, react.
 
+#### audience(ref, , draft=None)
+
+Who reads a chat, from `getChat`; a topic has its chat’s readers.
+
+- A private chat: `named`, the other account (by its id only, so a rename keeps
+  the hash) as its reader.
+- A chat with a public username: `public`.
+- A group or supergroup without one: `group`; a channel without one: `group`
+  of its subscribers. Members are never listed.
+- A linked chat (a channel’s discussion group, or the channel a group discusses)
+  is read too: posts are copied into it. A public linked chat makes the audience
+  public; one that cannot be read makes it unknown.
+
+Joiners read the history unless `getChat` says the history is hidden from them.
+Forwarding widens every chat unless its content is protected. A failed `getChat`
+raises, so the audience resolves to public, defaulted.
+
+* **Return type:**
+  [`Audience`](correspond.model.html.md#correspond.model.Audience)
+
 #### *property* capabilities *: [Capabilities](correspond.model.html.md#correspond.model.Capabilities)*
 
 A bot’s view of Telegram.

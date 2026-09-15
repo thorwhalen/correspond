@@ -24,6 +24,11 @@ sender (not every server strips those), so a result recorded lower down fails sa
 'email:ada@example.org'
 ```
 
+### Module Attributes
+
+| [`LIST_LOCAL_PARTS`](#correspond.channels.mail.LIST_LOCAL_PARTS)   | Words that, as a part of an address's local part (`dev-team@`), mark it as a possible mailing list.   |
+|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+
 ### Functions
 
 | [`authenticity`](#correspond.channels.mail.authenticity)(message, trusted_authserv_ids)   | `domain` only when the topmost Authentication-Results comes from a trusted server and DMARC passed for the From domain.   |
@@ -39,6 +44,22 @@ sender (not every server strips those), so a result recorded lower down fails sa
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 A mailbox over IMAP and SMTP.
+
+#### audience(ref, , draft=None)
+
+Who reads an email: its address plus the draft’s `cc` and `bcc`, asked of nothing but the config.
+
+Scope `named`, never `complete`: any address may be an alias, a shared mailbox or
+an auto-forward, which nothing here can see. A recipient whose domain is not in
+`own_domains` makes it `external`; a list-shaped address (under `lists` in the
+config, or a local part naming a group, see [`LIST_LOCAL_PARTS`](#correspond.channels.mail.LIST_LOCAL_PARTS)) adds a class
+and `list_expansion`, and, when every address is in an own domain, leaves
+`external` unknown, since a list can have outside members. A Bcc address is a
+class of its own, so moving it to Cc changes the hash. Every email is pushed to its
+recipients, can be forwarded, and cannot be recalled.
+
+* **Return type:**
+  [`Audience`](correspond.model.html.md#correspond.model.Audience)
 
 #### *property* capabilities *: [Capabilities](correspond.model.html.md#correspond.model.Capabilities)*
 
@@ -64,10 +85,14 @@ Messages in the folder (from `ref`’s address, if it has one), oldest first; ne
 
 #### send(ref, draft, , dry_run=False)
 
-Send to `ref`’s address, with `In-Reply-To` and `References` when replying.
+Send to `ref`’s address, with `In-Reply-To` and `References` when replying; `cc` in a header, `bcc` only on the envelope.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
+
+### correspond.channels.mail.LIST_LOCAL_PARTS *= ('list', 'all', 'team', 'dev', 'announce', 'info')*
+
+Words that, as a part of an address’s local part (`dev-team@`), mark it as a possible mailing list.
 
 ### correspond.channels.mail.authenticity(message, trusted_authserv_ids)
 

@@ -1352,7 +1352,7 @@ window.runMermaid = runMermaid;</script>
 <span class="c1"># ---------------------------------------------------------------------- capabilities</span>
 
 
-<span class="n">_SUPPORT_FIELDS</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">OPERATIONS</span><span class="p">,</span> <span class="s2">"initiate"</span><span class="p">,</span> <span class="s2">"reply"</span><span class="p">,</span> <span class="s2">"priority"</span><span class="p">)</span>
+<span class="n">_SUPPORT_FIELDS</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">OPERATIONS</span><span class="p">,</span> <span class="s2">"initiate"</span><span class="p">,</span> <span class="s2">"reply"</span><span class="p">,</span> <span class="s2">"priority"</span><span class="p">,</span> <span class="s2">"cc"</span><span class="p">)</span>
 <span class="n">_TUPLE_FIELDS</span> <span class="o">=</span> <span class="p">(</span>
     <span class="s2">"listen_modes"</span><span class="p">,</span>
     <span class="s2">"reactions"</span><span class="p">,</span>
@@ -1369,9 +1369,10 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">"""What a channel can do, graded, with its limits.</span>
 
 <span class="sd">    One ``Support`` per operation in :data:`OPERATIONS` (``audience``: can the channel say</span>
-<span class="sd">    who reads a conversation), plus three features of writing:</span>
+<span class="sd">    who reads a conversation), plus four features of writing:</span>
 <span class="sd">    ``initiate`` (can a write start a conversation; Telegram bots cannot), ``reply``</span>
-<span class="sd">    (can a draft answer a specific message) and ``priority``. ``history_depth`` says how</span>
+<span class="sd">    (can a draft answer a specific message), ``priority``, and ``cc`` (can a draft copy</span>
+<span class="sd">    further recipients, ``Draft.cc`` and ``Draft.bcc``). ``history_depth`` says how</span>
 <span class="sd">    far back ``read`` sees; ``grades`` are the authenticity grades the channel can attest;</span>
 <span class="sd">    ``native_fields`` are the keys its messages may carry in ``native`` (what a routing</span>
 <span class="sd">    condition can test), or ``None`` when the channel does not declare them.</span>
@@ -1389,6 +1390,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">initiate</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">reply</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">priority</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">cc</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">history_depth</span><span class="p">:</span> <span class="n">HistoryDepth</span> <span class="o">=</span> <span class="n">HistoryDepth</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">listen_modes</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
     <span class="n">grades</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Grade</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
@@ -1701,12 +1703,21 @@ window.runMermaid = runMermaid;</script>
 <a class="viewcode-back" href="../../_autosummary/correspond.model.html#correspond.Draft">[docs]</a>
 <span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">kw_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">Draft</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""What to write: the text, and the few things channels share (a title, the message answered, a priority)."""</span>
+<span class="w">    </span><span class="sd">"""What to write: the text, and the few things channels share (a title, the message answered, a priority, copies).</span>
+
+<span class="sd">    ``cc`` and ``bcc`` are further recipients, on channels whose capabilities grade ``cc``</span>
+<span class="sd">    (email). They count in the conversation's audience.</span>
+
+<span class="sd">    &gt;&gt;&gt; Draft(text="hi", cc=["bob@example.org", " "]).cc</span>
+<span class="sd">    ('bob@example.org',)</span>
+<span class="sd">    """</span>
 
     <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">reply_to</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">priority</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">cc</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">bcc</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -1717,6 +1728,9 @@ window.runMermaid = runMermaid;</script>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"priority must be one of </span><span class="si">{</span><span class="n">PRIORITIES</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">priority</span><span class="si">!r}</span><span class="s2">"</span>
             <span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"cc"</span><span class="p">,</span> <span class="s2">"bcc"</span><span class="p">):</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="n">_texts</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
+            <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">values</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
 
 <div class="viewcode-block" id="Draft.to_dict">
 <a class="viewcode-back" href="../../_autosummary/correspond.model.html#correspond.Draft.to_dict">[docs]</a>
@@ -1727,6 +1741,8 @@ window.runMermaid = runMermaid;</script>
             <span class="s2">"title"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
             <span class="s2">"reply_to"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
             <span class="s2">"priority"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
+            <span class="s2">"cc"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cc</span><span class="p">),</span>
+            <span class="s2">"bcc"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bcc</span><span class="p">),</span>
         <span class="p">}</span></div>
 </div>
 

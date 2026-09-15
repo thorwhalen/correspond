@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "built_at": "2026-09-15T13:12:52Z",
+  "built_at": "2026-09-15T13:25:19Z",
   "package": {
     "name": "correspond",
     "version": "0.0.4",
@@ -9,26 +9,24 @@
   },
   "git": {
     "available": true,
-    "commit": "07922353b6d52c4841d96cbe82f34a29d7401a01",
-    "short_commit": "0792235",
+    "commit": "aeec9a3d71723ee5b5e50bc55c643fbc60616d13",
+    "short_commit": "aeec9a3",
     "branch": "main",
-    "tags": [
-      "0.0.4"
-    ],
+    "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/thorwhalen/correspond",
-    "commit_url": "https://github.com/thorwhalen/correspond/commit/07922353b6d52c4841d96cbe82f34a29d7401a01",
+    "commit_url": "https://github.com/thorwhalen/correspond/commit/aeec9a3d71723ee5b5e50bc55c643fbc60616d13",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "thorwhalen/correspond",
-    "sha": "ff0d7cee8fcc86c6628198bf1cfcdea4b5a574c1",
+    "sha": "aeec9a3d71723ee5b5e50bc55c643fbc60616d13",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "34973372141",
-    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/34973372141",
+    "run_id": "34974722222",
+    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/34974722222",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -58,7 +56,7 @@
   },
   "site": {
     "modules_documented": 20,
-    "objects_documented": 299
+    "objects_documented": 305
   },
   "pypi": {
     "checked": true,
@@ -66,7 +64,7 @@
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout 07922353b6d52c4841d96cbe82f34a29d7401a01\npip install \"epythet==0.2.12\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout aeec9a3d71723ee5b5e50bc55c643fbc60616d13\npip install \"epythet==0.2.12\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,

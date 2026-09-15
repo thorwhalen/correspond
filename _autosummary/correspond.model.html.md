@@ -50,7 +50,7 @@ True
 | [`Capabilities`](#correspond.model.Capabilities)(\*, channel[, read, listen, ...])     | What a channel can do, graded, with its limits.                                                                                              |
 | [`ChannelIdentity`](#correspond.model.ChannelIdentity)(\*, channel, native_id[, ...])     | Who a channel says sent something: its native id and what the platform attests about it.                                                     |
 | [`ConversationRef`](#correspond.model.ConversationRef)(\*, channel[, id, kind, parent])   | Where a conversation lives: a channel and that channel's own id, encoded `<channel>:<id>`.                                                   |
-| [`Draft`](#correspond.model.Draft)(\*, text[, title, reply_to, priority])       | What to write: the text, and the few things channels share (a title, the message answered, a priority).                                      |
+| [`Draft`](#correspond.model.Draft)(\*, text[, title, reply_to, priority, ...])  | What to write: the text, and the few things channels share (a title, the message answered, a priority, copies).                              |
 | [`Event`](#correspond.model.Event)(\*, kind, channel, delivery_id[, ...])       | Something that happened on a channel, as a listener reports it: dedupe on `delivery_id`, resume from `cursor`.                               |
 | [`Grade`](#correspond.model.Grade)(\*values)                                    | How sure the channel is about who sent a message: a vocabulary, not a ranking.                                                               |
 | [`HistoryDepth`](#correspond.model.HistoryDepth)(\*values)                             | How far back `read` sees: all history, a 24-hour buffer, only what correspond has seen since it was linked or started listening, or nothing. |
@@ -215,16 +215,17 @@ JSON-ready.
 Short phrases for reader classes, used by [`Audience.in_words()`](#correspond.model.Audience.in_words); a class not listed
 here is shown as written.
 
-### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 What a channel can do, graded, with its limits.
 
 One `Support` per operation in [`OPERATIONS`](#correspond.model.OPERATIONS) (`audience`: can the channel say
-who reads a conversation), plus three features of writing:
+who reads a conversation), plus four features of writing:
 `initiate` (can a write start a conversation; Telegram bots cannot), `reply`
-(can a draft answer a specific message) and `priority`. `history_depth` says how
+(can a draft answer a specific message), `priority`, and `cc` (can a draft copy
+further recipients, `Draft.cc` and `Draft.bcc`). `history_depth` says how
 far back `read` sees; `grades` are the authenticity grades the channel can attest;
 `native_fields` are the keys its messages may carry in `native` (what a routing
 condition can test), or `None` when the channel does not declare them.
@@ -345,11 +346,19 @@ readers (email notifications), an edit history anyone who reads can see.
 * **Type:**
   What a send leaves behind
 
-### *class* correspond.model.Draft(, text, title=None, reply_to=None, priority=None)
+### *class* correspond.model.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
-What to write: the text, and the few things channels share (a title, the message answered, a priority).
+What to write: the text, and the few things channels share (a title, the message answered, a priority, copies).
+
+`cc` and `bcc` are further recipients, on channels whose capabilities grade `cc`
+(email). They count in the conversation’s audience.
+
+```pycon
+>>> Draft(text="hi", cc=["bob@example.org", " "]).cc
+('bob@example.org',)
+```
 
 #### to_dict()
 

@@ -2,7 +2,7 @@
 
 # About this build
 
-This documentation was built on **2026-09-15 13:12 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/07922353b6d52c4841d96cbe82f34a29d7401a01"><code>0792235</code></a> on branch <code>main</code>, for **correspond 0.0.4** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-09-15 13:25 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/aeec9a3d71723ee5b5e50bc55c643fbc60616d13"><code>aeec9a3</code></a> on branch <code>main</code>, for **correspond 0.0.4** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -11,9 +11,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/07922353b6d52c4841d96cbe82f34a29d7401a01"><code>07922353b6d52c4841d96cbe82f34a29d7401a01</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/aeec9a3d71723ee5b5e50bc55c643fbc60616d13"><code>aeec9a3d71723ee5b5e50bc55c643fbc60616d13</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
-| Tags at this commit | <code>0.0.4</code>                                                                                                                                           |
+| Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
 | Remote              | <code>https://github.com/thorwhalen/correspond</code>                                                                                                        |
 
@@ -22,9 +22,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/34973372141">34973372141</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/34974722222">34974722222</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>ff0d7cee8fcc86c6628198bf1cfcdea4b5a574c1</code> (in the history of the built commit)  |
+| Event commit | <code>aeec9a3d71723ee5b5e50bc55c643fbc60616d13</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -55,7 +55,7 @@ Latest release: <a href="https://pypi.org/project/correspond/0.0.4/">0.0.4</a>, 
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 07922353b6d52c4841d96cbe82f34a29d7401a01
+git checkout aeec9a3d71723ee5b5e50bc55c643fbc60616d13
 pip install "epythet==0.2.12"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

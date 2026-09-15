@@ -440,6 +440,30 @@ update from the Bot API itself. The bot token never appears in an error or a pla
 <p>A Telegram bot: listen, read the local log, send, edit, react.</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.telegram.Telegram.audience">
+<span class="sig-name descname"><span class="pre">audience</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#Telegram.audience"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.Telegram.audience" title="Link to this definition">#</a></dt>
+<dd><p>Who reads a chat, from <code class="docutils literal notranslate"><span class="pre">getChat</span></code>; a topic has its chat’s readers.</p>
+<ul class="simple">
+<li><p>A private chat: <code class="docutils literal notranslate"><span class="pre">named</span></code>, the other account (by its id only, so a rename keeps
+the hash) as its reader.</p></li>
+<li><p>A chat with a public username: <code class="docutils literal notranslate"><span class="pre">public</span></code>.</p></li>
+<li><p>A group or supergroup without one: <code class="docutils literal notranslate"><span class="pre">group</span></code>; a channel without one: <code class="docutils literal notranslate"><span class="pre">group</span></code>
+of its subscribers. Members are never listed.</p></li>
+<li><p>A linked chat (a channel’s discussion group, or the channel a group discusses)
+is read too: posts are copied into it. A public linked chat makes the audience
+public; one that cannot be read makes it unknown.</p></li>
+</ul>
+<p>Joiners read the history unless <code class="docutils literal notranslate"><span class="pre">getChat</span></code> says the history is hidden from them.
+Forwarding widens every chat unless its content is protected. A failed <code class="docutils literal notranslate"><span class="pre">getChat</span></code>
+raises, so the audience resolves to public, defaulted.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.Audience" title="correspond.model.Audience"><code class="xref py py-class docutils literal notranslate"><span class="pre">Audience</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="correspond.channels.telegram.Telegram.capabilities">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">capabilities</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="correspond.model.html#correspond.model.Capabilities" title="correspond.model.Capabilities"><span class="pre">Capabilities</span></a></span><a class="headerlink" href="#correspond.channels.telegram.Telegram.capabilities" title="Link to this definition">#</a></dt>
@@ -567,6 +591,7 @@ update from the Bot API itself. The bot token never appears in an error or a pla
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram"><code class="docutils literal notranslate"><span class="pre">Telegram</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.audience"><code class="docutils literal notranslate"><span class="pre">Telegram.audience()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.capabilities"><code class="docutils literal notranslate"><span class="pre">Telegram.capabilities</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.edit"><code class="docutils literal notranslate"><span class="pre">Telegram.edit()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.log"><code class="docutils literal notranslate"><span class="pre">Telegram.log</span></code></a></li>

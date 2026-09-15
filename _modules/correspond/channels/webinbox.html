@@ -776,14 +776,17 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidRef</span><span class="p">,</span> <span class="n">MissingRequirement</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Attachment</span><span class="p">,</span>
+    <span class="n">Audience</span><span class="p">,</span>
     <span class="n">Authenticity</span><span class="p">,</span>
     <span class="n">Capabilities</span><span class="p">,</span>
     <span class="n">ChannelIdentity</span><span class="p">,</span>
     <span class="n">ConversationRef</span><span class="p">,</span>
     <span class="n">Event</span><span class="p">,</span>
     <span class="n">Grade</span><span class="p">,</span>
+    <span class="n">Draft</span><span class="p">,</span>
     <span class="n">HistoryDepth</span><span class="p">,</span>
     <span class="n">Message</span><span class="p">,</span>
+    <span class="n">Scope</span><span class="p">,</span>
     <span class="n">Support</span><span class="p">,</span>
     <span class="n">format_time</span><span class="p">,</span>
     <span class="n">parse_time</span><span class="p">,</span>
@@ -1473,6 +1476,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
             <span class="n">read</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">listen</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">audience</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">history_depth</span><span class="o">=</span><span class="n">HistoryDepth</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">listen_modes</span><span class="o">=</span><span class="p">(</span><span class="s2">"poll"</span><span class="p">,),</span>
             <span class="n">grades</span><span class="o">=</span><span class="p">(</span><span class="n">Grade</span><span class="o">.</span><span class="n">CLAIMED</span><span class="p">,</span> <span class="n">Grade</span><span class="o">.</span><span class="n">BOUND</span><span class="p">),</span>
@@ -1493,6 +1497,22 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">"webinbox references name a site, webinbox:&lt;site&gt;, not webinbox:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="WebInbox.audience">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.webinbox.html#correspond.channels.webinbox.WebInbox.audience">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">audience</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Audience</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Only the operator: reports are stored where the collector runs, and nothing is sent back to a page."""</span>
+        <span class="k">return</span> <span class="n">Audience</span><span class="p">(</span>
+            <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">scope</span><span class="o">=</span><span class="n">Scope</span><span class="o">.</span><span class="n">OPERATOR</span><span class="p">,</span>
+            <span class="n">complete</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">external</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">retractable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">evidence</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"reports are kept in the operator's store; the web inbox sends nothing to reporters"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span></div>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">site</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>

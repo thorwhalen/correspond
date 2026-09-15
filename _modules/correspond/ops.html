@@ -1159,7 +1159,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">if</span> <span class="n">generic</span><span class="o">.</span><span class="n">channel</span> <span class="ow">in</span> <span class="n">planned</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">Audience</span><span class="o">.</span><span class="n">unknown</span><span class="p">(</span>
                     <span class="n">label</span><span class="p">,</span>
-                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">generic</span><span class="o">.</span><span class="n">channel</span><span class="si">}</span><span class="s2"> is planned, not built (</span><span class="si">{</span><span class="n">planned</span><span class="p">[</span><span class="n">generic</span><span class="o">.</span><span class="n">channel</span><span class="p">]</span><span class="si">}</span><span class="s2">), so nothing can tell who reads it"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">generic</span><span class="o">.</span><span class="n">channel</span><span class="si">}</span><span class="s2"> is planned, not built (</span><span class="si">{</span><span class="n">planned</span><span class="p">[</span><span class="n">generic</span><span class="o">.</span><span class="n">channel</span><span class="p">]</span><span class="si">}</span><span class="s2">): a channel not built cannot tell who reads it"</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">return</span> <span class="n">Audience</span><span class="o">.</span><span class="n">unknown</span><span class="p">(</span><span class="n">label</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
         <span class="n">label</span> <span class="o">=</span> <span class="n">adapter</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="n">generic</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">encoded</span>
@@ -1198,6 +1198,10 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span> <span class="ow">and</span> <span class="n">caps</span><span class="o">.</span><span class="n">reply</span> <span class="ow">is</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
         <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span><span class="s2">"reply"</span><span class="p">,</span> <span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"send without reply_to"</span><span class="p">,))</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">cc</span> <span class="ow">or</span> <span class="n">draft</span><span class="o">.</span><span class="n">bcc</span><span class="p">)</span> <span class="ow">and</span> <span class="n">caps</span><span class="o">.</span><span class="n">cc</span> <span class="ow">is</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
+            <span class="s2">"cc"</span><span class="p">,</span> <span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"send to each recipient separately"</span><span class="p">,)</span>
+        <span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
         <span class="k">return</span> <span class="s2">"nothing to send: the text is empty"</span>
     <span class="k">if</span> <span class="n">caps</span><span class="o">.</span><span class="n">max_text_length</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">caps</span><span class="o">.</span><span class="n">max_text_length</span><span class="p">:</span>
@@ -1297,20 +1301,35 @@ window.runMermaid = runMermaid;</script>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">reply_to</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">priority</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">cc</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
+    <span class="n">bcc</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
     <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">before_send</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Send ``text`` (or a :class:`~correspond.model.Draft`) to a conversation; ``dry_run`` shows the plan and sends nothing.</span>
 
+<span class="sd">    ``cc`` and ``bcc`` copy further recipients, on channels that grade ``cc`` (email).</span>
 <span class="sd">    ``before_send(ref, draft, audience)`` runs first, on the dry run too; when ``None``, the</span>
 <span class="sd">    config's ``before_send`` reference, else :func:`correspond.outbound.notice`.</span>
 <span class="sd">    """</span>
+    <span class="n">cc</span><span class="p">,</span> <span class="n">bcc</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">cc</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">bcc</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">Draft</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">title</span> <span class="ow">or</span> <span class="n">reply_to</span> <span class="ow">or</span> <span class="n">priority</span> <span class="ow">or</span> <span class="n">cc</span> <span class="ow">or</span> <span class="n">bcc</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"pass a Draft or title/reply_to/priority/cc/bcc, not both: the Draft already carries them"</span>
+        <span class="p">)</span>
     <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
     <span class="n">draft</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">text</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">Draft</span><span class="p">)</span>
-        <span class="k">else</span> <span class="n">Draft</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span> <span class="n">reply_to</span><span class="o">=</span><span class="n">reply_to</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">)</span>
+        <span class="k">else</span> <span class="n">Draft</span><span class="p">(</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+            <span class="n">reply_to</span><span class="o">=</span><span class="n">reply_to</span><span class="p">,</span>
+            <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">,</span>
+            <span class="n">cc</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">cc</span><span class="p">),</span>
+            <span class="n">bcc</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">bcc</span><span class="p">),</span>
+        <span class="p">)</span>
     <span class="p">)</span>
     <span class="n">problem</span> <span class="o">=</span> <span class="n">_feature_check</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">problem</span><span class="p">:</span>

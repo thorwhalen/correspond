@@ -447,6 +447,20 @@ read it. Prefer <code class="docutils literal notranslate"><span class="pre">ntf
 <p>An ntfy server: publish to a topic.</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.ntfy.Ntfy.audience">
+<span class="sig-name descname"><span class="pre">audience</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/ntfy.html#Ntfy.audience"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.ntfy.Ntfy.audience" title="Link to this definition">#</a></dt>
+<dd><p>Who reads a topic: anyone who knows its name, unless the config says the server denies anonymous reads.</p>
+<p>Nothing is asked of the server. Its cache keeps each message for subscribers who
+connect later (<code class="docutils literal notranslate"><span class="pre">cache_duration</span></code>, 12h by default), and every subscriber’s device
+gets a copy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.Audience" title="correspond.model.Audience"><code class="xref py py-class docutils literal notranslate"><span class="pre">Audience</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="correspond.channels.ntfy.Ntfy.capabilities">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">capabilities</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="correspond.model.html#correspond.model.Capabilities" title="correspond.model.Capabilities"><span class="pre">Capabilities</span></a></span><a class="headerlink" href="#correspond.channels.ntfy.Ntfy.capabilities" title="Link to this definition">#</a></dt>
@@ -533,6 +547,7 @@ read it. Prefer <code class="docutils literal notranslate"><span class="pre">ntf
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.ntfy.Ntfy"><code class="docutils literal notranslate"><span class="pre">Ntfy</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.ntfy.Ntfy.audience"><code class="docutils literal notranslate"><span class="pre">Ntfy.audience()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.ntfy.Ntfy.capabilities"><code class="docutils literal notranslate"><span class="pre">Ntfy.capabilities</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.ntfy.Ntfy.parse_ref"><code class="docutils literal notranslate"><span class="pre">Ntfy.parse_ref()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.ntfy.Ntfy.send"><code class="docutils literal notranslate"><span class="pre">Ntfy.send()</span></code></a></li>

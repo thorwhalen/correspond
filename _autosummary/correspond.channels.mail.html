@@ -428,6 +428,15 @@ sender (not every server strips those), so a result recorded lower down fails sa
 <span class="go">'email:ada@example.org'</span>
 </pre></div>
 </div>
+<p class="rubric">Module Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.mail.LIST_LOCAL_PARTS" title="correspond.channels.mail.LIST_LOCAL_PARTS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">LIST_LOCAL_PARTS</span></code></a></p></td>
+<td><p>Words that, as a part of an address's local part (<code class="docutils literal notranslate"><span class="pre">dev-team&#64;</span></code>), mark it as a possible mailing list.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
@@ -453,6 +462,25 @@ sender (not every server strips those), so a result recorded lower down fails sa
 <p>A mailbox over IMAP and SMTP.</p>
 <dl class="field-list simple">
 </dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.mail.Email.audience">
+<span class="sig-name descname"><span class="pre">audience</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/mail.html#Email.audience"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.mail.Email.audience" title="Link to this definition">#</a></dt>
+<dd><p>Who reads an email: its address plus the draft’s <code class="docutils literal notranslate"><span class="pre">cc</span></code> and <code class="docutils literal notranslate"><span class="pre">bcc</span></code>, asked of nothing but the config.</p>
+<p>Scope <code class="docutils literal notranslate"><span class="pre">named</span></code>, never <code class="docutils literal notranslate"><span class="pre">complete</span></code>: any address may be an alias, a shared mailbox or
+an auto-forward, which nothing here can see. A recipient whose domain is not in
+<code class="docutils literal notranslate"><span class="pre">own_domains</span></code> makes it <code class="docutils literal notranslate"><span class="pre">external</span></code>; a list-shaped address (under <code class="docutils literal notranslate"><span class="pre">lists</span></code> in the
+config, or a local part naming a group, see <a class="reference internal" href="#correspond.channels.mail.LIST_LOCAL_PARTS" title="correspond.channels.mail.LIST_LOCAL_PARTS"><code class="xref py py-data docutils literal notranslate"><span class="pre">LIST_LOCAL_PARTS</span></code></a>) adds a class
+and <code class="docutils literal notranslate"><span class="pre">list_expansion</span></code>, and, when every address is in an own domain, leaves
+<code class="docutils literal notranslate"><span class="pre">external</span></code> unknown, since a list can have outside members. A Bcc address is a
+class of its own, so moving it to Cc changes the hash. Every email is pushed to its
+recipients, can be forwarded, and cannot be recalled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.Audience" title="correspond.model.Audience"><code class="xref py py-class docutils literal notranslate"><span class="pre">Audience</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py property">
 <dt class="sig sig-object py" id="correspond.channels.mail.Email.capabilities">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">capabilities</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="correspond.model.html#correspond.model.Capabilities" title="correspond.model.Capabilities"><span class="pre">Capabilities</span></a></span><a class="headerlink" href="#correspond.channels.mail.Email.capabilities" title="Link to this definition">#</a></dt>
@@ -492,7 +520,7 @@ sender (not every server strips those), so a result recorded lower down fails sa
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.mail.Email.send">
 <span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/mail.html#Email.send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.mail.Email.send" title="Link to this definition">#</a></dt>
-<dd><p>Send to <code class="docutils literal notranslate"><span class="pre">ref</span></code>’s address, with <code class="docutils literal notranslate"><span class="pre">In-Reply-To</span></code> and <code class="docutils literal notranslate"><span class="pre">References</span></code> when replying.</p>
+<dd><p>Send to <code class="docutils literal notranslate"><span class="pre">ref</span></code>’s address, with <code class="docutils literal notranslate"><span class="pre">In-Reply-To</span></code> and <code class="docutils literal notranslate"><span class="pre">References</span></code> when replying; <code class="docutils literal notranslate"><span class="pre">cc</span></code> in a header, <code class="docutils literal notranslate"><span class="pre">bcc</span></code> only on the envelope.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
@@ -500,6 +528,12 @@ sender (not every server strips those), so a result recorded lower down fails sa
 </dl>
 </dd></dl>
 
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="correspond.channels.mail.LIST_LOCAL_PARTS">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.mail.</span></span><span class="sig-name descname"><span class="pre">LIST_LOCAL_PARTS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('list',</span> <span class="pre">'all',</span> <span class="pre">'team',</span> <span class="pre">'dev',</span> <span class="pre">'announce',</span> <span class="pre">'info')</span></span><a class="headerlink" href="#correspond.channels.mail.LIST_LOCAL_PARTS" title="Link to this definition">#</a></dt>
+<dd><p>Words that, as a part of an address’s local part (<code class="docutils literal notranslate"><span class="pre">dev-team&#64;</span></code>), mark it as a possible mailing list.</p>
 </dd></dl>
 
 <dl class="py function">
@@ -563,6 +597,7 @@ sender (not every server strips those), so a result recorded lower down fails sa
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.mail.Email"><code class="docutils literal notranslate"><span class="pre">Email</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.mail.Email.audience"><code class="docutils literal notranslate"><span class="pre">Email.audience()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.mail.Email.capabilities"><code class="docutils literal notranslate"><span class="pre">Email.capabilities</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.mail.Email.parse_ref"><code class="docutils literal notranslate"><span class="pre">Email.parse_ref()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.mail.Email.poll"><code class="docutils literal notranslate"><span class="pre">Email.poll()</span></code></a></li>
@@ -570,6 +605,7 @@ sender (not every server strips those), so a result recorded lower down fails sa
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.mail.Email.send"><code class="docutils literal notranslate"><span class="pre">Email.send()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.mail.LIST_LOCAL_PARTS"><code class="docutils literal notranslate"><span class="pre">LIST_LOCAL_PARTS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.mail.authenticity"><code class="docutils literal notranslate"><span class="pre">authenticity()</span></code></a></li>
 </ul>
   </nav></div>

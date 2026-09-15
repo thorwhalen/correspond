@@ -4,6 +4,12 @@ correspond.channels.mail
 .. automodule:: correspond.channels.mail
 
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      LIST_LOCAL_PARTS
+   
    .. rubric:: Functions
 
    .. autosummary::

@@ -895,6 +895,16 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">what</span><span class="o">=</span><span class="s2">"comma-separated authserv-ids of your own receiving server; only their Authentication-Results can make a sender `domain`"</span><span class="p">,</span>
                 <span class="n">where</span><span class="o">=</span><span class="s2">"the topmost Authentication-Results header of a message your provider delivered (for Gmail: mx.google.com)"</span><span class="p">,</span>
             <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"own_domains"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_EMAIL_OWN_DOMAINS"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"comma-separated mail domains that are your own (and their subdomains); a recipient anywhere else makes an email's audience external"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"lists"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_EMAIL_LISTS"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"comma-separated mailing-list addresses, or @domain for a whole list server; local parts such as list, all, team, dev, announce and info count as lists anyway"</span><span class="p">,</span>
+            <span class="p">),</span>
         <span class="p">),</span>
     <span class="p">),</span>
     <span class="n">ChannelInfo</span><span class="p">(</span>
@@ -931,6 +941,17 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">key</span><span class="o">=</span><span class="s2">"topic_remote_file"</span><span class="p">,</span>
                 <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_NTFY_TOPIC_REMOTE_FILE"</span><span class="p">,</span>
                 <span class="n">what</span><span class="o">=</span><span class="s2">"the file on that host holding a NTFY_TOPIC=... line"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"denies_anonymous_read"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_NTFY_DENIES_ANONYMOUS_READ"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"true when the server denies anonymous reads (its auth-default-access), so only the accounts it grants can read a topic; unset, anyone who knows a topic can"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"cache_duration"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_NTFY_CACHE_DURATION"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"how long the server keeps a message for subscribers who connect later (its cache-duration)"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"12h"</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">),</span>
         <span class="n">notes</span><span class="o">=</span><span class="p">(</span>

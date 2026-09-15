@@ -23,6 +23,13 @@ Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 Notification Centre on the Mac correspond runs on.
 
+#### audience(ref, , draft=None)
+
+Only the operator: a banner on this Mac, which can be cleared.
+
+* **Return type:**
+  [`Audience`](correspond.model.html.md#correspond.model.Audience)
+
 #### *property* capabilities *: [Capabilities](correspond.model.html.md#correspond.model.Capabilities)*
 
 Send only.

@@ -742,9 +742,11 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">OPERATIONS</span><span class="p">,</span>
     <span class="n">Audience</span><span class="p">,</span>
+    <span class="n">Draft</span><span class="p">,</span>
     <span class="n">HistoryDepth</span><span class="p">,</span>
     <span class="n">Message</span><span class="p">,</span>
     <span class="n">SendResult</span><span class="p">,</span>
+    <span class="n">Support</span><span class="p">,</span>
     <span class="n">format_time</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">CHANNELS</span><span class="p">,</span> <span class="n">check_requirements</span>
@@ -904,7 +906,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">data</span> <span class="o">=</span> <span class="n">caps</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
     <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">':'</span><span class="si">:</span><span class="s2">&lt;10</span><span class="si">}{</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
-        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="o">*</span><span class="n">OPERATIONS</span><span class="p">,</span> <span class="s2">"initiate"</span><span class="p">,</span> <span class="s2">"reply"</span><span class="p">,</span> <span class="s2">"priority"</span><span class="p">,</span> <span class="s2">"history_depth"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="o">*</span><span class="n">OPERATIONS</span><span class="p">,</span> <span class="s2">"initiate"</span><span class="p">,</span> <span class="s2">"reply"</span><span class="p">,</span> <span class="s2">"priority"</span><span class="p">,</span> <span class="s2">"cc"</span><span class="p">,</span> <span class="s2">"history_depth"</span><span class="p">)</span>
     <span class="p">]</span>
     <span class="k">if</span> <span class="n">caps</span><span class="o">.</span><span class="n">grades</span><span class="p">:</span>
         <span class="n">lines</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="s1">'grades:'</span><span class="si">:</span><span class="s2">&lt;10</span><span class="si">}{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s1">'grades'</span><span class="p">])</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
@@ -1032,12 +1034,34 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_addresses</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""A comma-separated list of recipients, as a tuple."""</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">part</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="p">(</span><span class="n">text</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span> <span class="k">if</span> <span class="n">part</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+
+
 <div class="viewcode-block" id="audience">
 <a class="viewcode-back" href="../../_autosummary/correspond.tools.html#correspond.tools.audience">[docs]</a>
 <span class="nd">@_as_result</span>
-<span class="k">def</span><span class="w"> </span><span class="nf">audience</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does."""</span>
-    <span class="n">found</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">audience</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">audience</span><span class="p">(</span><span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cc</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">bcc</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does."""</span>
+    <span class="n">copies</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"cc"</span><span class="p">:</span> <span class="n">_addresses</span><span class="p">(</span><span class="n">cc</span><span class="p">),</span> <span class="s2">"bcc"</span><span class="p">:</span> <span class="n">_addresses</span><span class="p">(</span><span class="n">bcc</span><span class="p">)}</span>
+    <span class="n">draft</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">copies</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+        <span class="n">channel</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">":"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">copies_graded</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">capabilities</span><span class="p">(</span><span class="n">channel</span><span class="p">)</span><span class="o">.</span><span class="n">cc</span>
+        <span class="k">except</span> <span class="p">(</span>
+            <span class="n">CorrespondError</span>
+        <span class="p">):</span>  <span class="c1"># an unknown channel's audience is answered below, as public</span>
+            <span class="n">copies_graded</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">copies_graded</span> <span class="ow">is</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
+                <span class="s2">"cc"</span><span class="p">,</span>
+                <span class="n">channel</span><span class="p">,</span>
+                <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"ask about each recipient's channel separately"</span><span class="p">,),</span>
+            <span class="p">)</span>
+        <span class="n">draft</span> <span class="o">=</span> <span class="n">Draft</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="o">**</span><span class="n">copies</span><span class="p">)</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">audience</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span>
     <span class="n">words</span> <span class="o">=</span> <span class="n">found</span><span class="o">.</span><span class="n">in_words</span><span class="p">()</span>
     <span class="k">return</span> <span class="p">{</span>
         <span class="s2">"ok"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
@@ -1121,12 +1145,21 @@ window.runMermaid = runMermaid;</script>
     <span class="n">title</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">reply_to</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">priority</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">cc</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">bcc</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""</span>
+<span class="w">    </span><span class="sd">"""Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""</span>
     <span class="k">return</span> <span class="n">_write_result</span><span class="p">(</span>
         <span class="n">ops</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
-            <span class="n">ref</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span> <span class="n">reply_to</span><span class="o">=</span><span class="n">reply_to</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span>
+            <span class="n">ref</span><span class="p">,</span>
+            <span class="n">text</span><span class="p">,</span>
+            <span class="n">title</span><span class="o">=</span><span class="n">title</span><span class="p">,</span>
+            <span class="n">reply_to</span><span class="o">=</span><span class="n">reply_to</span><span class="p">,</span>
+            <span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">,</span>
+            <span class="n">cc</span><span class="o">=</span><span class="n">_addresses</span><span class="p">(</span><span class="n">cc</span><span class="p">),</span>
+            <span class="n">bcc</span><span class="o">=</span><span class="n">_addresses</span><span class="p">(</span><span class="n">bcc</span><span class="p">),</span>
+            <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">)</span></div>
 

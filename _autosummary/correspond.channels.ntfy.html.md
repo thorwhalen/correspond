@@ -35,6 +35,17 @@ Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 An ntfy server: publish to a topic.
 
+#### audience(ref, , draft=None)
+
+Who reads a topic: anyone who knows its name, unless the config says the server denies anonymous reads.
+
+Nothing is asked of the server. Its cache keeps each message for subscribers who
+connect later (`cache_duration`, 12h by default), and every subscriber’s device
+gets a copy.
+
+* **Return type:**
+  [`Audience`](correspond.model.html.md#correspond.model.Audience)
+
 #### *property* capabilities *: [Capabilities](correspond.model.html.md#correspond.model.Capabilities)*
 
 Send only, with priorities.

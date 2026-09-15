@@ -1,4 +1,4 @@
-> built 2026-09-15 13:12 UTC from 0792235 (main) · correspond 0.0.4. Details: build_info.json
+> built 2026-09-15 13:25 UTC from aeec9a3 (main) · correspond 0.0.4. Details: build_info.json
 
 # index.html.md
 
@@ -23,14 +23,14 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 
 ## Channels
 
-| Channel    | References                                                         | Operations                                                                         | Built on                                              |
-|------------|--------------------------------------------------------------------|------------------------------------------------------------------------------------|-------------------------------------------------------|
-| `github`   | `github:owner/repo`, `github:owner/repo#12`                        | read, listen (issues and comments), send, edit, react, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
-| `email`    | `email:` (the folder), `email:someone@example.org`                 | read, listen, send                                                                 | `imaplib`, `smtplib`                                  |
-| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                        | send                                                                               | `urllib`                                              |
-| `macos`    | `macos:`                                                           | send                                                                               | `terminal-notifier` or `osascript`                    |
-| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react                            | the Bot API over `urllib`                             |
-| `webinbox` | `webinbox:<site>`                                                  | read, listen                                                                       | the ASGI collector below, and `dol` stores            |
+| Channel    | References                                                                           | Operations                                                                         | Built on                                              |
+|------------|--------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|-------------------------------------------------------|
+| `github`   | `github:owner/repo`, `github:owner/repo#12`                                          | read, listen (issues and comments), send, edit, react, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
+| `email`    | `email:` (the folder), `email:someone@example.org`                                   | read, listen, send (with cc and bcc), audience                                     | `imaplib`, `smtplib`                                  |
+| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                          | send, audience                                                                     | `urllib`                                              |
+| `macos`    | `macos:`                                                                             | send, audience                                                                     | `terminal-notifier` or `osascript`                    |
+| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience                  | the Bot API over `urllib`                             |
+| `webinbox` | `webinbox:<site>`                                                                    | read, listen, audience                                                             | the ASGI collector below, and `dol` stores            |
 
 Every v0.1 adapter uses the Python standard library. Discord ([#2](https://github.com/thorwhalen/correspond/issues/2)), Slack ([#3](https://github.com/thorwhalen/correspond/issues/3)), Signal ([#4](https://github.com/thorwhalen/correspond/issues/4)) and Apprise ([#5](https://github.com/thorwhalen/correspond/issues/5)) are planned as extras; `correspond channels` lists them with their issues.
 
@@ -51,7 +51,7 @@ Grades are a vocabulary, not a ranking. A policy lists the grades it accepts for
 
 ## Capabilities
 
-`correspond capabilities github` grades each operation `full`, `partial` or `none`, plus whether a write can start a conversation (`initiate`; a Telegram bot cannot), answer a specific message (`reply`) or carry a `priority`, how far back `read` sees (`history_depth`), the limits (text length, reactions), the fields its messages carry in `native` (`native_fields`), the rate limits and notes. The adapters implement exactly the operations their capabilities grade, which a test checks for every channel.
+`correspond capabilities github` grades each operation `full`, `partial` or `none`, plus whether a write can start a conversation (`initiate`; a Telegram bot cannot), answer a specific message (`reply`), carry a `priority` or copy further recipients (`cc`), how far back `read` sees (`history_depth`), the limits (text length, reactions), the fields its messages carry in `native` (`native_fields`), the rate limits and notes. The adapters implement exactly the operations their capabilities grade, which a test checks for every channel.
 
 ```text
 $ correspond react ntfy:example-topic m1 eyes
@@ -69,11 +69,20 @@ scope: public
 
 `correspond audience <reference>` says who can read a conversation, now and plausibly later, before anything is written to it. The first line is the answer in words; the rest is the record (`--json` prints it under `audience`, beside `hash` and `words`): a `scope` (`operator`, `named`, `group`, `org`, `public`), the `readers` known to read it with whether that list is `complete`, the reader `classes` that cannot be listed, whether `external` readers exist, what a send leaves behind (`durability`), how the readership can grow (`widening`), the `evidence` behind each value, and a `hash` that changes when the audience does (and only then, not with the time or the evidence).
 
-**Unknown resolves to public.** A failed or forbidden lookup, a channel without an audience reader and a planned channel all answer `public` with `defaulted: true` and the reason in `evidence`. Nothing is cached: ask again right before sending. GitHub computes it from the repository’s visibility, its collaborators when the `gh` account may list them, and the organisation’s base permission when the account may read it (otherwise the documented default, read). A GitHub audience is never `complete`: installed apps, webhooks and an organisation’s security managers read without being listable. Every other channel answers public, defaulted, until its audience reader lands ([#29](https://github.com/thorwhalen/correspond/issues/29)).
+**Unknown resolves to public.** A failed or forbidden lookup, a channel without an audience reader and a planned channel (Discord, Slack, Signal, Apprise) all answer `public` with `defaulted: true` and the reason in `evidence`. Nothing is cached: ask again right before sending. `correspond capabilities <channel>` grades how much each reader can tell.
+
+| Channel                    | How the audience is computed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+|----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `github` (full)            | The repository’s visibility; its collaborators, when the `gh` account may list them; the organisation’s base permission, when the account may read it (otherwise the documented default, read). Never `complete`: installed apps, webhooks and an organisation’s security managers read without being listable.                                                                                                                                                                                                                                     |
+| `email` (full)             | Scope `named`: the address plus `--cc` and `--bcc`, never `complete` (any address may be an alias, a shared mailbox or an auto-forward). A recipient outside the config’s `own_domains` makes it `external`. A list-shaped address (under `lists` in the config, or a local part such as `list`, `all`, `team`, `dev`, `announce`, `info`) adds a class for its unlistable members and `list_expansion`, and leaves `external` unknown when every address is internal. A Bcc address is a class of its own. Always `forwarding`, never retractable. |
+| `telegram` (partial)       | `getChat`. A private chat is `named`, its reader identified by account id. A chat with a public username is `public`. A group, or a channel without a username, is `group`, and members are never listed. A linked discussion group or channel is read too, and makes the audience public when it is. New members read the history unless the chat hides it; forwards widen it unless its content is protected. A chat `getChat` cannot read is public, defaulted.                                                                                  |
+| `ntfy` (partial)           | `public`, with the classes “anyone who knows the topic name” and whoever runs the server, unless the config says `denies_anonymous_read`. The cache window is a class; its length is evidence. Nothing is asked of the server.                                                                                                                                                                                                                                                                                                                      |
+| `macos`, `webinbox` (full) | `operator`, retractable.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
 ## Writing: dry run first
 
-- `--dry-run` on `send`, `edit` and `react` sends nothing and changes nothing. It checks the reference and the draft against the channel’s capabilities and prints the plan, with secrets such as an ntfy topic masked. A dry run reads only the environment and the config file, plus, for `send` and `edit`, the audience lookup: a value kept in the Keychain or on a remote host is looked up when sending, and the plan says so.
+- `--dry-run` on `send`, `edit` and `react` sends nothing and changes nothing. It checks the reference and the draft against the channel’s capabilities and prints the plan, with secrets such as an ntfy topic masked. A dry run reads only the environment and the config file, plus the audience lookup (a `gh api` call for GitHub, `getChat` with the bot token for Telegram): a value kept in the Keychain or on a remote host is otherwise looked up when sending, and the plan says so.
+- `--cc` and `--bcc` (comma-separated) copy further recipients on channels that grade `cc` (email); elsewhere they are refused by name. Bcc addresses go on the envelope only, never in a header, and they count in the audience.
 - **Every write (`send`, `edit`, `react`, and `upload` in Python) passes the `before_send` check first**, on the dry run too. The plan shows `audience` (who can read it, in words), `audience_hash`, and `before_send` (the verdict). With nothing configured the check lets the write go ahead, so the audience line is all it adds. A check can stop the write: `refused` (not as written, not here) or `needs_approval` (wait for the operator), with any details it attached in `before_send_details`. A configured check that does not load stops every write (`before_send_unavailable`), and one that crashes stops that write (`before_send_failed`). Nothing is sent in any of these cases, and `--allow-send` on the MCP server does not skip the check.
 - The check guards drafts, not the process running correspond: whoever sets its environment or edits the config file (`$CORRESPOND_CONFIG` can point at another file) chooses the check. Commands that write without correspond (`gh issue comment`, say) are covered by liaise’s hook, not by this check.
 - A write that fails is a result, not an exception: `ok: false`, an `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`, or one of the four check kinds above), and whether a retry can help (`retryable`, `retry_after`).
@@ -99,9 +108,13 @@ Cursors live under the data root, one per reference. A cursor is stored only aft
   imap_host = "imap.example.org"
   smtp_host = "smtp.example.org"
   trusted_authserv_ids = ["mx.example.org"]
+  own_domains = ["example.org"]           # recipients elsewhere are external
+  lists = ["@lists.example.org"]          # list addresses, or a whole list server
 
   [ntfy]
   topic_keychain_service = "my-ntfy-topic"
+  denies_anonymous_read = true            # only if your server's auth-default-access denies reads
+  cache_duration = "12h"
   ```
 - **`before_send`**, at the top of the config file (before any table), names the check every write runs, as `"module:attr"`. The check is a callable `before_send(ref, draft, audience, *, operation, dry_run, message_id, **context)`. It returns to let the write go ahead, or raises `correspond.errors.Refused(reason, **details)` or `correspond.errors.NeedsApproval(reason, **details)`. Accept `**context`, so that later context keys do not break it. liaise supplies one:
   ```toml
@@ -407,6 +420,13 @@ Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 Notification Centre on the Mac correspond runs on.
 
+#### audience(ref, , draft=None)
+
+Only the operator: a banner on this Mac, which can be cleared.
+
+* **Return type:**
+  [`Audience`](_autosummary/correspond.model.html.md#correspond.model.Audience)
+
 #### *property* capabilities *: [Capabilities](_autosummary/correspond.model.html.md#correspond.model.Capabilities)*
 
 Send only.
@@ -454,6 +474,11 @@ sender (not every server strips those), so a result recorded lower down fails sa
 'email:ada@example.org'
 ```
 
+### Module Attributes
+
+| [`LIST_LOCAL_PARTS`](_autosummary/correspond.channels.mail.html.md#correspond.channels.mail.LIST_LOCAL_PARTS)   | Words that, as a part of an address's local part (`dev-team@`), mark it as a possible mailing list.   |
+|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------|
+
 ### Functions
 
 | [`authenticity`](_autosummary/correspond.channels.mail.html.md#correspond.channels.mail.authenticity)(message, trusted_authserv_ids)   | `domain` only when the topmost Authentication-Results comes from a trusted server and DMARC passed for the From domain.   |
@@ -469,6 +494,22 @@ sender (not every server strips those), so a result recorded lower down fails sa
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 A mailbox over IMAP and SMTP.
+
+#### audience(ref, , draft=None)
+
+Who reads an email: its address plus the draft’s `cc` and `bcc`, asked of nothing but the config.
+
+Scope `named`, never `complete`: any address may be an alias, a shared mailbox or
+an auto-forward, which nothing here can see. A recipient whose domain is not in
+`own_domains` makes it `external`; a list-shaped address (under `lists` in the
+config, or a local part naming a group, see [`LIST_LOCAL_PARTS`](_autosummary/correspond.channels.mail.html.md#correspond.channels.mail.LIST_LOCAL_PARTS)) adds a class
+and `list_expansion`, and, when every address is in an own domain, leaves
+`external` unknown, since a list can have outside members. A Bcc address is a
+class of its own, so moving it to Cc changes the hash. Every email is pushed to its
+recipients, can be forwarded, and cannot be recalled.
+
+* **Return type:**
+  [`Audience`](_autosummary/correspond.model.html.md#correspond.model.Audience)
 
 #### *property* capabilities *: [Capabilities](_autosummary/correspond.model.html.md#correspond.model.Capabilities)*
 
@@ -494,10 +535,14 @@ Messages in the folder (from `ref`’s address, if it has one), oldest first; ne
 
 #### send(ref, draft, , dry_run=False)
 
-Send to `ref`’s address, with `In-Reply-To` and `References` when replying.
+Send to `ref`’s address, with `In-Reply-To` and `References` when replying; `cc` in a header, `bcc` only on the envelope.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
+
+### correspond.channels.mail.LIST_LOCAL_PARTS *= ('list', 'all', 'team', 'dev', 'announce', 'info')*
+
+Words that, as a part of an address’s local part (`dev-team@`), mark it as a possible mailing list.
 
 ### correspond.channels.mail.authenticity(message, trusted_authserv_ids)
 
@@ -545,6 +590,17 @@ read it. Prefer `ntfy:` to writing a topic into a reference that ends up in logs
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 An ntfy server: publish to a topic.
+
+#### audience(ref, , draft=None)
+
+Who reads a topic: anyone who knows its name, unless the config says the server denies anonymous reads.
+
+Nothing is asked of the server. Its cache keeps each message for subscribers who
+connect later (`cache_duration`, 12h by default), and every subscriber’s device
+gets a copy.
+
+* **Return type:**
+  [`Audience`](_autosummary/correspond.model.html.md#correspond.model.Audience)
 
 #### *property* capabilities *: [Capabilities](_autosummary/correspond.model.html.md#correspond.model.Capabilities)*
 
@@ -605,6 +661,26 @@ update from the Bot API itself. The bot token never appears in an error or a pla
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 A Telegram bot: listen, read the local log, send, edit, react.
+
+#### audience(ref, , draft=None)
+
+Who reads a chat, from `getChat`; a topic has its chat’s readers.
+
+- A private chat: `named`, the other account (by its id only, so a rename keeps
+  the hash) as its reader.
+- A chat with a public username: `public`.
+- A group or supergroup without one: `group`; a channel without one: `group`
+  of its subscribers. Members are never listed.
+- A linked chat (a channel’s discussion group, or the channel a group discusses)
+  is read too: posts are copied into it. A public linked chat makes the audience
+  public; one that cannot be read makes it unknown.
+
+Joiners read the history unless `getChat` says the history is hidden from them.
+Forwarding widens every chat unless its content is protected. A failed `getChat`
+raises, so the audience resolves to public, defaulted.
+
+* **Return type:**
+  [`Audience`](_autosummary/correspond.model.html.md#correspond.model.Audience)
 
 #### *property* capabilities *: [Capabilities](_autosummary/correspond.model.html.md#correspond.model.Capabilities)*
 
@@ -751,6 +827,13 @@ Per-key token buckets: `rate_per_minute` sustained, `burst` at once. In memory, 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 Reports the collector stored, as a channel: read and listen per site.
+
+#### audience(ref, , draft=None)
+
+Only the operator: reports are stored where the collector runs, and nothing is sent back to a page.
+
+* **Return type:**
+  [`Audience`](_autosummary/correspond.model.html.md#correspond.model.Audience)
 
 #### *property* blobs *: [MutableMapping](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [bytes](https://docs.python.org/3/builtins/stdtypes.html#bytes)]*
 
@@ -1031,7 +1114,7 @@ the same verbs, through [`correspond.tools`](_autosummary/correspond.tools.html.
 | [`Capabilities`](_autosummary/correspond.html.md#correspond.Capabilities)(\*, channel[, read, listen, ...])     | What a channel can do, graded, with its limits.                                                                                              |
 | [`ChannelIdentity`](_autosummary/correspond.html.md#correspond.ChannelIdentity)(\*, channel, native_id[, ...])     | Who a channel says sent something: its native id and what the platform attests about it.                                                     |
 | [`ConversationRef`](_autosummary/correspond.html.md#correspond.ConversationRef)(\*, channel[, id, kind, parent])   | Where a conversation lives: a channel and that channel's own id, encoded `<channel>:<id>`.                                                   |
-| [`Draft`](_autosummary/correspond.html.md#correspond.Draft)(\*, text[, title, reply_to, priority])       | What to write: the text, and the few things channels share (a title, the message answered, a priority).                                      |
+| [`Draft`](_autosummary/correspond.html.md#correspond.Draft)(\*, text[, title, reply_to, priority, ...])  | What to write: the text, and the few things channels share (a title, the message answered, a priority, copies).                              |
 | [`Editor`](_autosummary/correspond.html.md#correspond.Editor)(\*args, \*\*kwargs)                         | Replace the text of a message correspond's account wrote.                                                                                    |
 | [`Event`](_autosummary/correspond.html.md#correspond.Event)(\*, kind, channel, delivery_id[, ...])       | Something that happened on a channel, as a listener reports it: dedupe on `delivery_id`, resume from `cursor`.                               |
 | [`Grade`](_autosummary/correspond.html.md#correspond.Grade)(\*values)                                    | How sure the channel is about who sent a message: a vocabulary, not a ranking.                                                               |
@@ -1206,16 +1289,17 @@ JSON-ready.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 What a channel can do, graded, with its limits.
 
 One `Support` per operation in `OPERATIONS` (`audience`: can the channel say
-who reads a conversation), plus three features of writing:
+who reads a conversation), plus four features of writing:
 `initiate` (can a write start a conversation; Telegram bots cannot), `reply`
-(can a draft answer a specific message) and `priority`. `history_depth` says how
+(can a draft answer a specific message), `priority`, and `cc` (can a draft copy
+further recipients, `Draft.cc` and `Draft.bcc`). `history_depth` says how
 far back `read` sees; `grades` are the authenticity grades the channel can attest;
 `native_fields` are the keys its messages may carry in `native` (what a routing
 condition can test), or `None` when the channel does not declare them.
@@ -1340,11 +1424,19 @@ Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exceptio
 
 An expected failure, with a message meant for the person or agent that asked.
 
-### *class* correspond.Draft(, text, title=None, reply_to=None, priority=None)
+### *class* correspond.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
-What to write: the text, and the few things channels share (a title, the message answered, a priority).
+What to write: the text, and the few things channels share (a title, the message answered, a priority, copies).
+
+`cc` and `bcc` are further recipients, on channels whose capabilities grade `cc`
+(email). They count in the conversation’s audience.
+
+```pycon
+>>> Draft(text="hi", cc=["bob@example.org", " "]).cc
+('bob@example.org',)
+```
 
 #### to_dict()
 
@@ -1693,10 +1785,11 @@ Run the chain (bindings, thread continuity, metadata rules, classifier) and retu
 * **Return type:**
   [`RouteDecision`](_autosummary/correspond.routing.html.md#correspond.routing.RouteDecision) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.send(ref, text, , title=None, reply_to=None, priority=None, dry_run=False, registry=None, before_send=None)
+### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), dry_run=False, registry=None, before_send=None)
 
 Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
+`cc` and `bcc` copy further recipients, on channels that grade `cc` (email).
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice).
 
@@ -1847,7 +1940,7 @@ True
 | [`Capabilities`](_autosummary/correspond.model.html.md#correspond.model.Capabilities)(\*, channel[, read, listen, ...])     | What a channel can do, graded, with its limits.                                                                                              |
 | [`ChannelIdentity`](_autosummary/correspond.model.html.md#correspond.model.ChannelIdentity)(\*, channel, native_id[, ...])     | Who a channel says sent something: its native id and what the platform attests about it.                                                     |
 | [`ConversationRef`](_autosummary/correspond.model.html.md#correspond.model.ConversationRef)(\*, channel[, id, kind, parent])   | Where a conversation lives: a channel and that channel's own id, encoded `<channel>:<id>`.                                                   |
-| [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)(\*, text[, title, reply_to, priority])       | What to write: the text, and the few things channels share (a title, the message answered, a priority).                                      |
+| [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)(\*, text[, title, reply_to, priority, ...])  | What to write: the text, and the few things channels share (a title, the message answered, a priority, copies).                              |
 | [`Event`](_autosummary/correspond.model.html.md#correspond.model.Event)(\*, kind, channel, delivery_id[, ...])       | Something that happened on a channel, as a listener reports it: dedupe on `delivery_id`, resume from `cursor`.                               |
 | [`Grade`](_autosummary/correspond.model.html.md#correspond.model.Grade)(\*values)                                    | How sure the channel is about who sent a message: a vocabulary, not a ranking.                                                               |
 | [`HistoryDepth`](_autosummary/correspond.model.html.md#correspond.model.HistoryDepth)(\*values)                             | How far back `read` sees: all history, a 24-hour buffer, only what correspond has seen since it was linked or started listening, or nothing. |
@@ -2012,16 +2105,17 @@ JSON-ready.
 Short phrases for reader classes, used by [`Audience.in_words()`](_autosummary/correspond.model.html.md#correspond.model.Audience.in_words); a class not listed
 here is shown as written.
 
-### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 What a channel can do, graded, with its limits.
 
 One `Support` per operation in [`OPERATIONS`](_autosummary/correspond.model.html.md#correspond.model.OPERATIONS) (`audience`: can the channel say
-who reads a conversation), plus three features of writing:
+who reads a conversation), plus four features of writing:
 `initiate` (can a write start a conversation; Telegram bots cannot), `reply`
-(can a draft answer a specific message) and `priority`. `history_depth` says how
+(can a draft answer a specific message), `priority`, and `cc` (can a draft copy
+further recipients, `Draft.cc` and `Draft.bcc`). `history_depth` says how
 far back `read` sees; `grades` are the authenticity grades the channel can attest;
 `native_fields` are the keys its messages may carry in `native` (what a routing
 condition can test), or `None` when the channel does not declare them.
@@ -2142,11 +2236,19 @@ readers (email notifications), an edit history anyone who reads can see.
 * **Type:**
   What a send leaves behind
 
-### *class* correspond.model.Draft(, text, title=None, reply_to=None, priority=None)
+### *class* correspond.model.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
-What to write: the text, and the few things channels share (a title, the message answered, a priority).
+What to write: the text, and the few things channels share (a title, the message answered, a priority, copies).
+
+`cc` and `bcc` are further recipients, on channels whose capabilities grade `cc`
+(email). They count in the conversation’s audience.
+
+```pycon
+>>> Draft(text="hi", cc=["bob@example.org", " "]).cc
+('bob@example.org',)
+```
 
 #### to_dict()
 
@@ -2510,10 +2612,11 @@ The messages of a conversation, oldest first (`limit` keeps the most recent ones
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Message`](_autosummary/correspond.model.html.md#correspond.model.Message)]
 
-### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, dry_run=False, registry=None, before_send=None)
+### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), dry_run=False, registry=None, before_send=None)
 
 Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
+`cc` and `bcc` copy further recipients, on channels that grade `cc` (email).
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice).
 
@@ -2723,7 +2826,7 @@ One value a channel reads: its config key, its environment variable, what it is 
 A `secret` is never read from the config file: it comes from `env`, else (on macOS)
 the Keychain.
 
-### correspond.registry.build_registry(infos=(ChannelInfo(name='github', summary="GitHub issues, pull request conversations and discussions, through the gh CLI (the machine's gh login; correspond holds no token)", factory='correspond.channels.github:GitHub', modules=(), extra=None, binaries=(('gh',),), platforms=(), settings=(Setting(key='webhook_secret', env='GITHUB_WEBHOOK_SECRET', what='the webhook secret, used only to verify deliveries', where='the secret set on the repository or organization webhook (Settings, Webhooks)', secret=True, required=False, default=None),), notes=('log in once with \`gh auth login\` (https://cli.github.com/); check with \`gh auth status\`',), check='', planned=None), ChannelInfo(name='email', summary='Email: IMAP to read and listen, SMTP to send, with the standard library', factory='correspond.channels.mail:Email', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='imap_host', env='CORRESPOND_EMAIL_IMAP_HOST', what='the IMAP server', where="your mail provider's IMAP settings", secret=False, required=True, default=None), Setting(key='imap_port', env='CORRESPOND_EMAIL_IMAP_PORT', what='the IMAP port (TLS)', where='', secret=False, required=False, default='993'), Setting(key='smtp_host', env='CORRESPOND_EMAIL_SMTP_HOST', what='the SMTP server', where="your mail provider's SMTP settings", secret=False, required=True, default=None), Setting(key='smtp_port', env='CORRESPOND_EMAIL_SMTP_PORT', what='the SMTP port: 465 for TLS, 587 for STARTTLS', where='', secret=False, required=False, default='465'), Setting(key='user', env='CORRESPOND_EMAIL_USER', what='the mailbox login, usually its address', where='', secret=False, required=True, default=None), Setting(key='password', env='CORRESPOND_EMAIL_PASSWORD', what='the mailbox password, preferably an app password', where="your mail provider's app-password page (for Gmail: https://myaccount.google.com/apppasswords)", secret=True, required=True, default=None), Setting(key='from_address', env='CORRESPOND_EMAIL_FROM', what='the From address of sends (default: the login)', where='', secret=False, required=False, default=None), Setting(key='folder', env='CORRESPOND_EMAIL_FOLDER', what='the folder read and listened to', where='', secret=False, required=False, default='INBOX'), Setting(key='trusted_authserv_ids', env='CORRESPOND_EMAIL_TRUSTED_AUTHSERV_IDS', what='comma-separated authserv-ids of your own receiving server; only their Authentication-Results can make a sender \`domain\`', where='the topmost Authentication-Results header of a message your provider delivered (for Gmail: mx.google.com)', secret=False, required=False, default=None)), notes=(), check='', planned=None), ChannelInfo(name='ntfy', summary='Push notifications through an ntfy server (send only)', factory='correspond.channels.ntfy:Ntfy', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='url', env='NTFY_URL', what='the ntfy server', where='', secret=False, required=False, default='https://ntfy.sh'), Setting(key='topic', env='NTFY_TOPIC', what='the default topic, used by \`ntfy:\` with no topic', where='any long, hard-to-guess string; subscribe to it in the ntfy app (https://ntfy.sh)', secret=True, required=False, default=None), Setting(key='token', env='NTFY_TOKEN', what='an access token, for a server that requires one', where="your ntfy server's account page", secret=True, required=False, default=None), Setting(key='topic_remote', env='CORRESPOND_NTFY_TOPIC_REMOTE', what='an ssh host asked for the default topic when neither the environment nor the Keychain has it', where='', secret=False, required=False, default=None), Setting(key='topic_remote_file', env='CORRESPOND_NTFY_TOPIC_REMOTE_FILE', what='the file on that host holding a NTFY_TOPIC=... line', where='', secret=False, required=False, default=None)), notes=('anyone who knows an unauthenticated topic can publish to it and read it: treat it as a secret',), check='', planned=None), ChannelInfo(name='macos', summary='Notification Centre banners on this Mac (send only)', factory='correspond.channels.macos:MacOS', modules=(), extra=None, binaries=(('terminal-notifier', 'osascript'),), platforms=('darwin',), settings=(), notes=('terminal-notifier (\`brew install terminal-notifier\`) keeps bodies intact; osascript is the fallback',), check='', planned=None), ChannelInfo(name='telegram', summary='A Telegram bot over the Bot API: listen with getUpdates, read what was logged, send, edit, react', factory='correspond.channels.telegram:Telegram', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='token', env='TELEGRAM_BOT_TOKEN', what='the bot token', where='create a bot with BotFather in Telegram (https://core.telegram.org/bots/tutorial)', secret=True, required=True, default=None), Setting(key='api_url', env='CORRESPOND_TELEGRAM_API_URL', what='the Bot API server', where='', secret=False, required=False, default='https://api.telegram.org')), notes=('a bot can write only to chats that wrote to it first, or groups it was added to', 'privacy mode (on by default) hides group messages that do not address the bot'), check='', planned=None), ChannelInfo(name='webinbox', summary="Reports posted from web pages to correspond's ASGI collector, and a reader over what it stored", factory='correspond.channels.webinbox:WebInbox', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='sites', env='CORRESPOND_WEBINBOX_SITES', what='comma-separated site names the collector accepts', where='', secret=False, required=False, default=None), Setting(key='origins', env='CORRESPOND_WEBINBOX_ORIGINS', what='comma-separated page origins allowed to post, e.g. https://app.example.org', where='', secret=False, required=False, default=None), Setting(key='secret', env='CORRESPOND_WEBINBOX_SECRET', what="the HMAC key shared with the host application's server, which signs its logged-in user (a single site; several sites need CORRESPOND_WEBINBOX_SECRET_<SITE> each)", where='generate one with: python -c "import secrets; print(secrets.token_hex(32))"', secret=True, required=False, default=None), Setting(key='max_age_s', env='CORRESPOND_WEBINBOX_MAX_AGE_S', what='how long a signed identity stays valid, in seconds', where='', secret=False, required=False, default='86400'), Setting(key='rate_per_minute', env='CORRESPOND_WEBINBOX_RATE_PER_MINUTE', what='reports accepted per client per minute, per site', where='', secret=False, required=False, default='10'), Setting(key='burst', env='CORRESPOND_WEBINBOX_BURST', what='reports a client may send in a burst', where='', secret=False, required=False, default='5'), Setting(key='max_body_bytes', env='CORRESPOND_WEBINBOX_MAX_BODY_BYTES', what='the largest request accepted, attachments included', where='', secret=False, required=False, default='5000000'), Setting(key='trusted_proxies', env='CORRESPOND_WEBINBOX_TRUSTED_PROXIES', what='how many reverse proxies of yours stand in front of the collector; the address rate-limited is read that many hops from the right of X-Forwarded-For (0: the connecting address)', where='', secret=False, required=False, default='0')), notes=('serve the collector on localhost behind your own server, e.g. \`uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1\`', 'for a reverse proxy on another host set CORRESPOND_WEBINBOX_TRUSTED_PROXIES (1 for one proxy), or every visitor shares one rate limit; uvicorn already resolves a proxy on 127.0.0.1', "several sites on one collector need a secret each, CORRESPOND_WEBINBOX_SECRET_<SITE> (upper case, - as \_) or the Keychain item correspond-webinbox-secret-<site>, so no site's server can sign for another"), check='correspond.channels.webinbox:requirements_problems', planned=None), ChannelInfo(name='discord', summary='Discord: read and post over REST, listen on the gateway', factory='', modules=(), extra='discord', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/2'), ChannelInfo(name='slack', summary='Slack: Socket Mode or the Events API', factory='', modules=(), extra='slack', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/3'), ChannelInfo(name='signal', summary='Signal through signal-cli-rest-api', factory='', modules=(), extra='signal', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/4'), ChannelInfo(name='apprise', summary='Apprise as a send-only writer for about 155 notification services', factory='', modules=(), extra='apprise', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/5')), , name='correspond channels')
+### correspond.registry.build_registry(infos=(ChannelInfo(name='github', summary="GitHub issues, pull request conversations and discussions, through the gh CLI (the machine's gh login; correspond holds no token)", factory='correspond.channels.github:GitHub', modules=(), extra=None, binaries=(('gh',),), platforms=(), settings=(Setting(key='webhook_secret', env='GITHUB_WEBHOOK_SECRET', what='the webhook secret, used only to verify deliveries', where='the secret set on the repository or organization webhook (Settings, Webhooks)', secret=True, required=False, default=None),), notes=('log in once with \`gh auth login\` (https://cli.github.com/); check with \`gh auth status\`',), check='', planned=None), ChannelInfo(name='email', summary='Email: IMAP to read and listen, SMTP to send, with the standard library', factory='correspond.channels.mail:Email', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='imap_host', env='CORRESPOND_EMAIL_IMAP_HOST', what='the IMAP server', where="your mail provider's IMAP settings", secret=False, required=True, default=None), Setting(key='imap_port', env='CORRESPOND_EMAIL_IMAP_PORT', what='the IMAP port (TLS)', where='', secret=False, required=False, default='993'), Setting(key='smtp_host', env='CORRESPOND_EMAIL_SMTP_HOST', what='the SMTP server', where="your mail provider's SMTP settings", secret=False, required=True, default=None), Setting(key='smtp_port', env='CORRESPOND_EMAIL_SMTP_PORT', what='the SMTP port: 465 for TLS, 587 for STARTTLS', where='', secret=False, required=False, default='465'), Setting(key='user', env='CORRESPOND_EMAIL_USER', what='the mailbox login, usually its address', where='', secret=False, required=True, default=None), Setting(key='password', env='CORRESPOND_EMAIL_PASSWORD', what='the mailbox password, preferably an app password', where="your mail provider's app-password page (for Gmail: https://myaccount.google.com/apppasswords)", secret=True, required=True, default=None), Setting(key='from_address', env='CORRESPOND_EMAIL_FROM', what='the From address of sends (default: the login)', where='', secret=False, required=False, default=None), Setting(key='folder', env='CORRESPOND_EMAIL_FOLDER', what='the folder read and listened to', where='', secret=False, required=False, default='INBOX'), Setting(key='trusted_authserv_ids', env='CORRESPOND_EMAIL_TRUSTED_AUTHSERV_IDS', what='comma-separated authserv-ids of your own receiving server; only their Authentication-Results can make a sender \`domain\`', where='the topmost Authentication-Results header of a message your provider delivered (for Gmail: mx.google.com)', secret=False, required=False, default=None), Setting(key='own_domains', env='CORRESPOND_EMAIL_OWN_DOMAINS', what="comma-separated mail domains that are your own (and their subdomains); a recipient anywhere else makes an email's audience external", where='', secret=False, required=False, default=None), Setting(key='lists', env='CORRESPOND_EMAIL_LISTS', what='comma-separated mailing-list addresses, or @domain for a whole list server; local parts such as list, all, team, dev, announce and info count as lists anyway', where='', secret=False, required=False, default=None)), notes=(), check='', planned=None), ChannelInfo(name='ntfy', summary='Push notifications through an ntfy server (send only)', factory='correspond.channels.ntfy:Ntfy', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='url', env='NTFY_URL', what='the ntfy server', where='', secret=False, required=False, default='https://ntfy.sh'), Setting(key='topic', env='NTFY_TOPIC', what='the default topic, used by \`ntfy:\` with no topic', where='any long, hard-to-guess string; subscribe to it in the ntfy app (https://ntfy.sh)', secret=True, required=False, default=None), Setting(key='token', env='NTFY_TOKEN', what='an access token, for a server that requires one', where="your ntfy server's account page", secret=True, required=False, default=None), Setting(key='topic_remote', env='CORRESPOND_NTFY_TOPIC_REMOTE', what='an ssh host asked for the default topic when neither the environment nor the Keychain has it', where='', secret=False, required=False, default=None), Setting(key='topic_remote_file', env='CORRESPOND_NTFY_TOPIC_REMOTE_FILE', what='the file on that host holding a NTFY_TOPIC=... line', where='', secret=False, required=False, default=None), Setting(key='denies_anonymous_read', env='CORRESPOND_NTFY_DENIES_ANONYMOUS_READ', what='true when the server denies anonymous reads (its auth-default-access), so only the accounts it grants can read a topic; unset, anyone who knows a topic can', where='', secret=False, required=False, default=None), Setting(key='cache_duration', env='CORRESPOND_NTFY_CACHE_DURATION', what='how long the server keeps a message for subscribers who connect later (its cache-duration)', where='', secret=False, required=False, default='12h')), notes=('anyone who knows an unauthenticated topic can publish to it and read it: treat it as a secret',), check='', planned=None), ChannelInfo(name='macos', summary='Notification Centre banners on this Mac (send only)', factory='correspond.channels.macos:MacOS', modules=(), extra=None, binaries=(('terminal-notifier', 'osascript'),), platforms=('darwin',), settings=(), notes=('terminal-notifier (\`brew install terminal-notifier\`) keeps bodies intact; osascript is the fallback',), check='', planned=None), ChannelInfo(name='telegram', summary='A Telegram bot over the Bot API: listen with getUpdates, read what was logged, send, edit, react', factory='correspond.channels.telegram:Telegram', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='token', env='TELEGRAM_BOT_TOKEN', what='the bot token', where='create a bot with BotFather in Telegram (https://core.telegram.org/bots/tutorial)', secret=True, required=True, default=None), Setting(key='api_url', env='CORRESPOND_TELEGRAM_API_URL', what='the Bot API server', where='', secret=False, required=False, default='https://api.telegram.org')), notes=('a bot can write only to chats that wrote to it first, or groups it was added to', 'privacy mode (on by default) hides group messages that do not address the bot'), check='', planned=None), ChannelInfo(name='webinbox', summary="Reports posted from web pages to correspond's ASGI collector, and a reader over what it stored", factory='correspond.channels.webinbox:WebInbox', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='sites', env='CORRESPOND_WEBINBOX_SITES', what='comma-separated site names the collector accepts', where='', secret=False, required=False, default=None), Setting(key='origins', env='CORRESPOND_WEBINBOX_ORIGINS', what='comma-separated page origins allowed to post, e.g. https://app.example.org', where='', secret=False, required=False, default=None), Setting(key='secret', env='CORRESPOND_WEBINBOX_SECRET', what="the HMAC key shared with the host application's server, which signs its logged-in user (a single site; several sites need CORRESPOND_WEBINBOX_SECRET_<SITE> each)", where='generate one with: python -c "import secrets; print(secrets.token_hex(32))"', secret=True, required=False, default=None), Setting(key='max_age_s', env='CORRESPOND_WEBINBOX_MAX_AGE_S', what='how long a signed identity stays valid, in seconds', where='', secret=False, required=False, default='86400'), Setting(key='rate_per_minute', env='CORRESPOND_WEBINBOX_RATE_PER_MINUTE', what='reports accepted per client per minute, per site', where='', secret=False, required=False, default='10'), Setting(key='burst', env='CORRESPOND_WEBINBOX_BURST', what='reports a client may send in a burst', where='', secret=False, required=False, default='5'), Setting(key='max_body_bytes', env='CORRESPOND_WEBINBOX_MAX_BODY_BYTES', what='the largest request accepted, attachments included', where='', secret=False, required=False, default='5000000'), Setting(key='trusted_proxies', env='CORRESPOND_WEBINBOX_TRUSTED_PROXIES', what='how many reverse proxies of yours stand in front of the collector; the address rate-limited is read that many hops from the right of X-Forwarded-For (0: the connecting address)', where='', secret=False, required=False, default='0')), notes=('serve the collector on localhost behind your own server, e.g. \`uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1\`', 'for a reverse proxy on another host set CORRESPOND_WEBINBOX_TRUSTED_PROXIES (1 for one proxy), or every visitor shares one rate limit; uvicorn already resolves a proxy on 127.0.0.1', "several sites on one collector need a secret each, CORRESPOND_WEBINBOX_SECRET_<SITE> (upper case, - as \_) or the Keychain item correspond-webinbox-secret-<site>, so no site's server can sign for another"), check='correspond.channels.webinbox:requirements_problems', planned=None), ChannelInfo(name='discord', summary='Discord: read and post over REST, listen on the gateway', factory='', modules=(), extra='discord', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/2'), ChannelInfo(name='slack', summary='Slack: Socket Mode or the Events API', factory='', modules=(), extra='slack', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/3'), ChannelInfo(name='signal', summary='Signal through signal-cli-rest-api', factory='', modules=(), extra='signal', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/4'), ChannelInfo(name='apprise', summary='Apprise as a send-only writer for about 155 notification services', factory='', modules=(), extra='apprise', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/5')), , name='correspond channels')
 
 A fresh `xdol.Registry` with a lazy entry for every built channel whose optional modules import.
 
@@ -3272,7 +3375,7 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 
 ### Functions
 
-| [`audience`](_autosummary/correspond.tools.html.md#correspond.tools.audience)(ref)                                   | Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow.   |
+| [`audience`](_autosummary/correspond.tools.html.md#correspond.tools.audience)(ref, \*[, cc, bcc])                    | Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow.   |
 |--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`capabilities`](_autosummary/correspond.tools.html.md#correspond.tools.capabilities)(channel)                           | What a channel can do, graded per operation (full, partial, none), with its limits, rate limits and notes.                                                                                                     |
 | [`channels`](_autosummary/correspond.tools.html.md#correspond.tools.channels)()                                      | List the channels correspond knows: available, missing a module, planned (with its tracking issue), or registered from outside.                                                                                |
@@ -3294,9 +3397,9 @@ locally); `external` writes to a remote service, where people see it.
 
 Every tool, in the order surfaces list them.
 
-### correspond.tools.audience(ref)
+### correspond.tools.audience(ref, , cc=None, bcc=None)
 
-Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does.
+Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -3357,9 +3460,9 @@ What a channel needs (install command, binaries, platform, each setting and wher
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, dry_run=False)
+### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, dry_run=False)
 
-Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
+Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -3371,7 +3474,7 @@ Send a message to a conversation. Run it with `dry_run` first and show the plan,
 
 # About this build
 
-This documentation was built on **2026-09-15 13:12 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/07922353b6d52c4841d96cbe82f34a29d7401a01"><code>0792235</code></a> on branch <code>main</code>, for **correspond 0.0.4** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-09-15 13:25 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/aeec9a3d71723ee5b5e50bc55c643fbc60616d13"><code>aeec9a3</code></a> on branch <code>main</code>, for **correspond 0.0.4** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -3380,9 +3483,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/07922353b6d52c4841d96cbe82f34a29d7401a01"><code>07922353b6d52c4841d96cbe82f34a29d7401a01</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/aeec9a3d71723ee5b5e50bc55c643fbc60616d13"><code>aeec9a3d71723ee5b5e50bc55c643fbc60616d13</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
-| Tags at this commit | <code>0.0.4</code>                                                                                                                                           |
+| Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
 | Remote              | <code>https://github.com/thorwhalen/correspond</code>                                                                                                        |
 
@@ -3391,9 +3494,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/34973372141">34973372141</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/34974722222">34974722222</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>ff0d7cee8fcc86c6628198bf1cfcdea4b5a574c1</code> (in the history of the built commit)  |
+| Event commit | <code>aeec9a3d71723ee5b5e50bc55c643fbc60616d13</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -3424,7 +3527,7 @@ Latest release: <a href="https://pypi.org/project/correspond/0.0.4/">0.0.4</a>, 
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 07922353b6d52c4841d96cbe82f34a29d7401a01
+git checkout aeec9a3d71723ee5b5e50bc55c643fbc60616d13
 pip install "epythet==0.2.12"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
