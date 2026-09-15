@@ -74,6 +74,7 @@ The first listen looks back a little (a day). An event can repeat after an inter
 
 - Do not message a person (an issue comment, an email, a Telegram chat) without the operator's go-ahead for that message, unless they gave a standing instruction for exactly this kind of message.
 - **GitHub repositories are often public.** Never put private content, local paths, tokens, email addresses or anyone's personal details in a comment.
+- **Know who will read it, not only who it is for.** A conversation's real audience is often wider than its recipient: anyone on a public repository, every organisation member on a private one by default, everyone behind a list address, a public Telegram chat, anyone who knows an ntfy topic. When you cannot tell, treat it as public. [references/outbound-safety.md](references/outbound-safety.md) has the per-channel facts; show the audience with the dry-run plan.
 - `-` as the text reads it from stdin: `printf '%s' "$BODY" | correspond send github:owner/repo#12 - --dry-run`.
 - A failed write says `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`) and whether a retry can help (`retryable`, `retry_after`). Wait `retry_after` before retrying; never loop on a rate limit.
 - `does not support X` (`not_supported`) is final for that channel. Use the alternative it names or another channel; do not imitate the operation (no "editing" by posting a copy without saying so).
