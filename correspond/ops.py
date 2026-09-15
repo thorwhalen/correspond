@@ -400,7 +400,9 @@ def audience(
                 f"{adapter.name}'s audience reader answered for {found.ref}, not {label}",
             )
         return found
-    except Exception as error:  # an audience nobody could compute is public, whatever failed
+    except (
+        Exception
+    ) as error:  # an audience nobody could compute is public, whatever failed
         return Audience.unknown(
             label, f"computing the audience failed ({type(error).__name__}): {error}"
         )

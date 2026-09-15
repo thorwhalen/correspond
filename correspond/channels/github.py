@@ -169,7 +169,12 @@ UNLISTED_COLLABORATORS = "collaborators and team members the gh account cannot l
 APPS_AND_WEBHOOKS = "apps and webhooks with access to the repository, which can copy its conversations elsewhere"
 #: GitHub lists a repository's collaborators only to accounts with one of these permissions.
 LISTING_PERMISSIONS = ("admin", "maintain", "push")
-PUBLIC_DURABILITY = ("indexed", "archived_by_others", "copies_pushed", "edit_history_visible")
+PUBLIC_DURABILITY = (
+    "indexed",
+    "archived_by_others",
+    "copies_pushed",
+    "edit_history_visible",
+)
 PRIVATE_DURABILITY = ("copies_pushed", "edit_history_visible")
 PUBLIC_WIDENING = ("forks", "visibility_flip")
 PRIVATE_WIDENING = ("joiners_read_history", "forks", "visibility_flip")
@@ -832,7 +837,9 @@ class GitHub:
                 *evidence,
                 f"visibility {visibility!r} is not public, private or internal",
             )
-        return self._restricted_audience(ref, data, visibility=visibility, evidence=evidence)
+        return self._restricted_audience(
+            ref, data, visibility=visibility, evidence=evidence
+        )
 
     def _restricted_audience(
         self,
@@ -916,7 +923,11 @@ class GitHub:
             if error.kind == "rate_limited":
                 raise error
         found = reply.json() if reply.status < 400 else None
-        base = found.get("default_repository_permission") if isinstance(found, dict) else None
+        base = (
+            found.get("default_repository_permission")
+            if isinstance(found, dict)
+            else None
+        )
         if base == "none":
             evidence.append(
                 f"GET {path}: base permission none, so membership alone reads nothing"

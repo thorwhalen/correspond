@@ -727,7 +727,9 @@ class Audience:
 
     def __post_init__(self):
         if not isinstance(self.ref, str):
-            raise TypeError(f"ref is the encoded reference, not {type(self.ref).__name__}")
+            raise TypeError(
+                f"ref is the encoded reference, not {type(self.ref).__name__}"
+            )
         object.__setattr__(self, "scope", Scope(self.scope))
         readers = tuple(self.readers)
         for reader in readers:
@@ -739,9 +741,7 @@ class Audience:
             self,
             "readers",
             tuple(
-                sorted(
-                    dict.fromkeys(readers), key=lambda r: _canonical_json(r.to_dict())
-                )
+                sorted(dict.fromkeys(readers), key=lambda r: _canonical_json(r.to_dict()))
             ),
         )
         object.__setattr__(
@@ -754,13 +754,19 @@ class Audience:
         object.__setattr__(self, "widening", _flags("widening", self.widening, WIDENING))
         as_of = parse_time(self.as_of)
         if as_of is None:
-            raise ValueError("as_of is when the audience was computed; it cannot be empty")
+            raise ValueError(
+                "as_of is when the audience was computed; it cannot be empty"
+            )
         object.__setattr__(self, "as_of", as_of.astimezone(timezone.utc))
         for name in ("complete", "retractable", "defaulted"):
             if not isinstance(getattr(self, name), bool):
-                raise TypeError(f"{name} must be true or false, not {getattr(self, name)!r}")
+                raise TypeError(
+                    f"{name} must be true or false, not {getattr(self, name)!r}"
+                )
         if self.external is not None and not isinstance(self.external, bool):
-            raise TypeError(f"external must be true, false or None, not {self.external!r}")
+            raise TypeError(
+                f"external must be true, false or None, not {self.external!r}"
+            )
         if self.defaulted and (self.scope is not Scope.PUBLIC or self.complete):
             raise ValueError(
                 "a defaulted audience is public and incomplete: unknown resolves to public"
