@@ -327,9 +327,12 @@ def test_the_hash_covers_everything_but_when_and_how_it_was_computed():
 def test_an_audience_refuses_unknown_vocabulary_and_a_default_other_than_public():
     for bad in (
         dict(scope="everyone"),
-        dict(durability=["carved_in_stone"]),
-        dict(widening=["gossip"]),
+        dict(durability=["Carved In Stone"]),
+        dict(widening=["gossip!"]),
         dict(as_of=""),
+        dict(scope="public", complete=True),
+        dict(scope="public", retractable=True),
+        dict(scope="public", external=False),
     ):
         with pytest.raises(ValueError):
             _audience(**bad)
@@ -346,6 +349,13 @@ def test_an_audience_refuses_unknown_vocabulary_and_a_default_other_than_public(
     for bad in (dict(defaulted=True), dict(scope="public", complete=True, defaulted=True)):
         with pytest.raises(ValueError, match="unknown resolves to public"):
             _audience(**bad)
+
+
+def test_a_flag_from_a_newer_correspond_is_kept_not_dropped():
+    newer = _audience(durability=["copies_pushed", "cache_window"])
+    assert newer.durability == ("cache_window", "copies_pushed")
+    assert Audience.from_dict(json.loads(json.dumps(newer.to_dict()))) == newer
+    assert newer.hash != _audience(durability=["copies_pushed"]).hash
 
 
 def test_the_unknown_audience_assumes_the_widest_of_everything():

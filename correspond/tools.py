@@ -182,12 +182,11 @@ def capabilities(channel: str) -> dict:
     caps = ops.capabilities(channel)
     data = caps.to_dict()
     lines = [
-        f"{name:<9}{data[name]}"
-        for name in (*OPERATIONS, "initiate", "reply", "priority")
+        f"{name + ':':<10}{data[name]}"
+        for name in (*OPERATIONS, "initiate", "reply", "priority", "history_depth")
     ]
-    lines.append(f"history  {data['history_depth']}")
     if caps.grades:
-        lines.append(f"grades   {', '.join(data['grades'])}")
+        lines.append(f"{'grades:':<10}{', '.join(data['grades'])}")
     for name in (
         "max_text_length",
         "max_title_length",
@@ -304,14 +303,15 @@ def _audience_text(found: Audience) -> str:
 
 @_as_result
 def audience(ref: str) -> dict:
-    """Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. Check it before writing and show it with the dry-run plan; `hash` changes when the audience does."""
+    """Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does."""
     found = ops.audience(ref)
+    words = found.in_words()
     return {
         "ok": True,
-        **found.to_dict(),
+        "audience": found.to_dict(),
         "hash": found.hash,
-        "words": found.in_words(),
-        "summary": f"{found.ref}: {found.in_words()}",
+        "words": words,
+        "summary": f"{found.ref}: {words}",
         "text": _audience_text(found),
     }
 

@@ -385,14 +385,19 @@ def audience(
                     f"{generic.channel} is planned, not built ({planned[generic.channel]}), so nothing can tell who reads it",
                 )
             return Audience.unknown(label, str(error))
+        label = adapter.parse_ref(generic.id).encoded
         if not isinstance(adapter, AudienceReader):
             return Audience.unknown(label, f"{adapter.name} has no audience reader")
-        canonical = adapter.parse_ref(generic.id)
-        found = adapter.audience(canonical, draft=draft)
+        found = adapter.audience(adapter.parse_ref(generic.id), draft=draft)
         if not isinstance(found, Audience):
             return Audience.unknown(
-                canonical.encoded,
+                label,
                 f"{adapter.name}'s audience reader returned {type(found).__name__}, not an Audience",
+            )
+        if found.ref != label:
+            return Audience.unknown(
+                label,
+                f"{adapter.name}'s audience reader answered for {found.ref}, not {label}",
             )
         return found
     except Exception as error:  # an audience nobody could compute is public, whatever failed

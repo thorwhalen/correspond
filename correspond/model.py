@@ -660,14 +660,18 @@ def _canonical_json(data: Any) -> str:
     return json.dumps(data, sort_keys=True, separators=(",", ":"))
 
 
+_FLAG_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+
+
 def _flags(name: str, values: Any, vocabulary: tuple[str, ...]) -> tuple[str, ...]:
+    """Sorted, deduplicated flags. One outside ``vocabulary`` (from a newer correspond) is kept: dropping it would narrow the audience."""
     if isinstance(values, str):
         raise TypeError(f"{name} is a collection of flags, not the string {values!r}")
     flags = {str(v) for v in values}
-    unknown = flags - set(vocabulary)
-    if unknown:
+    malformed = sorted(f for f in flags if not _FLAG_RE.match(f))
+    if malformed:
         raise ValueError(
-            f"unknown {name} flag(s) {sorted(unknown)}; expected some of {vocabulary}"
+            f"malformed {name} flag(s) {malformed}; flags are snake_case, like those in {vocabulary}"
         )
     return tuple(sorted(flags))
 
@@ -696,7 +700,9 @@ class Audience:
 
     Set-valued fields (``readers``, ``classes``, ``durability``, ``widening``) are stored
     deduplicated and sorted, so the same audience compares and hashes alike whatever
-    order a platform listed it in.
+    order a platform listed it in. A durability or widening flag this version does not
+    know is kept, never dropped. A public audience is never complete, retractable or free
+    of external readers, and a defaulted one is always public.
 
     >>> a = Audience(ref="github:example/app#12", scope="public", classes=["watchers and participants receive the body by email"],
     ...              durability=["indexed", "archived_by_others", "copies_pushed", "edit_history_visible"], as_of="2026-09-15T12:00:00Z")
@@ -759,6 +765,12 @@ class Audience:
             raise ValueError(
                 "a defaulted audience is public and incomplete: unknown resolves to public"
             )
+        if self.scope is Scope.PUBLIC and (
+            self.complete or self.retractable or self.external is False
+        ):
+            raise ValueError(
+                "a public audience cannot be complete, retractable, or free of external readers"
+            )
 
     @classmethod
     def unknown(cls, ref: str, *reasons: str) -> Audience:
@@ -779,9 +791,11 @@ class Audience:
     def hash(self) -> str:
         """The SHA-256, in hex, of the canonical JSON of :meth:`to_dict` without :data:`AUDIENCE_UNHASHED`.
 
-        Canonical JSON is ``json.dumps(data, sort_keys=True, separators=(",", ":"))``
+        ``data`` is exactly what :meth:`to_dict` returns, derived ``readers[].address``
+        included. Canonical JSON is ``json.dumps(data, sort_keys=True, separators=(",", ":"))``
         (Python's default ASCII escaping), encoded as UTF-8. Approvals bind to this value,
-        so the construction is a contract: from a dict, ``Audience.from_dict(d).hash``.
+        so the construction is a contract. A ``to_dict`` output can be hashed as it stands;
+        any other dict should go through ``Audience.from_dict(d).hash``, which normalises.
         """
         data = {k: v for k, v in self.to_dict().items() if k not in AUDIENCE_UNHASHED}
         return hashlib.sha256(_canonical_json(data).encode("utf-8")).hexdigest()

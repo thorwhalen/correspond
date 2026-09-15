@@ -75,6 +75,7 @@ from correspond.ops import window, with_final_cursor
 from correspond.registry import require
 
 __all__ = [
+    "APPS_AND_WEBHOOKS",
     "BASE_PERMISSION_DEFAULT",
     "GitHub",
     "REACTIONS",
@@ -165,6 +166,7 @@ WATCHERS = "watchers and participants receive the body by email"
 BASE_PERMISSION_DEFAULT = "every member of the organisation through its base permission (documented default: read)"
 SECURITY_MANAGERS = "members of teams with the organisation's security manager role (read access to every repository)"
 UNLISTED_COLLABORATORS = "collaborators and team members the gh account cannot list"
+APPS_AND_WEBHOOKS = "apps and webhooks with access to the repository, which can copy its conversations elsewhere"
 #: GitHub lists a repository's collaborators only to accounts with one of these permissions.
 LISTING_PERMISSIONS = ("admin", "maintain", "push")
 PUBLIC_DURABILITY = ("indexed", "archived_by_others", "copies_pushed", "edit_history_visible")
@@ -329,8 +331,19 @@ def _encode_cursor(position: datetime, openings_from: datetime, seen: set[str]) 
     )
 
 
+def _reader(user: Mapping[str, Any]) -> ChannelIdentity:
+    """An account that can read a repository, as GitHub lists it; no ``is_self``, which would depend on who asks."""
+    login = str(user.get("login") or "")
+    return ChannelIdentity(
+        channel=NAME,
+        native_id=str(user.get("id") or ""),
+        handle=login or None,
+        is_bot=user.get("type") == "Bot" or login.endswith("[bot]"),
+    )
+
+
 class GitHub:
-    """GitHub through ``gh``: read, listen, send, edit, react, and verify webhook deliveries."""
+    """GitHub through ``gh``: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation."""
 
     name = NAME
 
@@ -381,7 +394,7 @@ class GitHub:
                 "reply_to works in discussions only; issue and pull request comments are flat",
                 "pull request review comments on diffs are not read",
                 "listen can miss a change only when more than 2,000 issues or comments change within the same second",
-                "audience is the repository's readership; a 404 or 403 resolves to public, and an organisation repository's readers are never complete",
+                "audience is the repository's readership and never complete (installed apps, webhooks and security managers cannot be listed); a 404 or 403 resolves to public",
             ),
         )
 
@@ -763,13 +776,16 @@ class GitHub:
 
         For a private or internal repository, collaborators (team members, members reading
         through the base permission, and owners included) are listed only when the account
-        can write to it, since GitHub lists them to no one else; only then is a user's
-        repository ``complete``. An organisation's repository never is: members of
-        security-manager teams read every repository. Its base permission is read from the
-        organisation when the account may see it (owners only), and otherwise assumed to be
-        the documented default, read. Every repository emails bodies to watchers and
-        participants, and nothing sent is retractable. Nothing is cached. A rate limit or a
-        transport failure raises; :func:`correspond.ops.audience` resolves it to public.
+        can write to it, since GitHub lists them to no one else. The list is a lower bound
+        and the audience is never ``complete``: installed apps and webhooks read the
+        repository without being listable through ``gh``, and an organisation's
+        security-manager teams read every repository. An organisation's base permission is
+        read when the account may see it (owners only), and otherwise assumed to be the
+        documented default, read; ``read``, ``write`` and ``admin`` reach the same readers
+        and give the same class. The ``gh`` account itself is never consulted, so the answer,
+        and its hash, do not depend on who asks. Every repository emails bodies to watchers
+        and participants, and nothing sent is retractable. Nothing is cached. A rate limit or
+        a transport failure raises; :func:`correspond.ops.audience` resolves it to public.
         """
         owner, repo, _ = self._parts(ref)
         path = f"repos/{owner}/{repo}"
@@ -830,10 +846,8 @@ class GitHub:
         path = f"repos/{owner}/{repo}"
         owner_data = data.get("owner") or {}
         by_user = visibility == "private" and owner_data.get("type") == "User"
-        # Before any identity is built, so is_self (and the hash) never depends on what ran earlier.
-        login = self._whoami()
-        readers = [self._identity(owner_data, None)] if by_user else []
-        classes = [WATCHERS]
+        readers = [_reader(owner_data)] if by_user else []
+        classes = [WATCHERS, APPS_AND_WEBHOOKS]
         listed = False
         permissions = data.get("permissions") or {}
         if any(permissions.get(p) for p in LISTING_PERMISSIONS):
@@ -854,18 +868,14 @@ class GitHub:
             classes.append(
                 f"every member of every organisation in the enterprise that owns {owner} (internal visibility)"
             )
-        complete = by_user and listed
-        external = None
-        if by_user:
-            if any(not r.is_self for r in readers):
-                external = True
-            elif complete and login:
-                external = False
+        # Two accounts reading a user's repository mean one of them is not the operator,
+        # whichever it is; in an organisation they may all be the operator's colleagues.
+        external = True if by_user and len(set(readers)) > 1 else None
         return Audience(
             ref=ref.encoded,
             scope=Scope.NAMED if by_user else Scope.ORG,
             readers=readers,
-            complete=complete,
+            complete=False,
             classes=classes,
             external=external,
             durability=PRIVATE_DURABILITY,
@@ -884,7 +894,7 @@ class GitHub:
         note = f"GET {path}/collaborators: {len(people)} collaborator(s)"
         if truncated:
             note += f", cut at {MAX_PAGES * PAGE_SIZE}, so the list is a lower bound"
-        return [self._identity(p, None) for p in people], not truncated, note
+        return [_reader(p) for p in people], not truncated, note
 
     def _teams(self, path: str) -> str:
         try:
@@ -899,25 +909,27 @@ class GitHub:
         return f"GET {path}/teams: {names or 'none'}" + (" (cut)" if truncated else "")
 
     def _organisation_classes(self, owner: str, evidence: list[str]) -> list[str]:
-        reply = self._api(f"orgs/{owner}", allow=(403, 404))
+        path = f"orgs/{owner}"
+        reply = self._api(path, allow=(403, 404))
+        if reply.status == 403:
+            error = _status_error(reply, f"GET {path}")
+            if error.kind == "rate_limited":
+                raise error
         found = reply.json() if reply.status < 400 else None
         base = found.get("default_repository_permission") if isinstance(found, dict) else None
-        classes = [SECURITY_MANAGERS]
+        if base == "none":
+            evidence.append(
+                f"GET {path}: base permission none, so membership alone reads nothing"
+            )
+            return [SECURITY_MANAGERS]
         if base is None:
             evidence.append(
-                f"GET orgs/{owner}: the base permission is visible only to organisation owners; assumed the documented default, read"
-            )
-            classes.append(BASE_PERMISSION_DEFAULT)
-        elif base == "none":
-            evidence.append(
-                f"GET orgs/{owner}: base permission none, so membership alone reads nothing"
+                f"GET {path}: the base permission is visible only to organisation owners; assumed the documented default, read"
             )
         else:
-            evidence.append(f"GET orgs/{owner}: base permission {base}")
-            classes.append(
-                f"every member of the organisation through its base permission ({base})"
-            )
-        return classes
+            # read, write and admin reach the same readers: one class, so one hash.
+            evidence.append(f"GET {path}: base permission {base}")
+        return [SECURITY_MANAGERS, BASE_PERMISSION_DEFAULT]
 
     # ----------------------------------------------------------------- listening
 

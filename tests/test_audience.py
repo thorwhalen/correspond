@@ -1,5 +1,6 @@
 """The audience operation: unknown resolves to public from every direction, and every surface shows the same record, in words first."""
 
+import hashlib
 import json
 import os
 import subprocess
@@ -12,6 +13,7 @@ from correspond import ops, registry, tools
 from correspond.errors import ChannelError
 from correspond.mcp import refs
 from correspond.model import (
+    AUDIENCE_UNHASHED,
     DURABILITY,
     WIDENING,
     Audience,
@@ -106,30 +108,49 @@ def test_an_audience_reader_answers_for_its_canonical_reference_and_sees_the_dra
 
 
 @pytest.mark.parametrize(
-    "ref, channels, reason",
+    "ref, channels, expected_ref, reason",
     [
-        ("fake:example/demo", {"fake": demo_channel()}, "fake has no audience reader"),
-        ("nowhere:example", {"fake": demo_channel()}, "unknown channel 'nowhere'"),
-        ("nonsense", {}, "is not a conversation reference"),
         (
-            "room:x",
+            "fake:example/demo",
+            {"fake": demo_channel()},
+            "fake:example/demo",
+            "fake has no audience reader",
+        ),
+        (
+            "nowhere:example",
+            {"fake": demo_channel()},
+            "nowhere:example",
+            "unknown channel 'nowhere'",
+        ),
+        ("nonsense", {}, "nonsense", "is not a conversation reference"),
+        (
+            "room:Kitchen",
             {"room": _Room(_raise(RuntimeError("the platform fell over")))},
+            "room:kitchen",
             "(RuntimeError): the platform fell over",
         ),
         (
             "room:x",
             {"room": _Room(_raise(ChannelError("offline", kind="network")))},
+            "room:x",
             "(ChannelError): offline",
         ),
         (
             "room:x",
             {"room": _Room(lambda ref: {"scope": "operator"})},
+            "room:x",
             "returned dict, not an Audience",
+        ),
+        (
+            "room:Kitchen",
+            {"room": _Room(lambda ref: Audience(ref="room:elsewhere", scope="operator"))},
+            "room:kitchen",
+            "answered for room:elsewhere, not room:kitchen",
         ),
     ],
 )
-def test_unknown_resolves_to_public_whatever_went_wrong(ref, channels, reason):
-    _assert_defaulted(ops.audience(ref, registry=channels), ref, reason)
+def test_unknown_resolves_to_public_whatever_went_wrong(ref, channels, expected_ref, reason):
+    _assert_defaulted(ops.audience(ref, registry=channels), expected_ref, reason)
 
 
 def test_a_planned_channel_says_it_is_planned_and_where():
@@ -152,28 +173,39 @@ def test_only_github_reads_audiences_so_far():
         if not c.planned and built[c.name].capabilities.audience is not Support.NONE
     }
     assert grading == {"github"}
-    assert tools.capabilities("github")["capabilities"]["audience"] == "full"
-    assert "audience" in tools.capabilities("github")["operations"]
+    github = tools.capabilities("github")
+    assert github["capabilities"]["audience"] == "full"
+    assert "audience" in github["operations"]
+    assert "audience: full" in github["text"].splitlines()
 
 
-def test_the_tool_result_is_the_record_with_its_hash_and_words(monkeypatch):
+def test_the_tool_result_holds_the_record_its_hash_and_words(monkeypatch):
     monkeypatch.setattr(registry, "channels", lambda: {"room": _Room()})
     result = tools.audience("room:Kitchen")
     json.dumps(result)
-    assert result["ok"] and (result["ref"], result["scope"]) == ("room:kitchen", "operator")
+    record = result["audience"]
+    assert result["ok"] and (record["ref"], record["scope"]) == ("room:kitchen", "operator")
     assert result["words"] == "only the operator; retractable"
     assert result["summary"] == "room:kitchen: only the operator; retractable"
-    # The dict carries extra keys (ok, words, hash, …): from_dict ignores them, so a consumer
-    # recomputes the same hash from the tool's JSON.
-    assert Audience.from_dict(json.loads(json.dumps(result))).hash == result["hash"]
+    # A consumer hashes the record as it came, or through from_dict: the same value.
+    canonical = json.dumps(
+        {k: v for k, v in record.items() if k not in AUDIENCE_UNHASHED},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    assert (
+        hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+        == result["hash"]
+        == Audience.from_dict(json.loads(json.dumps(record))).hash
+    )
     lines = result["text"].splitlines()
     assert lines[0] == result["words"] and lines[-1] == f"hash: {result['hash']}"
     assert {"scope: operator", "complete: true", "external: false"} <= set(lines)
     assert "evidence: asked the room" in lines and "defaulted: true" not in lines
 
     unknown = tools.audience("nowhere:example")
-    assert unknown["ok"] and unknown["defaulted"] and unknown["scope"] == "public"
-    assert unknown["words"] == UNKNOWN_WORDS
+    assert unknown["ok"] and unknown["audience"]["defaulted"]
+    assert unknown["audience"]["scope"] == "public" and unknown["words"] == UNKNOWN_WORDS
     assert "defaulted: true" in unknown["text"].splitlines()
 
 
@@ -183,7 +215,7 @@ def test_the_cli_answers_in_words_first_and_with_the_record_on_request():
     lines = shown.stdout.splitlines()
     assert lines[0] == UNKNOWN_WORDS
     assert "scope: public" in lines and "evidence: fake has no audience reader" in lines
-    record = json.loads(_cli(["audience", "fake:example/demo", "--json"]).stdout)
+    record = json.loads(_cli(["audience", "fake:example/demo", "--json"]).stdout)["audience"]
     assert (record["scope"], record["defaulted"], record["complete"]) == (
         "public",
         True,
