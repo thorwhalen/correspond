@@ -1,17 +1,18 @@
-"""The operations: seven small protocols an adapter implements a subset of, and the verbs that call them.
+"""The operations: small protocols an adapter implements a subset of, and the verbs that call them.
 
 An adapter is any object with a ``name``, ``capabilities`` and ``parse_ref(id)``, plus the
 methods of whichever protocols it can honour:
 
-=========  ==========================================================================
-Reader     ``read(ref, *, since=None, limit=None) -> Iterable[Message]``
-Listener   ``poll(ref, *, cursor=None, limit=None) -> Iterable[Event]``
-Writer     ``send(ref, draft, *, dry_run=False) -> SendResult``
-Editor     ``edit(ref, message_id, draft, *, dry_run=False) -> SendResult``
-Reactor    ``react(ref, message_id, reaction, *, dry_run=False) -> SendResult``
-Uploader   ``upload(ref, name, data, *, media_type, dry_run=False) -> SendResult``
-Verifier   ``verify(headers, body) -> Authenticity``
-=========  ==========================================================================
+==============  =====================================================================
+Reader          ``read(ref, *, since=None, limit=None) -> Iterable[Message]``
+Listener        ``poll(ref, *, cursor=None, limit=None) -> Iterable[Event]``
+Writer          ``send(ref, draft, *, dry_run=False) -> SendResult``
+Editor          ``edit(ref, message_id, draft, *, dry_run=False) -> SendResult``
+Reactor         ``react(ref, message_id, reaction, *, dry_run=False) -> SendResult``
+Uploader        ``upload(ref, name, data, *, media_type, dry_run=False) -> SendResult``
+Verifier        ``verify(headers, body) -> Authenticity``
+AudienceReader  ``audience(ref, *, draft=None) -> Audience``
+==============  =====================================================================
 
 The verbs here (:func:`read`, :func:`listen`, :func:`send`, …) take a reference string,
 find the adapter in the registry, and raise :class:`~correspond.errors.NotSupported`
@@ -19,6 +20,8 @@ naming the operation when the adapter lacks it; never a silent no-op. Writes che
 draft against the channel's capabilities first, and turn a
 :class:`~correspond.errors.ChannelError` into a ``SendResult`` with ``ok=False``, so a
 failed notification never crashes its caller. ``dry_run=True`` contacts nothing.
+:func:`audience` is the exception to refusing: it never raises, because an audience
+nobody can compute is public.
 """
 
 from __future__ import annotations
@@ -29,6 +32,7 @@ from typing import Any, Protocol, runtime_checkable
 
 from correspond.errors import ChannelError, NotSupported, UnknownChannel
 from correspond.model import (
+    Audience,
     Authenticity,
     Capabilities,
     ConversationRef,
@@ -42,6 +46,7 @@ from correspond.model import (
 
 __all__ = [
     "PROTOCOLS",
+    "AudienceReader",
     "Channel",
     "Editor",
     "Listener",
@@ -50,6 +55,7 @@ __all__ = [
     "Uploader",
     "Verifier",
     "Writer",
+    "audience",
     "capabilities",
     "edit",
     "get_channel",
@@ -159,6 +165,15 @@ class Verifier(Protocol):
     def verify(self, headers: Mapping[str, str], body: bytes) -> Authenticity: ...
 
 
+@runtime_checkable
+class AudienceReader(Protocol):
+    """Who can read a conversation, now and plausibly later, asked of the platform at the time of the call."""
+
+    def audience(
+        self, ref: ConversationRef, *, draft: Draft | None = None
+    ) -> Audience: ...
+
+
 #: Operation name → the protocol an adapter implements to have it.
 PROTOCOLS: dict[str, type] = {
     "read": Reader,
@@ -168,6 +183,7 @@ PROTOCOLS: dict[str, type] = {
     "react": Reactor,
     "upload": Uploader,
     "verify": Verifier,
+    "audience": AudienceReader,
 }
 
 
@@ -339,6 +355,55 @@ def verify(
     if not isinstance(adapter, Verifier):
         raise NotSupported("verify", adapter.name)
     return adapter.verify(headers, body)
+
+
+def audience(
+    ref: str | ConversationRef,
+    draft: Draft | None = None,
+    *,
+    registry: Mapping[str, Any] | None = None,
+) -> Audience:
+    """Who can read a conversation, asked of its channel now. Never raises: unknown resolves to public.
+
+    A malformed reference, an unknown or planned channel, an adapter without an audience
+    reader, and any error while computing all give ``scope="public"``, ``complete=False``,
+    ``defaulted=True``, with the reason in ``evidence``. Nothing is cached: call it again
+    right before sending.
+    """
+    label = ref.encoded if isinstance(ref, ConversationRef) else str(ref).strip()
+    try:
+        generic = ConversationRef.parse(ref)
+        try:
+            adapter = get_channel(generic.channel, registry=registry)
+        except UnknownChannel as error:
+            from correspond.registry import CHANNELS
+
+            planned = {c.name: c.planned for c in CHANNELS if c.planned}
+            if generic.channel in planned:
+                return Audience.unknown(
+                    label,
+                    f"{generic.channel} is planned, not built ({planned[generic.channel]}), so nothing can tell who reads it",
+                )
+            return Audience.unknown(label, str(error))
+        label = adapter.parse_ref(generic.id).encoded
+        if not isinstance(adapter, AudienceReader):
+            return Audience.unknown(label, f"{adapter.name} has no audience reader")
+        found = adapter.audience(adapter.parse_ref(generic.id), draft=draft)
+        if not isinstance(found, Audience):
+            return Audience.unknown(
+                label,
+                f"{adapter.name}'s audience reader returned {type(found).__name__}, not an Audience",
+            )
+        if found.ref != label:
+            return Audience.unknown(
+                label,
+                f"{adapter.name}'s audience reader answered for {found.ref}, not {label}",
+            )
+        return found
+    except Exception as error:  # an audience nobody could compute is public, whatever failed
+        return Audience.unknown(
+            label, f"computing the audience failed ({type(error).__name__}): {error}"
+        )
 
 
 # --------------------------------------------------------------------------- writes

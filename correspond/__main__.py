@@ -34,6 +34,7 @@ HELP = {
         "peek": {"help": "show new events without moving the cursor"},
         "data_dir": {"help": "where cursors are kept (default: the data root)"},
     },
+    "audience": {"ref": _REF},
     "send": {
         "ref": _REF,
         "text": {"help": "the message, or - to read it from stdin"},

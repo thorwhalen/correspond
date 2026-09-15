@@ -14,6 +14,7 @@ correspond read github:octocat/hello-world#1       # messages, oldest first
 correspond send ntfy: "backup finished" --dry-run   # the plan; nothing is contacted
 correspond capabilities telegram                    # what a channel can do, graded
 correspond requirements email                       # what it needs, and where to get it
+correspond audience github:octocat/hello-world#1   # who can read it, in words first
 ```
 
 Add `--json` to any command for the full result. A result with `ok: false` exits 1 and says why.
@@ -69,12 +70,13 @@ The first listen looks back a little (a day). An event can repeat after an inter
 ## Writing: the dry run first, every time
 
 1. If unsure the channel can do it: `correspond capabilities <channel>`.
-2. `correspond send <ref> "text" --dry-run` (or `edit` / `react` with `--dry-run`). Show the operator the plan: target, text, title, priority.
-3. Only after the operator approves, run the same command without `--dry-run`.
+2. `correspond audience <ref>`: who can read it, in words on the first line. `defaulted: true` means nobody could tell, so it counts as public.
+3. `correspond send <ref> "text" --dry-run` (or `edit` / `react` with `--dry-run`). Show the operator the plan and the audience line: target, who can read it, text, title, priority.
+4. Only after the operator approves, run the same command without `--dry-run`.
 
 - Do not message a person (an issue comment, an email, a Telegram chat) without the operator's go-ahead for that message, unless they gave a standing instruction for exactly this kind of message.
 - **GitHub repositories are often public.** Never put private content, local paths, tokens, email addresses or anyone's personal details in a comment.
-- **Know who will read it, not only who it is for.** A conversation's real audience is often wider than its recipient: anyone on a public repository, every organisation member on a private one by default, everyone behind a list address, a public Telegram chat, anyone who knows an ntfy topic. When you cannot tell, treat it as public. [references/outbound-safety.md](references/outbound-safety.md) has the per-channel facts; show the audience with the dry-run plan.
+- **Know who will read it, not only who it is for.** A conversation's real audience is often wider than its recipient: anyone on a public repository, every organisation member on a private one by default, everyone behind a list address, a public Telegram chat, anyone who knows an ntfy topic. When you cannot tell, treat it as public. `correspond audience <ref>` computes it for GitHub and answers public (defaulted) for channels that cannot tell yet; `--json` adds a `hash` that changes when the audience does, so ask again right before sending. [references/outbound-safety.md](references/outbound-safety.md) has the per-channel facts.
 - `-` as the text reads it from stdin: `printf '%s' "$BODY" | correspond send github:owner/repo#12 - --dry-run`.
 - A failed write says `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`) and whether a retry can help (`retryable`, `retry_after`). Wait `retry_after` before retrying; never loop on a rate limit.
 - `does not support X` (`not_supported`) is final for that channel. Use the alternative it names or another channel; do not imitate the operation (no "editing" by posting a copy without saying so).

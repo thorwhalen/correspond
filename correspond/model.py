@@ -1,13 +1,14 @@
 """The data model every channel is described in.
 
 Accounts, conversation references, channel identities, authenticity, messages,
-attachments, events, capabilities, drafts and send results: frozen dataclasses that
-round-trip through JSON-ready dicts (``to_dict`` / ``from_dict``), because every surface
-(the CLI, MCP, a ledger on disk) moves them as JSON.
+attachments, events, capabilities, audiences, drafts and send results: frozen dataclasses
+that round-trip through JSON-ready dicts (``to_dict`` / ``from_dict``), because every
+surface (the CLI, MCP, a ledger on disk) moves them as JSON.
 
 There is no person here. A :class:`ChannelIdentity` is who the platform says sent a
 message and :class:`Authenticity` is how sure the channel is. Linking an identity to a
-person is a job for a people registry, with its own evidence.
+person is a job for a people registry, with its own evidence. An :class:`Audience` lists
+readers the same way: as channel identities, never as people.
 
 >>> ref = ConversationRef.parse("github:octocat/hello-world#1")
 >>> ref.channel, ref.id, str(ref)
@@ -20,6 +21,8 @@ True
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -31,11 +34,16 @@ from correspond.errors import ERROR_KINDS, ChannelError, CorrespondError, Invali
 
 __all__ = [
     "ACTS_AS",
+    "AUDIENCE_UNHASHED",
+    "CLASS_WORDS",
+    "DURABILITY",
     "EVENT_KINDS",
     "OPERATIONS",
     "PRIORITIES",
+    "WIDENING",
     "Account",
     "Attachment",
+    "Audience",
     "Authenticity",
     "Capabilities",
     "ChannelIdentity",
@@ -45,14 +53,15 @@ __all__ = [
     "Grade",
     "HistoryDepth",
     "Message",
+    "Scope",
     "SendResult",
     "Support",
     "format_time",
     "parse_time",
 ]
 
-#: The seven operations, in the order capabilities and surfaces list them.
-OPERATIONS = ("read", "listen", "send", "edit", "react", "upload", "verify")
+#: The operations, in the order capabilities and surfaces list them.
+OPERATIONS = ("read", "listen", "send", "edit", "react", "upload", "verify", "audience")
 #: Whose name a write goes out under.
 ACTS_AS = ("bot", "user", "app", "service")
 #: What an :class:`Event` reports.
@@ -152,6 +161,41 @@ class HistoryDepth(StrEnum):
     BUFFER_24H = "buffer_24h"
     SINCE_LINK = "since_link"
     NONE = "none"
+
+
+class Scope(StrEnum):
+    """The widest class of reader a conversation can reach.
+
+    - ``operator``: only the operator's own devices (a notification banner).
+    - ``named``: exactly the explicit recipients (an email, a user's private repository).
+    - ``group``: a bounded membership (a Telegram group).
+    - ``org``: an organisation or workspace (a private organisation repository).
+    - ``public``: anyone. What an unknown audience resolves to.
+    """
+
+    OPERATOR = "operator"
+    NAMED = "named"
+    GROUP = "group"
+    ORG = "org"
+    PUBLIC = "public"
+
+
+#: What a send leaves behind: searchable, archived by third parties, copies delivered to
+#: readers (email notifications), an edit history anyone who reads can see.
+DURABILITY = ("indexed", "archived_by_others", "copies_pushed", "edit_history_visible")
+#: How a readership can grow after a send.
+WIDENING = (
+    "visibility_flip",
+    "joiners_read_history",
+    "forwarding",
+    "forks",
+    "list_expansion",
+)
+#: Short phrases for reader classes, used by :meth:`Audience.in_words`; a class not listed
+#: here is shown as written.
+CLASS_WORDS = {
+    "watchers and participants receive the body by email": "emailed to watchers and participants",
+}
 
 
 # ------------------------------------------------------------------------ references
@@ -513,7 +557,8 @@ _TUPLE_FIELDS = (
 class Capabilities:
     """What a channel can do, graded, with its limits.
 
-    One ``Support`` per operation in :data:`OPERATIONS`, plus three features of writing:
+    One ``Support`` per operation in :data:`OPERATIONS` (``audience``: can the channel say
+    who reads a conversation), plus three features of writing:
     ``initiate`` (can a write start a conversation; Telegram bots cannot), ``reply``
     (can a draft answer a specific message) and ``priority``. ``history_depth`` says how
     far back ``read`` sees; ``grades`` are the authenticity grades the channel can attest;
@@ -529,6 +574,7 @@ class Capabilities:
     react: Support = Support.NONE
     upload: Support = Support.NONE
     verify: Support = Support.NONE
+    audience: Support = Support.NONE
     initiate: Support = Support.NONE
     reply: Support = Support.NONE
     priority: Support = Support.NONE
@@ -594,6 +640,216 @@ class Capabilities:
         """The inverse of :meth:`to_dict`."""
         known = set(cls.__dataclass_fields__)
         return cls(**{k: v for k, v in data.items() if k in known})
+
+
+# -------------------------------------------------------------------------- audience
+
+#: The fields :attr:`Audience.hash` leaves out: they differ between two computations of
+#: the same audience.
+AUDIENCE_UNHASHED = ("as_of", "evidence")
+_SCOPE_WORDS = {
+    Scope.OPERATOR: "only the operator",
+    Scope.NAMED: "named readers",
+    Scope.GROUP: "a bounded group",
+    Scope.ORG: "organisation-wide",
+    Scope.PUBLIC: "world-readable",
+}
+
+
+def _canonical_json(data: Any) -> str:
+    return json.dumps(data, sort_keys=True, separators=(",", ":"))
+
+
+_FLAG_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
+
+
+def _flags(name: str, values: Any, vocabulary: tuple[str, ...]) -> tuple[str, ...]:
+    """Sorted, deduplicated flags. One outside ``vocabulary`` (from a newer correspond) is kept: dropping it would narrow the audience."""
+    if isinstance(values, str):
+        raise TypeError(f"{name} is a collection of flags, not the string {values!r}")
+    flags = {str(v) for v in values}
+    malformed = sorted(f for f in flags if not _FLAG_RE.match(f))
+    if malformed:
+        raise ValueError(
+            f"malformed {name} flag(s) {malformed}; flags are snake_case, like those in {vocabulary}"
+        )
+    return tuple(sorted(flags))
+
+
+def _texts(name: str, values: Any) -> tuple[str, ...]:
+    if isinstance(values, str):
+        raise TypeError(f"{name} is a collection of strings, not the string {values!r}")
+    return tuple(str(v) for v in values)
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc).replace(microsecond=0)
+
+
+@dataclass(frozen=True, kw_only=True)
+class Audience:
+    """Who can read a conversation, now and plausibly later, as far as its channel can tell.
+
+    ``scope`` is the widest class of reader it can reach. ``readers`` are the channel
+    identities known to read it, a lower bound unless ``complete``; ``classes`` name, in
+    words, the readers that cannot be listed. ``external`` says whether readers outside
+    the operator's own accounts exist (``None``: unknown). ``durability`` is what a send
+    leaves behind (:data:`DURABILITY`), ``widening`` how the readership can grow
+    (:data:`WIDENING`). ``evidence`` records the calls made and why anything was assumed;
+    ``defaulted`` is true when an unknown resolved to ``public``, which it always does.
+
+    Set-valued fields (``readers``, ``classes``, ``durability``, ``widening``) are stored
+    deduplicated and sorted, so the same audience compares and hashes alike whatever
+    order a platform listed it in. A durability or widening flag this version does not
+    know is kept, never dropped. A public audience is never complete, retractable or free
+    of external readers, and a defaulted one is always public.
+
+    >>> a = Audience(ref="github:example/app#12", scope="public", classes=["watchers and participants receive the body by email"],
+    ...              durability=["indexed", "archived_by_others", "copies_pushed", "edit_history_visible"], as_of="2026-09-15T12:00:00Z")
+    >>> a.in_words()
+    'world-readable; emailed to watchers and participants; archived by others; edits keep a visible history; not retractable'
+    >>> Audience.from_dict(a.to_dict()) == a
+    True
+    """
+
+    ref: str
+    scope: Scope
+    readers: tuple[ChannelIdentity, ...] = ()
+    complete: bool = False
+    classes: tuple[str, ...] = ()
+    external: bool | None = None
+    retractable: bool = False
+    durability: tuple[str, ...] = ()
+    widening: tuple[str, ...] = ()
+    as_of: datetime = field(default_factory=_now)
+    evidence: tuple[str, ...] = ()
+    defaulted: bool = False
+
+    def __post_init__(self):
+        if not isinstance(self.ref, str):
+            raise TypeError(f"ref is the encoded reference, not {type(self.ref).__name__}")
+        object.__setattr__(self, "scope", Scope(self.scope))
+        readers = tuple(self.readers)
+        for reader in readers:
+            if not isinstance(reader, ChannelIdentity):
+                raise TypeError(
+                    f"readers are ChannelIdentity objects, not {type(reader).__name__}"
+                )
+        object.__setattr__(
+            self,
+            "readers",
+            tuple(
+                sorted(
+                    dict.fromkeys(readers), key=lambda r: _canonical_json(r.to_dict())
+                )
+            ),
+        )
+        object.__setattr__(
+            self, "classes", tuple(sorted(set(_texts("classes", self.classes))))
+        )
+        object.__setattr__(self, "evidence", _texts("evidence", self.evidence))
+        object.__setattr__(
+            self, "durability", _flags("durability", self.durability, DURABILITY)
+        )
+        object.__setattr__(self, "widening", _flags("widening", self.widening, WIDENING))
+        as_of = parse_time(self.as_of)
+        if as_of is None:
+            raise ValueError("as_of is when the audience was computed; it cannot be empty")
+        object.__setattr__(self, "as_of", as_of.astimezone(timezone.utc))
+        for name in ("complete", "retractable", "defaulted"):
+            if not isinstance(getattr(self, name), bool):
+                raise TypeError(f"{name} must be true or false, not {getattr(self, name)!r}")
+        if self.external is not None and not isinstance(self.external, bool):
+            raise TypeError(f"external must be true, false or None, not {self.external!r}")
+        if self.defaulted and (self.scope is not Scope.PUBLIC or self.complete):
+            raise ValueError(
+                "a defaulted audience is public and incomplete: unknown resolves to public"
+            )
+        if self.scope is Scope.PUBLIC and (
+            self.complete or self.retractable or self.external is False
+        ):
+            raise ValueError(
+                "a public audience cannot be complete, retractable, or free of external readers"
+            )
+
+    @classmethod
+    def unknown(cls, ref: str, *reasons: str) -> Audience:
+        """The audience nobody could compute: public, incomplete, every durability and widening flag, not retractable, defaulted, with ``reasons`` as evidence."""
+        return cls(
+            ref=str(ref),
+            scope=Scope.PUBLIC,
+            complete=False,
+            external=None,
+            retractable=False,
+            durability=DURABILITY,
+            widening=WIDENING,
+            evidence=(*reasons, "unknown resolves to public"),
+            defaulted=True,
+        )
+
+    @property
+    def hash(self) -> str:
+        """The SHA-256, in hex, of the canonical JSON of :meth:`to_dict` without :data:`AUDIENCE_UNHASHED`.
+
+        ``data`` is exactly what :meth:`to_dict` returns, derived ``readers[].address``
+        included. Canonical JSON is ``json.dumps(data, sort_keys=True, separators=(",", ":"))``
+        (Python's default ASCII escaping), encoded as UTF-8. Approvals bind to this value,
+        so the construction is a contract. A ``to_dict`` output can be hashed as it stands;
+        any other dict should go through ``Audience.from_dict(d).hash``, which normalises.
+        """
+        data = {k: v for k, v in self.to_dict().items() if k not in AUDIENCE_UNHASHED}
+        return hashlib.sha256(_canonical_json(data).encode("utf-8")).hexdigest()
+
+    def in_words(self) -> str:
+        """One line: the scope, the readers and reader classes, what a send leaves behind, whether it can be withdrawn."""
+        if self.defaulted:
+            parts = ["world-readable (assumed: the audience could not be determined)"]
+        else:
+            parts = [_SCOPE_WORDS[self.scope]]
+            if self.readers and self.scope is not Scope.PUBLIC:
+                count = len(self.readers)
+                noun = "reader" if count == 1 else "readers"
+                parts.append(
+                    f"exactly {count} {noun}"
+                    if self.complete
+                    else f"at least {count} known {noun}"
+                )
+            parts += [CLASS_WORDS.get(c, c) for c in self.classes]
+            if "indexed" in self.durability and self.scope is not Scope.PUBLIC:
+                parts.append("indexed by search")
+            if "archived_by_others" in self.durability:
+                parts.append("archived by others")
+            if "edit_history_visible" in self.durability:
+                parts.append("edits keep a visible history")
+        parts.append("retractable" if self.retractable else "not retractable")
+        return "; ".join(parts)
+
+    def to_dict(self) -> dict:
+        """JSON-ready."""
+        return {
+            "ref": self.ref,
+            "scope": self.scope.value,
+            "readers": [r.to_dict() for r in self.readers],
+            "complete": self.complete,
+            "classes": list(self.classes),
+            "external": self.external,
+            "retractable": self.retractable,
+            "durability": list(self.durability),
+            "widening": list(self.widening),
+            "as_of": format_time(self.as_of),
+            "evidence": list(self.evidence),
+            "defaulted": self.defaulted,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Mapping[str, Any]) -> Audience:
+        """The inverse of :meth:`to_dict`; unknown keys are ignored."""
+        known = set(cls.__dataclass_fields__)
+        fields = {k: v for k, v in data.items() if k in known}
+        fields["readers"] = tuple(
+            ChannelIdentity.from_dict(r) for r in fields.get("readers") or ()
+        )
+        return cls(**fields)
 
 
 # ------------------------------------------------------------------------- writing

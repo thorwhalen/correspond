@@ -19,6 +19,7 @@ TOOL_NAMES = [
     "ref",
     "read",
     "listen",
+    "audience",
     "send",
     "edit",
     "react",

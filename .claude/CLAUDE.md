@@ -15,7 +15,7 @@ Rationale and the provisional defaults: the "v0.1 architecture: seams and surfac
 
 ```
 Surfaces for v0.1: CLI + shipped skill + MCP stdio (write tools only with --allow-send); Claude Code channel server and remote MCP/HTTP asked, not built
-NOT seams: per-channel ref grammar, authenticity-grade and error-kind vocabularies, the seven operation names, the built-in channel table format, config file format and env var names, data-root layout, web inbox payload and identity-token format, rate and size defaults (config values), CLI rendering, dry-run plan format
+NOT seams: per-channel ref grammar, authenticity-grade and error-kind vocabularies, the operation names (audience joined them by design: liaise discussion 32), the built-in channel table format, config file format and env var names, data-root layout, web inbox payload and identity-token format, rate and size defaults (config values), CLI rendering, dry-run plan format
 ```
 
 One-command test (the definition of v0.1, fully offline):

@@ -7,7 +7,18 @@ import subprocess
 import pytest
 
 import correspond
-from correspond.channels.github import GitHub, _parse_reply, signature
+from correspond import registry
+from correspond.__main__ import main as cli
+from correspond.channels.github import (
+    APPS_AND_WEBHOOKS,
+    BASE_PERMISSION_DEFAULT,
+    SECURITY_MANAGERS,
+    UNLISTED_COLLABORATORS,
+    WATCHERS,
+    GitHub,
+    _parse_reply,
+    signature,
+)
 from correspond.errors import ChannelError, MissingRequirement, NotSupported
 
 REPO = "octocat/hello-world"
@@ -916,3 +927,346 @@ def test_a_malformed_cursor_is_a_validation_error():
                 )
             )
         assert caught.value.kind == "validation"
+
+
+# --------------------------------------------------------------------------- audience
+
+APP = "example/app"
+ISSUE = f"github:{APP}#12"
+PUBLIC_WORDS = "world-readable; emailed to watchers and participants; archived by others; edits keep a visible history; not retractable"
+PRIVATE_DURABILITY = {"copies_pushed", "edit_history_visible"}
+PRIVATE_WIDENING = {"joiners_read_history", "forks", "visibility_flip"}
+RATE_LIMITED = (403, {"message": "API rate limit exceeded"}, {"X-RateLimit-Remaining": "0"})
+
+
+def _repository(
+    visibility="public",
+    *,
+    owner="example",
+    owner_id=10,
+    owner_type="User",
+    write=False,
+    admin=False,
+):
+    return {
+        "full_name": f"{owner}/app",
+        "private": visibility != "public",
+        "visibility": visibility,
+        "owner": {"login": owner, "id": owner_id, "type": owner_type},
+        "permissions": {
+            "admin": admin,
+            "maintain": False,
+            "push": write or admin,
+            "triage": write or admin,
+            "pull": True,
+        },
+    }
+
+
+def _user(login, user_id):
+    return {"login": login, "id": user_id, "type": "User"}
+
+
+def _audience(gh, ref=ISSUE, draft=None):
+    return correspond.audience(ref, draft, registry={"github": GitHub(run=gh)})
+
+
+def _org_repository(**changes):
+    visibility = changes.pop("visibility", "private")
+    return (
+        "GET",
+        r"repos/example-org/app",
+        (
+            200,
+            _repository(
+                visibility, owner="example-org", owner_type="Organization", **changes
+            ),
+        ),
+    )
+
+
+def _owned_by_example_bot(*collaborators, cut=False):
+    """A private repository of the user example-bot, seen by its owner, with these collaborators."""
+    pages = r"\d+" if cut else "1"
+    return ScriptedGh(
+        (
+            "GET",
+            r"repos/example-bot/app",
+            (200, _repository("private", owner="example-bot", owner_id=7, admin=True)),
+        ),
+        (
+            "GET",
+            rf"repos/example-bot/app/collaborators\?per_page=100&page={pages}",
+            (200, list(collaborators)),
+        ),
+    )
+
+
+def test_a_public_repository_is_world_readable_after_one_call_and_a_mention_changes_nothing():
+    gh = ScriptedGh(("GET", rf"repos/{APP}", (200, _repository())))
+    found = _audience(gh, "github:Example/App#12")
+    assert (
+        found.ref,
+        found.scope,
+        found.complete,
+        found.external,
+        found.retractable,
+        found.defaulted,
+    ) == (ISSUE, "public", False, True, False, False)
+    assert found.readers == () and found.classes == (WATCHERS,)
+    assert set(found.durability) == {
+        "indexed",
+        "archived_by_others",
+        "copies_pushed",
+        "edit_history_visible",
+    }
+    assert set(found.widening) == {"forks", "visibility_flip"}
+    assert found.in_words() == PUBLIC_WORDS
+    assert gh.paths() == [f"repos/{APP}"]
+    mentioned = _audience(gh, draft=correspond.Draft(text="@octocat can you look?"))
+    assert mentioned.hash == found.hash
+    assert gh.paths() == [f"repos/{APP}"] * 2, "nothing is cached"
+
+
+@pytest.mark.parametrize(
+    "organisation, member_class",
+    [
+        ((200, {"login": "example-org"}), True),
+        ((403, {"message": "Must be an organization owner"}), True),
+        ((200, {"default_repository_permission": "read"}), True),
+        ((200, {"default_repository_permission": "admin"}), True),
+        ((200, {"default_repository_permission": "none"}), False),
+    ],
+)
+def test_a_private_organisation_repository_reaches_members_through_the_base_permission(
+    organisation, member_class
+):
+    gh = ScriptedGh(_org_repository(), ("GET", r"orgs/example-org", organisation))
+    found = _audience(gh, "github:example-org/app#12")
+    assert (found.scope, found.complete, found.external, found.defaulted) == (
+        "org",
+        False,
+        None,
+        False,
+    )
+    expected = {WATCHERS, APPS_AND_WEBHOOKS, SECURITY_MANAGERS, UNLISTED_COLLABORATORS}
+    assert set(found.classes) == expected | (
+        {BASE_PERMISSION_DEFAULT} if member_class else set()
+    )
+    assert (set(found.durability), set(found.widening), found.retractable) == (
+        PRIVATE_DURABILITY,
+        PRIVATE_WIDENING,
+        False,
+    )
+    assert gh.paths() == ["repos/example-org/app", "orgs/example-org"], (
+        "only an account that can write is shown collaborators, and the gh account is never asked who it is"
+    )
+
+
+def test_a_known_base_permission_and_the_documented_default_hash_alike():
+    def seen(organisation):
+        return _audience(
+            ScriptedGh(_org_repository(), ("GET", r"orgs/example-org", organisation)),
+            "github:example-org/app#12",
+        )
+
+    by_owner = seen((200, {"default_repository_permission": "write"}))
+    by_member = seen((200, {"login": "example-org"}))
+    assert by_owner.hash == by_member.hash and by_owner.evidence != by_member.evidence
+
+
+def test_collaborators_are_listed_with_write_access_and_stay_a_lower_bound():
+    gh = ScriptedGh(
+        _org_repository(write=True),
+        (
+            "GET",
+            r"repos/example-org/app/collaborators\?per_page=100&page=1",
+            (200, [_user("example-bot", 7), _user("ada", 3)]),
+        ),
+        (
+            "GET",
+            r"repos/example-org/app/teams\?per_page=100&page=1",
+            (200, [{"slug": "developers", "permission": "push"}]),
+        ),
+        ("GET", r"orgs/example-org", (200, {"default_repository_permission": "none"})),
+    )
+    found = _audience(gh, "github:example-org/app#12")
+    assert [(r.handle, r.is_self) for r in found.readers] == [
+        ("ada", False),
+        ("example-bot", False),
+    ]
+    assert (found.scope, found.complete, found.external) == ("org", False, None)
+    assert set(found.classes) == {WATCHERS, APPS_AND_WEBHOOKS, SECURITY_MANAGERS}
+    assert any("developers (push)" in line for line in found.evidence)
+    assert any("base permission none" in line for line in found.evidence)
+
+
+def test_a_users_private_repository_is_never_complete_because_apps_and_webhooks_read_it():
+    alone = _audience(
+        _owned_by_example_bot(_user("example-bot", 7)), "github:example-bot/app#12"
+    )
+    assert (alone.scope, alone.complete, alone.external) == ("named", False, None)
+    assert [r.handle for r in alone.readers] == ["example-bot"]
+    assert set(alone.classes) == {WATCHERS, APPS_AND_WEBHOOKS}
+    assert alone.in_words() == (
+        "named readers; at least 1 known reader; " + APPS_AND_WEBHOOKS + "; "
+        "emailed to watchers and participants; edits keep a visible history; not retractable"
+    )
+    shared = _audience(
+        _owned_by_example_bot(_user("example-bot", 7), _user("ada", 3)),
+        "github:example-bot/app#12",
+    )
+    assert (shared.complete, shared.external, len(shared.readers)) == (False, True, 2)
+    reordered = _audience(
+        _owned_by_example_bot(_user("ada", 3), _user("example-bot", 7)),
+        "github:example-bot/app#12",
+    )
+    assert reordered.hash == shared.hash, "the platform's listing order is not the audience"
+
+
+def test_the_audience_does_not_depend_on_who_asks_or_whether_gh_can_say():
+    routes = (
+        ("GET", r"repos/example-bot/app", (200, _repository("private", owner="example-bot", owner_id=7, admin=True))),
+        (
+            "GET",
+            r"repos/example-bot/app/collaborators\?per_page=100&page=1",
+            (200, [_user("example-bot", 7), _user("ada", 3)]),
+        ),
+    )
+    other_account = ScriptedGh(("GET", "user", (200, {"login": "ada"})), *routes)
+    no_account = ScriptedGh(("GET", "user", (502, {"message": "Bad Gateway"})), *routes)
+    first = _audience(other_account, "github:example-bot/app#12")
+    second = _audience(no_account, "github:example-bot/app#12")
+    assert first.hash == second.hash
+    assert "user" not in other_account.paths() + no_account.paths()
+
+
+def test_a_users_private_repository_seen_by_a_reader_is_only_a_lower_bound():
+    gh = ScriptedGh(("GET", rf"repos/{APP}", (200, _repository("private"))))
+    found = _audience(gh)
+    assert (found.scope, found.complete, found.external) == ("named", False, None)
+    assert [r.handle for r in found.readers] == ["example"]
+    assert set(found.classes) == {WATCHERS, APPS_AND_WEBHOOKS, UNLISTED_COLLABORATORS}
+
+
+def test_collaborators_refused_despite_write_access_leave_the_list_unknown():
+    gh = ScriptedGh(
+        ("GET", rf"repos/{APP}", (200, _repository("private", write=True))),
+        (
+            "GET",
+            rf"repos/{APP}/collaborators\?per_page=100&page=1",
+            (403, {"message": "Must have push access to view repository collaborators."}),
+        ),
+    )
+    found = _audience(gh)
+    assert (found.complete, found.defaulted) == (False, False)
+    assert UNLISTED_COLLABORATORS in found.classes
+    assert any(line.startswith("collaborators could not be listed") for line in found.evidence)
+
+
+def test_a_collaborator_list_cut_short_says_so():
+    page = [_user(f"member-{i}", 1000 + i) for i in range(100)]
+    found = _audience(_owned_by_example_bot(*page, cut=True), "github:example-bot/app#12")
+    assert (found.scope, found.complete, found.external) == ("named", False, True)
+    assert any("so the list is a lower bound" in line for line in found.evidence)
+
+
+def test_an_internal_repository_reaches_the_whole_enterprise():
+    gh = ScriptedGh(
+        _org_repository(visibility="internal"),
+        ("GET", r"orgs/example-org", (403, {"message": "Forbidden"})),
+    )
+    found = _audience(gh, "github:example-org/app#12")
+    assert (found.scope, found.complete, found.external) == ("org", False, None)
+    assert any("enterprise that owns example-org" in c for c in found.classes)
+    assert {BASE_PERMISSION_DEFAULT, APPS_AND_WEBHOOKS} <= set(found.classes)
+
+
+@pytest.mark.parametrize(
+    "status, message",
+    [(404, "Not Found"), (403, "Resource not accessible by integration")],
+)
+def test_a_repository_the_account_cannot_see_resolves_to_public(status, message):
+    gh = ScriptedGh(("GET", rf"repos/{APP}", (status, {"message": message})))
+    found = _audience(gh)
+    assert (found.scope, found.complete, found.defaulted, found.external) == (
+        "public",
+        False,
+        True,
+        None,
+    )
+    failed = found.evidence[0]
+    assert f"GET repos/{APP}" in failed and str(status) in failed and message in failed
+
+
+def test_a_rate_limit_raises_in_the_adapter_and_resolves_to_public_through_the_registry():
+    limited = ScriptedGh(("GET", rf"repos/{APP}", RATE_LIMITED))
+    adapter = GitHub(run=limited)
+    with pytest.raises(ChannelError) as caught:
+        adapter.audience(adapter.parse_ref(f"{APP}#12"))
+    assert caught.value.kind == "rate_limited"
+    found = _audience(limited)
+    assert found.defaulted and "rate limit" in found.evidence[0]
+
+    organisation_limited = ScriptedGh(
+        _org_repository(), ("GET", r"orgs/example-org", RATE_LIMITED)
+    )
+    found = _audience(organisation_limited, "github:example-org/app#12")
+    assert found.defaulted and "rate limit" in found.evidence[0], (
+        "a rate limit is not the base permission being hidden"
+    )
+
+    def offline(argv, **kwargs):
+        return subprocess.CompletedProcess(
+            argv, 1, stdout="", stderr="error connecting to api.github.com: could not resolve host"
+        )
+
+    unreachable = _audience(offline)
+    assert unreachable.defaulted and "could not reach GitHub" in unreachable.evidence[0]
+
+
+def test_unknown_visibility_resolves_to_public():
+    odd = _repository()
+    odd["visibility"] = "secret-club"
+    found = _audience(ScriptedGh(("GET", rf"repos/{APP}", (200, odd))))
+    assert found.defaulted and "secret-club" in found.evidence[-2]
+    older = _repository("private")
+    del older["visibility"]
+    fallback = _audience(ScriptedGh(("GET", rf"repos/{APP}", (200, older))))
+    assert (fallback.scope, fallback.defaulted) == ("named", False)
+
+
+def _cli(monkeypatch, capsys, gh, *args):
+    monkeypatch.setattr(registry, "channels", lambda: {"github": GitHub(run=gh)})
+    with pytest.raises(SystemExit) as done:
+        cli(list(args))
+    return done.value.code, capsys.readouterr().out
+
+
+def test_correspond_audience_on_the_command_line(monkeypatch, capsys):
+    public = ScriptedGh(("GET", rf"repos/{APP}", (200, _repository())))
+    code, out = _cli(monkeypatch, capsys, public, "audience", ISSUE)
+    assert code == 0 and out.splitlines()[0] == PUBLIC_WORDS
+    code, out = _cli(monkeypatch, capsys, public, "audience", ISSUE, "--json")
+    assert code == 0 and json.loads(out)["audience"]["scope"] == "public"
+
+    organisation = ScriptedGh(
+        _org_repository(), ("GET", r"orgs/example-org", (403, {"message": "Forbidden"}))
+    )
+    _, out = _cli(monkeypatch, capsys, organisation, "audience", "github:example-org/app#12")
+    assert {"scope: org", f"class: {BASE_PERMISSION_DEFAULT}", "complete: false"} <= set(
+        out.splitlines()
+    )
+
+    hidden = ScriptedGh(("GET", rf"repos/{APP}", (404, {"message": "Not Found"})))
+    code, out = _cli(monkeypatch, capsys, hidden, "audience", ISSUE)
+    lines = out.splitlines()
+    assert code == 0 and {"scope: public", "defaulted: true"} <= set(lines)
+    assert any(
+        line.startswith("evidence: ") and f"GET repos/{APP}" in line for line in lines
+    )
+
+    code, out = _cli(monkeypatch, capsys, ScriptedGh(), "capabilities", "github")
+    assert code == 0 and "audience: full" in out.splitlines()
+    code, out = _cli(monkeypatch, capsys, ScriptedGh(), "capabilities", "github", "--json")
+    assert code == 0 and json.loads(out)["capabilities"]["audience"] == "full"

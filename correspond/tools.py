@@ -26,13 +26,21 @@ from correspond.errors import (
     NotSupported,
     UnknownChannel,
 )
-from correspond.model import OPERATIONS, HistoryDepth, Message, SendResult
+from correspond.model import (
+    OPERATIONS,
+    Audience,
+    HistoryDepth,
+    Message,
+    SendResult,
+    format_time,
+)
 from correspond.registry import CHANNELS, check_requirements
 from correspond.registry import channels as _registry
 
 __all__ = [
     "SIDE_EFFECTS",
     "TOOLS",
+    "audience",
     "capabilities",
     "channels",
     "edit",
@@ -174,12 +182,11 @@ def capabilities(channel: str) -> dict:
     caps = ops.capabilities(channel)
     data = caps.to_dict()
     lines = [
-        f"{name:<9}{data[name]}"
-        for name in (*OPERATIONS, "initiate", "reply", "priority")
+        f"{name + ':':<10}{data[name]}"
+        for name in (*OPERATIONS, "initiate", "reply", "priority", "history_depth")
     ]
-    lines.append(f"history  {data['history_depth']}")
     if caps.grades:
-        lines.append(f"grades   {', '.join(data['grades'])}")
+        lines.append(f"{'grades:':<10}{', '.join(data['grades'])}")
     for name in (
         "max_text_length",
         "max_title_length",
@@ -267,6 +274,48 @@ def listen(
     }
 
 
+#: How many readers the text of `audience` names before counting the rest.
+READERS_SHOWN = 10
+
+
+def _audience_text(found: Audience) -> str:
+    names = [r.label() + (" (you)" if r.is_self else "") for r in found.readers]
+    shown = ", ".join(names[:READERS_SHOWN])
+    if len(names) > READERS_SHOWN:
+        shown += f" and {len(names) - READERS_SHOWN} more"
+    external = {True: "true", False: "false", None: "unknown"}[found.external]
+    lines = [
+        found.in_words(),
+        f"scope: {found.scope.value}",
+        f"complete: {str(found.complete).lower()}",
+        f"external: {external}",
+        f"readers: {shown or 'none listed'}",
+        *(f"class: {c}" for c in found.classes),
+        f"durability: {', '.join(found.durability) or 'none'}",
+        f"widening: {', '.join(found.widening) or 'none'}",
+    ]
+    if found.defaulted:
+        lines.append("defaulted: true")
+    lines += [f"evidence: {e}" for e in found.evidence]
+    lines += [f"as_of: {format_time(found.as_of)}", f"hash: {found.hash}"]
+    return "\n".join(lines)
+
+
+@_as_result
+def audience(ref: str) -> dict:
+    """Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does."""
+    found = ops.audience(ref)
+    words = found.in_words()
+    return {
+        "ok": True,
+        "audience": found.to_dict(),
+        "hash": found.hash,
+        "words": words,
+        "summary": f"{found.ref}: {words}",
+        "text": _audience_text(found),
+    }
+
+
 # -------------------------------------------------------------------------- writes
 
 _DONE = {
@@ -344,7 +393,18 @@ def react(ref: str, message_id: str, reaction: str, *, dry_run: bool = False) ->
 
 
 #: Every tool, in the order surfaces list them.
-TOOLS = [channels, requirements, capabilities, ref, read, listen, send, edit, react]
+TOOLS = [
+    channels,
+    requirements,
+    capabilities,
+    ref,
+    read,
+    listen,
+    audience,
+    send,
+    edit,
+    react,
+]
 
 #: What each tool touches, for surfaces deciding what to expose. ``read`` stays on this
 #: machine; ``external-read`` reads a remote service (``listen`` also stores its cursor
@@ -356,6 +416,7 @@ SIDE_EFFECTS = {
     "ref": "read",
     "read": "external-read",
     "listen": "external-read",
+    "audience": "external-read",
     "send": "external",
     "edit": "external",
     "react": "external",
