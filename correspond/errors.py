@@ -10,11 +10,18 @@ Two families, on purpose:
   ``retry_after``. Reads let them propagate; the write verbs turn them into a
   ``SendResult`` with ``ok=False``, so a notifier never crashes its caller.
 
+A third family stops a write before it leaves: the ``before_send`` check (see
+:mod:`correspond.outbound`) raises :class:`Refused` or :class:`NeedsApproval`, and the write
+verbs report it as a ``SendResult`` whose ``error_kind`` is one of :data:`CHECK_KINDS`.
+
 >>> str(NotSupported("react", "ntfy"))
 'ntfy does not support react'
 >>> error = ChannelError("slow down", kind="rate_limited", retryable=True, retry_after=30)
 >>> error.kind, error.retryable, error.retry_after
 ('rate_limited', True, 30.0)
+>>> held = NeedsApproval("public audience")
+>>> held.error_kind, held.reason
+('needs_approval', 'public audience')
 """
 
 from __future__ import annotations
@@ -22,12 +29,18 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 __all__ = [
+    "CHECK_KINDS",
     "ERROR_KINDS",
+    "BeforeSendFailed",
+    "BeforeSendUnavailable",
     "ChannelError",
     "CorrespondError",
     "InvalidRef",
     "MissingRequirement",
+    "NeedsApproval",
     "NotSupported",
+    "Refused",
+    "Stopped",
     "UnknownChannel",
 ]
 
@@ -40,6 +53,14 @@ ERROR_KINDS = (
     "network",  # the platform could not be reached
     "validation",  # the input was rejected (by the platform, or by correspond on its behalf)
     "unavailable",  # the platform failed, or something local (a binary, the OS) is missing
+)
+
+#: Why the ``before_send`` check stopped a write. Nothing was sent; a retry of the same draft changes nothing.
+CHECK_KINDS = (
+    "refused",  # the check blocks this draft on this conversation: change the text or the destination
+    "needs_approval",  # the check holds the draft until the operator approves it
+    "before_send_unavailable",  # the configured check could not be loaded, so no write goes ahead (fail closed)
+    "before_send_failed",  # the check crashed or answered outside its contract, so the write did not go ahead
 )
 
 
@@ -97,6 +118,40 @@ class ChannelError(CorrespondError):
         self.retryable = retryable
         self.retry_after = None if retry_after is None else float(retry_after)
         super().__init__(message)
+
+
+class Stopped(CorrespondError):
+    """A write the ``before_send`` check did not let leave: ``error_kind`` says how, ``reason`` says why."""
+
+    error_kind: str = "before_send_failed"
+
+    def __init__(self, reason: str):
+        self.reason = str(reason)
+        super().__init__(self.reason)
+
+
+class Refused(Stopped):
+    """Block: this draft does not go to this conversation as written. Raised by a ``before_send`` check."""
+
+    error_kind = "refused"
+
+
+class NeedsApproval(Stopped):
+    """Draft to operator: the write waits for the operator's approval. Raised by a ``before_send`` check."""
+
+    error_kind = "needs_approval"
+
+
+class BeforeSendUnavailable(Stopped):
+    """The configured ``before_send`` check could not be loaded, so nothing is sent."""
+
+    error_kind = "before_send_unavailable"
+
+
+class BeforeSendFailed(Stopped):
+    """The ``before_send`` check raised something else, or returned a value, so nothing is sent."""
+
+    error_kind = "before_send_failed"
 
 
 class MissingRequirement(ChannelError):

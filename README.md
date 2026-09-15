@@ -67,8 +67,9 @@ scope: public
 
 ## Writing: dry run first
 
-- `--dry-run` on `send`, `edit` and `react` contacts nothing and changes nothing. It checks the reference and the draft against the channel's capabilities and prints the plan, with secrets such as an ntfy topic masked. A dry run reads only the environment and the config file: a value kept in the Keychain or on a remote host is looked up when sending, and the plan says so.
-- A write that fails is a result, not an exception: `ok: false`, an `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`), and whether a retry can help (`retryable`, `retry_after`).
+- `--dry-run` on `send`, `edit` and `react` sends nothing and changes nothing. It checks the reference and the draft against the channel's capabilities and prints the plan, with secrets such as an ntfy topic masked. A dry run reads only the environment and the config file, plus, for `send` and `edit`, the audience lookup: a value kept in the Keychain or on a remote host is looked up when sending, and the plan says so.
+- **Every `send` and `edit` passes the `before_send` check first**, on the dry run too. The plan shows `audience` (who can read it, in words), `audience_hash`, and `before_send` (the verdict). With nothing configured the check lets the write go ahead, so the audience line is all it adds. A check can stop the write: `refused` (not as written, not here) or `needs_approval` (wait for the operator). A configured check that does not load stops every write (`before_send_unavailable`), and one that crashes stops that write (`before_send_failed`). Nothing is sent in any of these cases, and `--allow-send` on the MCP server does not skip the check.
+- A write that fails is a result, not an exception: `ok: false`, an `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`, or one of the four check kinds above), and whether a retry can help (`retryable`, `retry_after`).
 - `-` as the text reads it from stdin; `--json` prints the whole result.
 
 ## Listening
@@ -96,6 +97,14 @@ Cursors live under the data root, one per reference. A cursor is stored only aft
   [ntfy]
   topic_keychain_service = "my-ntfy-topic"
   ```
+
+- **`before_send`**, at the top of the config file, names the check every send and edit runs, as `"module:attr"`: a callable `before_send(ref, draft, audience)` that returns to let the write go ahead, or raises `correspond.errors.Refused(reason)` or `correspond.errors.NeedsApproval(reason)`. liaise supplies one:
+
+  ```toml
+  before_send = "liaise.vet:before_send"
+  ```
+
+  It is imported when a write first needs it. Leave it out and the default (`correspond.outbound:notice`) only shows the audience. A Python caller can pass `before_send=` to `correspond.send` or `correspond.edit` instead; the command line and the MCP tools cannot.
 
 - **State** (cursors, the Telegram log, web inbox reports) lives under `~/.local/share/correspond/` (or `$CORRESPOND_DATA_DIR`), one folder per kind, never in a repository.
 

@@ -277,7 +277,8 @@ def test_reading_a_repository_lists_its_open_issues_oldest_first():
     assert messages[1].conversation.kind == "pull_request"
 
 
-def test_dry_runs_run_no_gh_command_at_all():
+def test_dry_runs_run_no_gh_command_that_writes():
+    """A dry run changes nothing on GitHub; the only calls a send or edit attempts are the audience's reads (liaise discussion 32, §3.4)."""
     gh = ScriptedGh()
     registry = {"github": GitHub(run=gh)}
     results = [
@@ -296,7 +297,9 @@ def test_dry_runs_run_no_gh_command_at_all():
             f"github:{REPO}#1", "issue-1", "eyes", dry_run=True, registry=registry
         ),
     ]
-    assert all(r.ok and r.dry_run for r in results) and gh.calls == []
+    assert all(r.ok and r.dry_run for r in results)
+    assert gh.calls and {c["method"] for c in gh.calls} == {"GET"}
+    assert all(r.plan["audience"] for r in results[:3])
     assert (
         results[1].plan["action"] == "open an issue"
         and "discussion" in results[0].plan["request"]

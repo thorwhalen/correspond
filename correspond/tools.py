@@ -324,10 +324,23 @@ _DONE = {
     "react": "reacted to {id} in {target}",
 }
 
+#: How a write the ``before_send`` check stopped is summarised, by ``error_kind``.
+_STOPPED = {
+    "refused": "refused by the before_send check",
+    "needs_approval": "held for the operator's approval by the before_send check",
+    "before_send_unavailable": "not attempted: the before_send check is unavailable",
+    "before_send_failed": "not attempted: the before_send check failed",
+}
+
 
 def _write_result(result: SendResult) -> dict:
     target, operation = result.conversation, result.operation
-    if not result.ok:
+    if not result.ok and result.error_kind in _STOPPED:
+        summary = (
+            f"{'dry run: ' if result.dry_run else ''}{operation} on {target} "
+            f"{_STOPPED[result.error_kind]}: {result.error}"
+        )
+    elif not result.ok:
         hint = ""
         if result.retryable:
             hint = (
@@ -339,9 +352,11 @@ def _write_result(result: SendResult) -> dict:
             f"{operation} on {target} failed ({result.error_kind}): {result.error}{hint}"
         )
     elif result.dry_run:
-        summary = (
-            f"dry run: would {operation} on {target}; nothing was contacted or changed"
-        )
+        audience = result.plan.get("audience")
+        readers = f" ({audience})" if audience else ""
+        summary = f"dry run: would {operation} on {target}{readers}; nothing was contacted or changed"
+        if audience:
+            summary += " beyond reading who can see it"
     else:
         summary = _DONE.get(operation, operation + " on {target}").format(
             target=target, id=result.message_id
@@ -372,7 +387,7 @@ def send(
     priority: str | None = None,
     dry_run: bool = False,
 ) -> dict:
-    """Send a message to a conversation. Run it with `dry_run` first and show the plan: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities."""
+    """Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""
     return _write_result(
         ops.send(
             ref, text, title=title, reply_to=reply_to, priority=priority, dry_run=dry_run
@@ -382,7 +397,7 @@ def send(
 
 @_as_result
 def edit(ref: str, message_id: str, text: str, *, dry_run: bool = False) -> dict:
-    """Replace the text of a message this account wrote (`message_id` as `read` shows it). Run it with `dry_run` first."""
+    """Replace the text of a message this account wrote (`message_id` as `read` shows it). Run it with `dry_run` first. The new text passes the before_send check, as for `send`."""
     return _write_result(ops.edit(ref, message_id, text, dry_run=dry_run))
 
 

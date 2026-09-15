@@ -17,7 +17,9 @@ from correspond.render import render
 _REF = {
     "help": "a conversation reference, <channel>:<id> (e.g. github:octocat/hello-world#1)"
 }
-_DRY_RUN = {"help": "show the plan; contact nothing and change nothing"}
+_DRY_RUN = {
+    "help": "show the plan, who can read it and the before_send verdict; contact nothing but the audience lookup, and change nothing"
+}
 #: Per-parameter help for the command line (the tools' docstrings are the command help).
 HELP = {
     "requirements": {"channel": {"help": "a channel name, e.g. telegram"}},
