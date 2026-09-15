@@ -1,5 +1,6 @@
-"""The data model: references round-trip, grades are unranked, every type survives JSON."""
+"""The data model: references round-trip, grades are unranked, every type survives JSON, an audience hashes by contract."""
 
+import hashlib
 import json
 from datetime import datetime, timedelta, timezone
 
@@ -7,9 +8,14 @@ import pytest
 
 from correspond.errors import ChannelError, CorrespondError, InvalidRef
 from correspond.model import (
+    AUDIENCE_UNHASHED,
+    CLASS_WORDS,
+    DURABILITY,
     OPERATIONS,
+    WIDENING,
     Account,
     Attachment,
+    Audience,
     Authenticity,
     Capabilities,
     ChannelIdentity,
@@ -19,6 +25,7 @@ from correspond.model import (
     Grade,
     HistoryDepth,
     Message,
+    Scope,
     SendResult,
     Support,
     format_time,
@@ -216,3 +223,161 @@ def test_native_fields_are_declared_or_none():
     assert declared.native_fields == ("labels",)
     for caps in (Capabilities(channel="x"), declared):
         assert Capabilities.from_dict(json.loads(json.dumps(caps.to_dict()))) == caps
+
+
+def test_capabilities_grade_audience_and_records_without_it_still_load():
+    assert OPERATIONS[-1] == "audience"
+    caps = Capabilities(channel="x", audience="full")
+    assert caps.supports("audience") is Support.FULL and caps.operations == ("audience",)
+    older = caps.to_dict()
+    del older["audience"]
+    assert Capabilities.from_dict(older).audience is Support.NONE
+
+
+WATCHERS = "watchers and participants receive the body by email"
+BASE = "every member of the organisation through its base permission (documented default: read)"
+
+
+def _audience(**changes):
+    fields = dict(
+        ref="github:example/app#12",
+        scope="org",
+        readers=[
+            ChannelIdentity(
+                channel="github", native_id="7", handle="example-bot", is_self=True
+            ),
+            ChannelIdentity(channel="github", native_id="3", handle="ada"),
+        ],
+        classes=[WATCHERS, BASE],
+        durability=["edit_history_visible", "copies_pushed"],
+        widening=["visibility_flip", "forks", "joiners_read_history"],
+        as_of="2026-09-15T12:00:00Z",
+        evidence=["GET repos/example/app: visibility private"],
+    )
+    fields.update(changes)
+    return Audience(**fields)
+
+
+def test_an_audience_survives_json_and_ignores_keys_it_does_not_know():
+    audience = _audience()
+    data = json.loads(json.dumps(audience.to_dict()))
+    assert Audience.from_dict(data) == audience
+    assert Audience.from_dict({**data, "added_later": [1], "hash": "x"}) == audience
+    assert list(data) == [
+        "ref",
+        "scope",
+        "readers",
+        "complete",
+        "classes",
+        "external",
+        "retractable",
+        "durability",
+        "widening",
+        "as_of",
+        "evidence",
+        "defaulted",
+    ]
+    assert (data["scope"], data["as_of"], data["external"]) == (
+        "org",
+        "2026-09-15T12:00:00Z",
+        None,
+    )
+
+
+def test_set_valued_fields_are_sorted_so_the_listing_order_never_matters():
+    audience = _audience()
+    shuffled = _audience(
+        readers=[*reversed(audience.readers), audience.readers[0]],
+        classes=[*reversed(audience.classes), WATCHERS],
+        durability=list(reversed(audience.durability)),
+        widening=list(reversed(audience.widening)),
+    )
+    assert shuffled == audience and shuffled.hash == audience.hash
+    assert audience.durability == ("copies_pushed", "edit_history_visible")
+    assert [r.handle for r in audience.readers] == ["ada", "example-bot"]
+
+
+def test_the_hash_covers_everything_but_when_and_how_it_was_computed():
+    audience = _audience()
+    assert AUDIENCE_UNHASHED == ("as_of", "evidence")
+    later = _audience(as_of="2026-10-01T08:00:00+02:00", evidence=["another call"])
+    assert later != audience and later.hash == audience.hash
+    canonical = json.dumps(
+        {k: v for k, v in audience.to_dict().items() if k not in AUDIENCE_UNHASHED},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    assert audience.hash == hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    changes = [
+        dict(ref="github:example/app#13"),
+        dict(scope="public"),
+        dict(scope="public", defaulted=True),
+        dict(readers=audience.readers[:1]),
+        dict(complete=True),
+        dict(classes=[WATCHERS]),
+        dict(external=True),
+        dict(retractable=True),
+        dict(durability=["copies_pushed"]),
+        dict(widening=["forks"]),
+    ]
+    hashes = {audience.hash} | {_audience(**change).hash for change in changes}
+    assert len(hashes) == len(changes) + 1
+
+
+def test_an_audience_refuses_unknown_vocabulary_and_a_default_other_than_public():
+    for bad in (
+        dict(scope="everyone"),
+        dict(durability=["carved_in_stone"]),
+        dict(widening=["gossip"]),
+        dict(as_of=""),
+    ):
+        with pytest.raises(ValueError):
+            _audience(**bad)
+    for bad in (
+        dict(classes="one string"),
+        dict(durability="indexed"),
+        dict(readers=[{"channel": "github", "native_id": "3"}]),
+        dict(complete="yes"),
+        dict(external="maybe"),
+        dict(ref=ConversationRef.parse("github:example/app")),
+    ):
+        with pytest.raises(TypeError):
+            _audience(**bad)
+    for bad in (dict(defaulted=True), dict(scope="public", complete=True, defaulted=True)):
+        with pytest.raises(ValueError, match="unknown resolves to public"):
+            _audience(**bad)
+
+
+def test_the_unknown_audience_assumes_the_widest_of_everything():
+    found = Audience.unknown("slack:example", "slack is planned")
+    assert (
+        found.scope,
+        found.complete,
+        found.external,
+        found.retractable,
+        found.defaulted,
+    ) == (Scope.PUBLIC, False, None, False, True)
+    assert set(found.durability) == set(DURABILITY) and set(found.widening) == set(WIDENING)
+    assert found.evidence == ("slack is planned", "unknown resolves to public")
+    assert (
+        found.in_words()
+        == "world-readable (assumed: the audience could not be determined); not retractable"
+    )
+
+
+def test_an_audience_in_words_leads_with_its_scope():
+    assert CLASS_WORDS[WATCHERS] == "emailed to watchers and participants"
+    assert _audience().in_words() == (
+        "organisation-wide; at least 2 known readers; " + BASE + "; "
+        "emailed to watchers and participants; edits keep a visible history; not retractable"
+    )
+    assert (
+        _audience(scope="named", complete=True, classes=[], durability=[]).in_words()
+        == "named readers; exactly 2 readers; not retractable"
+    )
+    assert (
+        _audience(
+            scope="operator", readers=[], classes=[], durability=[], retractable=True
+        ).in_words()
+        == "only the operator; retractable"
+    )

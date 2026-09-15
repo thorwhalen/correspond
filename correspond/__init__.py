@@ -10,8 +10,10 @@ Telegram and a web inbox, through one model and one set of verbs::
     >>> correspond.send("ntfy:", "backup finished", dry_run=True).plan     # doctest: +SKIP
 
 A conversation reference is ``<channel>:<id>``. Each channel implements the operations it
-can (``read``, ``listen``, ``send``, ``edit``, ``react``, ``upload``, ``verify``); asking
-for one it lacks raises :class:`NotSupported`, and :func:`capabilities` says so in advance.
+can (``read``, ``listen``, ``send``, ``edit``, ``react``, ``upload``, ``verify``,
+``audience``); asking for one it lacks raises :class:`NotSupported`, and
+:func:`capabilities` says so in advance. :func:`audience` is the exception: it never
+refuses, because an audience nobody can compute is public.
 correspond knows no people: a message's ``author`` is what the platform attests, and its
 ``authenticity`` is how sure the channel is.
 
@@ -30,6 +32,7 @@ from correspond.errors import (
 from correspond.model import (
     Account,
     Attachment,
+    Audience,
     Authenticity,
     Capabilities,
     ChannelIdentity,
@@ -39,10 +42,12 @@ from correspond.model import (
     Grade,
     HistoryDepth,
     Message,
+    Scope,
     SendResult,
     Support,
 )
 from correspond.ops import (
+    AudienceReader,
     Editor,
     Listener,
     Reactor,
@@ -50,6 +55,7 @@ from correspond.ops import (
     Uploader,
     Verifier,
     Writer,
+    audience,
     capabilities,
     edit,
     get_channel,
@@ -68,6 +74,8 @@ from correspond.routing import RouteDecision, check_binding, metadata_rule, rout
 __all__ = [
     "Account",
     "Attachment",
+    "Audience",
+    "AudienceReader",
     "Authenticity",
     "Capabilities",
     "ChannelError",
@@ -87,12 +95,14 @@ __all__ = [
     "Reactor",
     "Reader",
     "RouteDecision",
+    "Scope",
     "SendResult",
     "Support",
     "UnknownChannel",
     "Uploader",
     "Verifier",
     "Writer",
+    "audience",
     "capabilities",
     "channel_registry",
     "check_binding",

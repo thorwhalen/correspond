@@ -19,7 +19,7 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 
 | Channel | References | Operations | Built on |
 |---|---|---|---|
-| `github` | `github:owner/repo`, `github:owner/repo#12` | read, listen (issues and comments), send, edit, react, verify (webhooks) | the `gh` CLI and its login; correspond holds no token |
+| `github` | `github:owner/repo`, `github:owner/repo#12` | read, listen (issues and comments), send, edit, react, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
 | `email` | `email:` (the folder), `email:someone@example.org` | read, listen, send | `imaplib`, `smtplib` |
 | `ntfy` | `ntfy:` (the default topic), `ntfy:<topic>` | send | `urllib` |
 | `macos` | `macos:` | send | `terminal-notifier` or `osascript` |
@@ -51,6 +51,19 @@ Grades are a vocabulary, not a ranking. A policy lists the grades it accepts for
 $ correspond react ntfy:example-topic m1 eyes
 ntfy does not support react
 ```
+
+## Who can read it
+
+```text
+$ correspond audience github:example/app#12
+world-readable; emailed to watchers and participants; archived by others; edits keep a visible history; not retractable
+scope: public
+...
+```
+
+`correspond audience <reference>` says who can read a conversation, now and plausibly later, before anything is written to it. The first line is the answer in words; the rest (and `--json`) is the record: a `scope` (`operator`, `named`, `group`, `org`, `public`), the `readers` known to read it with whether that list is `complete`, the reader `classes` that cannot be listed, whether `external` readers exist, what a send leaves behind (`durability`), how the readership can grow (`widening`), the `evidence` behind each value, and a `hash` that changes when the audience does (and only then, not with the time or the evidence).
+
+**Unknown resolves to public.** A failed or forbidden lookup, a channel without an audience reader and a planned channel all answer `public` with `defaulted: true` and the reason in `evidence`. Nothing is cached: ask again right before sending. GitHub computes it from the repository's visibility, its collaborators when the `gh` account may list them, and the organisation's base permission when the account may read it (otherwise the documented default, read); every other channel answers public, defaulted, until its audience reader lands ([#29](https://github.com/thorwhalen/correspond/issues/29)).
 
 ## Writing: dry run first
 
