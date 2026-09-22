@@ -26,6 +26,8 @@ def registry():
         (lambda r: ops.listen("fake:example/demo", cursors={}, registry=r), "listen"),
         (lambda r: ops.upload("fake:example/demo", "a.txt", b"x", registry=r), "upload"),
         (lambda r: ops.verify("fake", {}, b"", registry=r), "verify"),
+        (lambda r: ops.label("fake:example/demo", ["bug"], registry=r), "label"),
+        (lambda r: ops.unlabel("fake:example/demo", ["bug"], registry=r), "unlabel"),
     ],
 )
 def test_an_operation_the_channel_lacks_raises_not_supported_naming_it(

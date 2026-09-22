@@ -296,6 +296,10 @@ def test_dry_runs_run_no_gh_command_that_writes():
         correspond.react(
             f"github:{REPO}#1", "issue-1", "eyes", dry_run=True, registry=registry
         ),
+        correspond.label(
+            f"github:{REPO}#1", ["needs-triage", "bug"], dry_run=True, registry=registry
+        ),
+        correspond.unlabel(f"github:{REPO}#1", ["bug"], dry_run=True, registry=registry),
     ]
     assert all(r.ok and r.dry_run for r in results)
     assert gh.calls and {c["method"] for c in gh.calls} == {"GET"}
@@ -304,6 +308,9 @@ def test_dry_runs_run_no_gh_command_that_writes():
         results[1].plan["action"] == "open an issue"
         and "discussion" in results[0].plan["request"]
     )
+    assert results[4].plan["labels"] == ["needs-triage", "bug"]
+    assert results[4].plan["action"] == "add labels"
+    assert results[5].plan["action"] == "remove labels"
 
 
 def test_a_comment_travels_on_stdin_never_on_the_command_line():
@@ -473,6 +480,136 @@ def test_editing_and_reacting_in_a_discussion_go_through_graphql():
         f"github:{REPO}", "discussioncomment-501", "x", registry=registry
     )
     assert no_number.error_kind == "validation"
+
+
+def test_label_and_unlabel_refuse_a_bare_repository_with_no_gh_call():
+    gh = ScriptedGh()
+    registry = {"github": GitHub(run=gh)}
+    labelled = correspond.label(f"github:{REPO}", ["bug"], registry=registry)
+    unlabelled = correspond.unlabel(f"github:{REPO}", ["bug"], registry=registry)
+    assert (labelled.ok, labelled.error_kind) == (False, "validation")
+    assert (unlabelled.ok, unlabelled.error_kind) == (False, "validation")
+    assert gh.calls == []
+
+
+def test_label_adds_labels_and_reports_what_landed():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        (
+            "POST",
+            rf"repos/{REPO}/issues/1/labels",
+            (200, [{"name": "bug"}, {"name": "needs-triage"}]),
+        ),
+    )
+    result = correspond.label(
+        f"github:{REPO}#1", ["bug", "needs-triage", "bug"], registry={"github": GitHub(run=gh)}
+    )
+    assert result.ok and result.message_id == "issue-1"
+    assert result.plan["labels"] == ["bug", "needs-triage"]  # de-duplicated
+    assert result.plan["landed"] == ["bug", "needs-triage"]
+    assert "not_applied" not in result.plan
+    post = next(c for c in gh.calls if c["method"] == "POST")
+    assert post["payload"] == {"labels": ["bug", "needs-triage"]}
+
+
+def test_label_reports_a_label_the_response_did_not_include():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        ("POST", rf"repos/{REPO}/issues/1/labels", (200, [{"name": "bug"}])),
+    )
+    result = correspond.label(
+        f"github:{REPO}#1", ["bug", "wontfix"], registry={"github": GitHub(run=gh)}
+    )
+    assert result.ok and result.plan["not_applied"] == ["wontfix"]
+
+
+def test_label_landed_excludes_labels_the_issue_already_carried():
+    """The POST response is every label now on the issue, not only the ones this call added."""
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        (
+            "POST",
+            rf"repos/{REPO}/issues/1/labels",
+            (200, [{"name": "priority:high"}, {"name": "bug"}]),
+        ),
+    )
+    result = correspond.label(
+        f"github:{REPO}#1", ["bug"], registry={"github": GitHub(run=gh)}
+    )
+    assert result.ok
+    assert result.plan["landed"] == ["bug"]
+    assert "priority:high" not in result.plan["landed"]
+    assert "not_applied" not in result.plan
+
+
+def test_unlabel_removes_labels_one_call_each_and_tolerates_an_absent_one():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        ("DELETE", rf"repos/{REPO}/issues/1/labels/bug", (200, [])),
+        ("DELETE", rf"repos/{REPO}/issues/1/labels/wontfix", (404, {"message": "Label does not exist"})),
+    )
+    result = correspond.unlabel(
+        f"github:{REPO}#1", ["bug", "wontfix"], registry={"github": GitHub(run=gh)}
+    )
+    assert result.ok and result.message_id == "issue-1"
+    assert result.plan["removed"] == ["bug"]
+    assert result.plan["already_absent"] == ["wontfix"]
+    deletes = [c for c in gh.calls if c["method"] == "DELETE"]
+    assert len(deletes) == 2 and all(c["payload"] is None for c in deletes)
+
+
+def test_unlabel_a_label_with_special_characters_is_url_escaped():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        ("DELETE", rf"repos/{REPO}/issues/1/labels/help%20wanted", (200, [])),
+    )
+    result = correspond.unlabel(
+        f"github:{REPO}#1", ["help wanted"], registry={"github": GitHub(run=gh)}
+    )
+    assert result.ok and result.plan["removed"] == ["help wanted"]
+
+
+def test_label_on_a_discussion_is_refused_by_name():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
+        ("POST", "graphql", (200, {"data": {"repository": {"discussion": {"id": "D_node5"}}}})),
+    )
+    with pytest.raises(NotSupported, match="label"):
+        correspond.label(f"github:{REPO}#5", ["bug"], registry={"github": GitHub(run=gh)})
+
+
+def test_unlabel_on_a_number_that_is_nothing_at_all_is_not_found():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/9", (404, {"message": "Not Found"})),
+        ("POST", "graphql", (200, {"data": {"repository": {"discussion": None}}})),
+    )
+    result = correspond.unlabel(
+        f"github:{REPO}#9", ["bug"], registry={"github": GitHub(run=gh)}
+    )
+    assert (result.ok, result.error_kind) == (False, "not_found")
+
+
+def test_label_and_unlabel_refuse_an_empty_label_list_with_no_gh_call():
+    gh = ScriptedGh()
+    registry = {"github": GitHub(run=gh)}
+    labelled = correspond.label(f"github:{REPO}#1", ["  ", ""], registry=registry)
+    unlabelled = correspond.unlabel(f"github:{REPO}#1", [], registry=registry)
+    assert (labelled.ok, labelled.error_kind) == (False, "validation")
+    assert (unlabelled.ok, unlabelled.error_kind) == (False, "validation")
+    assert gh.calls == []
+
+
+def test_label_and_unlabel_are_named_in_capabilities():
+    caps = GitHub().capabilities
+    assert caps.label.value == "full" and caps.unlabel.value == "full"
+    assert "label" in caps.operations and "unlabel" in caps.operations
 
 
 @pytest.mark.parametrize(

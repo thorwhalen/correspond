@@ -11,7 +11,7 @@ Telegram and a web inbox, through one model and one set of verbs::
 
 A conversation reference is ``<channel>:<id>``. Each channel implements the operations it
 can (``read``, ``listen``, ``send``, ``edit``, ``react``, ``upload``, ``verify``,
-``audience``); asking for one it lacks raises :class:`NotSupported`, and
+``audience``, ``label``, ``unlabel``); asking for one it lacks raises :class:`NotSupported`, and
 :func:`capabilities` says so in advance. :func:`audience` is the exception: it never
 refuses, because an audience nobody can compute is public.
 correspond knows no people: a message's ``author`` is what the platform attests, and its
@@ -52,9 +52,11 @@ from correspond.model import (
 from correspond.ops import (
     AudienceReader,
     Editor,
+    Labeler,
     Listener,
     Reactor,
     Reader,
+    Unlabeler,
     Uploader,
     Verifier,
     Writer,
@@ -62,11 +64,13 @@ from correspond.ops import (
     capabilities,
     edit,
     get_channel,
+    label,
     listen,
     parse_ref,
     react,
     read,
     send,
+    unlabel,
     upload,
     verify,
 )
@@ -91,6 +95,7 @@ __all__ = [
     "Grade",
     "HistoryDepth",
     "InvalidRef",
+    "Labeler",
     "Listener",
     "Message",
     "MissingRequirement",
@@ -104,6 +109,7 @@ __all__ = [
     "SendResult",
     "Stopped",
     "Support",
+    "Unlabeler",
     "UnknownChannel",
     "Uploader",
     "Verifier",
@@ -115,6 +121,7 @@ __all__ = [
     "check_requirements",
     "edit",
     "get_channel",
+    "label",
     "listen",
     "metadata_rule",
     "parse_ref",
@@ -123,6 +130,7 @@ __all__ = [
     "register_channel",
     "route",
     "send",
+    "unlabel",
     "unregister_channel",
     "upload",
     "verify",

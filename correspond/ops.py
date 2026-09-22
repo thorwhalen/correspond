@@ -12,6 +12,8 @@ Reactor         ``react(ref, message_id, reaction, *, dry_run=False) -> SendResu
 Uploader        ``upload(ref, name, data, *, media_type, dry_run=False) -> SendResult``
 Verifier        ``verify(headers, body) -> Authenticity``
 AudienceReader  ``audience(ref, *, draft=None) -> Audience``
+Labeler         ``label(ref, labels, *, dry_run=False) -> SendResult``
+Unlabeler       ``unlabel(ref, labels, *, dry_run=False) -> SendResult``
 ==============  =====================================================================
 
 The verbs here (:func:`read`, :func:`listen`, :func:`send`, …) take a reference string,
@@ -79,9 +81,11 @@ __all__ = [
     "AudienceReader",
     "Channel",
     "Editor",
+    "Labeler",
     "Listener",
     "Reactor",
     "Reader",
+    "Unlabeler",
     "Uploader",
     "Verifier",
     "Writer",
@@ -90,11 +94,13 @@ __all__ = [
     "edit",
     "get_channel",
     "implemented",
+    "label",
     "listen",
     "parse_ref",
     "react",
     "read",
     "send",
+    "unlabel",
     "upload",
     "verify",
     "window",
@@ -204,6 +210,24 @@ class AudienceReader(Protocol):
     ) -> Audience: ...
 
 
+@runtime_checkable
+class Labeler(Protocol):
+    """Add labels to a conversation, apart from its opening send."""
+
+    def label(
+        self, ref: ConversationRef, labels: Iterable[str], *, dry_run: bool = False
+    ) -> SendResult: ...
+
+
+@runtime_checkable
+class Unlabeler(Protocol):
+    """Remove labels from a conversation."""
+
+    def unlabel(
+        self, ref: ConversationRef, labels: Iterable[str], *, dry_run: bool = False
+    ) -> SendResult: ...
+
+
 #: Operation name → the protocol an adapter implements to have it.
 PROTOCOLS: dict[str, type] = {
     "read": Reader,
@@ -214,6 +238,8 @@ PROTOCOLS: dict[str, type] = {
     "upload": Uploader,
     "verify": Verifier,
     "audience": AudienceReader,
+    "label": Labeler,
+    "unlabel": Unlabeler,
 }
 
 
@@ -871,6 +897,60 @@ def react(
         write=lambda rehearse: adapter.react(
             ref, str(message_id), reaction, dry_run=rehearse
         ),
+    )
+
+
+def _labels_check(labels: Iterable[str]) -> tuple[str, ...]:
+    return tuple(str(label).strip() for label in labels if str(label).strip())
+
+
+def label(
+    ref: str | ConversationRef,
+    labels: Iterable[str],
+    *,
+    dry_run: bool = False,
+    registry: Mapping[str, Any] | None = None,
+    before_send: Callable[..., None] | None = None,
+) -> SendResult:
+    """Add ``labels`` to a conversation; the ``before_send`` check sees them, comma-joined, as the draft's text."""
+    adapter, ref = _adapter_for(ref, "label", registry)
+    labels = _labels_check(labels)
+    if not labels:
+        return _invalid(adapter, ref, "label", dry_run, "no labels given")
+    return _checked_write(
+        adapter,
+        ref,
+        "label",
+        Draft(text=", ".join(labels)),
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
+        write=lambda rehearse: adapter.label(ref, labels, dry_run=rehearse),
+    )
+
+
+def unlabel(
+    ref: str | ConversationRef,
+    labels: Iterable[str],
+    *,
+    dry_run: bool = False,
+    registry: Mapping[str, Any] | None = None,
+    before_send: Callable[..., None] | None = None,
+) -> SendResult:
+    """Remove ``labels`` from a conversation; the ``before_send`` check sees them, comma-joined, as the draft's text."""
+    adapter, ref = _adapter_for(ref, "unlabel", registry)
+    labels = _labels_check(labels)
+    if not labels:
+        return _invalid(adapter, ref, "unlabel", dry_run, "no labels given")
+    return _checked_write(
+        adapter,
+        ref,
+        "unlabel",
+        Draft(text=", ".join(labels)),
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
+        write=lambda rehearse: adapter.unlabel(ref, labels, dry_run=rehearse),
     )
 
 
