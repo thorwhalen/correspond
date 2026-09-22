@@ -187,21 +187,28 @@ def check_binding(
 ) -> list[str]:
     """What would make a binding never match, found when bindings are loaded instead of by messages quietly going unrouted.
 
-    Reports a pattern without a channel, an unknown channel, and a condition on a field the
-    channel's messages never carry (its ``native_fields``, plus ``author`` and ``grade``). A
-    channel written as a wildcard, or one that does not declare its fields
-    (``native_fields`` is ``None``), is not checked for fields.
+    Reports a pattern without a channel, an unknown channel, a ref that is not in the
+    channel's canonical form (e.g. GitHub references are lower-cased by
+    :meth:`~correspond.channels.github.GitHub.parse_ref`, so ``binding_matches``, which
+    compares the pattern literally, never matches a differently-cased pattern against it),
+    and a condition on a field the channel's messages never carry (its ``native_fields``,
+    plus ``author`` and ``grade``). A channel written as a wildcard, or one that does not
+    declare its fields (``native_fields`` is ``None``), is not checked for fields. A ref
+    with wildcards, or one the channel's own parser rejects outright, is not checked for
+    canonical form -- a malformed ref is a different problem than a mis-cased one.
 
     >>> from correspond.channels.github import GitHub
     >>> check_binding("github:example/app?labels=bug", registry={"github": GitHub()})
     []
     >>> check_binding("github:example/app?label=bug", registry={"github": GitHub()})[0].split(":")[0]
     'the condition label=bug never matches'
+    >>> check_binding("github:Example/App", registry={"github": GitHub()})
+    ["github:Example/App is not in canonical form: github references are normalised to 'github:example/app'; binding_matches compares refs literally, so this pattern will not match github:example/app"]
     """
     from correspond.ops import get_channel
 
     ref_glob, _, query = pattern.partition("?")
-    channel, separator, _ = ref_glob.partition(":")
+    channel, separator, ref_id = ref_glob.partition(":")
     if not separator or not channel:
         if ":" in query:
             return [
@@ -214,14 +221,31 @@ def check_binding(
         adapter = get_channel(channel, registry=registry)
     except CorrespondError as error:
         return [str(error)]
+    problems = []
+    parse_ref = getattr(adapter, "parse_ref", None)
+    if parse_ref is not None and not _WILDCARDS & set(ref_id):
+        try:
+            canonical = parse_ref(ref_id).encoded
+        except CorrespondError:
+            canonical = None
+        if canonical is not None and canonical != ref_glob:
+            problems.append(
+                f"{ref_glob} is not in canonical form: {channel} references are "
+                f"normalised to {canonical!r}; binding_matches compares refs literally, "
+                f"so this pattern will not match {canonical}"
+            )
     caps = getattr(adapter, "capabilities", None)
     if caps is None:
-        return [f"{channel} has no capabilities to check the binding against"]
+        return [
+            *problems,
+            f"{channel} has no capabilities to check the binding against",
+        ]
     if caps.native_fields is None:
-        return []
+        return problems
     carried = (*caps.native_fields, *MESSAGE_FIELDS)
-    return [
+    problems.extend(
         f"the condition {field}={glob} never matches: {channel} messages carry no field {field!r} (they carry {', '.join(carried)})"
         for field, glob in _conditions(query)
         if field not in carried
-    ]
+    )
+    return problems
