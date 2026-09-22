@@ -24,6 +24,9 @@ nothing; the only call it makes is the audience lookup.
 :func:`audience` is the exception to refusing: it never raises, because an audience
 nobody can compute is public.
 
+:func:`send` takes an ``idempotency_key``: the same key again posts nothing a second time,
+even after a send that went out and then reported a failure (:mod:`correspond.idempotency`).
+
 Before every write (:func:`send`, :func:`edit`, :func:`react`, :func:`upload`), and in its
 dry run, the ``before_send`` check runs with the conversation's audience
 (:mod:`correspond.outbound`). Its verdict and the audience in words go into the plan, and a
@@ -38,7 +41,20 @@ from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMappin
 from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
+from correspond import idempotency
 from correspond.errors import ChannelError, NotSupported, UnknownChannel
+from correspond.idempotency import (
+    FAILED,
+    NOTHING_POSTED_KINDS,
+    READ_BACK_SKEW,
+    SENT,
+    attempted_at,
+    check_key,
+    claimed,
+    fingerprint,
+    matching_message,
+    settled,
+)
 from correspond.model import (
     Audience,
     Authenticity,
@@ -534,12 +550,20 @@ def send(
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
+    idempotency_key: str | None = None,
+    sends: MutableMapping[str, Any] | None = None,
 ) -> SendResult:
     """Send ``text`` (or a :class:`~correspond.model.Draft`) to a conversation; ``dry_run`` shows the plan and sends nothing.
 
     ``cc`` and ``bcc`` copy further recipients, on channels that grade ``cc`` (email).
     ``before_send(ref, draft, audience)`` runs first, on the dry run too; when ``None``, the
     config's ``before_send`` reference, else :func:`correspond.outbound.notice`.
+
+    ``idempotency_key`` makes sending the same message again safe: a key that already sent
+    answers that send's result and posts nothing, and one whose earlier attempt may have
+    gone out is confirmed by reading the conversation back, or refused as ``unconfirmed``
+    (:mod:`correspond.idempotency`). ``sends`` is where keys are kept: by default files
+    under the data root (:func:`correspond.stores.send_store`).
     """
     cc, bcc = tuple(cc), tuple(bcc)
     if isinstance(text, Draft) and (title or reply_to or priority or cc or bcc):
@@ -559,9 +583,23 @@ def send(
             bcc=tuple(bcc),
         )
     )
+    key = None if idempotency_key is None else check_key(idempotency_key)
     problem = _feature_check(adapter, draft)
     if problem:
         return _invalid(adapter, ref, "send", dry_run, problem)
+
+    def write(rehearse: bool) -> SendResult:
+        return adapter.send(ref, draft, dry_run=rehearse)
+
+    if key is not None:
+        if sends is None:
+            from correspond.stores import send_store
+
+            sends = send_store()
+        earlier = _earlier_send(adapter, ref, draft, key, sends, dry_run=dry_run)
+        if earlier is not None:
+            return earlier
+        write = _claiming(write, key, fingerprint(ref.encoded, draft), ref, sends)
     return _checked_write(
         adapter,
         ref,
@@ -570,8 +608,140 @@ def send(
         dry_run=dry_run,
         before_send=before_send,
         registry=registry,
-        write=lambda rehearse: adapter.send(ref, draft, dry_run=rehearse),
+        write=write,
     )
+
+
+def _claiming(
+    write: Callable[[bool], SendResult],
+    key: str,
+    bound_to: str,
+    ref: ConversationRef,
+    sends: MutableMapping[str, Any],
+) -> Callable[[bool], SendResult]:
+    """``write`` with ``key`` claimed in ``sends`` before the real write, and settled after it.
+
+    The rehearsal claims nothing. A failure the platform reported before accepting anything
+    settles the key :data:`~correspond.idempotency.FAILED`; any other failure, and anything
+    else raised, leaves it claimed, its outcome unknown.
+    """
+
+    def claiming_write(rehearse: bool) -> SendResult:
+        if rehearse:
+            return write(True)
+        record = claimed(key, ref.encoded, fingerprint=bound_to, at=idempotency.now())
+        sends[key] = record
+        try:
+            result = write(False)
+        except ChannelError as error:
+            if error.kind in NOTHING_POSTED_KINDS:
+                sends[key] = settled(record, FAILED, {"error_kind": error.kind})
+            raise
+        sends[key] = settled(record, SENT if result.ok else FAILED, result.to_dict())
+        return result
+
+    return claiming_write
+
+
+def _earlier_send(
+    adapter: Any,
+    ref: ConversationRef,
+    draft: Draft,
+    key: str,
+    sends: MutableMapping[str, Any],
+    *,
+    dry_run: bool,
+) -> SendResult | None:
+    """What an earlier send with ``key`` settles for this one, or None when this one goes ahead.
+
+    None for a new key and one whose earlier try the platform refused. Otherwise the earlier
+    result, replayed; the message read back, for an attempt whose outcome was unknown; or a
+    refusal: a key bound to another conversation or draft (``validation``), or an attempt
+    that may have gone out and that reading back does not confirm (``unconfirmed``). A dry
+    run reads nothing back and writes nothing.
+    """
+    record = sends.get(key)
+    if record is None or record.get("state") == FAILED:
+        return None
+    base = {"channel": adapter.name, "conversation": ref.encoded, "dry_run": dry_run}
+    if record.get("fingerprint") != fingerprint(ref.encoded, draft):
+        return SendResult(
+            ok=False,
+            **base,
+            plan={"idempotency_key": key},
+            error=(
+                f"the idempotency key {key!r} was used for another message (to "
+                f"{record.get('conversation')}): use a new key for a new message"
+            ),
+            error_kind="validation",
+        )
+    if record.get("state") == SENT:
+        earlier = SendResult.from_dict(record.get("result") or {**base, "ok": True})
+        plan = {
+            **earlier.plan,
+            "idempotency_key": key,
+            "idempotency": (
+                f"already sent (attempted at {record.get('attempted_at')}): not sent again"
+            ),
+        }
+        return dataclasses.replace(earlier, dry_run=dry_run, plan=plan)
+    check_it = (
+        f"an earlier send with the idempotency key {key!r} failed at "
+        f"{record.get('attempted_at')} and may have gone out"
+    )
+    if dry_run:
+        return SendResult(
+            ok=False,
+            **base,
+            plan={
+                "idempotency_key": key,
+                "idempotency": f"{check_it}: a real send reads {ref.encoded} back first",
+            },
+            error=f"{check_it}; a real send reads the conversation back before deciding",
+            error_kind="unconfirmed",
+        )
+    found, why = _read_back(adapter, ref, draft, since=attempted_at(record))
+    if found is None:
+        return SendResult(
+            ok=False,
+            **base,
+            plan={"idempotency_key": key},
+            error=(
+                f"{check_it}, and {why}: check {ref.encoded}, then send with a new key "
+                f"if it is not there"
+            ),
+            error_kind="unconfirmed",
+        )
+    result = SendResult(
+        ok=True,
+        **base,
+        message_id=found.id,
+        url=found.url,
+        plan={
+            "idempotency_key": key,
+            "idempotency": f"{check_it}; it did, as {found.id}: not sent again",
+        },
+    )
+    sends[key] = settled(record, SENT, result.to_dict())
+    return result
+
+
+def _read_back(
+    adapter: Any, ref: ConversationRef, draft: Draft, *, since: datetime
+) -> tuple[Message | None, str]:
+    """``(message, "")``: correspond's own message with ``draft``'s text since ``since``; else ``(None, why not)``."""
+    if not isinstance(adapter, Reader):
+        return None, f"{adapter.name} cannot be read back to confirm it"
+    try:
+        messages = adapter.read(ref, since=since - READ_BACK_SKEW)
+    except Exception as error:  # an unreadable conversation confirms nothing
+        return None, f"reading it back failed ({type(error).__name__}: {error})"
+    found = matching_message(messages, draft, since=since)
+    if found is None:
+        return None, (
+            "reading it back did not find it (which does not prove it did not go out)"
+        )
+    return found, ""
 
 
 def edit(

@@ -54,6 +54,7 @@ ERROR_KINDS = (
     "network",  # the platform could not be reached
     "validation",  # the input was rejected (by the platform, or by correspond on its behalf)
     "unavailable",  # the platform failed, or something local (a binary, the OS) is missing
+    "unconfirmed",  # an earlier send with the same idempotency key may have gone out: check before sending again
 )
 
 #: Why the ``before_send`` check stopped a write. Nothing was sent; a retry of the same draft changes nothing.

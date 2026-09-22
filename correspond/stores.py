@@ -35,6 +35,7 @@ __all__ = [
     "cursor_store",
     "json_store",
     "kind_dir",
+    "send_store",
     "text_store",
 ]
 
@@ -167,3 +168,8 @@ def cursor_store(
 ) -> MutableMapping[str, str]:
     """Listen cursors, keyed by encoded conversation reference, under ``<data root>/cursors/``."""
     return QuotedKeys(text_store("cursors", data_dir=data_dir), suffix=".txt")
+
+
+def send_store(*, data_dir: str | os.PathLike | None = None) -> MutableMapping[str, Any]:
+    """What each idempotency key of :func:`correspond.send` did, under ``<data root>/sends/``."""
+    return QuotedKeys(json_store("sends", data_dir=data_dir), suffix=".json")

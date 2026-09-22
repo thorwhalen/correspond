@@ -1,0 +1,217 @@
+"""Idempotent sends: a key that sent posts nothing again, even after a send that went out and then failed.
+
+Every channel here is in memory (correspond.testing); nothing leaves the process.
+"""
+
+from datetime import timedelta
+
+import pytest
+
+from correspond import idempotency, ops
+from correspond.errors import ChannelError
+from correspond.idempotency import ATTEMPTED, FAILED, SENT
+from correspond.model import Draft
+from correspond.stores import send_store
+from correspond.testing import _EPOCH, FakeChannel, demo_channel
+
+REF = "fake:example/demo"
+TEXT = "The fix is deployed."
+
+
+class PostsThenFails(FakeChannel):
+    """Posts the message, then raises: the platform took it and its answer never came."""
+
+    def __init__(self, *args, kind="network", post=True, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.kind, self.post, self.calls = kind, post, 0
+
+    def send(self, ref, draft, *, dry_run=False):
+        if dry_run:
+            return super().send(ref, draft, dry_run=True)
+        self.calls += 1
+        if self.calls == 1:
+            if self.post:
+                super().send(ref, draft)
+            raise ChannelError("the platform did not answer", kind=self.kind)
+        return super().send(ref, draft)
+
+
+class WriteOnly:
+    """A channel that can send and cannot be read (as a notification service)."""
+
+    def __init__(self, inner):
+        self.inner, self.name = inner, inner.name
+
+    @property
+    def capabilities(self):
+        return self.inner.capabilities
+
+    def parse_ref(self, id):
+        return self.inner.parse_ref(id)
+
+    def send(self, ref, draft, *, dry_run=False):
+        return self.inner.send(ref, draft, dry_run=dry_run)
+
+
+def _seeded(cls=FakeChannel, **kwargs):
+    return cls("fake", conversations=demo_channel().conversations, **kwargs)
+
+
+@pytest.fixture(autouse=True)
+def fixed_clock(monkeypatch):
+    """Claims are stamped at the fake channel's epoch, where its messages are dated."""
+    monkeypatch.setattr(idempotency, "now", lambda: _EPOCH)
+
+
+def _send(channel, text=TEXT, *, sends, key="k-1", **kwargs):
+    return ops.send(
+        REF, text, registry={"fake": channel}, idempotency_key=key, sends=sends, **kwargs
+    )
+
+
+def test_a_key_that_sent_posts_nothing_again_and_answers_the_first_result():
+    channel, sends = _seeded(), {}
+
+    first = _send(channel, sends=sends)
+    again = _send(channel, sends=sends)
+
+    assert first.ok and again.ok and len(channel.sent) == 1
+    assert again.message_id == first.message_id
+    assert "not sent again" in again.plan["idempotency"]
+    assert sends["k-1"]["state"] == SENT and sends["k-1"]["result"]["ok"] is True
+
+
+def test_a_send_that_posted_then_failed_is_confirmed_by_reading_back_not_posted_twice():
+    channel, sends = _seeded(PostsThenFails), {}
+
+    failed = _send(channel, sends=sends)
+    assert not failed.ok and failed.error_kind == "network"
+    assert sends["k-1"]["state"] == ATTEMPTED and len(channel.sent) == 1
+
+    retried = _send(channel, sends=sends)
+
+    assert retried.ok and len(channel.sent) == 1 and channel.calls == 1
+    posted = channel.conversations["example/demo"][-1]
+    assert retried.message_id == posted.id and "it did" in retried.plan["idempotency"]
+    assert sends["k-1"]["state"] == SENT
+    assert _send(channel, sends=sends).message_id == posted.id and len(channel.sent) == 1
+
+
+def test_an_attempt_that_did_not_post_and_cannot_be_confirmed_is_refused_as_unconfirmed():
+    channel, sends = _seeded(PostsThenFails, post=False), {}
+    _send(channel, sends=sends)
+
+    refused = _send(channel, sends=sends)
+
+    assert not refused.ok and refused.error_kind == "unconfirmed"
+    assert "check fake:example/demo" in refused.error and "new key" in refused.error
+    assert channel.sent == [] and sends["k-1"]["state"] == ATTEMPTED
+    # The caller who checked sends with a new key.
+    assert _send(channel, sends=sends, key="k-2").ok and len(channel.sent) == 1
+
+
+def test_a_channel_that_cannot_be_read_back_confirms_nothing():
+    inner = _seeded(PostsThenFails)
+    channel, sends = WriteOnly(inner), {}
+    _send(channel, sends=sends)
+
+    refused = _send(channel, sends=sends)
+
+    assert refused.error_kind == "unconfirmed" and "cannot be read back" in refused.error
+    assert len(inner.sent) == 1
+
+
+def test_a_message_read_back_from_before_the_attempt_is_not_this_attempt(monkeypatch):
+    channel, sends = _seeded(PostsThenFails, post=False), {}
+    FakeChannel.send(channel, channel.parse_ref("example/demo"), Draft(text=TEXT))  # an old copy
+    monkeypatch.setattr(idempotency, "now", lambda: _EPOCH + timedelta(hours=1))
+    _send(channel, sends=sends)
+
+    assert _send(channel, sends=sends).error_kind == "unconfirmed"
+
+
+def test_a_refusal_before_anything_was_accepted_lets_the_same_key_try_again():
+    channel, sends = _seeded(PostsThenFails, kind="rate_limited", post=False), {}
+
+    assert _send(channel, sends=sends).error_kind == "rate_limited"
+    assert sends["k-1"]["state"] == FAILED
+
+    again = _send(channel, sends=sends)
+    assert again.ok and len(channel.sent) == 1 and sends["k-1"]["state"] == SENT
+
+
+def test_a_key_used_again_for_another_message_or_conversation_is_refused():
+    channel, sends = _seeded(), {}
+    _send(channel, sends=sends)
+
+    other = _send(channel, "Another message.", sends=sends)
+
+    assert not other.ok and other.error_kind == "validation" and "new key" in other.error
+    assert len(channel.sent) == 1
+
+
+def test_a_crash_between_claim_and_result_leaves_the_key_attempted():
+    class Crashes(FakeChannel):
+        def send(self, ref, draft, *, dry_run=False):
+            if dry_run:
+                return super().send(ref, draft, dry_run=True)
+            super().send(ref, draft)
+            raise RuntimeError("the process died here")
+
+    channel, sends = _seeded(Crashes), {}
+    with pytest.raises(RuntimeError):
+        _send(channel, sends=sends)
+    assert sends["k-1"]["state"] == ATTEMPTED
+
+    healthy = _seeded()
+    healthy.conversations = channel.conversations
+    assert _send(healthy, sends=sends).ok and healthy.sent == []
+
+
+def test_a_dry_run_reads_the_store_and_writes_nothing():
+    channel, sends = _seeded(PostsThenFails), {}
+
+    planned = _send(channel, sends=sends, dry_run=True)
+    assert planned.ok and planned.dry_run and sends == {} and channel.sent == []
+
+    _send(channel, sends=sends)
+    before = dict(sends)
+    rehearsed = _send(channel, sends=sends, dry_run=True)
+    assert rehearsed.error_kind == "unconfirmed" and "reads" in rehearsed.plan["idempotency"]
+    assert sends == before and len(channel.sent) == 1
+
+
+def test_a_before_send_refusal_claims_nothing():
+    from correspond.errors import Refused
+
+    def refuse(ref, draft, audience, **context):
+        raise Refused("not on this conversation")
+
+    channel, sends = _seeded(), {}
+    stopped = _send(channel, sends=sends, before_send=refuse)
+
+    assert stopped.error_kind == "refused" and sends == {} and channel.sent == []
+
+
+def test_without_a_key_nothing_is_stored_and_every_send_posts():
+    channel = _seeded()
+    for _ in range(2):
+        assert ops.send(REF, TEXT, registry={"fake": channel}).ok
+    assert len(channel.sent) == 2
+
+
+@pytest.mark.parametrize("key", ["", "   ", 12, "a" * 129, "tab\tinside"])
+def test_a_key_that_is_blank_too_long_or_unprintable_raises(key):
+    with pytest.raises(ValueError, match="idempotency key"):
+        _send(_seeded(), sends={}, key=key)
+
+
+def test_the_default_store_keeps_keys_as_files_under_the_data_root(tmp_path):
+    channel = _seeded()
+    ops.send(REF, TEXT, registry={"fake": channel}, idempotency_key="case-12/reply 3")
+
+    store = send_store()
+    assert store["case-12/reply 3"]["state"] == SENT
+    assert list((tmp_path / "data" / "sends").iterdir())
+    again = ops.send(REF, TEXT, registry={"fake": channel}, idempotency_key="case-12/reply 3")
+    assert again.ok and len(channel.sent) == 1
