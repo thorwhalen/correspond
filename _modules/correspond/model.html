@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../_static/documentation_options.js?v=1fd71caa"></script>
+    <script src="../../_static/documentation_options.js?v=bbaf98b3"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.6" />
+  <meta name="docsearch:version" content="0.0.7" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -780,7 +780,18 @@ window.runMermaid = runMermaid;</script>
 <span class="p">]</span>
 
 <span class="c1">#: The operations, in the order capabilities and surfaces list them.</span>
-<span class="n">OPERATIONS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"read"</span><span class="p">,</span> <span class="s2">"listen"</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="s2">"edit"</span><span class="p">,</span> <span class="s2">"react"</span><span class="p">,</span> <span class="s2">"upload"</span><span class="p">,</span> <span class="s2">"verify"</span><span class="p">,</span> <span class="s2">"audience"</span><span class="p">)</span>
+<span class="n">OPERATIONS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"read"</span><span class="p">,</span>
+    <span class="s2">"listen"</span><span class="p">,</span>
+    <span class="s2">"send"</span><span class="p">,</span>
+    <span class="s2">"edit"</span><span class="p">,</span>
+    <span class="s2">"react"</span><span class="p">,</span>
+    <span class="s2">"upload"</span><span class="p">,</span>
+    <span class="s2">"verify"</span><span class="p">,</span>
+    <span class="s2">"audience"</span><span class="p">,</span>
+    <span class="s2">"label"</span><span class="p">,</span>
+    <span class="s2">"unlabel"</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="c1">#: Whose name a write goes out under.</span>
 <span class="n">ACTS_AS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"bot"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"app"</span><span class="p">,</span> <span class="s2">"service"</span><span class="p">)</span>
 <span class="c1">#: What an :class:`Event` reports.</span>
@@ -1369,7 +1380,8 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">"""What a channel can do, graded, with its limits.</span>
 
 <span class="sd">    One ``Support`` per operation in :data:`OPERATIONS` (``audience``: can the channel say</span>
-<span class="sd">    who reads a conversation), plus four features of writing:</span>
+<span class="sd">    who reads a conversation; ``label`` / ``unlabel``: can labels be added to or removed</span>
+<span class="sd">    from a conversation, apart from its opening send), plus four features of writing:</span>
 <span class="sd">    ``initiate`` (can a write start a conversation; Telegram bots cannot), ``reply``</span>
 <span class="sd">    (can a draft answer a specific message), ``priority``, and ``cc`` (can a draft copy</span>
 <span class="sd">    further recipients, ``Draft.cc`` and ``Draft.bcc``). ``history_depth`` says how</span>
@@ -1387,6 +1399,8 @@ window.runMermaid = runMermaid;</script>
     <span class="n">upload</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">verify</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">audience</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">label</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">unlabel</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">initiate</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">reply</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">priority</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>

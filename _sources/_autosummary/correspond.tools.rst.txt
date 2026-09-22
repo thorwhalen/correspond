@@ -19,10 +19,12 @@ correspond.tools
       capabilities
       channels
       edit
+      label
       listen
       react
       read
       ref
       requirements
       send
+      unlabel
    

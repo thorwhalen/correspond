@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=1fd71caa"></script>
+    <script src="../_static/documentation_options.js?v=bbaf98b3"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="correspond.model" href="correspond.model.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.6" />
+  <meta name="docsearch:version" content="0.0.7" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -437,6 +437,12 @@ methods of whichever protocols it can honour:</p>
 <tr class="row-even"><td><p>AudienceReader</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">audience(ref,</span> <span class="pre">*,</span> <span class="pre">draft=None)</span> <span class="pre">-&gt;</span> <span class="pre">Audience</span></code></p></td>
 </tr>
+<tr class="row-odd"><td><p>Labeler</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">label(ref,</span> <span class="pre">labels,</span> <span class="pre">*,</span> <span class="pre">dry_run=False)</span> <span class="pre">-&gt;</span> <span class="pre">SendResult</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Unlabeler</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">unlabel(ref,</span> <span class="pre">labels,</span> <span class="pre">*,</span> <span class="pre">dry_run=False)</span> <span class="pre">-&gt;</span> <span class="pre">SendResult</span></code></p></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -483,20 +489,26 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.implemented" title="correspond.ops.implemented"><code class="xref py py-obj docutils literal notranslate"><span class="pre">implemented</span></code></a>(adapter)</p></td>
 <td><p>The operations an adapter implements, in <a class="reference internal" href="correspond.model.html#correspond.model.OPERATIONS" title="correspond.model.OPERATIONS"><code class="xref py py-data docutils literal notranslate"><span class="pre">OPERATIONS</span></code></a> order.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.listen" title="correspond.ops.listen"><code class="xref py py-obj docutils literal notranslate"><span class="pre">listen</span></code></a>(ref, *[, cursors, limit, commit, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.label" title="correspond.ops.label"><code class="xref py py-obj docutils literal notranslate"><span class="pre">label</span></code></a>(ref, labels, *[, dry_run, registry, ...])</p></td>
+<td><p>Add <code class="docutils literal notranslate"><span class="pre">labels</span></code> to a conversation; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees them, comma-joined, as the draft's text.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.listen" title="correspond.ops.listen"><code class="xref py py-obj docutils literal notranslate"><span class="pre">listen</span></code></a>(ref, *[, cursors, limit, commit, ...])</p></td>
 <td><p>Events since the cursor stored for <code class="docutils literal notranslate"><span class="pre">ref</span></code>; each cursor is stored once the consumer moves past its event.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.parse_ref" title="correspond.ops.parse_ref"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_ref</span></code></a>(ref, *[, registry])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.parse_ref" title="correspond.ops.parse_ref"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_ref</span></code></a>(ref, *[, registry])</p></td>
 <td><p>A reference normalised by its channel's adapter (kind and parent filled in, the id validated).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.react" title="correspond.ops.react"><code class="xref py py-obj docutils literal notranslate"><span class="pre">react</span></code></a>(ref, message_id, reaction, *[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.react" title="correspond.ops.react"><code class="xref py py-obj docutils literal notranslate"><span class="pre">react</span></code></a>(ref, message_id, reaction, *[, ...])</p></td>
 <td><p>Add a reaction to a message (the channel's capabilities list the reactions it accepts); the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees the reaction as the draft's text.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.read" title="correspond.ops.read"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read</span></code></a>(ref, *[, since, limit, registry])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.read" title="correspond.ops.read"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read</span></code></a>(ref, *[, since, limit, registry])</p></td>
 <td><p>The messages of a conversation, oldest first (<code class="docutils literal notranslate"><span class="pre">limit</span></code> keeps the most recent ones).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.send" title="correspond.ops.send"><code class="xref py py-obj docutils literal notranslate"><span class="pre">send</span></code></a>(ref, text, *[, title, reply_to, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.send" title="correspond.ops.send"><code class="xref py py-obj docutils literal notranslate"><span class="pre">send</span></code></a>(ref, text, *[, title, reply_to, ...])</p></td>
 <td><p>Send <code class="docutils literal notranslate"><span class="pre">text</span></code> (or a <a class="reference internal" href="correspond.model.html#correspond.model.Draft" title="correspond.model.Draft"><code class="xref py py-class docutils literal notranslate"><span class="pre">Draft</span></code></a>) to a conversation; <code class="docutils literal notranslate"><span class="pre">dry_run</span></code> shows the plan and sends nothing.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.unlabel" title="correspond.ops.unlabel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unlabel</span></code></a>(ref, labels, *[, dry_run, registry, ...])</p></td>
+<td><p>Remove <code class="docutils literal notranslate"><span class="pre">labels</span></code> from a conversation; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees them, comma-joined, as the draft's text.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.upload" title="correspond.ops.upload"><code class="xref py py-obj docutils literal notranslate"><span class="pre">upload</span></code></a>(ref, name, data, *[, media_type, ...])</p></td>
 <td><p>Send a file to a conversation.</p></td>
@@ -525,14 +537,20 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.Editor" title="correspond.ops.Editor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Editor</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Replace the text of a message correspond's account wrote.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.Listener" title="correspond.ops.Listener"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Listener</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.Labeler" title="correspond.ops.Labeler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Labeler</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Add labels to a conversation, apart from its opening send.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.Listener" title="correspond.ops.Listener"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Listener</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Events since <code class="docutils literal notranslate"><span class="pre">cursor</span></code>, oldest first, each carrying the cursor to resume after it.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.Reactor" title="correspond.ops.Reactor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Reactor</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.Reactor" title="correspond.ops.Reactor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Reactor</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Add a reaction to a message.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.Reader" title="correspond.ops.Reader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Reader</span></code></a>(*args, **kwargs)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.Reader" title="correspond.ops.Reader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Reader</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Messages of a conversation, oldest first; <code class="docutils literal notranslate"><span class="pre">limit</span></code> keeps the most recent.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.Unlabeler" title="correspond.ops.Unlabeler"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Unlabeler</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Remove labels from a conversation.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.Uploader" title="correspond.ops.Uploader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Uploader</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Send a file to a conversation.</p></td>
@@ -568,6 +586,13 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="correspond.ops.Labeler">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Labeler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#Labeler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Labeler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>Add labels to a conversation, apart from its opening send.</p>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="correspond.ops.Listener">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Listener</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#Listener"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Listener" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
@@ -576,7 +601,7 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 
 <dl class="py data">
 <dt class="sig sig-object py" id="correspond.ops.PROTOCOLS">
-<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">PROTOCOLS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#type" title="(in Python v3.14)"><span class="pre">type</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'audience':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.AudienceReader'&gt;,</span> <span class="pre">'edit':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Editor'&gt;,</span> <span class="pre">'listen':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Listener'&gt;,</span> <span class="pre">'react':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Reactor'&gt;,</span> <span class="pre">'read':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Reader'&gt;,</span> <span class="pre">'send':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Writer'&gt;,</span> <span class="pre">'upload':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Uploader'&gt;,</span> <span class="pre">'verify':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Verifier'&gt;}</span></span><a class="headerlink" href="#correspond.ops.PROTOCOLS" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">PROTOCOLS</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><span class="pre">dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#type" title="(in Python v3.14)"><span class="pre">type</span></a><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'audience':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.AudienceReader'&gt;,</span> <span class="pre">'edit':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Editor'&gt;,</span> <span class="pre">'label':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Labeler'&gt;,</span> <span class="pre">'listen':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Listener'&gt;,</span> <span class="pre">'react':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Reactor'&gt;,</span> <span class="pre">'read':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Reader'&gt;,</span> <span class="pre">'send':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Writer'&gt;,</span> <span class="pre">'unlabel':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Unlabeler'&gt;,</span> <span class="pre">'upload':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Uploader'&gt;,</span> <span class="pre">'verify':</span> <span class="pre">&lt;class</span> <span class="pre">'correspond.ops.Verifier'&gt;}</span></span><a class="headerlink" href="#correspond.ops.PROTOCOLS" title="Link to this definition">#</a></dt>
 <dd><p>Operation name → the protocol an adapter implements to have it.</p>
 </dd></dl>
 
@@ -592,6 +617,13 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Reader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#Reader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Reader" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
 <p>Messages of a conversation, oldest first; <code class="docutils literal notranslate"><span class="pre">limit</span></code> keeps the most recent.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.ops.Unlabeler">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Unlabeler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#Unlabeler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Unlabeler" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>Remove labels from a conversation.</p>
 </dd></dl>
 
 <dl class="py class">
@@ -675,6 +707,17 @@ right before sending.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.label">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#label"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.label" title="Link to this definition">#</a></dt>
+<dd><p>Add <code class="docutils literal notranslate"><span class="pre">labels</span></code> to a conversation; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees them, comma-joined, as the draft’s text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="correspond.ops.listen">
 <span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">listen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">commit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#listen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.listen" title="Link to this definition">#</a></dt>
 <dd><p>Events since the cursor stored for <code class="docutils literal notranslate"><span class="pre">ref</span></code>; each cursor is stored once the consumer moves past its event.</p>
@@ -734,6 +777,17 @@ gone out is confirmed by reading the conversation back, or refused as <code clas
 under the data root (<a class="reference internal" href="correspond.stores.html#correspond.stores.send_store" title="correspond.stores.send_store"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.stores.send_store()</span></code></a>). A mapping with a
 <code class="docutils literal notranslate"><span class="pre">claim(key,</span> <span class="pre">record)</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code> (as that store has) is exclusive across processes; a
 plain one is checked, then set, which covers one process.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.unlabel">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">unlabel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#unlabel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.unlabel" title="Link to this definition">#</a></dt>
+<dd><p>Remove <code class="docutils literal notranslate"><span class="pre">labels</span></code> from a conversation; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees them, comma-joined, as the draft’s text.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
@@ -837,10 +891,12 @@ plain one is checked, then set, which covers one process.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.AudienceReader"><code class="docutils literal notranslate"><span class="pre">AudienceReader</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Channel"><code class="docutils literal notranslate"><span class="pre">Channel</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Editor"><code class="docutils literal notranslate"><span class="pre">Editor</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Labeler"><code class="docutils literal notranslate"><span class="pre">Labeler</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Listener"><code class="docutils literal notranslate"><span class="pre">Listener</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.PROTOCOLS"><code class="docutils literal notranslate"><span class="pre">PROTOCOLS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Reactor"><code class="docutils literal notranslate"><span class="pre">Reactor</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Reader"><code class="docutils literal notranslate"><span class="pre">Reader</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Unlabeler"><code class="docutils literal notranslate"><span class="pre">Unlabeler</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Uploader"><code class="docutils literal notranslate"><span class="pre">Uploader</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Verifier"><code class="docutils literal notranslate"><span class="pre">Verifier</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Writer"><code class="docutils literal notranslate"><span class="pre">Writer</span></code></a></li>
@@ -849,11 +905,13 @@ plain one is checked, then set, which covers one process.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.edit"><code class="docutils literal notranslate"><span class="pre">edit()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.get_channel"><code class="docutils literal notranslate"><span class="pre">get_channel()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.implemented"><code class="docutils literal notranslate"><span class="pre">implemented()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.label"><code class="docutils literal notranslate"><span class="pre">label()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.listen"><code class="docutils literal notranslate"><span class="pre">listen()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.parse_ref"><code class="docutils literal notranslate"><span class="pre">parse_ref()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.react"><code class="docutils literal notranslate"><span class="pre">react()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.read"><code class="docutils literal notranslate"><span class="pre">read()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.send"><code class="docutils literal notranslate"><span class="pre">send()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.unlabel"><code class="docutils literal notranslate"><span class="pre">unlabel()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.upload"><code class="docutils literal notranslate"><span class="pre">upload()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.verify"><code class="docutils literal notranslate"><span class="pre">verify()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.window"><code class="docutils literal notranslate"><span class="pre">window()</span></code></a></li>

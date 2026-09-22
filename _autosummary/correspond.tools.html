@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=1fd71caa"></script>
+    <script src="../_static/documentation_options.js?v=bbaf98b3"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="correspond.testing" href="correspond.testing.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.6" />
+  <meta name="docsearch:version" content="0.0.7" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -444,30 +444,36 @@ operation the channel lacks, a platform error) comes back as <code class="docuti
 <tr class="row-even"><td><p><a class="reference internal" href="#correspond.tools.edit" title="correspond.tools.edit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">edit</span></code></a>(ref, message_id, text, *[, dry_run])</p></td>
 <td><p>Replace the text of a message this account wrote (<code class="code docutils literal notranslate"><span class="pre">message_id</span></code> as <code class="code docutils literal notranslate"><span class="pre">read</span></code> shows it).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.tools.listen" title="correspond.tools.listen"><code class="xref py py-obj docutils literal notranslate"><span class="pre">listen</span></code></a>(ref, *[, limit, peek, data_dir])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.tools.label" title="correspond.tools.label"><code class="xref py py-obj docutils literal notranslate"><span class="pre">label</span></code></a>(ref, labels, *[, dry_run])</p></td>
+<td><p>Add labels (comma-separated; a label name may not itself contain a comma) to a conversation (<code class="code docutils literal notranslate"><span class="pre">capabilities</span></code> says whether a channel supports it).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.tools.listen" title="correspond.tools.listen"><code class="xref py py-obj docutils literal notranslate"><span class="pre">listen</span></code></a>(ref, *[, limit, peek, data_dir])</p></td>
 <td><p>New activity on a conversation since the last listen (a first listen looks back a little).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.tools.react" title="correspond.tools.react"><code class="xref py py-obj docutils literal notranslate"><span class="pre">react</span></code></a>(ref, message_id, reaction, *[, dry_run])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.tools.react" title="correspond.tools.react"><code class="xref py py-obj docutils literal notranslate"><span class="pre">react</span></code></a>(ref, message_id, reaction, *[, dry_run])</p></td>
 <td><p>Add a reaction to a message (<code class="code docutils literal notranslate"><span class="pre">capabilities</span></code> lists the reactions a channel accepts).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.tools.read" title="correspond.tools.read"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read</span></code></a>(ref, *[, since, limit])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.tools.read" title="correspond.tools.read"><code class="xref py py-obj docutils literal notranslate"><span class="pre">read</span></code></a>(ref, *[, since, limit])</p></td>
 <td><p>Read a conversation: messages oldest first, each with its author, authenticity grade, time and text.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.tools.ref" title="correspond.tools.ref"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ref</span></code></a>(ref)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.tools.ref" title="correspond.tools.ref"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ref</span></code></a>(ref)</p></td>
 <td><p>Parse and normalise a conversation reference (<code class="code docutils literal notranslate"><span class="pre">&lt;channel&gt;:&lt;id&gt;</span></code>): its channel, id, kind, parent, and the canonical form, which parses back to the same reference.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.tools.requirements" title="correspond.tools.requirements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requirements</span></code></a>(channel)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.tools.requirements" title="correspond.tools.requirements"><code class="xref py py-obj docutils literal notranslate"><span class="pre">requirements</span></code></a>(channel)</p></td>
 <td><p>What a channel needs (install command, binaries, platform, each setting and where to get it) and what is missing.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.tools.send" title="correspond.tools.send"><code class="xref py py-obj docutils literal notranslate"><span class="pre">send</span></code></a>(ref, text, *[, title, reply_to, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.tools.send" title="correspond.tools.send"><code class="xref py py-obj docutils literal notranslate"><span class="pre">send</span></code></a>(ref, text, *[, title, reply_to, ...])</p></td>
 <td><p>Send a message to a conversation.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.tools.unlabel" title="correspond.tools.unlabel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">unlabel</span></code></a>(ref, labels, *[, dry_run])</p></td>
+<td><p>Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
 <dl class="py data">
 <dt class="sig sig-object py" id="correspond.tools.SIDE_EFFECTS">
-<span class="sig-prename descclassname"><span class="pre">correspond.tools.</span></span><span class="sig-name descname"><span class="pre">SIDE_EFFECTS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'audience':</span> <span class="pre">'external-read',</span> <span class="pre">'capabilities':</span> <span class="pre">'read',</span> <span class="pre">'channels':</span> <span class="pre">'read',</span> <span class="pre">'edit':</span> <span class="pre">'external',</span> <span class="pre">'listen':</span> <span class="pre">'external-read',</span> <span class="pre">'react':</span> <span class="pre">'external',</span> <span class="pre">'read':</span> <span class="pre">'external-read',</span> <span class="pre">'ref':</span> <span class="pre">'read',</span> <span class="pre">'requirements':</span> <span class="pre">'read',</span> <span class="pre">'send':</span> <span class="pre">'external'}</span></span><a class="headerlink" href="#correspond.tools.SIDE_EFFECTS" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">correspond.tools.</span></span><span class="sig-name descname"><span class="pre">SIDE_EFFECTS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'audience':</span> <span class="pre">'external-read',</span> <span class="pre">'capabilities':</span> <span class="pre">'read',</span> <span class="pre">'channels':</span> <span class="pre">'read',</span> <span class="pre">'edit':</span> <span class="pre">'external',</span> <span class="pre">'label':</span> <span class="pre">'external',</span> <span class="pre">'listen':</span> <span class="pre">'external-read',</span> <span class="pre">'react':</span> <span class="pre">'external',</span> <span class="pre">'read':</span> <span class="pre">'external-read',</span> <span class="pre">'ref':</span> <span class="pre">'read',</span> <span class="pre">'requirements':</span> <span class="pre">'read',</span> <span class="pre">'send':</span> <span class="pre">'external',</span> <span class="pre">'unlabel':</span> <span class="pre">'external'}</span></span><a class="headerlink" href="#correspond.tools.SIDE_EFFECTS" title="Link to this definition">#</a></dt>
 <dd><p>What each tool touches, for surfaces deciding what to expose. <code class="docutils literal notranslate"><span class="pre">read</span></code> stays on this
 machine; <code class="docutils literal notranslate"><span class="pre">external-read</span></code> reads a remote service (<code class="docutils literal notranslate"><span class="pre">listen</span></code> also stores its cursor
 locally); <code class="docutils literal notranslate"><span class="pre">external</span></code> writes to a remote service, where people see it.</p>
@@ -475,7 +481,7 @@ locally); <code class="docutils literal notranslate"><span class="pre">external<
 
 <dl class="py data">
 <dt class="sig sig-object py" id="correspond.tools.TOOLS">
-<span class="sig-prename descclassname"><span class="pre">correspond.tools.</span></span><span class="sig-name descname"><span class="pre">TOOLS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[&lt;function</span> <span class="pre">channels&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">requirements&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">capabilities&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">ref&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">read&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">listen&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">audience&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">send&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">edit&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">react&gt;]</span></span><a class="headerlink" href="#correspond.tools.TOOLS" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">correspond.tools.</span></span><span class="sig-name descname"><span class="pre">TOOLS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">[&lt;function</span> <span class="pre">channels&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">requirements&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">capabilities&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">ref&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">read&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">listen&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">audience&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">send&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">edit&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">react&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">label&gt;,</span> <span class="pre">&lt;function</span> <span class="pre">unlabel&gt;]</span></span><a class="headerlink" href="#correspond.tools.TOOLS" title="Link to this definition">#</a></dt>
 <dd><p>Every tool, in the order surfaces list them.</p>
 </dd></dl>
 
@@ -516,6 +522,17 @@ locally); <code class="docutils literal notranslate"><span class="pre">external<
 <dt class="sig sig-object py" id="correspond.tools.edit">
 <span class="sig-prename descclassname"><span class="pre">correspond.tools.</span></span><span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/tools.html#edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.tools.edit" title="Link to this definition">#</a></dt>
 <dd><p>Replace the text of a message this account wrote (<code class="code docutils literal notranslate"><span class="pre">message_id</span></code> as <code class="code docutils literal notranslate"><span class="pre">read</span></code> shows it). Run it with <code class="code docutils literal notranslate"><span class="pre">dry_run</span></code> first. The new text passes the before_send check, as for <code class="code docutils literal notranslate"><span class="pre">send</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.tools.label">
+<span class="sig-prename descclassname"><span class="pre">correspond.tools.</span></span><span class="sig-name descname"><span class="pre">label</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/tools.html#label"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.tools.label" title="Link to this definition">#</a></dt>
+<dd><p>Add labels (comma-separated; a label name may not itself contain a comma) to a conversation (<code class="code docutils literal notranslate"><span class="pre">capabilities</span></code> says whether a channel supports it). Run it with <code class="code docutils literal notranslate"><span class="pre">dry_run</span></code> first. It passes the before_send check, as for <code class="code docutils literal notranslate"><span class="pre">send</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
@@ -589,6 +606,17 @@ locally); <code class="docutils literal notranslate"><span class="pre">external<
 </dl>
 </dd></dl>
 
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.tools.unlabel">
+<span class="sig-prename descclassname"><span class="pre">correspond.tools.</span></span><span class="sig-name descname"><span class="pre">unlabel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/tools.html#unlabel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.tools.unlabel" title="Link to this definition">#</a></dt>
+<dd><p>Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation. Run it with <code class="code docutils literal notranslate"><span class="pre">dry_run</span></code> first. It passes the before_send check, as for <code class="code docutils literal notranslate"><span class="pre">send</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 
 
@@ -644,12 +672,14 @@ locally); <code class="docutils literal notranslate"><span class="pre">external<
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.tools.capabilities"><code class="docutils literal notranslate"><span class="pre">capabilities()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.tools.channels"><code class="docutils literal notranslate"><span class="pre">channels()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.tools.edit"><code class="docutils literal notranslate"><span class="pre">edit()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.tools.label"><code class="docutils literal notranslate"><span class="pre">label()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.tools.listen"><code class="docutils literal notranslate"><span class="pre">listen()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.tools.react"><code class="docutils literal notranslate"><span class="pre">react()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.tools.read"><code class="docutils literal notranslate"><span class="pre">read()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.tools.ref"><code class="docutils literal notranslate"><span class="pre">ref()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.tools.requirements"><code class="docutils literal notranslate"><span class="pre">requirements()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.tools.send"><code class="docutils literal notranslate"><span class="pre">send()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.tools.unlabel"><code class="docutils literal notranslate"><span class="pre">unlabel()</span></code></a></li>
 </ul>
   </nav></div>
 

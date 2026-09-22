@@ -215,14 +215,15 @@ JSON-ready.
 Short phrases for reader classes, used by [`Audience.in_words()`](#correspond.model.Audience.in_words); a class not listed
 here is shown as written.
 
-### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
 What a channel can do, graded, with its limits.
 
 One `Support` per operation in [`OPERATIONS`](#correspond.model.OPERATIONS) (`audience`: can the channel say
-who reads a conversation), plus four features of writing:
+who reads a conversation; `label` / `unlabel`: can labels be added to or removed
+from a conversation, apart from its opening send), plus four features of writing:
 `initiate` (can a write start a conversation; Telegram bots cannot), `reply`
 (can a draft answer a specific message), `priority`, and `cc` (can a draft copy
 further recipients, `Draft.cc` and `Draft.bcc`). `history_depth` says how
@@ -440,7 +441,7 @@ JSON-ready; `raw` (the untouched payload) only when asked for.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.model.OPERATIONS *= ('read', 'listen', 'send', 'edit', 'react', 'upload', 'verify', 'audience')*
+### correspond.model.OPERATIONS *= ('read', 'listen', 'send', 'edit', 'react', 'upload', 'verify', 'audience', 'label', 'unlabel')*
 
 The operations, in the order capabilities and surfaces list them.
 

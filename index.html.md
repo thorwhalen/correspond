@@ -19,14 +19,14 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 
 ## Channels
 
-| Channel    | References                                                                           | Operations                                                                         | Built on                                              |
-|------------|--------------------------------------------------------------------------------------|------------------------------------------------------------------------------------|-------------------------------------------------------|
-| `github`   | `github:owner/repo`, `github:owner/repo#12`                                          | read, listen (issues and comments), send, edit, react, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
-| `email`    | `email:` (the folder), `email:someone@example.org`                                   | read, listen, send (with cc and bcc), audience                                     | `imaplib`, `smtplib`                                  |
-| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                          | send, audience                                                                     | `urllib`                                              |
-| `macos`    | `macos:`                                                                             | send, audience                                                                     | `terminal-notifier` or `osascript`                    |
-| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience                  | the Bot API over `urllib`                             |
-| `webinbox` | `webinbox:<site>`                                                                    | read, listen, audience                                                             | the ASGI collector below, and `dol` stores            |
+| Channel    | References                                                                           | Operations                                                                                         | Built on                                              |
+|------------|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------|-------------------------------------------------------|
+| `github`   | `github:owner/repo`, `github:owner/repo#12`                                          | read, listen (issues and comments), send, edit, react, label, unlabel, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
+| `email`    | `email:` (the folder), `email:someone@example.org`                                   | read, listen, send (with cc and bcc), audience                                                     | `imaplib`, `smtplib`                                  |
+| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                          | send, audience                                                                                     | `urllib`                                              |
+| `macos`    | `macos:`                                                                             | send, audience                                                                                     | `terminal-notifier` or `osascript`                    |
+| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience                                  | the Bot API over `urllib`                             |
+| `webinbox` | `webinbox:<site>`                                                                    | read, listen, audience                                                                             | the ASGI collector below, and `dol` stores            |
 
 Every v0.1 adapter uses the Python standard library. Discord ([#2](https://github.com/thorwhalen/correspond/issues/2)), Slack ([#3](https://github.com/thorwhalen/correspond/issues/3)), Signal ([#4](https://github.com/thorwhalen/correspond/issues/4)) and Apprise ([#5](https://github.com/thorwhalen/correspond/issues/5)) are planned as extras; `correspond channels` lists them with their issues.
 

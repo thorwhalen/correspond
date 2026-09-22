@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../../_static/documentation_options.js?v=1fd71caa"></script>
+    <script src="../../../_static/documentation_options.js?v=bbaf98b3"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.6" />
+  <meta name="docsearch:version" content="0.0.7" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -724,7 +724,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">  requests, ``listen`` polls its issue and comment activity, ``send`` opens an issue (a</span>
 <span class="sd">  title is required).</span>
 <span class="sd">- ``github:owner/repo#N``: an issue, a pull request, or a discussion. GitHub numbers the</span>
-<span class="sd">  three in one sequence; correspond asks which.</span>
+<span class="sd">  three in one sequence; correspond asks which. ``label`` and ``unlabel`` work on an issue</span>
+<span class="sd">  or pull request only: GitHub discussions have categories, not labels.</span>
 
 <span class="sd">Message ids match the anchors in GitHub's own URLs: ``issue-N`` (the opening post of issue</span>
 <span class="sd">or pull request N), ``issuecomment-ID``, ``discussion-N``, ``discussioncomment-ID``.</span>
@@ -757,6 +758,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">email.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parsedate_to_datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">quote</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.channels._http</span><span class="w"> </span><span class="kn">import</span> <span class="n">classify</span><span class="p">,</span> <span class="n">retry_after_seconds</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -1087,6 +1089,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">react</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">verify</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">audience</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">unlabel</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">initiate</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">reply</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
             <span class="n">history_depth</span><span class="o">=</span><span class="n">HistoryDepth</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
@@ -1118,6 +1122,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"pull request review comments on diffs are not read"</span><span class="p">,</span>
                 <span class="s2">"listen can miss a change only when more than 2,000 issues or comments change within the same second"</span><span class="p">,</span>
                 <span class="s2">"audience is the repository's readership and never complete (installed apps, webhooks and security managers cannot be listed); a 404 or 403 resolves to public"</span><span class="p">,</span>
+                <span class="s2">"label and unlabel apply to issues and pull requests, not discussions (GitHub discussions have categories, not labels); listen does not yet surface who applied a label"</span><span class="p">,</span>
+                <span class="s2">"label and unlabel each cost one extra read (confirming the issue exists, to tell a label the issue never had apart from a missing issue) before their writes"</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span>
 
@@ -2087,6 +2093,118 @@ window.runMermaid = runMermaid;</script>
                 <span class="p">},</span>
             <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="s2">"react"</span><span class="p">,</span> <span class="n">message_id</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_require_issue</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Raise unless ``#number`` is an issue or pull request: GitHub discussions have categories, not labels."""</span>
+        <span class="n">probe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">allow</span><span class="o">=</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="mi">410</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">probe</span><span class="o">.</span><span class="n">status</span> <span class="o">&lt;</span> <span class="mi">400</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_discussion_id</span><span class="p">(</span>
+            <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span>
+        <span class="p">)</span>  <span class="c1"># raises not_found when there is nothing at all</span>
+        <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
+            <span class="n">operation</span><span class="p">,</span>
+            <span class="n">NAME</span><span class="p">,</span>
+            <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"labels apply to issues and pull requests, not discussions"</span><span class="p">,),</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">labels</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">names</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="s2">"a label name is empty"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">names</span><span class="p">))</span>  <span class="c1"># de-duplicated, order kept</span>
+
+<div class="viewcode-block" id="GitHub.label">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.github.html#correspond.channels.github.GitHub.label">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">label</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Add labels to an issue or pull request (``POST .../labels``).</span>
+
+<span class="sd">        GitHub creates a label that does not already exist in the repository rather than</span>
+<span class="sd">        rejecting it, so ``landed`` in the plan is mostly a confirmation: the requested</span>
+<span class="sd">        names the response's own (now-current) label list actually carries, which is read</span>
+<span class="sd">        back and reported the way an assignee is not (a login that is not a member of the</span>
+<span class="sd">        repository is silently dropped from ``assignees``; a label name never is). The</span>
+<span class="sd">        response lists every label now on the issue, including ones this call never</span>
+<span class="sd">        mentioned, so ``landed`` is filtered to the requested names, not the full list.</span>
+<span class="sd">        """</span>
+        <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parts</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">number</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"labels apply to an issue or pull request: github:</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#N"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/labels"</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"add labels"</span><span class="p">,</span>
+            <span class="s2">"target"</span><span class="p">:</span> <span class="n">target</span><span class="p">,</span>
+            <span class="s2">"request"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"POST </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="s2">"labels"</span><span class="p">:</span> <span class="n">names</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_planned</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"label"</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_require_issue</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="s2">"label"</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"POST"</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">"labels"</span><span class="p">:</span> <span class="n">names</span><span class="p">})</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="c1"># The response is every label now on the issue, not only the ones this call added</span>
+        <span class="c1"># (an issue can carry labels this request never mentioned): read back only the</span>
+        <span class="c1"># requested names, so `landed` reports this call's effect, not the issue's state.</span>
+        <span class="n">now_on_issue</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">data</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">landed</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">now_on_issue</span><span class="p">]</span>
+        <span class="n">plan</span><span class="p">[</span><span class="s2">"landed"</span><span class="p">]</span> <span class="o">=</span> <span class="n">landed</span>
+        <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">now_on_issue</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+            <span class="n">plan</span><span class="p">[</span><span class="s2">"not_applied"</span><span class="p">]</span> <span class="o">=</span> <span class="n">missing</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="s2">"label"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"issue-</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GitHub.unlabel">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.github.html#correspond.channels.github.GitHub.unlabel">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">unlabel</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">labels</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Remove labels from an issue or pull request.</span>
+
+<span class="sd">        GitHub has no bulk removal: one ``DELETE .../labels/{name}`` per label. A label</span>
+<span class="sd">        already absent from the issue answers 404 the same way a missing issue does, so the</span>
+<span class="sd">        issue's existence is checked first (:meth:`_require_issue`) and every 404 after that</span>
+<span class="sd">        is read as "was not on the issue", not as an error.</span>
+<span class="sd">        """</span>
+        <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parts</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">number</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"labels apply to an issue or pull request: github:</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#N"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_labels</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"remove labels"</span><span class="p">,</span>
+            <span class="s2">"target"</span><span class="p">:</span> <span class="n">target</span><span class="p">,</span>
+            <span class="s2">"request"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"DELETE repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/labels/</span><span class="se">{{</span><span class="s2">label</span><span class="se">}}</span><span class="s2">, one call per label"</span><span class="p">,</span>
+            <span class="s2">"labels"</span><span class="p">:</span> <span class="n">names</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_planned</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"unlabel"</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_require_issue</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="s2">"unlabel"</span><span class="p">)</span>
+        <span class="n">removed</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">already_absent</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/labels/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">name</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+            <span class="n">reply</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"DELETE"</span><span class="p">,</span> <span class="n">allow</span><span class="o">=</span><span class="p">(</span><span class="mi">404</span><span class="p">,))</span>
+            <span class="p">(</span><span class="n">already_absent</span> <span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">404</span> <span class="k">else</span> <span class="n">removed</span><span class="p">)</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">plan</span><span class="p">[</span><span class="s2">"removed"</span><span class="p">]</span> <span class="o">=</span> <span class="n">removed</span>
+        <span class="k">if</span> <span class="n">already_absent</span><span class="p">:</span>
+            <span class="n">plan</span><span class="p">[</span><span class="s2">"already_absent"</span><span class="p">]</span> <span class="o">=</span> <span class="n">already_absent</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="s2">"unlabel"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"issue-</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span></div>
 
 
     <span class="c1"># ----------------------------------------------------------------- verifying</span>

@@ -14,6 +14,8 @@ methods of whichever protocols it can honour:
 | Uploader       | `upload(ref, name, data, *, media_type, dry_run=False) -> SendResult` |
 | Verifier       | `verify(headers, body) -> Authenticity`                               |
 | AudienceReader | `audience(ref, *, draft=None) -> Audience`                            |
+| Labeler        | `label(ref, labels, *, dry_run=False) -> SendResult`                  |
+| Unlabeler      | `unlabel(ref, labels, *, dry_run=False) -> SendResult`                |
 
 The verbs here ([`read()`](#correspond.ops.read), [`listen()`](#correspond.ops.listen), [`send()`](#correspond.ops.send), …) take a reference string,
 find the adapter in the registry, and raise [`NotSupported`](correspond.errors.html.md#correspond.errors.NotSupported)
@@ -41,21 +43,23 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 
 ### Functions
 
-| [`audience`](#correspond.ops.audience)(ref[, draft, registry])                | Who can read a conversation, asked of its channel now.                                                                                                                  |
-|--------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`capabilities`](#correspond.ops.capabilities)(channel, \*[, registry])           | What a channel can do, graded, with its limits.                                                                                                                         |
-| [`edit`](#correspond.ops.edit)(ref, message_id, text, \*[, dry_run, ...]) | Replace the text of a message correspond's account wrote; the `before_send` check runs first, as for [`send()`](#correspond.ops.send).           |
-| [`get_channel`](#correspond.ops.get_channel)(name, \*[, registry])               | The adapter registered under `name`; [`UnknownChannel`](correspond.errors.html.md#correspond.errors.UnknownChannel) says what to do if there is none. |
-| [`implemented`](#correspond.ops.implemented)(adapter)                            | The operations an adapter implements, in [`OPERATIONS`](correspond.model.html.md#correspond.model.OPERATIONS) order.                                 |
-| [`listen`](#correspond.ops.listen)(ref, \*[, cursors, limit, commit, ...])  | Events since the cursor stored for `ref`; each cursor is stored once the consumer moves past its event.                                                                 |
-| [`parse_ref`](#correspond.ops.parse_ref)(ref, \*[, registry])                  | A reference normalised by its channel's adapter (kind and parent filled in, the id validated).                                                                          |
-| [`react`](#correspond.ops.react)(ref, message_id, reaction, \*[, ...])     | Add a reaction to a message (the channel's capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft's text.                  |
-| [`read`](#correspond.ops.read)(ref, \*[, since, limit, registry])         | The messages of a conversation, oldest first (`limit` keeps the most recent ones).                                                                                      |
-| [`send`](#correspond.ops.send)(ref, text, \*[, title, reply_to, ...])     | Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.         |
-| [`upload`](#correspond.ops.upload)(ref, name, data, \*[, media_type, ...])  | Send a file to a conversation.                                                                                                                                          |
-| [`verify`](#correspond.ops.verify)(channel, headers, body, \*[, registry])  | Grade an inbound delivery on `channel` from its headers and raw body.                                                                                                   |
-| [`window`](#correspond.ops.window)(messages, \*[, since, limit])            | Messages sent or edited at or after `since`, oldest first, keeping the last `limit`.                                                                                    |
-| [`with_final_cursor`](#correspond.ops.with_final_cursor)(events, final_cursor)         | Yield `events`, then hand `final_cursor` to [`listen()`](#correspond.ops.listen), so a quiet poll still moves the cursor forward.                  |
+| [`audience`](#correspond.ops.audience)(ref[, draft, registry])                   | Who can read a conversation, asked of its channel now.                                                                                                                  |
+|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`capabilities`](#correspond.ops.capabilities)(channel, \*[, registry])              | What a channel can do, graded, with its limits.                                                                                                                         |
+| [`edit`](#correspond.ops.edit)(ref, message_id, text, \*[, dry_run, ...])    | Replace the text of a message correspond's account wrote; the `before_send` check runs first, as for [`send()`](#correspond.ops.send).           |
+| [`get_channel`](#correspond.ops.get_channel)(name, \*[, registry])                  | The adapter registered under `name`; [`UnknownChannel`](correspond.errors.html.md#correspond.errors.UnknownChannel) says what to do if there is none. |
+| [`implemented`](#correspond.ops.implemented)(adapter)                               | The operations an adapter implements, in [`OPERATIONS`](correspond.model.html.md#correspond.model.OPERATIONS) order.                                 |
+| [`label`](#correspond.ops.label)(ref, labels, \*[, dry_run, registry, ...])   | Add `labels` to a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                   |
+| [`listen`](#correspond.ops.listen)(ref, \*[, cursors, limit, commit, ...])     | Events since the cursor stored for `ref`; each cursor is stored once the consumer moves past its event.                                                                 |
+| [`parse_ref`](#correspond.ops.parse_ref)(ref, \*[, registry])                     | A reference normalised by its channel's adapter (kind and parent filled in, the id validated).                                                                          |
+| [`react`](#correspond.ops.react)(ref, message_id, reaction, \*[, ...])        | Add a reaction to a message (the channel's capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft's text.                  |
+| [`read`](#correspond.ops.read)(ref, \*[, since, limit, registry])            | The messages of a conversation, oldest first (`limit` keeps the most recent ones).                                                                                      |
+| [`send`](#correspond.ops.send)(ref, text, \*[, title, reply_to, ...])        | Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.         |
+| [`unlabel`](#correspond.ops.unlabel)(ref, labels, \*[, dry_run, registry, ...]) | Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                              |
+| [`upload`](#correspond.ops.upload)(ref, name, data, \*[, media_type, ...])     | Send a file to a conversation.                                                                                                                                          |
+| [`verify`](#correspond.ops.verify)(channel, headers, body, \*[, registry])     | Grade an inbound delivery on `channel` from its headers and raw body.                                                                                                   |
+| [`window`](#correspond.ops.window)(messages, \*[, since, limit])               | Messages sent or edited at or after `since`, oldest first, keeping the last `limit`.                                                                                    |
+| [`with_final_cursor`](#correspond.ops.with_final_cursor)(events, final_cursor)            | Yield `events`, then hand `final_cursor` to [`listen()`](#correspond.ops.listen), so a quiet poll still moves the cursor forward.                  |
 
 ### Classes
 
@@ -63,9 +67,11 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 |---------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
 | [`Channel`](#correspond.ops.Channel)(\*args, \*\*kwargs)          | What every adapter has: a name, its capabilities, and the grammar of its conversation ids.             |
 | [`Editor`](#correspond.ops.Editor)(\*args, \*\*kwargs)           | Replace the text of a message correspond's account wrote.                                              |
+| [`Labeler`](#correspond.ops.Labeler)(\*args, \*\*kwargs)          | Add labels to a conversation, apart from its opening send.                                             |
 | [`Listener`](#correspond.ops.Listener)(\*args, \*\*kwargs)         | Events since `cursor`, oldest first, each carrying the cursor to resume after it.                      |
 | [`Reactor`](#correspond.ops.Reactor)(\*args, \*\*kwargs)          | Add a reaction to a message.                                                                           |
 | [`Reader`](#correspond.ops.Reader)(\*args, \*\*kwargs)           | Messages of a conversation, oldest first; `limit` keeps the most recent.                               |
+| [`Unlabeler`](#correspond.ops.Unlabeler)(\*args, \*\*kwargs)        | Remove labels from a conversation.                                                                     |
 | [`Uploader`](#correspond.ops.Uploader)(\*args, \*\*kwargs)         | Send a file to a conversation.                                                                         |
 | [`Verifier`](#correspond.ops.Verifier)(\*args, \*\*kwargs)         | Grade an inbound delivery (a webhook, a posted report) from its headers and raw body.                  |
 | [`Writer`](#correspond.ops.Writer)(\*args, \*\*kwargs)           | Send a draft to a conversation.                                                                        |
@@ -88,13 +94,19 @@ Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protoco
 
 Replace the text of a message correspond’s account wrote.
 
+### *class* correspond.ops.Labeler(\*args, \*\*kwargs)
+
+Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
+
+Add labels to a conversation, apart from its opening send.
+
 ### *class* correspond.ops.Listener(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
 
 Events since `cursor`, oldest first, each carrying the cursor to resume after it.
 
-### correspond.ops.PROTOCOLS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [type](https://docs.python.org/3/builtins/functions.html#type)]* *= {'audience': <class 'correspond.ops.AudienceReader'>, 'edit': <class 'correspond.ops.Editor'>, 'listen': <class 'correspond.ops.Listener'>, 'react': <class 'correspond.ops.Reactor'>, 'read': <class 'correspond.ops.Reader'>, 'send': <class 'correspond.ops.Writer'>, 'upload': <class 'correspond.ops.Uploader'>, 'verify': <class 'correspond.ops.Verifier'>}*
+### correspond.ops.PROTOCOLS *: [dict](https://docs.python.org/3/builtins/stdtypes.html#dict)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [type](https://docs.python.org/3/builtins/functions.html#type)]* *= {'audience': <class 'correspond.ops.AudienceReader'>, 'edit': <class 'correspond.ops.Editor'>, 'label': <class 'correspond.ops.Labeler'>, 'listen': <class 'correspond.ops.Listener'>, 'react': <class 'correspond.ops.Reactor'>, 'read': <class 'correspond.ops.Reader'>, 'send': <class 'correspond.ops.Writer'>, 'unlabel': <class 'correspond.ops.Unlabeler'>, 'upload': <class 'correspond.ops.Uploader'>, 'verify': <class 'correspond.ops.Verifier'>}*
 
 Operation name → the protocol an adapter implements to have it.
 
@@ -109,6 +121,12 @@ Add a reaction to a message.
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
 
 Messages of a conversation, oldest first; `limit` keeps the most recent.
+
+### *class* correspond.ops.Unlabeler(\*args, \*\*kwargs)
+
+Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
+
+Remove labels from a conversation.
 
 ### *class* correspond.ops.Uploader(\*args, \*\*kwargs)
 
@@ -168,6 +186,13 @@ The operations an adapter implements, in [`OPERATIONS`](correspond.model.html.md
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
 
+### correspond.ops.label(ref, labels, , dry_run=False, registry=None, before_send=None)
+
+Add `labels` to a conversation; the `before_send` check sees them, comma-joined, as the draft’s text.
+
+* **Return type:**
+  [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
+
 ### correspond.ops.listen(ref, , cursors=None, limit=None, commit=True, registry=None)
 
 Events since the cursor stored for `ref`; each cursor is stored once the consumer moves past its event.
@@ -214,6 +239,13 @@ gone out is confirmed by reading the conversation back, or refused as `unconfirm
 under the data root ([`correspond.stores.send_store()`](correspond.stores.html.md#correspond.stores.send_store)). A mapping with a
 `claim(key, record) -> bool` (as that store has) is exclusive across processes; a
 plain one is checked, then set, which covers one process.
+
+* **Return type:**
+  [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
+
+### correspond.ops.unlabel(ref, labels, , dry_run=False, registry=None, before_send=None)
+
+Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft’s text.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)

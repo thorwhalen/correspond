@@ -25,20 +25,22 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 | [`capabilities`](#correspond.tools.capabilities)(channel)                           | What a channel can do, graded per operation (full, partial, none), with its limits, rate limits and notes.                                                                                                     |
 | [`channels`](#correspond.tools.channels)()                                      | List the channels correspond knows: available, missing a module, planned (with its tracking issue), or registered from outside.                                                                                |
 | [`edit`](#correspond.tools.edit)(ref, message_id, text, \*[, dry_run])      | Replace the text of a message this account wrote (`message_id` as `read` shows it).                                                                                                                            |
+| [`label`](#correspond.tools.label)(ref, labels, \*[, dry_run])               | Add labels (comma-separated; a label name may not itself contain a comma) to a conversation (`capabilities` says whether a channel supports it).                                                               |
 | [`listen`](#correspond.tools.listen)(ref, \*[, limit, peek, data_dir])        | New activity on a conversation since the last listen (a first listen looks back a little).                                                                                                                     |
 | [`react`](#correspond.tools.react)(ref, message_id, reaction, \*[, dry_run]) | Add a reaction to a message (`capabilities` lists the reactions a channel accepts).                                                                                                                            |
 | [`read`](#correspond.tools.read)(ref, \*[, since, limit])                   | Read a conversation: messages oldest first, each with its author, authenticity grade, time and text.                                                                                                           |
 | [`ref`](#correspond.tools.ref)(ref)                                        | Parse and normalise a conversation reference (`<channel>:<id>`): its channel, id, kind, parent, and the canonical form, which parses back to the same reference.                                               |
 | [`requirements`](#correspond.tools.requirements)(channel)                           | What a channel needs (install command, binaries, platform, each setting and where to get it) and what is missing.                                                                                              |
 | [`send`](#correspond.tools.send)(ref, text, \*[, title, reply_to, ...])     | Send a message to a conversation.                                                                                                                                                                              |
+| [`unlabel`](#correspond.tools.unlabel)(ref, labels, \*[, dry_run])             | Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation.                                                                                                              |
 
-### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'capabilities': 'read', 'channels': 'read', 'edit': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'requirements': 'read', 'send': 'external'}*
+### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'capabilities': 'read', 'channels': 'read', 'edit': 'external', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'requirements': 'read', 'send': 'external', 'unlabel': 'external'}*
 
 What each tool touches, for surfaces deciding what to expose. `read` stays on this
 machine; `external-read` reads a remote service (`listen` also stores its cursor
 locally); `external` writes to a remote service, where people see it.
 
-### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>]*
+### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function label>, <function unlabel>]*
 
 Every tool, in the order surfaces list them.
 
@@ -66,6 +68,13 @@ List the channels correspond knows: available, missing a module, planned (with i
 ### correspond.tools.edit(ref, message_id, text, , dry_run=False)
 
 Replace the text of a message this account wrote (`message_id` as `read` shows it). Run it with `dry_run` first. The new text passes the before_send check, as for `send`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### correspond.tools.label(ref, labels, , dry_run=False)
+
+Add labels (comma-separated; a label name may not itself contain a comma) to a conversation (`capabilities` says whether a channel supports it). Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -108,6 +117,13 @@ What a channel needs (install command, binaries, platform, each setting and wher
 ### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, idempotency_key=None, dry_run=False)
 
 Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### correspond.tools.unlabel(ref, labels, , dry_run=False)
+
+Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation. Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

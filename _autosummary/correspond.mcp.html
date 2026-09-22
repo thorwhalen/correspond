@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=1fd71caa"></script>
+    <script src="../_static/documentation_options.js?v=bbaf98b3"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="correspond.idempotency" href="correspond.idempotency.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.6" />
+  <meta name="docsearch:version" content="0.0.7" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -413,8 +413,8 @@
 are named by <code class="docutils literal notranslate"><span class="pre">correspond.tools:&lt;name&gt;</span></code> reference, so the core never imports an MCP
 library. By default the server exposes only the tools that read (<code class="docutils literal notranslate"><span class="pre">channels</span></code>,
 <code class="docutils literal notranslate"><span class="pre">requirements</span></code>, <code class="docutils literal notranslate"><span class="pre">capabilities</span></code>, <code class="docutils literal notranslate"><span class="pre">ref</span></code>, <code class="docutils literal notranslate"><span class="pre">read</span></code>, <code class="docutils literal notranslate"><span class="pre">listen</span></code>, <code class="docutils literal notranslate"><span class="pre">audience</span></code>). The writes (<code class="docutils literal notranslate"><span class="pre">send</span></code>,
-<code class="docutils literal notranslate"><span class="pre">edit</span></code>, <code class="docutils literal notranslate"><span class="pre">react</span></code>) are exposed only when the operator starts it with <code class="docutils literal notranslate"><span class="pre">--allow-send</span></code>,
-and every write still takes <code class="docutils literal notranslate"><span class="pre">dry_run</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">edit</span></code>, <code class="docutils literal notranslate"><span class="pre">react</span></code>, <code class="docutils literal notranslate"><span class="pre">label</span></code>, <code class="docutils literal notranslate"><span class="pre">unlabel</span></code>) are exposed only when the operator starts it with
+<code class="docutils literal notranslate"><span class="pre">--allow-send</span></code>, and every write still takes <code class="docutils literal notranslate"><span class="pre">dry_run</span></code>.</p>
 <p>The data root is the server’s, never the model’s: <code class="docutils literal notranslate"><span class="pre">data_dir</span></code> is removed from every tool’s
 schema. Point the server elsewhere with <code class="docutils literal notranslate"><span class="pre">CORRESPOND_DATA_DIR</span></code> in the client configuration:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">"mcpServers"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"correspond"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"command"</span><span class="p">:</span> <span class="s2">"correspond-mcp"</span><span class="p">}}}</span>

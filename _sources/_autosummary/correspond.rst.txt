@@ -15,6 +15,7 @@
       check_requirements
       edit
       get_channel
+      label
       listen
       metadata_rule
       parse_ref
@@ -23,6 +24,7 @@
       register_channel
       route
       send
+      unlabel
       unregister_channel
       upload
       verify
@@ -44,6 +46,7 @@
       Event
       Grade
       HistoryDepth
+      Labeler
       Listener
       Message
       Reactor
@@ -52,6 +55,7 @@
       Scope
       SendResult
       Support
+      Unlabeler
       Uploader
       Verifier
       Writer

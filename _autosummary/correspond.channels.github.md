@@ -13,7 +13,8 @@ limit and never shows in the process table.
   requests, `listen` polls its issue and comment activity, `send` opens an issue (a
   title is required).
 - `github:owner/repo#N`: an issue, a pull request, or a discussion. GitHub numbers the
-  three in one sequence; correspond asks which.
+  three in one sequence; correspond asks which. `label` and `unlabel` work on an issue
+  or pull request only: GitHub discussions have categories, not labels.
 
 Message ids match the anchors in GitHub’s own URLs: `issue-N` (the opening post of issue
 or pull request N), `issuecomment-ID`, `discussion-N`, `discussioncomment-ID`.
@@ -95,6 +96,21 @@ Replace the body of an issue, a comment, a discussion or a discussion comment.
 * **Return type:**
   [`SendResult`](correspond.model.md#correspond.model.SendResult)
 
+#### label(ref, labels, , dry_run=False)
+
+Add labels to an issue or pull request (`POST .../labels`).
+
+GitHub creates a label that does not already exist in the repository rather than
+rejecting it, so `landed` in the plan is mostly a confirmation: the requested
+names the response’s own (now-current) label list actually carries, which is read
+back and reported the way an assignee is not (a login that is not a member of the
+repository is silently dropped from `assignees`; a label name never is). The
+response lists every label now on the issue, including ones this call never
+mentioned, so `landed` is filtered to the requested names, not the full list.
+
+* **Return type:**
+  [`SendResult`](correspond.model.md#correspond.model.SendResult)
+
 #### parse_ref(id)
 
 `owner/repo` or `owner/repo#N`, lower-cased (GitHub names are case-insensitive).
@@ -131,6 +147,18 @@ An issue, pull request or discussion with its comments; for a repository, recent
 #### send(ref, draft, , dry_run=False)
 
 Comment on an issue, pull request or discussion; on a repository, open an issue (`title` required).
+
+* **Return type:**
+  [`SendResult`](correspond.model.md#correspond.model.SendResult)
+
+#### unlabel(ref, labels, , dry_run=False)
+
+Remove labels from an issue or pull request.
+
+GitHub has no bulk removal: one `DELETE .../labels/{name}` per label. A label
+already absent from the issue answers 404 the same way a missing issue does, so the
+issue’s existence is checked first (`_require_issue()`) and every 404 after that
+is read as “was not on the issue”, not as an error.
 
 * **Return type:**
   [`SendResult`](correspond.model.md#correspond.model.SendResult)

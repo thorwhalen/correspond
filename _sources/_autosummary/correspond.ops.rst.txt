@@ -19,11 +19,13 @@ correspond.ops
       edit
       get_channel
       implemented
+      label
       listen
       parse_ref
       react
       read
       send
+      unlabel
       upload
       verify
       window
@@ -36,9 +38,11 @@ correspond.ops
       AudienceReader
       Channel
       Editor
+      Labeler
       Listener
       Reactor
       Reader
+      Unlabeler
       Uploader
       Verifier
       Writer
