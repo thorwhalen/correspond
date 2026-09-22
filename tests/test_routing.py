@@ -130,6 +130,34 @@ def test_bindings_are_checked_against_the_fields_a_channel_carries():
     assert check_binding("no channel here", registry=registry)
 
 
+def test_check_binding_flags_a_ref_not_in_the_channels_canonical_form():
+    """#24: GitHub refs are lower-cased by parse_ref, but binding_matches compares
+    the pattern literally -- a mis-cased binding looked valid and silently routed
+    nothing. check_binding now catches it at load time instead."""
+    from correspond.channels.github import GitHub
+    from correspond.routing import binding_matches, check_binding
+    from correspond.testing import demo_message
+
+    registry = {"github": GitHub()}
+
+    [problem] = check_binding("github:Example/App", registry=registry)
+    assert "not in canonical form" in problem
+    assert "github:example/app" in problem
+
+    # And it is not merely a lint nit: the mis-cased pattern really does never match --
+    # this is the silent-routing-failure check_binding exists to surface at load time.
+    message = demo_message(conversation="github:example/app#12")
+    assert binding_matches("github:Example/App", message) is None
+    assert binding_matches("github:example/app", message) is not None
+
+    # A wildcard ref is not checked for canonical form -- it cannot be re-parsed.
+    assert check_binding("github:Example/*", registry=registry) == []
+
+    # Already-canonical and unparseable refs raise no false positive.
+    assert check_binding("github:example/app", registry=registry) == []
+    assert check_binding("github:not a valid ref", registry=registry) == []
+
+
 def test_conditions_keep_plus_signs_and_undeclared_fields_are_not_checked():
     from correspond.model import Capabilities, Support
     from correspond.routing import binding_matches, check_binding
