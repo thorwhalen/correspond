@@ -20,6 +20,8 @@ KeyError: "store key '../elsewhere' must be /-separated names of letters, digits
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import re
 from collections.abc import Iterator, MutableMapping
@@ -31,10 +33,12 @@ from correspond import settings
 __all__ = [
     "QuotedKeys",
     "SafeKeys",
+    "SendStore",
     "bytes_store",
     "cursor_store",
     "json_store",
     "kind_dir",
+    "send_store",
     "text_store",
 ]
 
@@ -167,3 +171,99 @@ def cursor_store(
 ) -> MutableMapping[str, str]:
     """Listen cursors, keyed by encoded conversation reference, under ``<data root>/cursors/``."""
     return QuotedKeys(text_store("cursors", data_dir=data_dir), suffix=".txt")
+
+
+class SendStore(MutableMapping):
+    """Idempotency records keyed by any key, each in ``<folder>/<sha256 of the key>.json``, with an exclusive :meth:`claim`.
+
+    Hashing keeps every file name short and safe whatever the key (the record keeps the key
+    itself). The record file is its own claim: :meth:`claim` creates it with an exclusive
+    create and writes the record through the same handle, so of two processes claiming one
+    key at once exactly one wins, and no crash can leave a claim without a record. A key
+    whose record says ``failed`` may be claimed again. A record that cannot be read (a
+    crash while it was written) reads as an attempt of unknown outcome, dated by its file.
+
+    This is the contract :func:`correspond.send` relies on: a ``sends=`` mapping with a
+    ``claim(key, record) -> bool`` is exclusive across processes; a plain mapping is
+    checked, then set, which covers one process only.
+    """
+
+    def __init__(self, folder: str | os.PathLike):
+        self.folder = os.fspath(folder)
+
+    @staticmethod
+    def name(key: str) -> str:
+        """The file name that holds ``key``'s record."""
+        if not isinstance(key, str) or not key:
+            raise KeyError(f"key must be a non-empty string, not {key!r}")
+        return hashlib.sha256(key.encode("utf-8")).hexdigest() + ".json"
+
+    def _path(self, key: str) -> str:
+        return os.path.join(self.folder, self.name(key))
+
+    def _read(self, path: str, key: Any) -> dict:
+        try:
+            with open(path, encoding="utf-8") as file:
+                return json.load(file)
+        except FileNotFoundError:
+            raise KeyError(key) from None
+        except (OSError, ValueError):
+            from datetime import datetime, timezone
+
+            moment = datetime.fromtimestamp(os.path.getmtime(path), timezone.utc)
+            return {"key": key, "state": "attempted", "attempted_at": moment.isoformat()}
+
+    def __getitem__(self, key):
+        return self._read(self._path(key), key)
+
+    def __setitem__(self, key, value):
+        os.makedirs(self.folder, exist_ok=True)
+        path = self._path(key)
+        temporary = f"{path}.{os.getpid()}.tmp"
+        with open(temporary, "w", encoding="utf-8") as file:
+            json.dump(value, file)
+        os.replace(temporary, path)  # atomic: a reader never sees half a record
+
+    def __delitem__(self, key):
+        try:
+            os.remove(self._path(key))
+        except FileNotFoundError:
+            raise KeyError(key) from None
+
+    def __iter__(self) -> Iterator[str]:
+        if not os.path.isdir(self.folder):
+            return
+        for name in sorted(os.listdir(self.folder)):
+            if name.endswith(".json"):
+                yield self._read(os.path.join(self.folder, name), name).get("key", name)
+
+    def __len__(self) -> int:
+        if not os.path.isdir(self.folder):
+            return 0
+        return sum(1 for name in os.listdir(self.folder) if name.endswith(".json"))
+
+    def __contains__(self, key) -> bool:
+        try:
+            return os.path.exists(self._path(key))
+        except KeyError:
+            return False
+
+    def claim(self, key: str, record: Any) -> bool:
+        """Store ``record`` for ``key`` unless a record holds it (one saying ``failed`` does not); False, storing nothing, if one does."""
+        os.makedirs(self.folder, exist_ok=True)
+        path = self._path(key)
+        try:
+            handle = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            if self._read(path, key).get("state") != "failed":
+                return False
+            self[key] = record
+            return True
+        with os.fdopen(handle, "w", encoding="utf-8") as file:
+            json.dump(record, file)
+        return True
+
+
+def send_store(*, data_dir: str | os.PathLike | None = None) -> SendStore:
+    """What each idempotency key of :func:`correspond.send` did, under ``<data root>/sends/``."""
+    return SendStore(kind_dir("sends", data_dir=data_dir))
