@@ -405,6 +405,7 @@ class GitHub:
                 "listen can miss a change only when more than 2,000 issues or comments change within the same second",
                 "audience is the repository's readership and never complete (installed apps, webhooks and security managers cannot be listed); a 404 or 403 resolves to public",
                 "label and unlabel apply to issues and pull requests, not discussions (GitHub discussions have categories, not labels); listen does not yet surface who applied a label",
+                "label and unlabel each cost one extra read (confirming the issue exists, to tell a label the issue never had apart from a missing issue) before their writes",
             ),
         )
 
@@ -1382,10 +1383,12 @@ class GitHub:
         """Add labels to an issue or pull request (``POST .../labels``).
 
         GitHub creates a label that does not already exist in the repository rather than
-        rejecting it, so ``landed`` in the plan (the response's own label list) is mostly a
-        confirmation; it is still read back and reported, the way an assignee is not: a
-        login that is not a member of the repository is silently dropped, a label name
-        never is.
+        rejecting it, so ``landed`` in the plan is mostly a confirmation: the requested
+        names the response's own (now-current) label list actually carries, which is read
+        back and reported the way an assignee is not (a login that is not a member of the
+        repository is silently dropped from ``assignees``; a label name never is). The
+        response lists every label now on the issue, including ones this call never
+        mentioned, so ``landed`` is filtered to the requested names, not the full list.
         """
         owner, repo, number = self._parts(ref)
         if number is None:
@@ -1406,13 +1409,17 @@ class GitHub:
             return self._planned(ref, "label", plan)
         self._require_issue(owner, repo, number, "label")
         data = self._api(path, method="POST", payload={"labels": names}).json() or []
-        landed = [
+        # The response is every label now on the issue, not only the ones this call added
+        # (an issue can carry labels this request never mentioned): read back only the
+        # requested names, so `landed` reports this call's effect, not the issue's state.
+        now_on_issue = {
             item.get("name")
             for item in data
             if isinstance(item, dict) and item.get("name")
-        ]
+        }
+        landed = [name for name in names if name in now_on_issue]
         plan["landed"] = landed
-        missing = [name for name in names if name not in landed]
+        missing = [name for name in names if name not in now_on_issue]
         if missing:
             plan["not_applied"] = missing
         return self._done(ref.encoded, "label", f"issue-{number}", None, plan)

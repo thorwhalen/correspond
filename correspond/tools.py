@@ -448,13 +448,13 @@ def react(ref: str, message_id: str, reaction: str, *, dry_run: bool = False) ->
 
 @_as_result
 def label(ref: str, labels: str, *, dry_run: bool = False) -> dict:
-    """Add labels (comma-separated) to a conversation (`capabilities` says whether a channel supports it). Run it with `dry_run` first. It passes the before_send check, as for `send`."""
+    """Add labels (comma-separated; a label name may not itself contain a comma) to a conversation (`capabilities` says whether a channel supports it). Run it with `dry_run` first. It passes the before_send check, as for `send`."""
     return _write_result(ops.label(ref, _addresses(labels), dry_run=dry_run))
 
 
 @_as_result
 def unlabel(ref: str, labels: str, *, dry_run: bool = False) -> dict:
-    """Remove labels (comma-separated) from a conversation. Run it with `dry_run` first. It passes the before_send check, as for `send`."""
+    """Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation. Run it with `dry_run` first. It passes the before_send check, as for `send`."""
     return _write_result(ops.unlabel(ref, _addresses(labels), dry_run=dry_run))
 
 

@@ -525,6 +525,26 @@ def test_label_reports_a_label_the_response_did_not_include():
     assert result.ok and result.plan["not_applied"] == ["wontfix"]
 
 
+def test_label_landed_excludes_labels_the_issue_already_carried():
+    """The POST response is every label now on the issue, not only the ones this call added."""
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        (
+            "POST",
+            rf"repos/{REPO}/issues/1/labels",
+            (200, [{"name": "priority:high"}, {"name": "bug"}]),
+        ),
+    )
+    result = correspond.label(
+        f"github:{REPO}#1", ["bug"], registry={"github": GitHub(run=gh)}
+    )
+    assert result.ok
+    assert result.plan["landed"] == ["bug"]
+    assert "priority:high" not in result.plan["landed"]
+    assert "not_applied" not in result.plan
+
+
 def test_unlabel_removes_labels_one_call_each_and_tolerates_an_absent_one():
     gh = ScriptedGh(
         WHOAMI,
