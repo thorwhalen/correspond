@@ -124,7 +124,9 @@ def test_a_channel_that_cannot_be_read_back_confirms_nothing():
 
 def test_a_message_read_back_from_before_the_attempt_is_not_this_attempt(monkeypatch):
     channel, sends = _seeded(PostsThenFails, post=False), {}
-    FakeChannel.send(channel, channel.parse_ref("example/demo"), Draft(text=TEXT))  # an old copy
+    FakeChannel.send(
+        channel, channel.parse_ref("example/demo"), Draft(text=TEXT)
+    )  # an old copy
     monkeypatch.setattr(idempotency, "now", lambda: _EPOCH + timedelta(hours=1))
     _send(channel, sends=sends)
 
@@ -178,7 +180,9 @@ def test_a_dry_run_reads_the_store_and_writes_nothing():
     _send(channel, sends=sends)
     before = dict(sends)
     rehearsed = _send(channel, sends=sends, dry_run=True)
-    assert rehearsed.error_kind == "unconfirmed" and "reads" in rehearsed.plan["idempotency"]
+    assert (
+        rehearsed.error_kind == "unconfirmed" and "reads" in rehearsed.plan["idempotency"]
+    )
     assert sends == before and len(channel.sent) == 1
 
 
@@ -214,7 +218,9 @@ def test_the_default_store_keeps_keys_as_files_under_the_data_root(tmp_path):
     store = send_store()
     assert store["case-12/reply 3"]["state"] == SENT
     assert list((tmp_path / "data" / "sends").iterdir())
-    again = ops.send(REF, TEXT, registry={"fake": channel}, idempotency_key="case-12/reply 3")
+    again = ops.send(
+        REF, TEXT, registry={"fake": channel}, idempotency_key="case-12/reply 3"
+    )
     assert again.ok and len(channel.sent) == 1
 
 
@@ -222,7 +228,9 @@ def test_a_send_that_overlaps_another_with_the_same_key_posts_nothing():
     channel, sends, inner = _seeded(), {}, []
 
     def retry_while_checking(ref, draft, audience, **context):
-        if not inner:  # an MCP client that timed out retries while this call is in its check
+        if (
+            not inner
+        ):  # an MCP client that timed out retries while this call is in its check
             inner.append(_send(channel, sends=sends, before_send=lambda *a, **k: None))
 
     outer = _send(channel, sends=sends, before_send=retry_while_checking)
@@ -236,9 +244,41 @@ def test_the_default_store_claims_a_key_for_exactly_one_caller(tmp_path):
     store = send_store(data_dir=tmp_path)
     record = {"key": "k", "state": ATTEMPTED}
 
-    assert store.claim("k", record) and not store.claim("k", record)
-    store.release("k")
-    assert store.claim("k", {**record, "state": "again"}) and store["k"]["state"] == "again"
+    assert store.claim("k", record) and not store.claim("k", {**record, "state": "x"})
+    assert store["k"] == record
+    store["k"] = {**record, "state": FAILED}  # a refused write frees the key
+    assert (
+        store.claim("k", {**record, "state": "again"}) and store["k"]["state"] == "again"
+    )
+
+
+def test_a_record_left_half_written_reads_as_an_attempt_of_unknown_outcome(tmp_path):
+    store = send_store(data_dir=tmp_path)
+    folder = tmp_path / "sends"
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / store.name("k-1")).write_text('{"key": "k-1", "sta', encoding="utf-8")
+    channel = _seeded()
+
+    refused = _send(channel, sends=store)
+
+    assert store["k-1"]["state"] == ATTEMPTED and not store.claim("k-1", {})
+    assert refused.error_kind == "unconfirmed" and channel.sent == []
+    assert len(list(store)) == 1  # a corrupt record is listed, not raised
+
+
+def test_a_missing_requirement_raised_during_the_write_lets_the_key_be_used_again():
+    from correspond.errors import MissingRequirement
+
+    class NoToken(FakeChannel):
+        def send(self, ref, draft, *, dry_run=False):
+            if not dry_run:
+                raise MissingRequirement("fake", "no token", fix="set one")
+            return super().send(ref, draft, dry_run=True)
+
+    sends = {}
+    assert not _send(_seeded(NoToken), sends=sends).ok
+    assert sends["k-1"]["state"] == FAILED
+    assert _send(_seeded(), sends=sends).ok
 
 
 @pytest.mark.parametrize("key", ["/" * 128, "é" * 128, "case-12/reply 3"])
@@ -261,7 +301,13 @@ def test_a_mistake_raised_during_the_write_lets_the_key_be_used_again():
 
     channel, sends = _seeded(RefusesReplies), {}
     with pytest.raises(NotSupported):
-        ops.send(REF, Draft(text=TEXT, reply_to="m1"), registry={"fake": channel}, idempotency_key="k", sends=sends)
+        ops.send(
+            REF,
+            Draft(text=TEXT, reply_to="m1"),
+            registry={"fake": channel},
+            idempotency_key="k",
+            sends=sends,
+        )
     assert sends["k"]["state"] == FAILED
 
 
@@ -271,7 +317,9 @@ def test_a_platform_validation_error_after_the_claim_is_not_taken_as_nothing_pos
     _send(channel, sends=sends)
 
     assert sends["k-1"]["state"] == ATTEMPTED
-    assert _send(channel, sends=sends).ok and len(channel.sent) == 1  # confirmed by read-back
+    assert (
+        _send(channel, sends=sends).ok and len(channel.sent) == 1
+    )  # confirmed by read-back
 
 
 def test_a_failed_key_is_still_bound_to_its_message():
@@ -304,7 +352,10 @@ def test_a_replay_keeps_the_plan_of_the_send_it_replays():
 
     again = _send(channel, sends=sends)
 
-    assert "before_send" in first.plan and again.plan["before_send"] == first.plan["before_send"]
+    assert (
+        "before_send" in first.plan
+        and again.plan["before_send"] == first.plan["before_send"]
+    )
 
 
 def test_the_send_tool_passes_its_key_through():

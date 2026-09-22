@@ -42,7 +42,13 @@ from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
 from correspond import idempotency
-from correspond.errors import ChannelError, InvalidRef, NotSupported, UnknownChannel
+from correspond.errors import (
+    ChannelError,
+    InvalidRef,
+    MissingRequirement,
+    NotSupported,
+    UnknownChannel,
+)
 from correspond.idempotency import (
     FAILED,
     NOTHING_POSTED_KINDS,
@@ -563,7 +569,9 @@ def send(
     answers that send's result and posts nothing, and one whose earlier attempt may have
     gone out is confirmed by reading the conversation back, or refused as ``unconfirmed``
     (:mod:`correspond.idempotency`). ``sends`` is where keys are kept: by default files
-    under the data root (:func:`correspond.stores.send_store`).
+    under the data root (:func:`correspond.stores.send_store`). A mapping with a
+    ``claim(key, record) -> bool`` (as that store has) is exclusive across processes; a
+    plain one is checked, then set, which covers one process.
     """
     cc, bcc = tuple(cc), tuple(bcc)
     if isinstance(text, Draft) and (title or reply_to or priority or cc or bcc):
@@ -639,11 +647,8 @@ def _claim(sends: MutableMapping[str, Any], key: str, record: Mapping[str, Any])
 def _release(
     sends: MutableMapping[str, Any], key: str, record: Mapping[str, Any]
 ) -> None:
-    """Settle ``key`` as :data:`~correspond.idempotency.FAILED` and let it be claimed again."""
+    """Settle ``key`` as :data:`~correspond.idempotency.FAILED`, which lets it be claimed again."""
     sends[key] = record
-    release = getattr(sends, "release", None)
-    if callable(release):
-        release(key)
 
 
 def _claiming(
@@ -661,7 +666,7 @@ def _claiming(
     retry that overlapped this call), nothing is written, and ``taken()`` answers instead.
     A failure the platform reported before accepting anything
     (:data:`~correspond.idempotency.NOTHING_POSTED_KINDS`), and a mistake correspond raises
-    before contacting it (``NotSupported``, ``InvalidRef``), settle the key
+    before contacting it (``NotSupported``, ``InvalidRef``, ``MissingRequirement``), settle the key
     :data:`~correspond.idempotency.FAILED`; any other failure, and anything else raised,
     leaves it claimed, its outcome unknown.
     """
@@ -682,7 +687,9 @@ def _claiming(
         try:
             result = write(False)
         except ChannelError as error:
-            if error.kind in NOTHING_POSTED_KINDS:
+            if error.kind in NOTHING_POSTED_KINDS or isinstance(
+                error, MissingRequirement
+            ):
                 _release(sends, key, settled(record, FAILED, {"error_kind": error.kind}))
             raise
         except (NotSupported, InvalidRef) as error:
@@ -718,7 +725,8 @@ def _earlier_send(
     if record is None:
         return None
     base = {"channel": adapter.name, "conversation": ref.encoded, "dry_run": dry_run}
-    if record.get("fingerprint") != fingerprint(ref.encoded, draft):
+    bound_to = record.get("fingerprint")
+    if bound_to is not None and bound_to != fingerprint(ref.encoded, draft):
         return SendResult(
             ok=False,
             **base,
