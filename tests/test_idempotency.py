@@ -3,6 +3,7 @@
 Every channel here is in memory (correspond.testing); nothing leaves the process.
 """
 
+from dataclasses import replace
 from datetime import timedelta
 
 import pytest
@@ -215,3 +216,106 @@ def test_the_default_store_keeps_keys_as_files_under_the_data_root(tmp_path):
     assert list((tmp_path / "data" / "sends").iterdir())
     again = ops.send(REF, TEXT, registry={"fake": channel}, idempotency_key="case-12/reply 3")
     assert again.ok and len(channel.sent) == 1
+
+
+def test_a_send_that_overlaps_another_with_the_same_key_posts_nothing():
+    channel, sends, inner = _seeded(), {}, []
+
+    def retry_while_checking(ref, draft, audience, **context):
+        if not inner:  # an MCP client that timed out retries while this call is in its check
+            inner.append(_send(channel, sends=sends, before_send=lambda *a, **k: None))
+
+    outer = _send(channel, sends=sends, before_send=retry_while_checking)
+
+    assert inner[0].ok and outer.ok and len(channel.sent) == 1
+    assert outer.message_id == inner[0].message_id
+    assert sends["k-1"]["state"] == SENT
+
+
+def test_the_default_store_claims_a_key_for_exactly_one_caller(tmp_path):
+    store = send_store(data_dir=tmp_path)
+    record = {"key": "k", "state": ATTEMPTED}
+
+    assert store.claim("k", record) and not store.claim("k", record)
+    store.release("k")
+    assert store.claim("k", {**record, "state": "again"}) and store["k"]["state"] == "again"
+
+
+@pytest.mark.parametrize("key", ["/" * 128, "é" * 128, "case-12/reply 3"])
+def test_any_accepted_key_is_kept_under_a_short_safe_file_name(tmp_path, key):
+    channel, store = _seeded(), send_store(data_dir=tmp_path)
+
+    assert _send(channel, sends=store, key=key).ok
+    assert list(store) == [key] and store[key]["state"] == SENT
+    assert _send(channel, sends=store, key=key).ok and len(channel.sent) == 1
+
+
+def test_a_mistake_raised_during_the_write_lets_the_key_be_used_again():
+    from correspond.errors import NotSupported
+
+    class RefusesReplies(FakeChannel):
+        def send(self, ref, draft, *, dry_run=False):
+            if not dry_run and draft.reply_to:
+                raise NotSupported("reply", self.name)
+            return super().send(ref, draft, dry_run=dry_run)
+
+    channel, sends = _seeded(RefusesReplies), {}
+    with pytest.raises(NotSupported):
+        ops.send(REF, Draft(text=TEXT, reply_to="m1"), registry={"fake": channel}, idempotency_key="k", sends=sends)
+    assert sends["k"]["state"] == FAILED
+
+
+def test_a_platform_validation_error_after_the_claim_is_not_taken_as_nothing_posted():
+    channel, sends = _seeded(PostsThenFails, kind="validation"), {}
+
+    _send(channel, sends=sends)
+
+    assert sends["k-1"]["state"] == ATTEMPTED
+    assert _send(channel, sends=sends).ok and len(channel.sent) == 1  # confirmed by read-back
+
+
+def test_a_failed_key_is_still_bound_to_its_message():
+    channel, sends = _seeded(PostsThenFails, kind="rate_limited", post=False), {}
+    _send(channel, sends=sends)
+
+    other = _send(channel, "Another message.", sends=sends)
+
+    assert other.error_kind == "validation" and channel.sent == []
+
+
+def test_a_message_confirmed_by_reading_back_names_its_own_conversation():
+    from correspond.model import ConversationRef
+
+    class OpensElsewhere(PostsThenFails):
+        def read(self, ref, *, since=None, limit=None):
+            messages = super().read(ref, since=since, limit=limit)
+            moved = ConversationRef(channel="fake", id="example/demo#7", kind="thread")
+            return [replace(m, conversation=moved) for m in messages]
+
+    channel, sends = _seeded(OpensElsewhere), {}
+    _send(channel, sends=sends)
+
+    assert _send(channel, sends=sends).conversation == "fake:example/demo#7"
+
+
+def test_a_replay_keeps_the_plan_of_the_send_it_replays():
+    channel, sends = _seeded(), {}
+    first = _send(channel, sends=sends)
+
+    again = _send(channel, sends=sends)
+
+    assert "before_send" in first.plan and again.plan["before_send"] == first.plan["before_send"]
+
+
+def test_the_send_tool_passes_its_key_through():
+    from correspond import registry, tools
+
+    channel = registry.register_channel(_seeded(), replace=True)
+    try:
+        first = tools.send(REF, TEXT, idempotency_key="tool-k")
+        again = tools.send(REF, TEXT, idempotency_key="tool-k")
+    finally:
+        registry.unregister_channel("fake")
+
+    assert first["ok"] and again["ok"] and len(channel.sent) == 1
+    assert again["plan"]["idempotency_key"] == "tool-k"

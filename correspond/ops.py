@@ -42,7 +42,7 @@ from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
 
 from correspond import idempotency
-from correspond.errors import ChannelError, NotSupported, UnknownChannel
+from correspond.errors import ChannelError, InvalidRef, NotSupported, UnknownChannel
 from correspond.idempotency import (
     FAILED,
     NOTHING_POSTED_KINDS,
@@ -599,8 +599,15 @@ def send(
         earlier = _earlier_send(adapter, ref, draft, key, sends, dry_run=dry_run)
         if earlier is not None:
             return earlier
-        write = _claiming(write, key, fingerprint(ref.encoded, draft), ref, sends)
-    return _checked_write(
+        write = _claiming(
+            write,
+            key,
+            ref,
+            sends,
+            bound_to=fingerprint(ref.encoded, draft),
+            taken=lambda: _earlier_send(adapter, ref, draft, key, sends, dry_run=False),
+        )
+    result = _checked_write(
         adapter,
         ref,
         "send",
@@ -610,34 +617,81 @@ def send(
         registry=registry,
         write=write,
     )
+    if key is not None and not dry_run and result.ok:
+        record = sends.get(key)
+        if record and record.get("state") == SENT and "idempotency" not in result.plan:
+            sends[key] = settled(record, SENT, result.to_dict())  # with the check's lines
+    return result
+
+
+def _claim(sends: MutableMapping[str, Any], key: str, record: Mapping[str, Any]) -> bool:
+    """Store ``record`` for ``key`` unless someone holds it; the store's own exclusive ``claim`` when it has one."""
+    claim = getattr(sends, "claim", None)
+    if callable(claim):
+        return bool(claim(key, record))
+    current = sends.get(key)
+    if current is not None and current.get("state") != FAILED:
+        return False
+    sends[key] = record
+    return True
+
+
+def _release(
+    sends: MutableMapping[str, Any], key: str, record: Mapping[str, Any]
+) -> None:
+    """Settle ``key`` as :data:`~correspond.idempotency.FAILED` and let it be claimed again."""
+    sends[key] = record
+    release = getattr(sends, "release", None)
+    if callable(release):
+        release(key)
 
 
 def _claiming(
     write: Callable[[bool], SendResult],
     key: str,
-    bound_to: str,
     ref: ConversationRef,
     sends: MutableMapping[str, Any],
+    *,
+    bound_to: str,
+    taken: Callable[[], SendResult | None],
 ) -> Callable[[bool], SendResult]:
-    """``write`` with ``key`` claimed in ``sends`` before the real write, and settled after it.
+    """``write`` with ``key`` claimed in ``sends`` right before the real write, and settled after it.
 
-    The rehearsal claims nothing. A failure the platform reported before accepting anything
-    settles the key :data:`~correspond.idempotency.FAILED`; any other failure, and anything
-    else raised, leaves it claimed, its outcome unknown.
+    The rehearsal claims nothing. When someone claimed the key since it was first read (a
+    retry that overlapped this call), nothing is written, and ``taken()`` answers instead.
+    A failure the platform reported before accepting anything
+    (:data:`~correspond.idempotency.NOTHING_POSTED_KINDS`), and a mistake correspond raises
+    before contacting it (``NotSupported``, ``InvalidRef``), settle the key
+    :data:`~correspond.idempotency.FAILED`; any other failure, and anything else raised,
+    leaves it claimed, its outcome unknown.
     """
 
     def claiming_write(rehearse: bool) -> SendResult:
         if rehearse:
             return write(True)
         record = claimed(key, ref.encoded, fingerprint=bound_to, at=idempotency.now())
-        sends[key] = record
+        if not _claim(sends, key, record):
+            return taken() or SendResult(
+                ok=False,
+                channel=ref.channel,
+                conversation=ref.encoded,
+                plan={"idempotency_key": key},
+                error=f"another send with the idempotency key {key!r} is under way",
+                error_kind="unconfirmed",
+            )
         try:
             result = write(False)
         except ChannelError as error:
             if error.kind in NOTHING_POSTED_KINDS:
-                sends[key] = settled(record, FAILED, {"error_kind": error.kind})
+                _release(sends, key, settled(record, FAILED, {"error_kind": error.kind}))
             raise
-        sends[key] = settled(record, SENT if result.ok else FAILED, result.to_dict())
+        except (NotSupported, InvalidRef) as error:
+            _release(sends, key, settled(record, FAILED, {"error": str(error)}))
+            raise
+        if result.ok:
+            sends[key] = settled(record, SENT, result.to_dict())
+        else:
+            _release(sends, key, settled(record, FAILED, result.to_dict()))
         return result
 
     return claiming_write
@@ -661,7 +715,7 @@ def _earlier_send(
     run reads nothing back and writes nothing.
     """
     record = sends.get(key)
-    if record is None or record.get("state") == FAILED:
+    if record is None:
         return None
     base = {"channel": adapter.name, "conversation": ref.encoded, "dry_run": dry_run}
     if record.get("fingerprint") != fingerprint(ref.encoded, draft):
@@ -675,6 +729,8 @@ def _earlier_send(
             ),
             error_kind="validation",
         )
+    if record.get("state") == FAILED:
+        return None
     if record.get("state") == SENT:
         earlier = SendResult.from_dict(record.get("result") or {**base, "ok": True})
         plan = {
@@ -686,8 +742,8 @@ def _earlier_send(
         }
         return dataclasses.replace(earlier, dry_run=dry_run, plan=plan)
     check_it = (
-        f"an earlier send with the idempotency key {key!r} failed at "
-        f"{record.get('attempted_at')} and may have gone out"
+        f"an earlier send with the idempotency key {key!r} (attempted at "
+        f"{record.get('attempted_at')}) failed or has not finished, and may have gone out"
     )
     if dry_run:
         return SendResult(
@@ -714,7 +770,7 @@ def _earlier_send(
         )
     result = SendResult(
         ok=True,
-        **base,
+        **{**base, "conversation": found.conversation.encoded},
         message_id=found.id,
         url=found.url,
         plan={

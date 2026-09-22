@@ -20,6 +20,7 @@ KeyError: "store key '../elsewhere' must be /-separated names of letters, digits
 
 from __future__ import annotations
 
+import hashlib
 import os
 import re
 from collections.abc import Iterator, MutableMapping
@@ -31,6 +32,7 @@ from correspond import settings
 __all__ = [
     "QuotedKeys",
     "SafeKeys",
+    "SendStore",
     "bytes_store",
     "cursor_store",
     "json_store",
@@ -170,6 +172,72 @@ def cursor_store(
     return QuotedKeys(text_store("cursors", data_dir=data_dir), suffix=".txt")
 
 
-def send_store(*, data_dir: str | os.PathLike | None = None) -> MutableMapping[str, Any]:
+class SendStore(MutableMapping):
+    """Idempotency records keyed by any key, each in ``<sha256 of the key>.json``, with an exclusive :meth:`claim`.
+
+    Hashing keeps every file name short and safe whatever the key (the record keeps the key
+    itself). :meth:`claim` creates a ``.claim`` marker with an exclusive create, so of two
+    processes claiming one key at once exactly one wins; :meth:`release` removes it, so a
+    key whose write the platform refused can be claimed again.
+    """
+
+    def __init__(self, files: MutableMapping[str, Any], folder: str | os.PathLike):
+        self.files, self.folder = files, folder
+
+    @staticmethod
+    def name(key: str) -> str:
+        """The file stem that holds ``key``'s record."""
+        if not isinstance(key, str) or not key:
+            raise KeyError(f"key must be a non-empty string, not {key!r}")
+        return hashlib.sha256(key.encode("utf-8")).hexdigest()
+
+    def __getitem__(self, key):
+        return self.files[self.name(key) + ".json"]
+
+    def __setitem__(self, key, value):
+        self.files[self.name(key) + ".json"] = value
+
+    def __delitem__(self, key):
+        del self.files[self.name(key) + ".json"]
+        self.release(key)
+
+    def __iter__(self) -> Iterator[str]:
+        for name in list(self.files):
+            if name.endswith(".json"):
+                yield self.files[name].get("key", name)
+
+    def __len__(self) -> int:
+        return sum(1 for name in self.files if name.endswith(".json"))
+
+    def __contains__(self, key) -> bool:
+        try:
+            return self.name(key) + ".json" in self.files
+        except KeyError:
+            return False
+
+    def _marker(self, key: str) -> str:
+        return os.path.join(os.fspath(self.folder), self.name(key) + ".claim")
+
+    def claim(self, key: str, record: Any) -> bool:
+        """Store ``record`` for ``key`` if no one holds the key; False, storing nothing, if someone does."""
+        os.makedirs(self.folder, exist_ok=True)
+        try:
+            os.close(os.open(self._marker(key), os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+        except FileExistsError:
+            return False
+        self[key] = record
+        return True
+
+    def release(self, key: str) -> None:
+        """Let ``key`` be claimed again."""
+        try:
+            os.remove(self._marker(key))
+        except FileNotFoundError:
+            pass
+
+
+def send_store(*, data_dir: str | os.PathLike | None = None) -> SendStore:
     """What each idempotency key of :func:`correspond.send` did, under ``<data root>/sends/``."""
-    return QuotedKeys(json_store("sends", data_dir=data_dir), suffix=".json")
+    return SendStore(
+        json_store("sends", data_dir=data_dir), kind_dir("sends", data_dir=data_dir)
+    )

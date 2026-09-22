@@ -19,7 +19,11 @@ each key did:
   Found, that message is the result, and nothing is posted. Not found, or not readable, the
   send is not made: it fails with ``error_kind="unconfirmed"``, saying to check the
   conversation, since a reader may not show a message that did go out (an email's inbox
-  does not list what was sent). The caller who has checked sends with a new key;
+  does not list what was sent, and Telegram's posted text starts with the title). The
+  caller who has checked sends with a new key;
+- a second send with a key another one claimed meanwhile (a retry that overlapped the
+  first) writes nothing: the default store claims a key with an exclusive create, so of
+  two processes exactly one sends;
 - a key used again for another conversation or another draft is refused (``validation``).
 
 A dry run reads the store and writes nothing. Nothing is added to the text posted.
@@ -66,9 +70,9 @@ STATES = (ATTEMPTED, SENT, FAILED)
 
 #: The ``error_kind`` of failures that mean the platform accepted nothing, so a new try is safe.
 #: A network failure and an unavailable platform are not among them: the post may have landed.
-NOTHING_POSTED_KINDS = frozenset(
-    {"auth", "permission", "not_found", "validation", "rate_limited"}
-)
+#: ``validation`` is not among them either: a platform can report an error with no type
+#: after it committed the write (GitHub's GraphQL mutations do on a timeout).
+NOTHING_POSTED_KINDS = frozenset({"auth", "permission", "not_found", "rate_limited"})
 
 #: How far before an attempt a message read back may be dated and still be that attempt's:
 #: the platform's clock and this machine's differ.
@@ -136,7 +140,7 @@ def matching_message(
         for m in messages
         if m.author.is_self and m.sent_at >= earliest and (m.text or "").strip() == text
     ]
-    return found[-1] if found else None
+    return max(found, key=lambda m: m.sent_at) if found else None
 
 
 def now() -> datetime:
