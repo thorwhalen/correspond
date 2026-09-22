@@ -1,0 +1,31 @@
+# correspond
+
+> A channel facade for AI agents: read, listen, write and identify the sender over GitHub, email, push notifications, Telegram and a web inbox.
+
+
+## Pages in this subsection
+
+- [correspond](correspond.html.md): correspond: a channel facade for AI agents.
+- [correspond.channels](correspond.channels.html.md): The built-in channel adapters, one module each.
+- [correspond.channels.github](correspond.channels.github.html.md): GitHub: issues, pull request conversations and discussions, through the &#96;gh&#96; CLI.
+- [correspond.channels.macos](correspond.channels.macos.html.md): macOS Notification Centre: a banner on this Mac (send only).
+- [correspond.channels.mail](correspond.channels.mail.html.md): Email: IMAP to read and listen, SMTP to send, with the standard library.
+- [correspond.channels.ntfy](correspond.channels.ntfy.html.md): ntfy: push notifications to a phone or a desktop through an ntfy server (send only).
+- [correspond.channels.telegram](correspond.channels.telegram.html.md): Telegram: a bot over the Bot API, with the standard library.
+- [correspond.channels.webinbox](correspond.channels.webinbox.html.md): The web inbox: a small ASGI collector web pages post reports to, and the channel that reads them.
+- [correspond.errors](correspond.errors.html.md): What correspond raises, and the vocabulary a failed write reports.
+- [correspond.mcp](correspond.mcp.html.md): MCP over stdio: the same tools, for Claude Desktop and other local MCP clients.
+- [correspond.model](correspond.model.html.md): The data model every channel is described in.
+- [correspond.ops](correspond.ops.html.md): The operations: small protocols an adapter implements a subset of, and the verbs that call them.
+- [correspond.outbound](correspond.outbound.html.md): The &#96;before_send&#96; check: what every write runs, with the conversation’s audience, before anything le...
+- [correspond.registry](correspond.registry.html.md): Which channels exist: the built-in channel table, the registry built from it, and what each channel ...
+- [correspond.render](correspond.render.html.md): Turning a tool’s result into terminal output: &#96;(stdout, stderr, exit code)&#96;.
+- [correspond.routing](correspond.routing.html.md): Deciding what a message is about: a transparent rule chain.
+- [correspond.settings](correspond.settings.html.md): Where correspond keeps state and reads configuration, and how it finds a secret.
+- [correspond.stores](correspond.stores.html.md): The state stores: listen cursors, the web inbox’s reports and blobs, the Telegram log.
+- [correspond.testing](correspond.testing.html.md): An in-memory channel for tests and rehearsals, and &#96;python -m correspond.testing&#96;: the CLI with it r...
+- [correspond.tools](correspond.tools.html.md): The single source of truth for every surface: plain functions, flat arguments in, JSON-ready dicts o...
+
+## Optional
+
+- [Top-level llms.txt](../llms.txt): Complete documentation index.

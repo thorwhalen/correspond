@@ -1,4 +1,4 @@
-> built 2026-09-15 13:25 UTC from aeec9a3 (main) · correspond 0.0.4. Details: build_info.json
+> built 2026-09-22 13:41 UTC from 655256e (main) · correspond 0.0.5. Details: build_info.json
 
 # index.html.md
 
@@ -1689,10 +1689,15 @@ The process registry: built on first use, then shared.
 
 What would make a binding never match, found when bindings are loaded instead of by messages quietly going unrouted.
 
-Reports a pattern without a channel, an unknown channel, and a condition on a field the
-channel’s messages never carry (its `native_fields`, plus `author` and `grade`). A
-channel written as a wildcard, or one that does not declare its fields
-(`native_fields` is `None`), is not checked for fields.
+Reports a pattern without a channel, an unknown channel, a ref that is not in the
+channel’s canonical form (e.g. GitHub references are lower-cased by
+[`parse_ref()`](_autosummary/correspond.channels.github.html.md#correspond.channels.github.GitHub.parse_ref), so `binding_matches`, which
+compares the pattern literally, never matches a differently-cased pattern against it),
+and a condition on a field the channel’s messages never carry (its `native_fields`,
+plus `author` and `grade`). A channel written as a wildcard, or one that does not
+declare its fields (`native_fields` is `None`), is not checked for fields. A ref
+with wildcards, or one the channel’s own parser rejects outright, is not checked for
+canonical form – a malformed ref is a different problem than a mis-cased one.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
@@ -1703,6 +1708,8 @@ channel written as a wildcard, or one that does not declare its fields
 []
 >>> check_binding("github:example/app?label=bug", registry={"github": GitHub()})[0].split(":")[0]
 'the condition label=bug never matches'
+>>> check_binding("github:Example/App", registry={"github": GitHub()})
+["github:Example/App is not in canonical form: github references are normalised to 'github:example/app'; binding_matches compares refs literally, so this pattern will not match github:example/app"]
 ```
 
 ### correspond.check_requirements(channel, \*, registry=None, config=None, run=<function run>)
@@ -3016,10 +3023,15 @@ The reason `pattern` matches `message`, or `None`.
 
 What would make a binding never match, found when bindings are loaded instead of by messages quietly going unrouted.
 
-Reports a pattern without a channel, an unknown channel, and a condition on a field the
-channel’s messages never carry (its `native_fields`, plus `author` and `grade`). A
-channel written as a wildcard, or one that does not declare its fields
-(`native_fields` is `None`), is not checked for fields.
+Reports a pattern without a channel, an unknown channel, a ref that is not in the
+channel’s canonical form (e.g. GitHub references are lower-cased by
+[`parse_ref()`](_autosummary/correspond.channels.github.html.md#correspond.channels.github.GitHub.parse_ref), so `binding_matches`, which
+compares the pattern literally, never matches a differently-cased pattern against it),
+and a condition on a field the channel’s messages never carry (its `native_fields`,
+plus `author` and `grade`). A channel written as a wildcard, or one that does not
+declare its fields (`native_fields` is `None`), is not checked for fields. A ref
+with wildcards, or one the channel’s own parser rejects outright, is not checked for
+canonical form – a malformed ref is a different problem than a mis-cased one.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
@@ -3030,6 +3042,8 @@ channel written as a wildcard, or one that does not declare its fields
 []
 >>> check_binding("github:example/app?label=bug", registry={"github": GitHub()})[0].split(":")[0]
 'the condition label=bug never matches'
+>>> check_binding("github:Example/App", registry={"github": GitHub()})
+["github:Example/App is not in canonical form: github references are normalised to 'github:example/app'; binding_matches compares refs literally, so this pattern will not match github:example/app"]
 ```
 
 ### correspond.routing.metadata_rule(target, , name=None, \*\*conditions)
@@ -3474,7 +3488,7 @@ Send a message to a conversation. Run it with `dry_run` first and show the plan,
 
 # About this build
 
-This documentation was built on **2026-09-15 13:25 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/aeec9a3d71723ee5b5e50bc55c643fbc60616d13"><code>aeec9a3</code></a> on branch <code>main</code>, for **correspond 0.0.4** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-09-22 13:41 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/655256e40faba496c7e086e7566748792b5779da"><code>655256e</code></a> on branch <code>main</code>, for **correspond 0.0.5** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -3483,7 +3497,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/aeec9a3d71723ee5b5e50bc55c643fbc60616d13"><code>aeec9a3d71723ee5b5e50bc55c643fbc60616d13</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/655256e40faba496c7e086e7566748792b5779da"><code>655256e40faba496c7e086e7566748792b5779da</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -3494,9 +3508,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/34974722222">34974722222</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/35735005113">35735005113</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>aeec9a3d71723ee5b5e50bc55c643fbc60616d13</code> (in the history of the built commit)  |
+| Event commit | <code>655256e40faba496c7e086e7566748792b5779da</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -3521,13 +3535,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.4/">0.0.4</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.5/">0.0.5</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout aeec9a3d71723ee5b5e50bc55c643fbc60616d13
+git checkout 655256e40faba496c7e086e7566748792b5779da
 pip install "epythet==0.2.12"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

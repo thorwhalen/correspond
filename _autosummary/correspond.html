@@ -10,6 +10,8 @@
 
 <link rel="alternate" type="text/markdown" href="correspond.html.md">
 <link rel="describedby" href="../llms.txt" type="text/markdown">
+<link rel="alternate" type="text/markdown" href="correspond.html.md">
+<link rel="describedby" href="llms.txt">
     <title>correspond &#8212; correspond</title>
   
   
@@ -42,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=8c5712d9"></script>
+    <script src="../_static/documentation_options.js?v=282f96c0"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -55,7 +57,7 @@
     <link rel="prev" title="API reference" href="../api.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.4" />
+  <meta name="docsearch:version" content="0.0.5" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -1333,10 +1335,15 @@ right before sending.</p>
 <dt class="sig sig-object py" id="correspond.check_binding">
 <span class="sig-prename descclassname"><span class="pre">correspond.</span></span><span class="sig-name descname"><span class="pre">check_binding</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pattern</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/routing.html#check_binding"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.check_binding" title="Link to this definition">#</a></dt>
 <dd><p>What would make a binding never match, found when bindings are loaded instead of by messages quietly going unrouted.</p>
-<p>Reports a pattern without a channel, an unknown channel, and a condition on a field the
-channel’s messages never carry (its <code class="docutils literal notranslate"><span class="pre">native_fields</span></code>, plus <code class="docutils literal notranslate"><span class="pre">author</span></code> and <code class="docutils literal notranslate"><span class="pre">grade</span></code>). A
-channel written as a wildcard, or one that does not declare its fields
-(<code class="docutils literal notranslate"><span class="pre">native_fields</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>), is not checked for fields.</p>
+<p>Reports a pattern without a channel, an unknown channel, a ref that is not in the
+channel’s canonical form (e.g. GitHub references are lower-cased by
+<a class="reference internal" href="correspond.channels.github.html#correspond.channels.github.GitHub.parse_ref" title="correspond.channels.github.GitHub.parse_ref"><code class="xref py py-meth docutils literal notranslate"><span class="pre">parse_ref()</span></code></a>, so <code class="docutils literal notranslate"><span class="pre">binding_matches</span></code>, which
+compares the pattern literally, never matches a differently-cased pattern against it),
+and a condition on a field the channel’s messages never carry (its <code class="docutils literal notranslate"><span class="pre">native_fields</span></code>,
+plus <code class="docutils literal notranslate"><span class="pre">author</span></code> and <code class="docutils literal notranslate"><span class="pre">grade</span></code>). A channel written as a wildcard, or one that does not
+declare its fields (<code class="docutils literal notranslate"><span class="pre">native_fields</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>), is not checked for fields. A ref
+with wildcards, or one the channel’s own parser rejects outright, is not checked for
+canonical form – a malformed ref is a different problem than a mis-cased one.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>]</span></p>
@@ -1347,6 +1354,8 @@ channel written as a wildcard, or one that does not declare its fields
 <span class="go">[]</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">check_binding</span><span class="p">(</span><span class="s2">"github:example/app?label=bug"</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="p">{</span><span class="s2">"github"</span><span class="p">:</span> <span class="n">GitHub</span><span class="p">()})[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">":"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 <span class="go">'the condition label=bug never matches'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">check_binding</span><span class="p">(</span><span class="s2">"github:Example/App"</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="p">{</span><span class="s2">"github"</span><span class="p">:</span> <span class="n">GitHub</span><span class="p">()})</span>
+<span class="go">["github:Example/App is not in canonical form: github references are normalised to 'github:example/app'; binding_matches compares refs literally, so this pattern will not match github:example/app"]</span>
 </pre></div>
 </div>
 </dd></dl>

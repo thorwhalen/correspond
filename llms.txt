@@ -6,10 +6,10 @@
 ## Pages
 
 - [correspond](index.html.md): A channel facade for AI agents: read, listen, write and identify the sender over GitHub, email, push...
-- [API reference](api.html.md): | [`correspond`](_autosummary/correspond.html.md#module-correspond)   | correspond: a channel facade...
+- [API reference](api.html.md): | &#96;correspond&#96;   | correspond: a channel facade for AI agents.   |
 - [correspond](_autosummary/correspond.html.md): correspond: a channel facade for AI agents.
 - [correspond.channels](_autosummary/correspond.channels.html.md): The built-in channel adapters, one module each.
-- [correspond.channels.github](_autosummary/correspond.channels.github.html.md): GitHub: issues, pull request conversations and discussions, through the `gh` CLI.
+- [correspond.channels.github](_autosummary/correspond.channels.github.html.md): GitHub: issues, pull request conversations and discussions, through the &#96;gh&#96; CLI.
 - [correspond.channels.macos](_autosummary/correspond.channels.macos.html.md): macOS Notification Centre: a banner on this Mac (send only).
 - [correspond.channels.mail](_autosummary/correspond.channels.mail.html.md): Email: IMAP to read and listen, SMTP to send, with the standard library.
 - [correspond.channels.ntfy](_autosummary/correspond.channels.ntfy.html.md): ntfy: push notifications to a phone or a desktop through an ntfy server (send only).
@@ -19,20 +19,20 @@
 - [correspond.mcp](_autosummary/correspond.mcp.html.md): MCP over stdio: the same tools, for Claude Desktop and other local MCP clients.
 - [correspond.model](_autosummary/correspond.model.html.md): The data model every channel is described in.
 - [correspond.ops](_autosummary/correspond.ops.html.md): The operations: small protocols an adapter implements a subset of, and the verbs that call them.
-- [correspond.outbound](_autosummary/correspond.outbound.html.md): The `before_send` check: what every write runs, with the conversation’s audience, before anything le...
+- [correspond.outbound](_autosummary/correspond.outbound.html.md): The &#96;before_send&#96; check: what every write runs, with the conversation’s audience, before anything le...
 - [correspond.registry](_autosummary/correspond.registry.html.md): Which channels exist: the built-in channel table, the registry built from it, and what each channel ...
-- [correspond.render](_autosummary/correspond.render.html.md): Turning a tool’s result into terminal output: `(stdout, stderr, exit code)`.
+- [correspond.render](_autosummary/correspond.render.html.md): Turning a tool’s result into terminal output: &#96;(stdout, stderr, exit code)&#96;.
 - [correspond.routing](_autosummary/correspond.routing.html.md): Deciding what a message is about: a transparent rule chain.
 - [correspond.settings](_autosummary/correspond.settings.html.md): Where correspond keeps state and reads configuration, and how it finds a secret.
 - [correspond.stores](_autosummary/correspond.stores.html.md): The state stores: listen cursors, the web inbox’s reports and blobs, the Telegram log.
-- [correspond.testing](_autosummary/correspond.testing.html.md): An in-memory channel for tests and rehearsals, and `python -m correspond.testing`: the CLI with it r...
+- [correspond.testing](_autosummary/correspond.testing.html.md): An in-memory channel for tests and rehearsals, and &#96;python -m correspond.testing&#96;: the CLI with it r...
 - [correspond.tools](_autosummary/correspond.tools.html.md): The single source of truth for every surface: plain functions, flat arguments in, JSON-ready dicts o...
-- [For AI agents](ai-agents.html.md): `correspond` ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on **2026-09-15 13:25 UTC** from commit <a href="https://github.com/tho...
+- [For AI agents](ai-agents.html.md): &#96;correspond&#96; ships artifacts for coding agents alongside its code. This page lists
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-09-22 13:41 UTC&#42;&#42; from commit &lt;a href="https://github.com/tho...
 
----
+## Optional
 
-For more comprehensive documentation, see [correspond.md](correspond.md)
+- [correspond.md](correspond.md): Complete documentation in a single file.
 
 ## Build
 

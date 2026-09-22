@@ -83,10 +83,15 @@ The reason `pattern` matches `message`, or `None`.
 
 What would make a binding never match, found when bindings are loaded instead of by messages quietly going unrouted.
 
-Reports a pattern without a channel, an unknown channel, and a condition on a field the
-channel’s messages never carry (its `native_fields`, plus `author` and `grade`). A
-channel written as a wildcard, or one that does not declare its fields
-(`native_fields` is `None`), is not checked for fields.
+Reports a pattern without a channel, an unknown channel, a ref that is not in the
+channel’s canonical form (e.g. GitHub references are lower-cased by
+[`parse_ref()`](correspond.channels.github.html.md#correspond.channels.github.GitHub.parse_ref), so `binding_matches`, which
+compares the pattern literally, never matches a differently-cased pattern against it),
+and a condition on a field the channel’s messages never carry (its `native_fields`,
+plus `author` and `grade`). A channel written as a wildcard, or one that does not
+declare its fields (`native_fields` is `None`), is not checked for fields. A ref
+with wildcards, or one the channel’s own parser rejects outright, is not checked for
+canonical form – a malformed ref is a different problem than a mis-cased one.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
@@ -97,6 +102,8 @@ channel written as a wildcard, or one that does not declare its fields
 []
 >>> check_binding("github:example/app?label=bug", registry={"github": GitHub()})[0].split(":")[0]
 'the condition label=bug never matches'
+>>> check_binding("github:Example/App", registry={"github": GitHub()})
+["github:Example/App is not in canonical form: github references are normalised to 'github:example/app'; binding_matches compares refs literally, so this pattern will not match github:example/app"]
 ```
 
 ### correspond.routing.metadata_rule(target, , name=None, \*\*conditions)
