@@ -19,7 +19,7 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 
 | Channel | References | Operations | Built on |
 |---|---|---|---|
-| `github` | `github:owner/repo`, `github:owner/repo#12` | read, listen (issues and comments), send, edit, react, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
+| `github` | `github:owner/repo`, `github:owner/repo#12` | read, listen (issues and comments), send, edit, react, label, unlabel, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
 | `email` | `email:` (the folder), `email:someone@example.org` | read, listen, send (with cc and bcc), audience | `imaplib`, `smtplib` |
 | `ntfy` | `ntfy:` (the default topic), `ntfy:<topic>` | send, audience | `urllib` |
 | `macos` | `macos:` | send, audience | `terminal-notifier` or `osascript` |

@@ -46,12 +46,14 @@ __all__ = [
     "capabilities",
     "channels",
     "edit",
+    "label",
     "listen",
     "react",
     "read",
     "ref",
     "requirements",
     "send",
+    "unlabel",
 ]
 
 
@@ -304,7 +306,7 @@ def _audience_text(found: Audience) -> str:
 
 
 def _addresses(text: str | None) -> tuple[str, ...]:
-    """A comma-separated list of recipients, as a tuple."""
+    """A comma-separated list, as a tuple (recipients, labels, …)."""
     return tuple(part.strip() for part in (text or "").split(",") if part.strip())
 
 
@@ -346,6 +348,8 @@ _DONE = {
     "send": "sent to {target}",
     "edit": "edited {id} in {target}",
     "react": "reacted to {id} in {target}",
+    "label": "labelled {target}",
+    "unlabel": "unlabelled {target}",
 }
 
 #: How a write the ``before_send`` check stopped is summarised, by ``error_kind``.
@@ -442,6 +446,18 @@ def react(ref: str, message_id: str, reaction: str, *, dry_run: bool = False) ->
     return _write_result(ops.react(ref, message_id, reaction, dry_run=dry_run))
 
 
+@_as_result
+def label(ref: str, labels: str, *, dry_run: bool = False) -> dict:
+    """Add labels (comma-separated) to a conversation (`capabilities` says whether a channel supports it). Run it with `dry_run` first. It passes the before_send check, as for `send`."""
+    return _write_result(ops.label(ref, _addresses(labels), dry_run=dry_run))
+
+
+@_as_result
+def unlabel(ref: str, labels: str, *, dry_run: bool = False) -> dict:
+    """Remove labels (comma-separated) from a conversation. Run it with `dry_run` first. It passes the before_send check, as for `send`."""
+    return _write_result(ops.unlabel(ref, _addresses(labels), dry_run=dry_run))
+
+
 #: Every tool, in the order surfaces list them.
 TOOLS = [
     channels,
@@ -454,6 +470,8 @@ TOOLS = [
     send,
     edit,
     react,
+    label,
+    unlabel,
 ]
 
 #: What each tool touches, for surfaces deciding what to expose. ``read`` stays on this
@@ -470,4 +488,6 @@ SIDE_EFFECTS = {
     "send": "external",
     "edit": "external",
     "react": "external",
+    "label": "external",
+    "unlabel": "external",
 }

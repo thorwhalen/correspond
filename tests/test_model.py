@@ -226,7 +226,7 @@ def test_native_fields_are_declared_or_none():
 
 
 def test_capabilities_grade_audience_and_records_without_it_still_load():
-    assert OPERATIONS[-1] == "audience"
+    assert "audience" in OPERATIONS
     caps = Capabilities(channel="x", audience="full")
     assert caps.supports("audience") is Support.FULL and caps.operations == ("audience",)
     older = caps.to_dict()

@@ -11,7 +11,8 @@ References:
   requests, ``listen`` polls its issue and comment activity, ``send`` opens an issue (a
   title is required).
 - ``github:owner/repo#N``: an issue, a pull request, or a discussion. GitHub numbers the
-  three in one sequence; correspond asks which.
+  three in one sequence; correspond asks which. ``label`` and ``unlabel`` work on an issue
+  or pull request only: GitHub discussions have categories, not labels.
 
 Message ids match the anchors in GitHub's own URLs: ``issue-N`` (the opening post of issue
 or pull request N), ``issuecomment-ID``, ``discussion-N``, ``discussioncomment-ID``.
@@ -44,6 +45,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from typing import Any
+from urllib.parse import quote
 
 from correspond.channels._http import classify, retry_after_seconds
 from correspond.errors import (
@@ -369,6 +371,8 @@ class GitHub:
             react=Support.FULL,
             verify=Support.FULL,
             audience=Support.FULL,
+            label=Support.FULL,
+            unlabel=Support.FULL,
             initiate=Support.FULL,
             reply=Support.PARTIAL,
             history_depth=HistoryDepth.FULL,
@@ -400,6 +404,7 @@ class GitHub:
                 "pull request review comments on diffs are not read",
                 "listen can miss a change only when more than 2,000 issues or comments change within the same second",
                 "audience is the repository's readership and never complete (installed apps, webhooks and security managers cannot be listed); a 404 or 403 resolves to public",
+                "label and unlabel apply to issues and pull requests, not discussions (GitHub discussions have categories, not labels); listen does not yet surface who applied a label",
             ),
         )
 
@@ -1349,6 +1354,106 @@ class GitHub:
                 },
             )
         return self._done(ref.encoded, "react", message_id, None, plan)
+
+    def _require_issue(self, owner: str, repo: str, number: int, operation: str) -> None:
+        """Raise unless ``#number`` is an issue or pull request: GitHub discussions have categories, not labels."""
+        probe = self._api(f"repos/{owner}/{repo}/issues/{number}", allow=(404, 410))
+        if probe.status < 400:
+            return
+        self._discussion_id(
+            owner, repo, number
+        )  # raises not_found when there is nothing at all
+        raise NotSupported(
+            operation,
+            NAME,
+            alternatives=("labels apply to issues and pull requests, not discussions",),
+        )
+
+    @staticmethod
+    def _labels(labels: Iterable[str]) -> list[str]:
+        names = [str(name).strip() for name in labels]
+        if not all(names):
+            raise ChannelError("a label name is empty", kind="validation")
+        return list(dict.fromkeys(names))  # de-duplicated, order kept
+
+    def label(
+        self, ref: ConversationRef, labels: Iterable[str], *, dry_run: bool = False
+    ) -> SendResult:
+        """Add labels to an issue or pull request (``POST .../labels``).
+
+        GitHub creates a label that does not already exist in the repository rather than
+        rejecting it, so ``landed`` in the plan (the response's own label list) is mostly a
+        confirmation; it is still read back and reported, the way an assignee is not: a
+        login that is not a member of the repository is silently dropped, a label name
+        never is.
+        """
+        owner, repo, number = self._parts(ref)
+        if number is None:
+            raise ChannelError(
+                f"labels apply to an issue or pull request: github:{owner}/{repo}#N",
+                kind="validation",
+            )
+        names = self._labels(labels)
+        target = f"{owner}/{repo}#{number}"
+        path = f"repos/{owner}/{repo}/issues/{number}/labels"
+        plan = {
+            "action": "add labels",
+            "target": target,
+            "request": f"POST {path}",
+            "labels": names,
+        }
+        if dry_run:
+            return self._planned(ref, "label", plan)
+        self._require_issue(owner, repo, number, "label")
+        data = self._api(path, method="POST", payload={"labels": names}).json() or []
+        landed = [
+            item.get("name")
+            for item in data
+            if isinstance(item, dict) and item.get("name")
+        ]
+        plan["landed"] = landed
+        missing = [name for name in names if name not in landed]
+        if missing:
+            plan["not_applied"] = missing
+        return self._done(ref.encoded, "label", f"issue-{number}", None, plan)
+
+    def unlabel(
+        self, ref: ConversationRef, labels: Iterable[str], *, dry_run: bool = False
+    ) -> SendResult:
+        """Remove labels from an issue or pull request.
+
+        GitHub has no bulk removal: one ``DELETE .../labels/{name}`` per label. A label
+        already absent from the issue answers 404 the same way a missing issue does, so the
+        issue's existence is checked first (:meth:`_require_issue`) and every 404 after that
+        is read as "was not on the issue", not as an error.
+        """
+        owner, repo, number = self._parts(ref)
+        if number is None:
+            raise ChannelError(
+                f"labels apply to an issue or pull request: github:{owner}/{repo}#N",
+                kind="validation",
+            )
+        names = self._labels(labels)
+        target = f"{owner}/{repo}#{number}"
+        plan = {
+            "action": "remove labels",
+            "target": target,
+            "request": f"DELETE repos/{owner}/{repo}/issues/{number}/labels/{{label}}, one call per label",
+            "labels": names,
+        }
+        if dry_run:
+            return self._planned(ref, "unlabel", plan)
+        self._require_issue(owner, repo, number, "unlabel")
+        removed: list[str] = []
+        already_absent: list[str] = []
+        for name in names:
+            path = f"repos/{owner}/{repo}/issues/{number}/labels/{quote(name, safe='')}"
+            reply = self._api(path, method="DELETE", allow=(404,))
+            (already_absent if reply.status == 404 else removed).append(name)
+        plan["removed"] = removed
+        if already_absent:
+            plan["already_absent"] = already_absent
+        return self._done(ref.encoded, "unlabel", f"issue-{number}", None, plan)
 
     # ----------------------------------------------------------------- verifying
 

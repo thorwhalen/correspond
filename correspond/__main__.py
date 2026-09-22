@@ -63,6 +63,16 @@ HELP = {
         "reaction": {"help": "the reaction, e.g. +1 or eyes (see capabilities)"},
         "dry_run": _DRY_RUN,
     },
+    "label": {
+        "ref": _REF,
+        "labels": {"help": "comma-separated labels to add"},
+        "dry_run": _DRY_RUN,
+    },
+    "unlabel": {
+        "ref": _REF,
+        "labels": {"help": "comma-separated labels to remove"},
+        "dry_run": _DRY_RUN,
+    },
 }
 
 

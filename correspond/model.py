@@ -67,7 +67,18 @@ __all__ = [
 ]
 
 #: The operations, in the order capabilities and surfaces list them.
-OPERATIONS = ("read", "listen", "send", "edit", "react", "upload", "verify", "audience")
+OPERATIONS = (
+    "read",
+    "listen",
+    "send",
+    "edit",
+    "react",
+    "upload",
+    "verify",
+    "audience",
+    "label",
+    "unlabel",
+)
 #: Whose name a write goes out under.
 ACTS_AS = ("bot", "user", "app", "service")
 #: What an :class:`Event` reports.
@@ -564,7 +575,8 @@ class Capabilities:
     """What a channel can do, graded, with its limits.
 
     One ``Support`` per operation in :data:`OPERATIONS` (``audience``: can the channel say
-    who reads a conversation), plus four features of writing:
+    who reads a conversation; ``label`` / ``unlabel``: can labels be added to or removed
+    from a conversation, apart from its opening send), plus four features of writing:
     ``initiate`` (can a write start a conversation; Telegram bots cannot), ``reply``
     (can a draft answer a specific message), ``priority``, and ``cc`` (can a draft copy
     further recipients, ``Draft.cc`` and ``Draft.bcc``). ``history_depth`` says how
@@ -582,6 +594,8 @@ class Capabilities:
     upload: Support = Support.NONE
     verify: Support = Support.NONE
     audience: Support = Support.NONE
+    label: Support = Support.NONE
+    unlabel: Support = Support.NONE
     initiate: Support = Support.NONE
     reply: Support = Support.NONE
     priority: Support = Support.NONE

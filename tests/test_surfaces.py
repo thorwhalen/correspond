@@ -23,8 +23,10 @@ TOOL_NAMES = [
     "send",
     "edit",
     "react",
+    "label",
+    "unlabel",
 ]
-WRITES = {"send", "edit", "react"}
+WRITES = {"send", "edit", "react", "label", "unlabel"}
 SURFACE_LIBS = {
     "argh",
     "cw",
