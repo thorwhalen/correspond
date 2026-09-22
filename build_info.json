@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-09-22T13:41:51Z",
+  "built_at": "2026-09-22T13:45:33Z",
   "package": {
     "name": "correspond",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "display_name": "correspond",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "655256e40faba496c7e086e7566748792b5779da",
-    "short_commit": "655256e",
+    "commit": "de3100037a7bf92ab3fd4fef415639c87541b229",
+    "short_commit": "de31000",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/thorwhalen/correspond",
-    "commit_url": "https://github.com/thorwhalen/correspond/commit/655256e40faba496c7e086e7566748792b5779da",
+    "commit_url": "https://github.com/thorwhalen/correspond/commit/de3100037a7bf92ab3fd4fef415639c87541b229",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "thorwhalen/correspond",
-    "sha": "655256e40faba496c7e086e7566748792b5779da",
+    "sha": "de3100037a7bf92ab3fd4fef415639c87541b229",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "35735005113",
-    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/35735005113",
+    "run_id": "35735423703",
+    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/35735423703",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -55,19 +55,21 @@
     "docs_dir": "docsrc"
   },
   "site": {
-    "modules_documented": 20,
-    "objects_documented": 305
+    "modules_documented": 21,
+    "objects_documented": 322
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.5",
-    "relation": "same",
+    "latest": "0.0.7",
+    "relation": "behind",
     "error": null
   },
-  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout 655256e40faba496c7e086e7566748792b5779da\npip install \"epythet==0.2.12\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout de3100037a7bf92ab3fd4fef415639c87541b229\npip install \"epythet==0.2.12\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": true,
-    "notes": []
+    "aligned": false,
+    "notes": [
+      "The documented version (0.0.6) is behind the latest release on PyPI (0.0.7): `pip install correspond` gives newer code than these docs describe."
+    ]
   }
 }

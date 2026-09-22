@@ -14,6 +14,7 @@
 - [correspond.channels.telegram](correspond.channels.telegram.html.md): Telegram: a bot over the Bot API, with the standard library.
 - [correspond.channels.webinbox](correspond.channels.webinbox.html.md): The web inbox: a small ASGI collector web pages post reports to, and the channel that reads them.
 - [correspond.errors](correspond.errors.html.md): What correspond raises, and the vocabulary a failed write reports.
+- [correspond.idempotency](correspond.idempotency.html.md): Idempotent sends: an &#96;idempotency_key&#96; keeps a message from going out twice.
 - [correspond.mcp](correspond.mcp.html.md): MCP over stdio: the same tools, for Claude Desktop and other local MCP clients.
 - [correspond.model](correspond.model.html.md): The data model every channel is described in.
 - [correspond.ops](correspond.ops.html.md): The operations: small protocols an adapter implements a subset of, and the verbs that call them.

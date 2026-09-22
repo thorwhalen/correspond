@@ -12,6 +12,7 @@ correspond.stores
       cursor_store
       json_store
       kind_dir
+      send_store
       text_store
    
    .. rubric:: Classes
@@ -20,4 +21,5 @@ correspond.stores
    
       QuotedKeys
       SafeKeys
+      SendStore
    

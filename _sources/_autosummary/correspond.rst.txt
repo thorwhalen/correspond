@@ -78,6 +78,7 @@
 
    channels
    errors
+   idempotency
    mcp
    model
    ops

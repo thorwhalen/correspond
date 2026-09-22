@@ -25,6 +25,9 @@ nothing; the only call it makes is the audience lookup.
 [`audience()`](#correspond.ops.audience) is the exception to refusing: it never raises, because an audience
 nobody can compute is public.
 
+[`send()`](#correspond.ops.send) takes an `idempotency_key`: the same key again posts nothing a second time,
+even after a send that went out and then reported a failure ([`correspond.idempotency`](correspond.idempotency.html.md#module-correspond.idempotency)).
+
 Before every write ([`send()`](#correspond.ops.send), [`edit()`](#correspond.ops.edit), [`react()`](#correspond.ops.react), [`upload()`](#correspond.ops.upload)), and in its
 dry run, the `before_send` check runs with the conversation’s audience
 ([`correspond.outbound`](correspond.outbound.html.md#module-correspond.outbound)). Its verdict and the audience in words go into the plan, and a
@@ -196,13 +199,21 @@ The messages of a conversation, oldest first (`limit` keeps the most recent ones
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Message`](correspond.model.html.md#correspond.model.Message)]
 
-### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), dry_run=False, registry=None, before_send=None)
+### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
 `cc` and `bcc` copy further recipients, on channels that grade `cc` (email).
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](correspond.outbound.html.md#correspond.outbound.notice).
+
+`idempotency_key` makes sending the same message again safe: a key that already sent
+answers that send’s result and posts nothing, and one whose earlier attempt may have
+gone out is confirmed by reading the conversation back, or refused as `unconfirmed`
+([`correspond.idempotency`](correspond.idempotency.html.md#module-correspond.idempotency)). `sends` is where keys are kept: by default files
+under the data root ([`correspond.stores.send_store()`](correspond.stores.html.md#correspond.stores.send_store)). A mapping with a
+`claim(key, record) -> bool` (as that store has) is exclusive across processes; a
+plain one is checked, then set, which covers one process.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)

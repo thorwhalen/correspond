@@ -735,13 +735,21 @@ Run the chain (bindings, thread continuity, metadata rules, classifier) and retu
 * **Return type:**
   [`RouteDecision`](correspond.routing.md#correspond.routing.RouteDecision) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), dry_run=False, registry=None, before_send=None)
+### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](correspond.model.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
 `cc` and `bcc` copy further recipients, on channels that grade `cc` (email).
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](correspond.outbound.md#correspond.outbound.notice).
+
+`idempotency_key` makes sending the same message again safe: a key that already sent
+answers that send’s result and posts nothing, and one whose earlier attempt may have
+gone out is confirmed by reading the conversation back, or refused as `unconfirmed`
+([`correspond.idempotency`](correspond.idempotency.md#module-correspond.idempotency)). `sends` is where keys are kept: by default files
+under the data root ([`correspond.stores.send_store()`](correspond.stores.md#correspond.stores.send_store)). A mapping with a
+`claim(key, record) -> bool` (as that store has) is exclusive across processes; a
+plain one is checked, then set, which covers one process.
 
 * **Return type:**
   [`SendResult`](correspond.model.md#correspond.model.SendResult)
@@ -769,17 +777,18 @@ Grade an inbound delivery on `channel` from its headers and raw body.
 
 ### Modules
 
-| [`channels`](correspond.channels.md#module-correspond.channels)   | The built-in channel adapters, one module each.                                                                |
-|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| [`errors`](correspond.errors.md#module-correspond.errors)       | What correspond raises, and the vocabulary a failed write reports.                                             |
-| [`mcp`](correspond.mcp.md#module-correspond.mcp)             | MCP over stdio: the same tools, for Claude Desktop and other local MCP clients.                                |
-| [`model`](correspond.model.md#module-correspond.model)         | The data model every channel is described in.                                                                  |
-| [`ops`](correspond.ops.md#module-correspond.ops)             | The operations: small protocols an adapter implements a subset of, and the verbs that call them.               |
-| [`outbound`](correspond.outbound.md#module-correspond.outbound)   | The `before_send` check: what every write runs, with the conversation's audience, before anything leaves.      |
-| [`registry`](correspond.registry.md#module-correspond.registry)   | Which channels exist: the built-in channel table, the registry built from it, and what each channel needs.     |
-| [`render`](correspond.render.md#module-correspond.render)       | Turning a tool's result into terminal output: `(stdout, stderr, exit code)`.                                   |
-| [`routing`](correspond.routing.md#module-correspond.routing)     | Deciding what a message is about: a transparent rule chain.                                                    |
-| [`settings`](correspond.settings.md#module-correspond.settings)   | Where correspond keeps state and reads configuration, and how it finds a secret.                               |
-| [`stores`](correspond.stores.md#module-correspond.stores)       | The state stores: listen cursors, the web inbox's reports and blobs, the Telegram log.                         |
-| [`testing`](correspond.testing.md#module-correspond.testing)     | An in-memory channel for tests and rehearsals, and `python -m correspond.testing`: the CLI with it registered. |
-| [`tools`](correspond.tools.md#module-correspond.tools)         | The single source of truth for every surface: plain functions, flat arguments in, JSON-ready dicts out.        |
+| [`channels`](correspond.channels.md#module-correspond.channels)       | The built-in channel adapters, one module each.                                                                |
+|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| [`errors`](correspond.errors.md#module-correspond.errors)           | What correspond raises, and the vocabulary a failed write reports.                                             |
+| [`idempotency`](correspond.idempotency.md#module-correspond.idempotency) | Idempotent sends: an `idempotency_key` keeps a message from going out twice.                                   |
+| [`mcp`](correspond.mcp.md#module-correspond.mcp)                 | MCP over stdio: the same tools, for Claude Desktop and other local MCP clients.                                |
+| [`model`](correspond.model.md#module-correspond.model)             | The data model every channel is described in.                                                                  |
+| [`ops`](correspond.ops.md#module-correspond.ops)                 | The operations: small protocols an adapter implements a subset of, and the verbs that call them.               |
+| [`outbound`](correspond.outbound.md#module-correspond.outbound)       | The `before_send` check: what every write runs, with the conversation's audience, before anything leaves.      |
+| [`registry`](correspond.registry.md#module-correspond.registry)       | Which channels exist: the built-in channel table, the registry built from it, and what each channel needs.     |
+| [`render`](correspond.render.md#module-correspond.render)           | Turning a tool's result into terminal output: `(stdout, stderr, exit code)`.                                   |
+| [`routing`](correspond.routing.md#module-correspond.routing)         | Deciding what a message is about: a transparent rule chain.                                                    |
+| [`settings`](correspond.settings.md#module-correspond.settings)       | Where correspond keeps state and reads configuration, and how it finds a secret.                               |
+| [`stores`](correspond.stores.md#module-correspond.stores)           | The state stores: listen cursors, the web inbox's reports and blobs, the Telegram log.                         |
+| [`testing`](correspond.testing.md#module-correspond.testing)         | An in-memory channel for tests and rehearsals, and `python -m correspond.testing`: the CLI with it registered. |
+| [`tools`](correspond.tools.md#module-correspond.tools)             | The single source of truth for every surface: plain functions, flat arguments in, JSON-ready dicts out.        |

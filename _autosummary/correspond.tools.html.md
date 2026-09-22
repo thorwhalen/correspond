@@ -105,9 +105,9 @@ What a channel needs (install command, binaries, platform, each setting and wher
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, dry_run=False)
+### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, idempotency_key=None, dry_run=False)
 
-Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
+Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

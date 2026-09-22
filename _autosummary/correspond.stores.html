@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../_static/documentation_options.js?v=282f96c0"></script>
+    <script src="../_static/documentation_options.js?v=1fd71caa"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
     <link rel="prev" title="correspond.settings" href="correspond.settings.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.5" />
+  <meta name="docsearch:version" content="0.0.6" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -329,6 +329,7 @@
 </ul>
 </details></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.errors.html">correspond.errors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.idempotency.html">correspond.idempotency</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.mcp.html">correspond.mcp</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.model.html">correspond.model</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.ops.html">correspond.ops</a></li>
@@ -439,7 +440,10 @@ outside the store’s folder:</p>
 <tr class="row-even"><td><p><a class="reference internal" href="#correspond.stores.kind_dir" title="correspond.stores.kind_dir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kind_dir</span></code></a>(kind, *[, data_dir])</p></td>
 <td><p>The folder for one kind of state under the data root.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.text_store" title="correspond.stores.text_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">text_store</span></code></a>(kind, *[, data_dir])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.send_store" title="correspond.stores.send_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">send_store</span></code></a>(*[, data_dir])</p></td>
+<td><p>What each idempotency key of <a class="reference internal" href="correspond.html#correspond.send" title="correspond.send"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.send()</span></code></a> did, under <code class="docutils literal notranslate"><span class="pre">&lt;data</span> <span class="pre">root&gt;/sends/</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.stores.text_store" title="correspond.stores.text_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">text_store</span></code></a>(kind, *[, data_dir])</p></td>
 <td><p>Text files under <code class="docutils literal notranslate"><span class="pre">&lt;data</span> <span class="pre">root&gt;/&lt;kind&gt;/</span></code>.</p></td>
 </tr>
 </tbody>
@@ -453,6 +457,9 @@ outside the store’s folder:</p>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#correspond.stores.SafeKeys" title="correspond.stores.SafeKeys"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SafeKeys</span></code></a>(store)</p></td>
 <td><p>A mapping whose keys must be relative paths of plain names (no <code class="docutils literal notranslate"><span class="pre">..</span></code>, no absolute paths).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.SendStore" title="correspond.stores.SendStore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SendStore</span></code></a>(folder)</p></td>
+<td><p>Idempotency records keyed by any key, each in <code class="docutils literal notranslate"><span class="pre">&lt;folder&gt;/&lt;sha256</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">key&gt;.json</span></code>, with an exclusive <code class="xref py py-meth docutils literal notranslate"><span class="pre">claim()</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
@@ -483,6 +490,46 @@ outside the store’s folder:</p>
 <dt class="sig sig-object py" id="correspond.stores.SafeKeys.check">
 <span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">check</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#SafeKeys.check"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.SafeKeys.check" title="Link to this definition">#</a></dt>
 <dd><p><code class="docutils literal notranslate"><span class="pre">key</span></code> if it is a safe relative path, else <code class="docutils literal notranslate"><span class="pre">KeyError</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.stores.SendStore">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.stores.</span></span><span class="sig-name descname"><span class="pre">SendStore</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">folder</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#SendStore"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.SendStore" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MutableMapping</span></code></a></p>
+<p>Idempotency records keyed by any key, each in <code class="docutils literal notranslate"><span class="pre">&lt;folder&gt;/&lt;sha256</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">key&gt;.json</span></code>, with an exclusive <a class="reference internal" href="#correspond.stores.SendStore.claim" title="correspond.stores.SendStore.claim"><code class="xref py py-meth docutils literal notranslate"><span class="pre">claim()</span></code></a>.</p>
+<p>Hashing keeps every file name short and safe whatever the key (the record keeps the key
+itself). The record file is its own claim: <a class="reference internal" href="#correspond.stores.SendStore.claim" title="correspond.stores.SendStore.claim"><code class="xref py py-meth docutils literal notranslate"><span class="pre">claim()</span></code></a> creates it with an exclusive
+create and writes the record through the same handle, so of two processes claiming one
+key at once exactly one wins, and no crash can leave a claim without a record. A key
+whose record says <code class="docutils literal notranslate"><span class="pre">failed</span></code> may be claimed again. A record that cannot be read (a
+crash while it was written) reads as an attempt of unknown outcome, dated by its file.</p>
+<p>This is the contract <a class="reference internal" href="correspond.html#correspond.send" title="correspond.send"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.send()</span></code></a> relies on: a <code class="docutils literal notranslate"><span class="pre">sends=</span></code> mapping with a
+<code class="docutils literal notranslate"><span class="pre">claim(key,</span> <span class="pre">record)</span> <span class="pre">-&gt;</span> <span class="pre">bool</span></code> is exclusive across processes; a plain mapping is
+checked, then set, which covers one process only.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.stores.SendStore.claim">
+<span class="sig-name descname"><span class="pre">claim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">record</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#SendStore.claim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.SendStore.claim" title="Link to this definition">#</a></dt>
+<dd><p>Store <code class="docutils literal notranslate"><span class="pre">record</span></code> for <code class="docutils literal notranslate"><span class="pre">key</span></code> unless a record holds it (one saying <code class="docutils literal notranslate"><span class="pre">failed</span></code> does not); False, storing nothing, if one does.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.stores.SendStore.name">
+<span class="property"><span class="k"><span class="pre">static</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">name</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#SendStore.name"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.SendStore.name" title="Link to this definition">#</a></dt>
+<dd><p>The file name that holds <code class="docutils literal notranslate"><span class="pre">key</span></code>’s record.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
@@ -530,6 +577,17 @@ outside the store’s folder:</p>
 <span class="sig-prename descclassname"><span class="pre">correspond.stores.</span></span><span class="sig-name descname"><span class="pre">kind_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#kind_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.kind_dir" title="Link to this definition">#</a></dt>
 <dd><p>The folder for one kind of state under the data root.</p>
 <dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.stores.send_store">
+<span class="sig-prename descclassname"><span class="pre">correspond.stores.</span></span><span class="sig-name descname"><span class="pre">send_store</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#send_store"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.send_store" title="Link to this definition">#</a></dt>
+<dd><p>What each idempotency key of <a class="reference internal" href="correspond.html#correspond.send" title="correspond.send"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.send()</span></code></a> did, under <code class="docutils literal notranslate"><span class="pre">&lt;data</span> <span class="pre">root&gt;/sends/</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#correspond.stores.SendStore" title="correspond.stores.SendStore"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendStore</span></code></a></span></p>
+</dd>
 </dl>
 </dd></dl>
 
@@ -598,10 +656,16 @@ outside the store’s folder:</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.SafeKeys.check"><code class="docutils literal notranslate"><span class="pre">SafeKeys.check()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.SendStore"><code class="docutils literal notranslate"><span class="pre">SendStore</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.SendStore.claim"><code class="docutils literal notranslate"><span class="pre">SendStore.claim()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.SendStore.name"><code class="docutils literal notranslate"><span class="pre">SendStore.name()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.bytes_store"><code class="docutils literal notranslate"><span class="pre">bytes_store()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.cursor_store"><code class="docutils literal notranslate"><span class="pre">cursor_store()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.json_store"><code class="docutils literal notranslate"><span class="pre">json_store()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.kind_dir"><code class="docutils literal notranslate"><span class="pre">kind_dir()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.send_store"><code class="docutils literal notranslate"><span class="pre">send_store()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.text_store"><code class="docutils literal notranslate"><span class="pre">text_store()</span></code></a></li>
 </ul>
   </nav></div>

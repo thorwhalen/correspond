@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=cb8930eaaf36d9849b67" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=cb8930eaaf36d9849b67" />
 
-    <script src="../../_static/documentation_options.js?v=282f96c0"></script>
+    <script src="../../_static/documentation_options.js?v=1fd71caa"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.5" />
+  <meta name="docsearch:version" content="0.0.6" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -737,6 +737,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">:func:`audience` is the exception to refusing: it never raises, because an audience</span>
 <span class="sd">nobody can compute is public.</span>
 
+<span class="sd">:func:`send` takes an ``idempotency_key``: the same key again posts nothing a second time,</span>
+<span class="sd">even after a send that went out and then reported a failure (:mod:`correspond.idempotency`).</span>
+
 <span class="sd">Before every write (:func:`send`, :func:`edit`, :func:`react`, :func:`upload`), and in its</span>
 <span class="sd">dry run, the ``before_send`` check runs with the conversation's audience</span>
 <span class="sd">(:mod:`correspond.outbound`). Its verdict and the audience in words go into the plan, and a</span>
@@ -751,7 +754,26 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">NotSupported</span><span class="p">,</span> <span class="n">UnknownChannel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond</span><span class="w"> </span><span class="kn">import</span> <span class="n">idempotency</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ChannelError</span><span class="p">,</span>
+    <span class="n">InvalidRef</span><span class="p">,</span>
+    <span class="n">MissingRequirement</span><span class="p">,</span>
+    <span class="n">NotSupported</span><span class="p">,</span>
+    <span class="n">UnknownChannel</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.idempotency</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">FAILED</span><span class="p">,</span>
+    <span class="n">NOTHING_POSTED_KINDS</span><span class="p">,</span>
+    <span class="n">READ_BACK_SKEW</span><span class="p">,</span>
+    <span class="n">SENT</span><span class="p">,</span>
+    <span class="n">attempted_at</span><span class="p">,</span>
+    <span class="n">check_key</span><span class="p">,</span>
+    <span class="n">claimed</span><span class="p">,</span>
+    <span class="n">fingerprint</span><span class="p">,</span>
+    <span class="n">matching_message</span><span class="p">,</span>
+    <span class="n">settled</span><span class="p">,</span>
+<span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Audience</span><span class="p">,</span>
     <span class="n">Authenticity</span><span class="p">,</span>
@@ -1306,12 +1328,22 @@ window.runMermaid = runMermaid;</script>
     <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">before_send</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">sends</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""Send ``text`` (or a :class:`~correspond.model.Draft`) to a conversation; ``dry_run`` shows the plan and sends nothing.</span>
 
 <span class="sd">    ``cc`` and ``bcc`` copy further recipients, on channels that grade ``cc`` (email).</span>
 <span class="sd">    ``before_send(ref, draft, audience)`` runs first, on the dry run too; when ``None``, the</span>
 <span class="sd">    config's ``before_send`` reference, else :func:`correspond.outbound.notice`.</span>
+
+<span class="sd">    ``idempotency_key`` makes sending the same message again safe: a key that already sent</span>
+<span class="sd">    answers that send's result and posts nothing, and one whose earlier attempt may have</span>
+<span class="sd">    gone out is confirmed by reading the conversation back, or refused as ``unconfirmed``</span>
+<span class="sd">    (:mod:`correspond.idempotency`). ``sends`` is where keys are kept: by default files</span>
+<span class="sd">    under the data root (:func:`correspond.stores.send_store`). A mapping with a</span>
+<span class="sd">    ``claim(key, record) -&gt; bool`` (as that store has) is exclusive across processes; a</span>
+<span class="sd">    plain one is checked, then set, which covers one process.</span>
 <span class="sd">    """</span>
     <span class="n">cc</span><span class="p">,</span> <span class="n">bcc</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">cc</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">bcc</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">Draft</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">title</span> <span class="ow">or</span> <span class="n">reply_to</span> <span class="ow">or</span> <span class="n">priority</span> <span class="ow">or</span> <span class="n">cc</span> <span class="ow">or</span> <span class="n">bcc</span><span class="p">):</span>
@@ -1331,10 +1363,31 @@ window.runMermaid = runMermaid;</script>
             <span class="n">bcc</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">bcc</span><span class="p">),</span>
         <span class="p">)</span>
     <span class="p">)</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">idempotency_key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">check_key</span><span class="p">(</span><span class="n">idempotency_key</span><span class="p">)</span>
     <span class="n">problem</span> <span class="o">=</span> <span class="n">_feature_check</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">problem</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">_checked_write</span><span class="p">(</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="n">rehearse</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">adapter</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">rehearse</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">sends</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">send_store</span>
+
+            <span class="n">sends</span> <span class="o">=</span> <span class="n">send_store</span><span class="p">()</span>
+        <span class="n">earlier</span> <span class="o">=</span> <span class="n">_earlier_send</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">sends</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">earlier</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">earlier</span>
+        <span class="n">write</span> <span class="o">=</span> <span class="n">_claiming</span><span class="p">(</span>
+            <span class="n">write</span><span class="p">,</span>
+            <span class="n">key</span><span class="p">,</span>
+            <span class="n">ref</span><span class="p">,</span>
+            <span class="n">sends</span><span class="p">,</span>
+            <span class="n">bound_to</span><span class="o">=</span><span class="n">fingerprint</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">draft</span><span class="p">),</span>
+            <span class="n">taken</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">_earlier_send</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">sends</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">_checked_write</span><span class="p">(</span>
         <span class="n">adapter</span><span class="p">,</span>
         <span class="n">ref</span><span class="p">,</span>
         <span class="s2">"send"</span><span class="p">,</span>
@@ -1342,9 +1395,190 @@ window.runMermaid = runMermaid;</script>
         <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
         <span class="n">before_send</span><span class="o">=</span><span class="n">before_send</span><span class="p">,</span>
         <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>
-        <span class="n">write</span><span class="o">=</span><span class="k">lambda</span> <span class="n">rehearse</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">rehearse</span><span class="p">),</span>
-    <span class="p">)</span></div>
+        <span class="n">write</span><span class="o">=</span><span class="n">write</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">dry_run</span> <span class="ow">and</span> <span class="n">result</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="n">sends</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">record</span> <span class="ow">and</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"state"</span><span class="p">)</span> <span class="o">==</span> <span class="n">SENT</span> <span class="ow">and</span> <span class="s2">"idempotency"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">plan</span><span class="p">:</span>
+            <span class="n">sends</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">settled</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">SENT</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>  <span class="c1"># with the check's lines</span>
+    <span class="k">return</span> <span class="n">result</span></div>
 
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_claim</span><span class="p">(</span><span class="n">sends</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Store ``record`` for ``key`` unless someone holds it; the store's own exclusive ``claim`` when it has one."""</span>
+    <span class="n">claim</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">sends</span><span class="p">,</span> <span class="s2">"claim"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">claim</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">claim</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">record</span><span class="p">))</span>
+    <span class="n">current</span> <span class="o">=</span> <span class="n">sends</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">current</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">current</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"state"</span><span class="p">)</span> <span class="o">!=</span> <span class="n">FAILED</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="n">sends</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span>
+    <span class="k">return</span> <span class="kc">True</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_release</span><span class="p">(</span>
+    <span class="n">sends</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Settle ``key`` as :data:`~correspond.idempotency.FAILED`, which lets it be claimed again."""</span>
+    <span class="n">sends</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">record</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_claiming</span><span class="p">(</span>
+    <span class="n">write</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">SendResult</span><span class="p">],</span>
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">sends</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">bound_to</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">taken</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="n">SendResult</span> <span class="o">|</span> <span class="kc">None</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">SendResult</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""``write`` with ``key`` claimed in ``sends`` right before the real write, and settled after it.</span>
+
+<span class="sd">    The rehearsal claims nothing. When someone claimed the key since it was first read (a</span>
+<span class="sd">    retry that overlapped this call), nothing is written, and ``taken()`` answers instead.</span>
+<span class="sd">    A failure the platform reported before accepting anything</span>
+<span class="sd">    (:data:`~correspond.idempotency.NOTHING_POSTED_KINDS`), and a mistake correspond raises</span>
+<span class="sd">    before contacting it (``NotSupported``, ``InvalidRef``, ``MissingRequirement``), settle the key</span>
+<span class="sd">    :data:`~correspond.idempotency.FAILED`; any other failure, and anything else raised,</span>
+<span class="sd">    leaves it claimed, its outcome unknown.</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">claiming_write</span><span class="p">(</span><span class="n">rehearse</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">rehearse</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">write</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="n">claimed</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">fingerprint</span><span class="o">=</span><span class="n">bound_to</span><span class="p">,</span> <span class="n">at</span><span class="o">=</span><span class="n">idempotency</span><span class="o">.</span><span class="n">now</span><span class="p">())</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_claim</span><span class="p">(</span><span class="n">sends</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">record</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">taken</span><span class="p">()</span> <span class="ow">or</span> <span class="n">SendResult</span><span class="p">(</span>
+                <span class="n">ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+                <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+                <span class="n">plan</span><span class="o">=</span><span class="p">{</span><span class="s2">"idempotency_key"</span><span class="p">:</span> <span class="n">key</span><span class="p">},</span>
+                <span class="n">error</span><span class="o">=</span><span class="sa">f</span><span class="s2">"another send with the idempotency key </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> is under way"</span><span class="p">,</span>
+                <span class="n">error_kind</span><span class="o">=</span><span class="s2">"unconfirmed"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">write</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">kind</span> <span class="ow">in</span> <span class="n">NOTHING_POSTED_KINDS</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="n">error</span><span class="p">,</span> <span class="n">MissingRequirement</span>
+            <span class="p">):</span>
+                <span class="n">_release</span><span class="p">(</span><span class="n">sends</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">settled</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">FAILED</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error_kind"</span><span class="p">:</span> <span class="n">error</span><span class="o">.</span><span class="n">kind</span><span class="p">}))</span>
+            <span class="k">raise</span>
+        <span class="k">except</span> <span class="p">(</span><span class="n">NotSupported</span><span class="p">,</span> <span class="n">InvalidRef</span><span class="p">)</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="n">_release</span><span class="p">(</span><span class="n">sends</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">settled</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">FAILED</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">error</span><span class="p">)}))</span>
+            <span class="k">raise</span>
+        <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
+            <span class="n">sends</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">settled</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">SENT</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">_release</span><span class="p">(</span><span class="n">sends</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">settled</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">FAILED</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()))</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">return</span> <span class="n">claiming_write</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_earlier_send</span><span class="p">(</span>
+    <span class="n">adapter</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span>
+    <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">sends</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What an earlier send with ``key`` settles for this one, or None when this one goes ahead.</span>
+
+<span class="sd">    None for a new key and one whose earlier try the platform refused. Otherwise the earlier</span>
+<span class="sd">    result, replayed; the message read back, for an attempt whose outcome was unknown; or a</span>
+<span class="sd">    refusal: a key bound to another conversation or draft (``validation``), or an attempt</span>
+<span class="sd">    that may have gone out and that reading back does not confirm (``unconfirmed``). A dry</span>
+<span class="sd">    run reads nothing back and writes nothing.</span>
+<span class="sd">    """</span>
+    <span class="n">record</span> <span class="o">=</span> <span class="n">sends</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"channel"</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="s2">"conversation"</span><span class="p">:</span> <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="s2">"dry_run"</span><span class="p">:</span> <span class="n">dry_run</span><span class="p">}</span>
+    <span class="n">bound_to</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fingerprint"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">bound_to</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">bound_to</span> <span class="o">!=</span> <span class="n">fingerprint</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">draft</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">base</span><span class="p">,</span>
+            <span class="n">plan</span><span class="o">=</span><span class="p">{</span><span class="s2">"idempotency_key"</span><span class="p">:</span> <span class="n">key</span><span class="p">},</span>
+            <span class="n">error</span><span class="o">=</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"the idempotency key </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> was used for another message (to "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'conversation'</span><span class="p">)</span><span class="si">}</span><span class="s2">): use a new key for a new message"</span>
+            <span class="p">),</span>
+            <span class="n">error_kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"state"</span><span class="p">)</span> <span class="o">==</span> <span class="n">FAILED</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"state"</span><span class="p">)</span> <span class="o">==</span> <span class="n">SENT</span><span class="p">:</span>
+        <span class="n">earlier</span> <span class="o">=</span> <span class="n">SendResult</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"result"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{</span><span class="o">**</span><span class="n">base</span><span class="p">,</span> <span class="s2">"ok"</span><span class="p">:</span> <span class="kc">True</span><span class="p">})</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="o">**</span><span class="n">earlier</span><span class="o">.</span><span class="n">plan</span><span class="p">,</span>
+            <span class="s2">"idempotency_key"</span><span class="p">:</span> <span class="n">key</span><span class="p">,</span>
+            <span class="s2">"idempotency"</span><span class="p">:</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"already sent (attempted at </span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'attempted_at'</span><span class="p">)</span><span class="si">}</span><span class="s2">): not sent again"</span>
+            <span class="p">),</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">earlier</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">)</span>
+    <span class="n">check_it</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"an earlier send with the idempotency key </span><span class="si">{</span><span class="n">key</span><span class="si">!r}</span><span class="s2"> (attempted at "</span>
+        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'attempted_at'</span><span class="p">)</span><span class="si">}</span><span class="s2">) failed or has not finished, and may have gone out"</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">base</span><span class="p">,</span>
+            <span class="n">plan</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"idempotency_key"</span><span class="p">:</span> <span class="n">key</span><span class="p">,</span>
+                <span class="s2">"idempotency"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">check_it</span><span class="si">}</span><span class="s2">: a real send reads </span><span class="si">{</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="si">}</span><span class="s2"> back first"</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">error</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">check_it</span><span class="si">}</span><span class="s2">; a real send reads the conversation back before deciding"</span><span class="p">,</span>
+            <span class="n">error_kind</span><span class="o">=</span><span class="s2">"unconfirmed"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">found</span><span class="p">,</span> <span class="n">why</span> <span class="o">=</span> <span class="n">_read_back</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="n">attempted_at</span><span class="p">(</span><span class="n">record</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">base</span><span class="p">,</span>
+            <span class="n">plan</span><span class="o">=</span><span class="p">{</span><span class="s2">"idempotency_key"</span><span class="p">:</span> <span class="n">key</span><span class="p">},</span>
+            <span class="n">error</span><span class="o">=</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">check_it</span><span class="si">}</span><span class="s2">, and </span><span class="si">{</span><span class="n">why</span><span class="si">}</span><span class="s2">: check </span><span class="si">{</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="si">}</span><span class="s2">, then send with a new key "</span>
+                <span class="sa">f</span><span class="s2">"if it is not there"</span>
+            <span class="p">),</span>
+            <span class="n">error_kind</span><span class="o">=</span><span class="s2">"unconfirmed"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">SendResult</span><span class="p">(</span>
+        <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="p">{</span><span class="o">**</span><span class="n">base</span><span class="p">,</span> <span class="s2">"conversation"</span><span class="p">:</span> <span class="n">found</span><span class="o">.</span><span class="n">conversation</span><span class="o">.</span><span class="n">encoded</span><span class="p">},</span>
+        <span class="n">message_id</span><span class="o">=</span><span class="n">found</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="n">url</span><span class="o">=</span><span class="n">found</span><span class="o">.</span><span class="n">url</span><span class="p">,</span>
+        <span class="n">plan</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"idempotency_key"</span><span class="p">:</span> <span class="n">key</span><span class="p">,</span>
+            <span class="s2">"idempotency"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">check_it</span><span class="si">}</span><span class="s2">; it did, as </span><span class="si">{</span><span class="n">found</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">: not sent again"</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">)</span>
+    <span class="n">sends</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">settled</span><span class="p">(</span><span class="n">record</span><span class="p">,</span> <span class="n">SENT</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_read_back</span><span class="p">(</span>
+    <span class="n">adapter</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">since</span><span class="p">:</span> <span class="n">datetime</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Message</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""``(message, "")``: correspond's own message with ``draft``'s text since ``since``; else ``(None, why not)``."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">Reader</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> cannot be read back to confirm it"</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="n">adapter</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="n">since</span> <span class="o">-</span> <span class="n">READ_BACK_SKEW</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>  <span class="c1"># an unreadable conversation confirms nothing</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"reading it back failed (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">)"</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="n">matching_message</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="n">since</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="p">(</span>
+            <span class="s2">"reading it back did not find it (which does not prove it did not go out)"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">found</span><span class="p">,</span> <span class="s2">""</span>
 
 
 <div class="viewcode-block" id="edit">

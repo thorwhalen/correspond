@@ -1,0 +1,29 @@
+correspond.idempotency
+======================
+
+.. automodule:: correspond.idempotency
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      ATTEMPTED
+      SENT
+      FAILED
+      NOTHING_POSTED_KINDS
+      READ_BACK_SKEW
+      MAX_KEY_LENGTH
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      check_key
+      attempted_at
+      claimed
+      fingerprint
+      matching_message
+      now
+      settled
+   

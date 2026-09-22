@@ -1,4 +1,4 @@
-> built 2026-09-22 13:41 UTC from 655256e (main) · correspond 0.0.5. Details: build_info.json
+> built 2026-09-22 13:45 UTC from de31000 (main) · correspond 0.0.6. Details: build_info.json
 
 # index.html.md
 
@@ -85,7 +85,8 @@ scope: public
 - `--cc` and `--bcc` (comma-separated) copy further recipients on channels that grade `cc` (email); elsewhere they are refused by name. Bcc addresses go on the envelope only, never in a header, and they count in the audience.
 - **Every write (`send`, `edit`, `react`, and `upload` in Python) passes the `before_send` check first**, on the dry run too. The plan shows `audience` (who can read it, in words), `audience_hash`, and `before_send` (the verdict). With nothing configured the check lets the write go ahead, so the audience line is all it adds. A check can stop the write: `refused` (not as written, not here) or `needs_approval` (wait for the operator), with any details it attached in `before_send_details`. A configured check that does not load stops every write (`before_send_unavailable`), and one that crashes stops that write (`before_send_failed`). Nothing is sent in any of these cases, and `--allow-send` on the MCP server does not skip the check.
 - The check guards drafts, not the process running correspond: whoever sets its environment or edits the config file (`$CORRESPOND_CONFIG` can point at another file) chooses the check. Commands that write without correspond (`gh issue comment`, say) are covered by liaise’s hook, not by this check.
-- A write that fails is a result, not an exception: `ok: false`, an `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`, or one of the four check kinds above), and whether a retry can help (`retryable`, `retry_after`).
+- A write that fails is a result, not an exception: `ok: false`, an `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`, `unconfirmed`, or one of the four check kinds above), and whether a retry can help (`retryable`, `retry_after`).
+- **`--idempotency-key KEY` (`idempotency_key=` in Python) keeps a message from going out twice.** A channel can post and then fail (the platform took the message, and its answer never came), so a retry would post it again. With a key, correspond remembers what the key did (under the data root, in `sends/`): the same key after a send that went out posts nothing and returns that result. After a failure that may have posted (`network`, `unavailable`, a crash), it reads the conversation back for its own message with the same text and returns it if found. If it cannot confirm, it sends nothing and fails with `unconfirmed`: check the conversation, then send with a new key. A key reused for a different message is refused (`validation`). Nothing is added to the posted text. Two processes sending with the same key at the same moment are not covered.
 - `-` as the text reads it from stdin; `--json` prints the whole result.
 
 ## Listening
@@ -1003,7 +1004,7 @@ Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exceptio
 
 An expected failure, with a message meant for the person or agent that asked.
 
-### correspond.errors.ERROR_KINDS *= ('auth', 'permission', 'not_found', 'rate_limited', 'network', 'validation', 'unavailable')*
+### correspond.errors.ERROR_KINDS *= ('auth', 'permission', 'not_found', 'rate_limited', 'network', 'validation', 'unavailable', 'unconfirmed')*
 
 Why a platform call failed, for a caller deciding whether to retry, fix the draft, or ask a human.
 
@@ -1792,13 +1793,21 @@ Run the chain (bindings, thread continuity, metadata rules, classifier) and retu
 * **Return type:**
   [`RouteDecision`](_autosummary/correspond.routing.html.md#correspond.routing.RouteDecision) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), dry_run=False, registry=None, before_send=None)
+### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
 `cc` and `bcc` copy further recipients, on channels that grade `cc` (email).
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice).
+
+`idempotency_key` makes sending the same message again safe: a key that already sent
+answers that send’s result and posts nothing, and one whose earlier attempt may have
+gone out is confirmed by reading the conversation back, or refused as `unconfirmed`
+([`correspond.idempotency`](_autosummary/correspond.idempotency.html.md#module-correspond.idempotency)). `sends` is where keys are kept: by default files
+under the data root ([`correspond.stores.send_store()`](_autosummary/correspond.stores.html.md#correspond.stores.send_store)). A mapping with a
+`claim(key, record) -> bool` (as that store has) is exclusive across processes; a
+plain one is checked, then set, which covers one process.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -1826,20 +1835,165 @@ Grade an inbound delivery on `channel` from its headers and raw body.
 
 ### Modules
 
-| [`channels`](_autosummary/correspond.channels.html.md#module-correspond.channels)   | The built-in channel adapters, one module each.                                                                |
-|----------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| [`errors`](_autosummary/correspond.errors.html.md#module-correspond.errors)       | What correspond raises, and the vocabulary a failed write reports.                                             |
-| [`mcp`](_autosummary/correspond.mcp.html.md#module-correspond.mcp)             | MCP over stdio: the same tools, for Claude Desktop and other local MCP clients.                                |
-| [`model`](_autosummary/correspond.model.html.md#module-correspond.model)         | The data model every channel is described in.                                                                  |
-| [`ops`](_autosummary/correspond.ops.html.md#module-correspond.ops)             | The operations: small protocols an adapter implements a subset of, and the verbs that call them.               |
-| [`outbound`](_autosummary/correspond.outbound.html.md#module-correspond.outbound)   | The `before_send` check: what every write runs, with the conversation's audience, before anything leaves.      |
-| [`registry`](_autosummary/correspond.registry.html.md#module-correspond.registry)   | Which channels exist: the built-in channel table, the registry built from it, and what each channel needs.     |
-| [`render`](_autosummary/correspond.render.html.md#module-correspond.render)       | Turning a tool's result into terminal output: `(stdout, stderr, exit code)`.                                   |
-| [`routing`](_autosummary/correspond.routing.html.md#module-correspond.routing)     | Deciding what a message is about: a transparent rule chain.                                                    |
-| [`settings`](_autosummary/correspond.settings.html.md#module-correspond.settings)   | Where correspond keeps state and reads configuration, and how it finds a secret.                               |
-| [`stores`](_autosummary/correspond.stores.html.md#module-correspond.stores)       | The state stores: listen cursors, the web inbox's reports and blobs, the Telegram log.                         |
-| [`testing`](_autosummary/correspond.testing.html.md#module-correspond.testing)     | An in-memory channel for tests and rehearsals, and `python -m correspond.testing`: the CLI with it registered. |
-| [`tools`](_autosummary/correspond.tools.html.md#module-correspond.tools)         | The single source of truth for every surface: plain functions, flat arguments in, JSON-ready dicts out.        |
+| [`channels`](_autosummary/correspond.channels.html.md#module-correspond.channels)       | The built-in channel adapters, one module each.                                                                |
+|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
+| [`errors`](_autosummary/correspond.errors.html.md#module-correspond.errors)           | What correspond raises, and the vocabulary a failed write reports.                                             |
+| [`idempotency`](_autosummary/correspond.idempotency.html.md#module-correspond.idempotency) | Idempotent sends: an `idempotency_key` keeps a message from going out twice.                                   |
+| [`mcp`](_autosummary/correspond.mcp.html.md#module-correspond.mcp)                 | MCP over stdio: the same tools, for Claude Desktop and other local MCP clients.                                |
+| [`model`](_autosummary/correspond.model.html.md#module-correspond.model)             | The data model every channel is described in.                                                                  |
+| [`ops`](_autosummary/correspond.ops.html.md#module-correspond.ops)                 | The operations: small protocols an adapter implements a subset of, and the verbs that call them.               |
+| [`outbound`](_autosummary/correspond.outbound.html.md#module-correspond.outbound)       | The `before_send` check: what every write runs, with the conversation's audience, before anything leaves.      |
+| [`registry`](_autosummary/correspond.registry.html.md#module-correspond.registry)       | Which channels exist: the built-in channel table, the registry built from it, and what each channel needs.     |
+| [`render`](_autosummary/correspond.render.html.md#module-correspond.render)           | Turning a tool's result into terminal output: `(stdout, stderr, exit code)`.                                   |
+| [`routing`](_autosummary/correspond.routing.html.md#module-correspond.routing)         | Deciding what a message is about: a transparent rule chain.                                                    |
+| [`settings`](_autosummary/correspond.settings.html.md#module-correspond.settings)       | Where correspond keeps state and reads configuration, and how it finds a secret.                               |
+| [`stores`](_autosummary/correspond.stores.html.md#module-correspond.stores)           | The state stores: listen cursors, the web inbox's reports and blobs, the Telegram log.                         |
+| [`testing`](_autosummary/correspond.testing.html.md#module-correspond.testing)         | An in-memory channel for tests and rehearsals, and `python -m correspond.testing`: the CLI with it registered. |
+| [`tools`](_autosummary/correspond.tools.html.md#module-correspond.tools)             | The single source of truth for every surface: plain functions, flat arguments in, JSON-ready dicts out.        |
+
+
+# _autosummary/correspond.idempotency.html.md
+
+# correspond.idempotency
+
+Idempotent sends: an `idempotency_key` keeps a message from going out twice.
+
+A channel can post a message and then fail: the platform accepted the post and the
+connection dropped before its answer, or a call after the post raised. [`send()`](_autosummary/correspond.html.md#correspond.send)
+then reports `ok=False`, and whoever sends it again (a retry, an operator releasing the
+draft by hand) posts it a second time. With `idempotency_key=` [`send()`](_autosummary/correspond.html.md#correspond.send)
+remembers, in a store of its own (`sends=`, by default files under the data root), what
+each key did:
+
+- right before the real write the key is claimed ([`ATTEMPTED`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.ATTEMPTED)), and after it the key
+  is [`SENT`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.SENT), with the result; a failure the platform reported before accepting
+  anything ([`NOTHING_POSTED_KINDS`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.NOTHING_POSTED_KINDS)) marks it [`FAILED`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.FAILED), which a new try may
+  claim again;
+- the same key after [`SENT`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.SENT) posts nothing and answers the stored result, marked a
+  replay;
+- the same key after an attempt whose outcome is unknown (still [`ATTEMPTED`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.ATTEMPTED): a
+  network or platform failure, a crash) reads the conversation back, where the channel can
+  be read, for a message by correspond’s own account with the same text since the attempt.
+  Found, that message is the result, and nothing is posted. Not found, or not readable, the
+  send is not made: it fails with `error_kind="unconfirmed"`, saying to check the
+  conversation, since a reader may not show a message that did go out (an email’s inbox
+  does not list what was sent, and Telegram’s posted text starts with the title). The
+  caller who has checked sends with a new key;
+- a second send with a key another one claimed meanwhile (a retry that overlapped the
+  first) writes nothing: the default store claims a key with an exclusive create, so of
+  two processes exactly one sends;
+- a key used again for another conversation or another draft is refused (`validation`).
+
+A dry run reads the store and writes nothing. Nothing is added to the text posted.
+
+```pycon
+>>> record = claimed("k1", "fake:example/demo", fingerprint="f", at=parse_time("2026-09-22T12:00:00Z"))
+>>> record["state"], record["attempted_at"]
+('attempted', '2026-09-22T12:00:00+00:00')
+```
+
+### Module Attributes
+
+| [`ATTEMPTED`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.ATTEMPTED)            | The key was claimed for a real write whose outcome is not known yet (or never became known).                                            |
+|-----------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| [`SENT`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.SENT)                 | The write went out; the record keeps its result.                                                                                        |
+| [`FAILED`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.FAILED)               | The platform refused the write before accepting anything; the key may be claimed again.                                                 |
+| [`NOTHING_POSTED_KINDS`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.NOTHING_POSTED_KINDS) | The `error_kind` of failures that mean the platform accepted nothing, so a new try is safe.                                             |
+| [`READ_BACK_SKEW`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.READ_BACK_SKEW)       | How far before an attempt a message read back may be dated and still be that attempt's: the platform's clock and this machine's differ. |
+| [`MAX_KEY_LENGTH`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.MAX_KEY_LENGTH)       | The longest key accepted (it names a file in the default store).                                                                        |
+
+### Functions
+
+| [`check_key`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.check_key)(key)                                  | `key` stripped, or `ValueError` for one that is not a non-blank string of at most [`MAX_KEY_LENGTH`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.MAX_KEY_LENGTH) characters.               |
+|--------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`attempted_at`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.attempted_at)(record)                            | When `record`'s key was claimed.                                                                                                                                            |
+| [`claimed`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.claimed)(key, conversation, \*, fingerprint, at) | The record of `key` claimed at `at` for a real write to `conversation`.                                                                                                     |
+| [`fingerprint`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.fingerprint)(conversation, draft)                | What a key is bound to: the conversation and everything the draft says, as SHA-256 hex.                                                                                     |
+| [`matching_message`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.matching_message)(messages, draft, \*, since)    | The latest of `messages` written by correspond's own account with `draft`'s text, at or after `since` less [`READ_BACK_SKEW`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.READ_BACK_SKEW). |
+| [`now`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.now)()                                           | The moment a key is claimed (UTC).                                                                                                                                          |
+| [`settled`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.settled)(record, state, result)                  | `record` moved to `state` ([`SENT`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.SENT) or [`FAILED`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.FAILED)), with the write's `result`.    |
+
+### correspond.idempotency.ATTEMPTED *= 'attempted'*
+
+The key was claimed for a real write whose outcome is not known yet (or never became known).
+
+### correspond.idempotency.FAILED *= 'failed'*
+
+The platform refused the write before accepting anything; the key may be claimed again.
+
+### correspond.idempotency.MAX_KEY_LENGTH *= 128*
+
+The longest key accepted (it names a file in the default store).
+
+### correspond.idempotency.NOTHING_POSTED_KINDS *= frozenset({'auth', 'not_found', 'permission', 'rate_limited'})*
+
+The `error_kind` of failures that mean the platform accepted nothing, so a new try is safe.
+A network failure and an unavailable platform are not among them: the post may have landed.
+`validation` is not among them either: a platform can report an error with no type
+after it committed the write (GitHub’s GraphQL mutations do on a timeout).
+
+### correspond.idempotency.READ_BACK_SKEW *= datetime.timedelta(seconds=300)*
+
+How far before an attempt a message read back may be dated and still be that attempt’s:
+the platform’s clock and this machine’s differ.
+
+### correspond.idempotency.SENT *= 'sent'*
+
+The write went out; the record keeps its result.
+
+### correspond.idempotency.attempted_at(record)
+
+When `record`’s key was claimed.
+
+* **Return type:**
+  [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime)
+
+### correspond.idempotency.check_key(key)
+
+`key` stripped, or `ValueError` for one that is not a non-blank string of at most [`MAX_KEY_LENGTH`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.MAX_KEY_LENGTH) characters.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+```pycon
+>>> check_key(" case-12/reply-3 ")
+'case-12/reply-3'
+```
+
+### correspond.idempotency.claimed(key, conversation, , fingerprint, at)
+
+The record of `key` claimed at `at` for a real write to `conversation`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
+
+### correspond.idempotency.fingerprint(conversation, draft)
+
+What a key is bound to: the conversation and everything the draft says, as SHA-256 hex.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### correspond.idempotency.matching_message(messages, draft, , since)
+
+The latest of `messages` written by correspond’s own account with `draft`’s text, at or after `since` less [`READ_BACK_SKEW`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.READ_BACK_SKEW).
+
+* **Return type:**
+  [`Message`](_autosummary/correspond.model.html.md#correspond.model.Message) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### correspond.idempotency.now()
+
+The moment a key is claimed (UTC).
+
+* **Return type:**
+  [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime)
+
+### correspond.idempotency.settled(record, state, result)
+
+`record` moved to `state` ([`SENT`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.SENT) or [`FAILED`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.FAILED)), with the write’s `result`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
 
 # _autosummary/correspond.mcp.html.md
@@ -2448,6 +2602,9 @@ nothing; the only call it makes is the audience lookup.
 [`audience()`](_autosummary/correspond.ops.html.md#correspond.ops.audience) is the exception to refusing: it never raises, because an audience
 nobody can compute is public.
 
+[`send()`](_autosummary/correspond.ops.html.md#correspond.ops.send) takes an `idempotency_key`: the same key again posts nothing a second time,
+even after a send that went out and then reported a failure ([`correspond.idempotency`](_autosummary/correspond.idempotency.html.md#module-correspond.idempotency)).
+
 Before every write ([`send()`](_autosummary/correspond.ops.html.md#correspond.ops.send), [`edit()`](_autosummary/correspond.ops.html.md#correspond.ops.edit), [`react()`](_autosummary/correspond.ops.html.md#correspond.ops.react), [`upload()`](_autosummary/correspond.ops.html.md#correspond.ops.upload)), and in its
 dry run, the `before_send` check runs with the conversation’s audience
 ([`correspond.outbound`](_autosummary/correspond.outbound.html.md#module-correspond.outbound)). Its verdict and the audience in words go into the plan, and a
@@ -2619,13 +2776,21 @@ The messages of a conversation, oldest first (`limit` keeps the most recent ones
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Message`](_autosummary/correspond.model.html.md#correspond.model.Message)]
 
-### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), dry_run=False, registry=None, before_send=None)
+### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
 `cc` and `bcc` copy further recipients, on channels that grade `cc` (email).
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice).
+
+`idempotency_key` makes sending the same message again safe: a key that already sent
+answers that send’s result and posts nothing, and one whose earlier attempt may have
+gone out is confirmed by reading the conversation back, or refused as `unconfirmed`
+([`correspond.idempotency`](_autosummary/correspond.idempotency.html.md#module-correspond.idempotency)). `sends` is where keys are kept: by default files
+under the data root ([`correspond.stores.send_store()`](_autosummary/correspond.stores.html.md#correspond.stores.send_store)). A mapping with a
+`claim(key, record) -> bool` (as that store has) is exclusive across processes; a
+plain one is checked, then set, which covers one process.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -3206,18 +3371,20 @@ KeyError: "store key '../elsewhere' must be /-separated names of letters, digits
 
 ### Functions
 
-| [`bytes_store`](_autosummary/correspond.stores.html.md#correspond.stores.bytes_store)(kind, \*[, data_dir])   | Binary files under `<data root>/<kind>/`.                                              |
-|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|
-| [`cursor_store`](_autosummary/correspond.stores.html.md#correspond.stores.cursor_store)(\*[, data_dir])        | Listen cursors, keyed by encoded conversation reference, under `<data root>/cursors/`. |
-| [`json_store`](_autosummary/correspond.stores.html.md#correspond.stores.json_store)(kind, \*[, data_dir])    | JSON files under `<data root>/<kind>/` (keys end in `.json`).                          |
-| [`kind_dir`](_autosummary/correspond.stores.html.md#correspond.stores.kind_dir)(kind, \*[, data_dir])      | The folder for one kind of state under the data root.                                  |
-| [`text_store`](_autosummary/correspond.stores.html.md#correspond.stores.text_store)(kind, \*[, data_dir])    | Text files under `<data root>/<kind>/`.                                                |
+| [`bytes_store`](_autosummary/correspond.stores.html.md#correspond.stores.bytes_store)(kind, \*[, data_dir])   | Binary files under `<data root>/<kind>/`.                                                                                                        |
+|--------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`cursor_store`](_autosummary/correspond.stores.html.md#correspond.stores.cursor_store)(\*[, data_dir])        | Listen cursors, keyed by encoded conversation reference, under `<data root>/cursors/`.                                                           |
+| [`json_store`](_autosummary/correspond.stores.html.md#correspond.stores.json_store)(kind, \*[, data_dir])    | JSON files under `<data root>/<kind>/` (keys end in `.json`).                                                                                    |
+| [`kind_dir`](_autosummary/correspond.stores.html.md#correspond.stores.kind_dir)(kind, \*[, data_dir])      | The folder for one kind of state under the data root.                                                                                            |
+| [`send_store`](_autosummary/correspond.stores.html.md#correspond.stores.send_store)(\*[, data_dir])          | What each idempotency key of [`correspond.send()`](_autosummary/correspond.html.md#correspond.send) did, under `<data root>/sends/`. |
+| [`text_store`](_autosummary/correspond.stores.html.md#correspond.stores.text_store)(kind, \*[, data_dir])    | Text files under `<data root>/<kind>/`.                                                                                                          |
 
 ### Classes
 
-| [`QuotedKeys`](_autosummary/correspond.stores.html.md#correspond.stores.QuotedKeys)(store, \*[, suffix])   | Any string key, kept under a percent-encoded file-safe name (plus `suffix`) in a flat mapping.   |
-|------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
-| [`SafeKeys`](_autosummary/correspond.stores.html.md#correspond.stores.SafeKeys)(store)                   | A mapping whose keys must be relative paths of plain names (no `..`, no absolute paths).         |
+| [`QuotedKeys`](_autosummary/correspond.stores.html.md#correspond.stores.QuotedKeys)(store, \*[, suffix])   | Any string key, kept under a percent-encoded file-safe name (plus `suffix`) in a flat mapping.                  |
+|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| [`SafeKeys`](_autosummary/correspond.stores.html.md#correspond.stores.SafeKeys)(store)                   | A mapping whose keys must be relative paths of plain names (no `..`, no absolute paths).                        |
+| [`SendStore`](_autosummary/correspond.stores.html.md#correspond.stores.SendStore)(folder)                 | Idempotency records keyed by any key, each in `<folder>/<sha256 of the key>.json`, with an exclusive `claim()`. |
 
 ### *class* correspond.stores.QuotedKeys(store, , suffix='')
 
@@ -3241,6 +3408,37 @@ A mapping whose keys must be relative paths of plain names (no `..`, no absolute
 #### *static* check(key)
 
 `key` if it is a safe relative path, else `KeyError`.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+### *class* correspond.stores.SendStore(folder)
+
+Bases: [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)
+
+Idempotency records keyed by any key, each in `<folder>/<sha256 of the key>.json`, with an exclusive [`claim()`](_autosummary/correspond.stores.html.md#correspond.stores.SendStore.claim).
+
+Hashing keeps every file name short and safe whatever the key (the record keeps the key
+itself). The record file is its own claim: [`claim()`](_autosummary/correspond.stores.html.md#correspond.stores.SendStore.claim) creates it with an exclusive
+create and writes the record through the same handle, so of two processes claiming one
+key at once exactly one wins, and no crash can leave a claim without a record. A key
+whose record says `failed` may be claimed again. A record that cannot be read (a
+crash while it was written) reads as an attempt of unknown outcome, dated by its file.
+
+This is the contract [`correspond.send()`](_autosummary/correspond.html.md#correspond.send) relies on: a `sends=` mapping with a
+`claim(key, record) -> bool` is exclusive across processes; a plain mapping is
+checked, then set, which covers one process only.
+
+#### claim(key, record)
+
+Store `record` for `key` unless a record holds it (one saying `failed` does not); False, storing nothing, if one does.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+#### *static* name(key)
+
+The file name that holds `key`’s record.
 
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
@@ -3269,6 +3467,13 @@ JSON files under `<data root>/<kind>/` (keys end in `.json`).
 ### correspond.stores.kind_dir(kind, , data_dir=None)
 
 The folder for one kind of state under the data root.
+
+### correspond.stores.send_store(, data_dir=None)
+
+What each idempotency key of [`correspond.send()`](_autosummary/correspond.html.md#correspond.send) did, under `<data root>/sends/`.
+
+* **Return type:**
+  [`SendStore`](_autosummary/correspond.stores.html.md#correspond.stores.SendStore)
 
 ### correspond.stores.text_store(kind, , data_dir=None)
 
@@ -3474,9 +3679,9 @@ What a channel needs (install command, binaries, platform, each setting and wher
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, dry_run=False)
+### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, idempotency_key=None, dry_run=False)
 
-Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
+Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -3488,16 +3693,18 @@ Send a message to a conversation. Run it with `dry_run` first and show the plan,
 
 # About this build
 
-This documentation was built on **2026-09-22 13:41 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/655256e40faba496c7e086e7566748792b5779da"><code>655256e</code></a> on branch <code>main</code>, for **correspond 0.0.5** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-09-22 13:45 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/de3100037a7bf92ab3fd4fef415639c87541b229"><code>de31000</code></a> on branch <code>main</code>, for **correspond 0.0.6** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.6) is behind the latest release on PyPI (0.0.7): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/655256e40faba496c7e086e7566748792b5779da"><code>655256e40faba496c7e086e7566748792b5779da</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/de3100037a7bf92ab3fd4fef415639c87541b229"><code>de3100037a7bf92ab3fd4fef415639c87541b229</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -3508,9 +3715,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/35735005113">35735005113</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/35735423703">35735423703</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>655256e40faba496c7e086e7566748792b5779da</code> (in the history of the built commit)  |
+| Event commit | <code>de3100037a7bf92ab3fd4fef415639c87541b229</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -3535,13 +3742,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.5/">0.0.5</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.7/">0.0.7</a>, newer than the documented version (0.0.6).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 655256e40faba496c7e086e7566748792b5779da
+git checkout de3100037a7bf92ab3fd4fef415639c87541b229
 pip install "epythet==0.2.12"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

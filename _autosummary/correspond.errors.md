@@ -76,7 +76,7 @@ Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exceptio
 
 An expected failure, with a message meant for the person or agent that asked.
 
-### correspond.errors.ERROR_KINDS *= ('auth', 'permission', 'not_found', 'rate_limited', 'network', 'validation', 'unavailable')*
+### correspond.errors.ERROR_KINDS *= ('auth', 'permission', 'not_found', 'rate_limited', 'network', 'validation', 'unavailable', 'unconfirmed')*
 
 Why a platform call failed, for a caller deciding whether to retry, fix the draft, or ask a human.
 
