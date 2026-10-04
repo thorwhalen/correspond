@@ -6,6 +6,7 @@
 ## Pages in this subsection
 
 - [correspond](correspond.html.md): correspond: a channel facade for AI agents.
+- [correspond.authored](correspond.authored.html.md): What the sender of an email actually wrote: their text, apart from quoted replies, forwarded blocks,...
 - [correspond.channels](correspond.channels.html.md): The built-in channel adapters, one module each.
 - [correspond.channels.github](correspond.channels.github.html.md): GitHub: issues, pull request conversations and discussions, through the &#96;gh&#96; CLI.
 - [correspond.channels.macos](correspond.channels.macos.html.md): macOS Notification Centre: a banner on this Mac (send only).

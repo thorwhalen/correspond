@@ -1,0 +1,20 @@
+correspond.authored
+===================
+
+.. automodule:: correspond.authored
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      authored
+      authored_thread
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Authored
+      Markers
+   

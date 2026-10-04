@@ -16,6 +16,8 @@ correspond.tools
    .. autosummary::
    
       audience
+      authored
+      authored_thread
       capabilities
       channels
       edit

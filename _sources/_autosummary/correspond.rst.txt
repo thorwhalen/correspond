@@ -80,6 +80,7 @@
    :toctree:
    :recursive:
 
+   authored
    channels
    errors
    idempotency

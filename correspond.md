@@ -1,4 +1,4 @@
-> built 2026-09-22 18:56 UTC from b9c3784 (main) · correspond 0.0.7. Details: build_info.json
+> built 2026-10-04 07:51 UTC from 3bfc178 (main) · correspond 0.0.8. Details: build_info.json
 
 # index.html.md
 
@@ -192,6 +192,23 @@ correspond.register_channel(
 
 `correspond.testing.FakeChannel` is an in-memory channel for tests, and `python -m correspond.testing` runs the CLI with it registered as `fake`.
 
+## What the sender actually wrote
+
+A reply body carries the whole conversation beneath it, so anything built from raw bodies (a summary, a profile, a search) mostly measures the people being quoted. `correspond.authored` keeps the sender’s own words:
+
+```python
+from correspond.authored import authored, authored_thread
+
+found = authored(body)
+found.text, found.signature, found.quoted, found.forwarded
+
+# Answers written inside the quote ("Responses below.") need the earlier messages:
+for part in authored_thread([first_body, reply_body]):
+    part.full_text  # top text + recovered inline answers
+```
+
+It recognises reply headers in English, French, German, Swedish, Spanish, Italian and Dutch clients (Gmail’s `On … wrote:`, Outlook’s `From: … Sent: …` block, `-----Original Message-----`), forwards, mobile footers, contact blocks after the sign-off, and legal disclaimers; the sign-off itself stays in the text. Other vocabularies go in through `markers=`. On the CLI: `correspond authored - < body.txt` and `correspond authored-thread thread.json --author someone@`.
+
 ## MCP
 
 ```bash
@@ -213,6 +230,196 @@ A `correspond` skill ships inside the package (`correspond/data/skills/correspon
 The seams, surfaces and deliberate non-seams are in [Discussion #1](https://github.com/thorwhalen/correspond/discussions/1).
 
 <p class="epythet-aggregates">This documentation as a single file: <a href="correspond.md">correspond.md</a> (Markdown, for agents).</p>
+
+
+# _autosummary/correspond.authored.html.md
+
+# correspond.authored
+
+What the sender of an email actually wrote: their text, apart from quoted replies, forwarded blocks, signatures and disclaimers.
+
+A reply body carries the whole conversation beneath it, so a profile, a summary or a search
+built from raw bodies mostly measures the people being quoted. [`authored()`](_autosummary/correspond.authored.html.md#correspond.authored.authored) splits one
+body into its parts:
+
+```pycon
+>>> body = '''Fine by me, ship it Friday.
+...
+... /Ada
+...
+... On Mon, 3 Mar 2025 at 10:00, Grace Hopper <grace@example.org> wrote:
+... > Can we ship on Friday?
+... '''
+>>> found = authored(body)
+>>> found.text
+'Fine by me, ship it Friday.\n\n/Ada'
+>>> found.quoted.splitlines()[-1]
+'> Can we ship on Friday?'
+```
+
+Three shapes are handled:
+
+- **top-posting**: the text above the first reply header (`On … wrote:` in several
+  languages, an Outlook `From: … Sent: …` block, `-----Original Message-----`) or above
+  a run of `>` lines;
+- **forwarding**: a forwarded block is never authored text (`forwarded` is set);
+- **inline replies**: answers written *inside* the quoted text with no `>` marker, as
+  Outlook users do (“Responses below.”). These are recovered only when the earlier messages
+  of the thread are passed as `earlier`: a line of the quoted region that appears in none
+  of them was written by this sender. [`authored_thread()`](_autosummary/correspond.authored.html.md#correspond.authored.authored_thread) does that for a whole thread.
+
+Signatures (after 
+
+```
+``
+```
+
+– 
+
+```
+``
+```
+
+, a mobile footer, or a contact block after the sign-off) and legal
+disclaimers are split off; the sign-off itself (“Best,”, “/Ada”) stays in the text, since it
+is part of how the person writes.
+
+The reply-header and footer vocabulary is a seam: pass `markers=` a [`Markers`](_autosummary/correspond.authored.html.md#correspond.authored.Markers) with
+other patterns. The defaults cover English, French, German, Swedish, Spanish, Italian and
+Dutch clients. Prior art: `email-reply-parser` (top-posting, English) and
+`mail-parser-reply` (multilingual headers); neither recovers inline replies.
+
+### Functions
+
+| [`authored`](_autosummary/correspond.authored.html.md#correspond.authored.authored)(text, \*[, earlier, markers, ...])   | Split one email body (plain text) into what its sender wrote and everything else.                                                                |
+|------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`authored_thread`](_autosummary/correspond.authored.html.md#correspond.authored.authored_thread)(bodies, \*[, markers, ...])   | [`authored()`](_autosummary/correspond.authored.html.md#correspond.authored.authored) for each body of a thread, oldest first, each given every earlier body as `earlier`. |
+
+### Classes
+
+| [`Authored`](_autosummary/correspond.authored.html.md#correspond.authored.Authored)(text[, quoted, signature, ...])   | One email body split into what its sender wrote and everything else.   |
+|---------------------------------------------------------------------------------------------|------------------------------------------------------------------------|
+| [`Markers`](_autosummary/correspond.authored.html.md#correspond.authored.Markers)([reply_headers, ...])              | The patterns that recognise reply headers, forwards and footers.       |
+
+### *class* correspond.authored.Authored(text, quoted='', signature='', disclaimer='', inline=(), forwarded=False, inline_announced=False, notes=())
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+One email body split into what its sender wrote and everything else.
+
+#### *property* full_text *: [str](https://docs.python.org/3/builtins/stdtypes.html#str)*
+
+everything this sender wrote.
+
+* **Type:**
+  The top text and any recovered inline answers, in order
+
+#### to_dict()
+
+JSON-ready.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### *class* correspond.authored.Markers(reply_headers=(re.compile('^on\\\\\\\\b.{0, 300}\\\\\\\\bwrote\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^le\\\\\\\\b.{0, 300}\\\\\\\\ba [ée]crit\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^am\\\\\\\\b.{0, 300}\\\\\\\\bschrieb\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^(den|on)\\\\\\\\b.{0, 300}\\\\\\\\bskrev\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^el\\\\\\\\b.{0, 300}\\\\\\\\bescribi[óo]\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^il\\\\\\\\b.{0, 300}\\\\\\\\bha scritto\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^op\\\\\\\\b.{0, 300}\\\\\\\\bschreef\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile("^-{2, }\\\\\\\\s\*(original message|message d'origine|ursprüngliche nachricht|ursprungligt meddelande|mensaje original|messaggio originale|oorspronkelijk bericht)\\\\\\\\s\*-{2, }$", re.IGNORECASE)), reply_header_tails=(re.compile('^.{0, 120}\\\\\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\\\\\s\*: $', re.IGNORECASE), ), forward_headers=(re.compile('^-{2, }\\\\\\\\s\*(forwarded message|message transf[ée]r[ée]|weitergeleitete nachricht|vidarebefordrat meddelande|mensaje reenviado|messaggio inoltrato|doorgestuurd bericht)\\\\\\\\s\*-{2, }$', re.IGNORECASE), re.compile('^begin forwarded message\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^d[ée]but du message r[ée]exp[ée]di[ée]\\\\\\\\s\*: $', re.IGNORECASE)), header_from=(re.compile('^\\\\\\\\\*\*(from|de|från|von|van|da|fra)\\\\\\\\s\*:\\\\\\\\\*\*\\\\\\\\s\*\\\\\\\\S.\*$', re.IGNORECASE), ), header_field=(re.compile('^\\\\\\\\\*\*(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\\\\\s\*:\\\\\\\\\*\*(\\\\\\\\s|$)', re.IGNORECASE), ), separators=(re.compile('^_{10, }$', re.IGNORECASE), re.compile('^-{20, }$', re.IGNORECASE)), signature_starts=(re.compile('^--\\\\\\\\s\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf) (my|mon|ma|min|mein|meinem|mi|il mio|mijn)\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^von meinem \\\\\\\\S+ gesendet$', re.IGNORECASE), re.compile('^get outlook for\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^(obtenir|télécharger) outlook pour\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^h[äa]mta outlook f[öo]r\\\\\\\\b.\*$', re.IGNORECASE)), sign_offs=(re.compile('^/\\\\\\\\s?\\\\\\\\w[\\\\\\\\w .-]{0, 30}$', re.IGNORECASE), re.compile('^(best|best regards|kind regards|warm regards|regards|cheers|thanks|thank you|many thanks|all the best|br|brgds|rgds|cordialement|bien cordialement|bien à (vous|toi)|amitiés|bonne journée|merci|mvh|m, re.IGNORECASE)), contact=(re.compile('(\\\\\\\\+|00)\\\\\\\\d[\\\\\\\\d ().-]{6, }\\\\\\\\d', re.IGNORECASE), re.compile('\\\\\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\\\\\b\\\\\\\\.?\\\\\\\\s\*: ?', re.IGNORECASE), re.compile('https?: //|\\\\\\\\bwww\\\\\\\\.', re.IGNORECASE), re.compile('[\\\\\\\\w.+-]+@[\\\\\\\\w-]+\\\\\\\\.[\\\\\\\\w.]+', re.IGNORECASE)), disclaimers=(re.compile('\\\\\\\\b(this|the) (e-?mail|message)( and any (attachments?|files?))?.{0, 80}\\\\\\\\b(confidential|privileged|intended (solely |only )?for)\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bconfidentiality notice\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bce (message|courriel|mail)( et (toutes )?(les|ses) pi[èe]ces jointes)?.{0, 80}\\\\\\\\b(confidentiel|destin[ée] exclusivement)', re.IGNORECASE), re.compile('\\\\\\\\bdetta (e-?post|meddelande).{0, 80}\\\\\\\\bkonfidentiell', re.IGNORECASE), re.compile('\\\\\\\\bplease consider the environment before printing\\\\\\\\b', re.IGNORECASE), re.compile("\\\\\\\\bpensez à l'environnement avant d'imprimer\\\\\\\\b", re.IGNORECASE)), inline_announcements=(re.compile('\\\\\\\\b(see )?(my )?(answers?|responses?|replies|comments?|notes?) (are )?(below|inline|in (red|blue|bold|green))\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(see|cf\\\\\\\\.?) below\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(réponses?|commentaires?) (ci-dessous|en (rouge|bleu|gras)|dans le texte)\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bvoir ci-dessous\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(svar|kommentarer) (nedan|i texten|med (rött|blått))\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(antworten|kommentare) (unten|im text|in rot)\\\\\\\\b', re.IGNORECASE)), header_window=4)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+The patterns that recognise reply headers, forwards and footers. Every field is a tuple of compiled regexes matched against one stripped line.
+
+#### contact *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Pattern](https://docs.python.org/3/library/re.html#re.Pattern), ...]* *= (re.compile('(\\\\+|00)\\\\d[\\\\d ().-]{6,}\\\\d', re.IGNORECASE), re.compile('\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\b\\\\.?\\\\s\*:?', re.IGNORECASE), re.compile('https?://|\\\\bwww\\\\.', re.IGNORECASE), re.compile('[\\\\w.+-]+@[\\\\w-]+\\\\.[\\\\w.]+', re.IGNORECASE))*
+
+A line that looks like contact details (phone, URL, address) — the body of a signature block.
+
+#### disclaimers *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Pattern](https://docs.python.org/3/library/re.html#re.Pattern), ...]* *= (re.compile('\\\\b(this|the) (e-?mail|message)( and any (attachments?|files?))?.{0,80}\\\\b(confidential|privileged|intended (solely |only )?for)\\\\b', re.IGNORECASE), re.compile('\\\\bconfidentiality notice\\\\b', re.IGNORECASE), re.compile('\\\\bce (message|courriel|mail)( et (toutes )?(les|ses) pi[èe]ces jointes)?.{0,80}\\\\b(confidentiel|destin[ée] exclusivement)', re.IGNORECASE), re.compile('\\\\bdetta (e-?post|meddelande).{0,80}\\\\bkonfidentiell', re.IGNORECASE), re.compile('\\\\bplease consider the environment before printing\\\\b', re.IGNORECASE), re.compile("\\\\bpensez à l'environnement avant d'imprimer\\\\b", re.IGNORECASE))*
+
+A line that opens a legal disclaimer; it and everything after it are dropped.
+
+#### forward_headers *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Pattern](https://docs.python.org/3/library/re.html#re.Pattern), ...]* *= (re.compile('^-{2,}\\\\s\*(forwarded message|message transf[ée]r[ée]|weitergeleitete nachricht|vidarebefordrat meddelande|mensaje reenviado|messaggio inoltrato|doorgestuurd bericht)\\\\s\*-{2,}$', re.IGNORECASE), re.compile('^begin forwarded message\\\\s\*:$', re.IGNORECASE), re.compile('^d[ée]but du message r[ée]exp[ée]di[ée]\\\\s\*:$', re.IGNORECASE))*
+
+A line that starts a forwarded block.
+
+#### header_field *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Pattern](https://docs.python.org/3/library/re.html#re.Pattern), ...]* *= (re.compile('^\\\\\*\*(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\s\*:\\\\\*\*(\\\\s|$)', re.IGNORECASE),)*
+
+A line that must follow `header_from` within a few lines for it to count as a header block.
+
+#### header_from *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Pattern](https://docs.python.org/3/library/re.html#re.Pattern), ...]* *= (re.compile('^\\\\\*\*(from|de|från|von|van|da|fra)\\\\s\*:\\\\\*\*\\\\s\*\\\\S.\*$', re.IGNORECASE),)*
+
+Ada <ada@…>”).
+
+* **Type:**
+  The first line of an Outlook-style header block (”From
+
+#### header_window *: [int](https://docs.python.org/3/builtins/functions.html#int)* *= 4*
+
+How many lines after `header_from` may hold the `header_field` that confirms it.
+
+#### inline_announcements *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Pattern](https://docs.python.org/3/library/re.html#re.Pattern), ...]* *= (re.compile('\\\\b(see )?(my )?(answers?|responses?|replies|comments?|notes?) (are )?(below|inline|in (red|blue|bold|green))\\\\b', re.IGNORECASE), re.compile('\\\\b(see|cf\\\\.?) below\\\\b', re.IGNORECASE), re.compile('\\\\b(réponses?|commentaires?) (ci-dessous|en (rouge|bleu|gras)|dans le texte)\\\\b', re.IGNORECASE), re.compile('\\\\bvoir ci-dessous\\\\b', re.IGNORECASE), re.compile('\\\\b(svar|kommentarer) (nedan|i texten|med (rött|blått))\\\\b', re.IGNORECASE), re.compile('\\\\b(antworten|kommentare) (unten|im text|in rot)\\\\b', re.IGNORECASE))*
+
+Short top text that announces answers written inside the quote (“Responses below.”).
+
+#### reply_header_tails *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Pattern](https://docs.python.org/3/library/re.html#re.Pattern), ...]* *= (re.compile('^.{0,120}\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\s\*:$', re.IGNORECASE),)*
+
+“), never authored text.
+
+* **Type:**
+  The second line of a wrapped reply header (”wrote
+
+#### reply_headers *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Pattern](https://docs.python.org/3/library/re.html#re.Pattern), ...]* *= (re.compile('^on\\\\b.{0,300}\\\\bwrote\\\\s\*:$', re.IGNORECASE), re.compile('^le\\\\b.{0,300}\\\\ba [ée]crit\\\\s\*:$', re.IGNORECASE), re.compile('^am\\\\b.{0,300}\\\\bschrieb\\\\b.{0,300}:$', re.IGNORECASE), re.compile('^(den|on)\\\\b.{0,300}\\\\bskrev\\\\b.{0,300}:$', re.IGNORECASE), re.compile('^el\\\\b.{0,300}\\\\bescribi[óo]\\\\s\*:$', re.IGNORECASE), re.compile('^il\\\\b.{0,300}\\\\bha scritto\\\\s\*:$', re.IGNORECASE), re.compile('^op\\\\b.{0,300}\\\\bschreef\\\\b.{0,300}:$', re.IGNORECASE), re.compile("^-{2,}\\\\s\*(original message|message d'origine|ursprüngliche nachricht|ursprungligt meddelande|mensaje original|messaggio originale|oorspronkelijk bericht)\\\\s\*-{2,}$", re.IGNORECASE))*
+
+“, “—–Original Message—–“).
+
+* **Type:**
+  A line that, on its own, starts the quoted region (”On … wrote
+
+#### separators *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Pattern](https://docs.python.org/3/library/re.html#re.Pattern), ...]* *= (re.compile('^_{10,}$', re.IGNORECASE), re.compile('^-{20,}$', re.IGNORECASE))*
+
+A separator line Outlook puts above its header block.
+
+#### sign_offs *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Pattern](https://docs.python.org/3/library/re.html#re.Pattern), ...]* *= (re.compile('^/\\\\s?\\\\w[\\\\w .-]{0,30}$', re.IGNORECASE), re.compile('^(best|best regards|kind regards|warm regards|regards|cheers|thanks|thank you|many thanks|all the best|br|brgds|rgds|cordialement|bien cordialement|bien à (vous|toi)|amitiés|bonne journée|merci|mvh|m, re.IGNORECASE))*
+
+what is after it, in a trailing block of short lines, is a signature.
+
+* **Type:**
+  A sign-off line
+
+#### signature_starts *: [tuple](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[Pattern](https://docs.python.org/3/library/re.html#re.Pattern), ...]* *= (re.compile('^--\\\\s\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf) (my|mon|ma|min|mein|meinem|mi|il mio|mijn)\\\\b.\*$', re.IGNORECASE), re.compile('^von meinem \\\\S+ gesendet$', re.IGNORECASE), re.compile('^get outlook for\\\\b.\*$', re.IGNORECASE), re.compile('^(obtenir|télécharger) outlook pour\\\\b.\*$', re.IGNORECASE), re.compile('^h[äa]mta outlook f[öo]r\\\\b.\*$', re.IGNORECASE))*
+
+A line that starts a signature on its own (”– “, a mobile footer).
+
+### correspond.authored.authored(text, \*, earlier=(), markers=Markers(reply_headers=(re.compile('^on\\\\\\\\b.{0, 300}\\\\\\\\bwrote\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^le\\\\\\\\b.{0, 300}\\\\\\\\ba [ée]crit\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^am\\\\\\\\b.{0, 300}\\\\\\\\bschrieb\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^(den|on)\\\\\\\\b.{0, 300}\\\\\\\\bskrev\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^el\\\\\\\\b.{0, 300}\\\\\\\\bescribi[óo]\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^il\\\\\\\\b.{0, 300}\\\\\\\\bha scritto\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^op\\\\\\\\b.{0, 300}\\\\\\\\bschreef\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile("^-{2, }\\\\\\\\s\*(original message|message d'origine|ursprüngliche nachricht|ursprungligt meddelande|mensaje original|messaggio originale|oorspronkelijk bericht)\\\\\\\\s\*-{2, }$", re.IGNORECASE)), reply_header_tails=(re.compile('^.{0, 120}\\\\\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\\\\\s\*: $', re.IGNORECASE), ), forward_headers=(re.compile('^-{2, }\\\\\\\\s\*(forwarded message|message transf[ée]r[ée]|weitergeleitete nachricht|vidarebefordrat meddelande|mensaje reenviado|messaggio inoltrato|doorgestuurd bericht)\\\\\\\\s\*-{2, }$', re.IGNORECASE), re.compile('^begin forwarded message\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^d[ée]but du message r[ée]exp[ée]di[ée]\\\\\\\\s\*: $', re.IGNORECASE)), header_from=(re.compile('^\\\\\\\\\*\*(from|de|från|von|van|da|fra)\\\\\\\\s\*:\\\\\\\\\*\*\\\\\\\\s\*\\\\\\\\S.\*$', re.IGNORECASE), ), header_field=(re.compile('^\\\\\\\\\*\*(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\\\\\s\*:\\\\\\\\\*\*(\\\\\\\\s|$)', re.IGNORECASE), ), separators=(re.compile('^_{10, }$', re.IGNORECASE), re.compile('^-{20, }$', re.IGNORECASE)), signature_starts=(re.compile('^--\\\\\\\\s\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf) (my|mon|ma|min|mein|meinem|mi|il mio|mijn)\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^von meinem \\\\\\\\S+ gesendet$', re.IGNORECASE), re.compile('^get outlook for\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^(obtenir|télécharger) outlook pour\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^h[äa]mta outlook f[öo]r\\\\\\\\b.\*$', re.IGNORECASE)), sign_offs=(re.compile('^/\\\\\\\\s?\\\\\\\\w[\\\\\\\\w .-]{0, 30}$', re.IGNORECASE), re.compile('^(best|best regards|kind regards|warm regards|regards|cheers|thanks|thank you|many thanks|all the best|br|brgds|rgds|cordialement|bien cordialement|bien à (vous|toi)|amitiés|bonne journée|merci|mvh|m, re.IGNORECASE)), contact=(re.compile('(\\\\\\\\+|00)\\\\\\\\d[\\\\\\\\d ().-]{6, }\\\\\\\\d', re.IGNORECASE), re.compile('\\\\\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\\\\\b\\\\\\\\.?\\\\\\\\s\*: ?', re.IGNORECASE), re.compile('https?: //|\\\\\\\\bwww\\\\\\\\.', re.IGNORECASE), re.compile('[\\\\\\\\w.+-]+@[\\\\\\\\w-]+\\\\\\\\.[\\\\\\\\w.]+', re.IGNORECASE)), disclaimers=(re.compile('\\\\\\\\b(this|the) (e-?mail|message)( and any (attachments?|files?))?.{0, 80}\\\\\\\\b(confidential|privileged|intended (solely |only )?for)\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bconfidentiality notice\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bce (message|courriel|mail)( et (toutes )?(les|ses) pi[èe]ces jointes)?.{0, 80}\\\\\\\\b(confidentiel|destin[ée] exclusivement)', re.IGNORECASE), re.compile('\\\\\\\\bdetta (e-?post|meddelande).{0, 80}\\\\\\\\bkonfidentiell', re.IGNORECASE), re.compile('\\\\\\\\bplease consider the environment before printing\\\\\\\\b', re.IGNORECASE), re.compile("\\\\\\\\bpensez à l'environnement avant d'imprimer\\\\\\\\b", re.IGNORECASE)), inline_announcements=(re.compile('\\\\\\\\b(see )?(my )?(answers?|responses?|replies|comments?|notes?) (are )?(below|inline|in (red|blue|bold|green))\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(see|cf\\\\\\\\.?) below\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(réponses?|commentaires?) (ci-dessous|en (rouge|bleu|gras)|dans le texte)\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bvoir ci-dessous\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(svar|kommentarer) (nedan|i texten|med (rött|blått))\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(antworten|kommentare) (unten|im text|in rot)\\\\\\\\b', re.IGNORECASE)), header_window=4), min_coverage=0.6)
+
+Split one email body (plain text) into what its sender wrote and everything else.
+
+`earlier` is the text of messages that came before it in the thread (raw bodies are
+fine); with it, answers written inside the quoted text are recovered into `inline`.
+They are trusted only when at least `min_coverage` of the quoted lines are found in
+`earlier`, since a thread missing its earlier messages would make every quoted line look new.
+
+* **Return type:**
+  [`Authored`](_autosummary/correspond.authored.html.md#correspond.authored.Authored)
+
+```pycon
+>>> authored("Thanks!\n\n-- \nAda Lovelace\nAnalytical Engines Ltd").signature
+'--\nAda Lovelace\nAnalytical Engines Ltd'
+```
+
+### correspond.authored.authored_thread(bodies, \*, markers=Markers(reply_headers=(re.compile('^on\\\\\\\\b.{0, 300}\\\\\\\\bwrote\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^le\\\\\\\\b.{0, 300}\\\\\\\\ba [ée]crit\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^am\\\\\\\\b.{0, 300}\\\\\\\\bschrieb\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^(den|on)\\\\\\\\b.{0, 300}\\\\\\\\bskrev\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^el\\\\\\\\b.{0, 300}\\\\\\\\bescribi[óo]\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^il\\\\\\\\b.{0, 300}\\\\\\\\bha scritto\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^op\\\\\\\\b.{0, 300}\\\\\\\\bschreef\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile("^-{2, }\\\\\\\\s\*(original message|message d'origine|ursprüngliche nachricht|ursprungligt meddelande|mensaje original|messaggio originale|oorspronkelijk bericht)\\\\\\\\s\*-{2, }$", re.IGNORECASE)), reply_header_tails=(re.compile('^.{0, 120}\\\\\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\\\\\s\*: $', re.IGNORECASE), ), forward_headers=(re.compile('^-{2, }\\\\\\\\s\*(forwarded message|message transf[ée]r[ée]|weitergeleitete nachricht|vidarebefordrat meddelande|mensaje reenviado|messaggio inoltrato|doorgestuurd bericht)\\\\\\\\s\*-{2, }$', re.IGNORECASE), re.compile('^begin forwarded message\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^d[ée]but du message r[ée]exp[ée]di[ée]\\\\\\\\s\*: $', re.IGNORECASE)), header_from=(re.compile('^\\\\\\\\\*\*(from|de|från|von|van|da|fra)\\\\\\\\s\*:\\\\\\\\\*\*\\\\\\\\s\*\\\\\\\\S.\*$', re.IGNORECASE), ), header_field=(re.compile('^\\\\\\\\\*\*(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\\\\\s\*:\\\\\\\\\*\*(\\\\\\\\s|$)', re.IGNORECASE), ), separators=(re.compile('^_{10, }$', re.IGNORECASE), re.compile('^-{20, }$', re.IGNORECASE)), signature_starts=(re.compile('^--\\\\\\\\s\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf) (my|mon|ma|min|mein|meinem|mi|il mio|mijn)\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^von meinem \\\\\\\\S+ gesendet$', re.IGNORECASE), re.compile('^get outlook for\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^(obtenir|télécharger) outlook pour\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^h[äa]mta outlook f[öo]r\\\\\\\\b.\*$', re.IGNORECASE)), sign_offs=(re.compile('^/\\\\\\\\s?\\\\\\\\w[\\\\\\\\w .-]{0, 30}$', re.IGNORECASE), re.compile('^(best|best regards|kind regards|warm regards|regards|cheers|thanks|thank you|many thanks|all the best|br|brgds|rgds|cordialement|bien cordialement|bien à (vous|toi)|amitiés|bonne journée|merci|mvh|m, re.IGNORECASE)), contact=(re.compile('(\\\\\\\\+|00)\\\\\\\\d[\\\\\\\\d ().-]{6, }\\\\\\\\d', re.IGNORECASE), re.compile('\\\\\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\\\\\b\\\\\\\\.?\\\\\\\\s\*: ?', re.IGNORECASE), re.compile('https?: //|\\\\\\\\bwww\\\\\\\\.', re.IGNORECASE), re.compile('[\\\\\\\\w.+-]+@[\\\\\\\\w-]+\\\\\\\\.[\\\\\\\\w.]+', re.IGNORECASE)), disclaimers=(re.compile('\\\\\\\\b(this|the) (e-?mail|message)( and any (attachments?|files?))?.{0, 80}\\\\\\\\b(confidential|privileged|intended (solely |only )?for)\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bconfidentiality notice\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bce (message|courriel|mail)( et (toutes )?(les|ses) pi[èe]ces jointes)?.{0, 80}\\\\\\\\b(confidentiel|destin[ée] exclusivement)', re.IGNORECASE), re.compile('\\\\\\\\bdetta (e-?post|meddelande).{0, 80}\\\\\\\\bkonfidentiell', re.IGNORECASE), re.compile('\\\\\\\\bplease consider the environment before printing\\\\\\\\b', re.IGNORECASE), re.compile("\\\\\\\\bpensez à l'environnement avant d'imprimer\\\\\\\\b", re.IGNORECASE)), inline_announcements=(re.compile('\\\\\\\\b(see )?(my )?(answers?|responses?|replies|comments?|notes?) (are )?(below|inline|in (red|blue|bold|green))\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(see|cf\\\\\\\\.?) below\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(réponses?|commentaires?) (ci-dessous|en (rouge|bleu|gras)|dans le texte)\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bvoir ci-dessous\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(svar|kommentarer) (nedan|i texten|med (rött|blått))\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(antworten|kommentare) (unten|im text|in rot)\\\\\\\\b', re.IGNORECASE)), header_window=4), min_coverage=0.6)
+
+[`authored()`](_autosummary/correspond.authored.html.md#correspond.authored.authored) for each body of a thread, oldest first, each given every earlier body as `earlier`.
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Authored`](_autosummary/correspond.authored.html.md#correspond.authored.Authored)]
+
+```pycon
+>>> first, second = authored_thread([
+...     "Can we ship Friday?\nAnd who writes the notes?",
+...     "Answers below.\n\nFrom: Ada <ada@example.org>\nSent: Monday\n"
+...     "Can we ship Friday?\nYes, Friday works.\nAnd who writes the notes?\nGrace does.",
+... ])
+>>> second.inline
+('Yes, Friday works.', 'Grace does.')
+```
 
 
 # _autosummary/correspond.channels.github.html.md
@@ -1894,21 +2101,22 @@ Grade an inbound delivery on `channel` from its headers and raw body.
 
 ### Modules
 
-| [`channels`](_autosummary/correspond.channels.html.md#module-correspond.channels)       | The built-in channel adapters, one module each.                                                                |
-|--------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------|
-| [`errors`](_autosummary/correspond.errors.html.md#module-correspond.errors)           | What correspond raises, and the vocabulary a failed write reports.                                             |
-| [`idempotency`](_autosummary/correspond.idempotency.html.md#module-correspond.idempotency) | Idempotent sends: an `idempotency_key` keeps a message from going out twice.                                   |
-| [`mcp`](_autosummary/correspond.mcp.html.md#module-correspond.mcp)                 | MCP over stdio: the same tools, for Claude Desktop and other local MCP clients.                                |
-| [`model`](_autosummary/correspond.model.html.md#module-correspond.model)             | The data model every channel is described in.                                                                  |
-| [`ops`](_autosummary/correspond.ops.html.md#module-correspond.ops)                 | The operations: small protocols an adapter implements a subset of, and the verbs that call them.               |
-| [`outbound`](_autosummary/correspond.outbound.html.md#module-correspond.outbound)       | The `before_send` check: what every write runs, with the conversation's audience, before anything leaves.      |
-| [`registry`](_autosummary/correspond.registry.html.md#module-correspond.registry)       | Which channels exist: the built-in channel table, the registry built from it, and what each channel needs.     |
-| [`render`](_autosummary/correspond.render.html.md#module-correspond.render)           | Turning a tool's result into terminal output: `(stdout, stderr, exit code)`.                                   |
-| [`routing`](_autosummary/correspond.routing.html.md#module-correspond.routing)         | Deciding what a message is about: a transparent rule chain.                                                    |
-| [`settings`](_autosummary/correspond.settings.html.md#module-correspond.settings)       | Where correspond keeps state and reads configuration, and how it finds a secret.                               |
-| [`stores`](_autosummary/correspond.stores.html.md#module-correspond.stores)           | The state stores: listen cursors, the web inbox's reports and blobs, the Telegram log.                         |
-| [`testing`](_autosummary/correspond.testing.html.md#module-correspond.testing)         | An in-memory channel for tests and rehearsals, and `python -m correspond.testing`: the CLI with it registered. |
-| [`tools`](_autosummary/correspond.tools.html.md#module-correspond.tools)             | The single source of truth for every surface: plain functions, flat arguments in, JSON-ready dicts out.        |
+| [`authored`](_autosummary/correspond.authored.html.md#module-correspond.authored)       | What the sender of an email actually wrote: their text, apart from quoted replies, forwarded blocks, signatures and disclaimers.   |
+|--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| [`channels`](_autosummary/correspond.channels.html.md#module-correspond.channels)       | The built-in channel adapters, one module each.                                                                                    |
+| [`errors`](_autosummary/correspond.errors.html.md#module-correspond.errors)           | What correspond raises, and the vocabulary a failed write reports.                                                                 |
+| [`idempotency`](_autosummary/correspond.idempotency.html.md#module-correspond.idempotency) | Idempotent sends: an `idempotency_key` keeps a message from going out twice.                                                       |
+| [`mcp`](_autosummary/correspond.mcp.html.md#module-correspond.mcp)                 | MCP over stdio: the same tools, for Claude Desktop and other local MCP clients.                                                    |
+| [`model`](_autosummary/correspond.model.html.md#module-correspond.model)             | The data model every channel is described in.                                                                                      |
+| [`ops`](_autosummary/correspond.ops.html.md#module-correspond.ops)                 | The operations: small protocols an adapter implements a subset of, and the verbs that call them.                                   |
+| [`outbound`](_autosummary/correspond.outbound.html.md#module-correspond.outbound)       | The `before_send` check: what every write runs, with the conversation's audience, before anything leaves.                          |
+| [`registry`](_autosummary/correspond.registry.html.md#module-correspond.registry)       | Which channels exist: the built-in channel table, the registry built from it, and what each channel needs.                         |
+| [`render`](_autosummary/correspond.render.html.md#module-correspond.render)           | Turning a tool's result into terminal output: `(stdout, stderr, exit code)`.                                                       |
+| [`routing`](_autosummary/correspond.routing.html.md#module-correspond.routing)         | Deciding what a message is about: a transparent rule chain.                                                                        |
+| [`settings`](_autosummary/correspond.settings.html.md#module-correspond.settings)       | Where correspond keeps state and reads configuration, and how it finds a secret.                                                   |
+| [`stores`](_autosummary/correspond.stores.html.md#module-correspond.stores)           | The state stores: listen cursors, the web inbox's reports and blobs, the Telegram log.                                             |
+| [`testing`](_autosummary/correspond.testing.html.md#module-correspond.testing)         | An in-memory channel for tests and rehearsals, and `python -m correspond.testing`: the CLI with it registered.                     |
+| [`tools`](_autosummary/correspond.tools.html.md#module-correspond.tools)             | The single source of truth for every surface: plain functions, flat arguments in, JSON-ready dicts out.                            |
 
 
 # _autosummary/correspond.idempotency.html.md
@@ -3688,6 +3896,8 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 
 | [`audience`](_autosummary/correspond.tools.html.md#correspond.tools.audience)(ref, \*[, cc, bcc])                    | Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow.   |
 |--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`authored`](_autosummary/correspond.tools.html.md#correspond.tools.authored)(text)                                  | What the sender of one email body wrote: their text and inline answers, apart from quoted replies, forwards, signature and disclaimer.                                                                         |
+| [`authored_thread`](_autosummary/correspond.tools.html.md#correspond.tools.authored_thread)(path, \*[, author])             | What each sender of an email thread wrote, oldest first, with inline answers recovered by comparing each message with the earlier ones.                                                                        |
 | [`capabilities`](_autosummary/correspond.tools.html.md#correspond.tools.capabilities)(channel)                           | What a channel can do, graded per operation (full, partial, none), with its limits, rate limits and notes.                                                                                                     |
 | [`channels`](_autosummary/correspond.tools.html.md#correspond.tools.channels)()                                      | List the channels correspond knows: available, missing a module, planned (with its tracking issue), or registered from outside.                                                                                |
 | [`edit`](_autosummary/correspond.tools.html.md#correspond.tools.edit)(ref, message_id, text, \*[, dry_run])      | Replace the text of a message this account wrote (`message_id` as `read` shows it).                                                                                                                            |
@@ -3700,19 +3910,33 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 | [`send`](_autosummary/correspond.tools.html.md#correspond.tools.send)(ref, text, \*[, title, reply_to, ...])     | Send a message to a conversation.                                                                                                                                                                              |
 | [`unlabel`](_autosummary/correspond.tools.html.md#correspond.tools.unlabel)(ref, labels, \*[, dry_run])             | Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation.                                                                                                              |
 
-### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'capabilities': 'read', 'channels': 'read', 'edit': 'external', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'requirements': 'read', 'send': 'external', 'unlabel': 'external'}*
+### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'authored': 'read', 'authored_thread': 'read', 'capabilities': 'read', 'channels': 'read', 'edit': 'external', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'requirements': 'read', 'send': 'external', 'unlabel': 'external'}*
 
 What each tool touches, for surfaces deciding what to expose. `read` stays on this
 machine; `external-read` reads a remote service (`listen` also stores its cursor
 locally); `external` writes to a remote service, where people see it.
 
-### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function label>, <function unlabel>]*
+### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function label>, <function unlabel>, <function authored>, <function authored_thread>]*
 
 Every tool, in the order surfaces list them.
 
 ### correspond.tools.audience(ref, , cc=None, bcc=None)
 
 Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### correspond.tools.authored(text)
+
+What the sender of one email body wrote: their text and inline answers, apart from quoted replies, forwards, signature and disclaimer. For inline answers (“Responses below.”), use authored_thread, which can compare against the earlier messages.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### correspond.tools.authored_thread(path, , author=None)
+
+What each sender of an email thread wrote, oldest first, with inline answers recovered by comparing each message with the earlier ones. `path` is a JSON file: a list of bodies, a list of message objects, or an object with `messages` (a Gmail get_thread result works as is); `author` keeps only senders containing that text.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -3801,16 +4025,18 @@ Remove labels (comma-separated; a label name may not itself contain a comma) fro
 
 # About this build
 
-This documentation was built on **2026-09-22 18:56 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/b9c37840b7a4977f84dbaa6af8f4c415a1482c38"><code>b9c3784</code></a> on branch <code>main</code>, for **correspond 0.0.7** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-04 07:51 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/3bfc17871b4b3cf8b8249b9f1b52cb5d4213dcb6"><code>3bfc178</code></a> on branch <code>main</code>, for **correspond 0.0.8** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.8) is behind the latest release on PyPI (0.0.9): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/b9c37840b7a4977f84dbaa6af8f4c415a1482c38"><code>b9c37840b7a4977f84dbaa6af8f4c415a1482c38</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/3bfc17871b4b3cf8b8249b9f1b52cb5d4213dcb6"><code>3bfc17871b4b3cf8b8249b9f1b52cb5d4213dcb6</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -3821,9 +4047,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/35770279788">35770279788</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/37187005689">37187005689</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>b9c37840b7a4977f84dbaa6af8f4c415a1482c38</code> (in the history of the built commit)  |
+| Event commit | <code>3bfc17871b4b3cf8b8249b9f1b52cb5d4213dcb6</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -3848,13 +4074,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.7/">0.0.7</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.9/">0.0.9</a>, newer than the documented version (0.0.8).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout b9c37840b7a4977f84dbaa6af8f4c415a1482c38
+git checkout 3bfc17871b4b3cf8b8249b9f1b52cb5d4213dcb6
 pip install "epythet==0.2.12"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
@@ -3878,7 +4104,7 @@ Skills are folders holding a `SKILL.md` (the [Agent Skills](https://agentskills.
 
 ### `correspond`
 
-Read, listen to and send messages on the operator’s channels through one CLI, correspond - GitHub issues, pull requests and discussions; email; ntfy and macOS notifications; a Telegram bot; a web feedback inbox - and do it safely. Use when asked to read a GitHub issue or discussion thread, check a channel or an inbox for anything new, notify the operator, post a comment or a reply, react to a message, find out whether a channel can do something, what a channel needs before it works, or who really sent a message and how sure that is. Triggers on “read issue”, “what’s new on”, “check the inbox”, “send me a notification”, “ping me when”, “post a comment”, “reply on the thread”, “react to”, “can telegram do”, “set up correspond”, “is this sender verified”. Every write is dry-run first and shown to the operator.
+Read, listen to and send messages on the operator’s channels through one CLI, correspond - GitHub issues, pull requests and discussions; email; ntfy and macOS notifications; a Telegram bot; a web feedback inbox - and do it safely. Use when asked to read a GitHub issue or discussion thread, check a channel or an inbox for anything new, notify the operator, post a comment or a reply, react to a message, find out whether a channel can do something, what a channel needs before it works, or who really sent a message and how sure that is. Also strips quoted replies, forwards, signatures and disclaimers from email bodies to get what the sender actually wrote. Triggers on “read issue”, “what did they actually write”, “strip the quoted reply”, “what’s new on”, “check the inbox”, “send me a notification”, “ping me when”, “post a comment”, “reply on the thread”, “react to”, “can telegram do”, “set up correspond”, “is this sender verified”. Every write is dry-run first and shown to the operator.
 
 ```bash
 gh skill install thorwhalen/correspond correspond --agent claude-code

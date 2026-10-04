@@ -22,6 +22,8 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 
 | [`audience`](#correspond.tools.audience)(ref, \*[, cc, bcc])                    | Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow.   |
 |--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`authored`](#correspond.tools.authored)(text)                                  | What the sender of one email body wrote: their text and inline answers, apart from quoted replies, forwards, signature and disclaimer.                                                                         |
+| [`authored_thread`](#correspond.tools.authored_thread)(path, \*[, author])             | What each sender of an email thread wrote, oldest first, with inline answers recovered by comparing each message with the earlier ones.                                                                        |
 | [`capabilities`](#correspond.tools.capabilities)(channel)                           | What a channel can do, graded per operation (full, partial, none), with its limits, rate limits and notes.                                                                                                     |
 | [`channels`](#correspond.tools.channels)()                                      | List the channels correspond knows: available, missing a module, planned (with its tracking issue), or registered from outside.                                                                                |
 | [`edit`](#correspond.tools.edit)(ref, message_id, text, \*[, dry_run])      | Replace the text of a message this account wrote (`message_id` as `read` shows it).                                                                                                                            |
@@ -34,19 +36,33 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 | [`send`](#correspond.tools.send)(ref, text, \*[, title, reply_to, ...])     | Send a message to a conversation.                                                                                                                                                                              |
 | [`unlabel`](#correspond.tools.unlabel)(ref, labels, \*[, dry_run])             | Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation.                                                                                                              |
 
-### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'capabilities': 'read', 'channels': 'read', 'edit': 'external', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'requirements': 'read', 'send': 'external', 'unlabel': 'external'}*
+### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'authored': 'read', 'authored_thread': 'read', 'capabilities': 'read', 'channels': 'read', 'edit': 'external', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'requirements': 'read', 'send': 'external', 'unlabel': 'external'}*
 
 What each tool touches, for surfaces deciding what to expose. `read` stays on this
 machine; `external-read` reads a remote service (`listen` also stores its cursor
 locally); `external` writes to a remote service, where people see it.
 
-### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function label>, <function unlabel>]*
+### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function label>, <function unlabel>, <function authored>, <function authored_thread>]*
 
 Every tool, in the order surfaces list them.
 
 ### correspond.tools.audience(ref, , cc=None, bcc=None)
 
 Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### correspond.tools.authored(text)
+
+What the sender of one email body wrote: their text and inline answers, apart from quoted replies, forwards, signature and disclaimer. For inline answers (“Responses below.”), use authored_thread, which can compare against the earlier messages.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### correspond.tools.authored_thread(path, , author=None)
+
+What each sender of an email thread wrote, oldest first, with inline answers recovered by comparing each message with the earlier ones. `path` is a JSON file: a list of bodies, a list of message objects, or an object with `messages` (a Gmail get_thread result works as is); `author` keeps only senders containing that text.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

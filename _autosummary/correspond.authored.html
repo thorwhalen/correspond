@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="alternate" type="text/markdown" href="correspond.authored.html.md">
+<link rel="describedby" href="../llms.txt" type="text/markdown">
+<link rel="alternate" type="text/markdown" href="correspond.authored.html.md">
+<link rel="describedby" href="llms.txt">
+    <title>correspond.authored &#8212; correspond</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=64cc4de3f052d77215f0" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=c6155191" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=64cc4de3f052d77215f0"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0" />
+
+    <script src="../_static/documentation_options.js?v=53b53b71"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=fd10adb8"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/correspond.authored';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="correspond.channels" href="correspond.channels.html" />
+    <link rel="prev" title="correspond" href="correspond.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.8" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">correspond</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/correspond" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/correspond" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="correspond.html">correspond</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">correspond.authored</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="correspond.channels.html">correspond.channels</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.github.html">correspond.channels.github</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.webinbox.html">correspond.channels.webinbox</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.errors.html">correspond.errors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.idempotency.html">correspond.idempotency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.mcp.html">correspond.mcp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.model.html">correspond.model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.ops.html">correspond.ops</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.outbound.html">correspond.outbound</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.registry.html">correspond.registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.render.html">correspond.render</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.routing.html">correspond.routing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.settings.html">correspond.settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.stores.html">correspond.stores</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.testing.html">correspond.testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.tools.html">correspond.tools</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="correspond.html" class="nav-link">correspond</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">correspond.authored</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-correspond.authored">
+<span id="correspond-authored"></span><h1>correspond.authored<a class="headerlink" href="#module-correspond.authored" title="Link to this heading">#</a></h1>
+<p>What the sender of an email actually wrote: their text, apart from quoted replies, forwarded blocks, signatures and disclaimers.</p>
+<p>A reply body carries the whole conversation beneath it, so a profile, a summary or a search
+built from raw bodies mostly measures the people being quoted. <a class="reference internal" href="#correspond.authored.authored" title="correspond.authored.authored"><code class="xref py py-func docutils literal notranslate"><span class="pre">authored()</span></code></a> splits one
+body into its parts:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">body</span> <span class="o">=</span> <span class="s1">'''Fine by me, ship it Friday.</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="s1">/Ada</span>
+<span class="gp">...</span>
+<span class="gp">... </span><span class="s1">On Mon, 3 Mar 2025 at 10:00, Grace Hopper &lt;grace@example.org&gt; wrote:</span>
+<span class="gp">... </span><span class="s1">&gt; Can we ship on Friday?</span>
+<span class="gp">... </span><span class="s1">'''</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">found</span> <span class="o">=</span> <span class="n">authored</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">found</span><span class="o">.</span><span class="n">text</span>
+<span class="go">'Fine by me, ship it Friday.\n\n/Ada'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">found</span><span class="o">.</span><span class="n">quoted</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="go">'&gt; Can we ship on Friday?'</span>
+</pre></div>
+</div>
+<p>Three shapes are handled:</p>
+<ul class="simple">
+<li><p><strong>top-posting</strong>: the text above the first reply header (<code class="docutils literal notranslate"><span class="pre">On</span> <span class="pre">…</span> <span class="pre">wrote:</span></code> in several
+languages, an Outlook <code class="docutils literal notranslate"><span class="pre">From:</span> <span class="pre">…</span> <span class="pre">Sent:</span> <span class="pre">…</span></code> block, <code class="docutils literal notranslate"><span class="pre">-----Original</span> <span class="pre">Message-----</span></code>) or above
+a run of <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> lines;</p></li>
+<li><p><strong>forwarding</strong>: a forwarded block is never authored text (<code class="docutils literal notranslate"><span class="pre">forwarded</span></code> is set);</p></li>
+<li><p><strong>inline replies</strong>: answers written <em>inside</em> the quoted text with no <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> marker, as
+Outlook users do (“Responses below.”). These are recovered only when the earlier messages
+of the thread are passed as <code class="docutils literal notranslate"><span class="pre">earlier</span></code>: a line of the quoted region that appears in none
+of them was written by this sender. <a class="reference internal" href="#correspond.authored.authored_thread" title="correspond.authored.authored_thread"><code class="xref py py-func docutils literal notranslate"><span class="pre">authored_thread()</span></code></a> does that for a whole thread.</p></li>
+</ul>
+<p>Signatures (after <a href="#id1"><span class="problematic" id="id2">``</span></a>– <a href="#id3"><span class="problematic" id="id4">``</span></a>, a mobile footer, or a contact block after the sign-off) and legal
+disclaimers are split off; the sign-off itself (“Best,”, “/Ada”) stays in the text, since it
+is part of how the person writes.</p>
+<p>The reply-header and footer vocabulary is a seam: pass <code class="docutils literal notranslate"><span class="pre">markers=</span></code> a <a class="reference internal" href="#correspond.authored.Markers" title="correspond.authored.Markers"><code class="xref py py-class docutils literal notranslate"><span class="pre">Markers</span></code></a> with
+other patterns. The defaults cover English, French, German, Swedish, Spanish, Italian and
+Dutch clients. Prior art: <code class="docutils literal notranslate"><span class="pre">email-reply-parser</span></code> (top-posting, English) and
+<code class="docutils literal notranslate"><span class="pre">mail-parser-reply</span></code> (multilingual headers); neither recovers inline replies.</p>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.authored.authored" title="correspond.authored.authored"><code class="xref py py-obj docutils literal notranslate"><span class="pre">authored</span></code></a>(text, *[, earlier, markers, ...])</p></td>
+<td><p>Split one email body (plain text) into what its sender wrote and everything else.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.authored.authored_thread" title="correspond.authored.authored_thread"><code class="xref py py-obj docutils literal notranslate"><span class="pre">authored_thread</span></code></a>(bodies, *[, markers, ...])</p></td>
+<td><p><a class="reference internal" href="#correspond.authored.authored" title="correspond.authored.authored"><code class="xref py py-func docutils literal notranslate"><span class="pre">authored()</span></code></a> for each body of a thread, oldest first, each given every earlier body as <code class="docutils literal notranslate"><span class="pre">earlier</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.authored.Authored" title="correspond.authored.Authored"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Authored</span></code></a>(text[, quoted, signature, ...])</p></td>
+<td><p>One email body split into what its sender wrote and everything else.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.authored.Markers" title="correspond.authored.Markers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Markers</span></code></a>([reply_headers, ...])</p></td>
+<td><p>The patterns that recognise reply headers, forwards and footers.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.authored.Authored">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.authored.</span></span><span class="sig-name descname"><span class="pre">Authored</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quoted</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signature</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disclaimer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inline</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forwarded</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inline_announced</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/authored.html#Authored"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.authored.Authored" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One email body split into what its sender wrote and everything else.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="correspond.authored.Authored.full_text">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">full_text</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#correspond.authored.Authored.full_text" title="Link to this definition">#</a></dt>
+<dd><p>everything this sender wrote.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The top text and any recovered inline answers, in order</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.authored.Authored.to_dict">
+<span class="sig-name descname"><span class="pre">to_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/authored.html#Authored.to_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.authored.Authored.to_dict" title="Link to this definition">#</a></dt>
+<dd><p>JSON-ready.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.authored.Markers">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.authored.</span></span><span class="sig-name descname"><span class="pre">Markers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reply_headers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^on\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bwrote\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^le\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\ba</span> <span class="pre">[ée]crit\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^am\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bschrieb\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^(den|on)\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bskrev\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^el\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bescribi[óo]\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^il\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bha</span> <span class="pre">scritto\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^op\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bschreef\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile(&quot;^-{2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}\\\\s*(original</span> <span class="pre">message|message</span> <span class="pre">d'origine|ursprüngliche</span> <span class="pre">nachricht|ursprungligt</span> <span class="pre">meddelande|mensaje</span> <span class="pre">original|messaggio</span> <span class="pre">originale|oorspronkelijk</span> <span class="pre">bericht)\\\\s*-{2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}$&quot;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reply_header_tails</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">120}\\\\b(wrote|a</span> <span class="pre">[ée]crit|schrieb|skrev|escribi[óo]|ha</span> <span class="pre">scritto|schreef)\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forward_headers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^-{2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}\\\\s*(forwarded</span> <span class="pre">message|message</span> <span class="pre">transf[ée]r[ée]|weitergeleitete</span> <span class="pre">nachricht|vidarebefordrat</span> <span class="pre">meddelande|mensaje</span> <span class="pre">reenviado|messaggio</span> <span class="pre">inoltrato|doorgestuurd</span> <span class="pre">bericht)\\\\s*-{2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^begin</span> <span class="pre">forwarded</span> <span class="pre">message\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^d[ée]but</span> <span class="pre">du</span> <span class="pre">message</span> <span class="pre">r[ée]exp[ée]di[ée]\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_from</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^\\\\**(from|de|från|von|van|da|fra)\\\\s*:\\\\**\\\\s*\\\\S.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^\\\\**(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\s*:\\\\**(\\\\s|$)'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separators</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^_{10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^-{20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signature_starts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^--\\\\s*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden)</span> <span class="pre">(from|de|depuis|från|von|desde|da|vanaf)</span> <span class="pre">(my|mon|ma|min|mein|meinem|mi|il</span> <span class="pre">mio|mijn)\\\\b.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^von</span> <span class="pre">meinem</span> <span class="pre">\\\\S+</span> <span class="pre">gesendet$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^get</span> <span class="pre">outlook</span> <span class="pre">for\\\\b.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^(obtenir|télécharger)</span> <span class="pre">outlook</span> <span class="pre">pour\\\\b.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^h[äa]mta</span> <span class="pre">outlook</span> <span class="pre">f[öo]r\\\\b.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sign_offs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^/\\\\s?\\\\w[\\\\w</span> <span class="pre">.-]{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">30}$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^(best|best</span> <span class="pre">regards|kind</span> <span class="pre">regards|warm</span> <span class="pre">regards|regards|cheers|thanks|thank</span> <span class="pre">you|many</span> <span class="pre">thanks|all</span> <span class="pre">the</span> <span class="pre">best|br|brgds|rgds|cordialement|bien</span> <span class="pre">cordialement|bien</span> <span class="pre">à</span> <span class="pre">(vous|toi)|amitiés|bonne</span> <span class="pre">journée|merci|mvh|m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contact</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('(\\\\+|00)\\\\d[\\\\d</span> <span class="pre">().-]{6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}\\\\d'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\b\\\\.?\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">?'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('https?</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">//|\\\\bwww\\\\.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('[\\\\w.+-]+&#64;[\\\\w-]+\\\\.[\\\\w.]+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disclaimers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('\\\\b(this|the)</span> <span class="pre">(e-?mail|message)(</span> <span class="pre">and</span> <span class="pre">any</span> <span class="pre">(attachments?|files?))?.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">80}\\\\b(confidential|privileged|intended</span> <span class="pre">(solely</span> <span class="pre">|only</span> <span class="pre">)?for)\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bconfidentiality</span> <span class="pre">notice\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bce</span> <span class="pre">(message|courriel|mail)(</span> <span class="pre">et</span> <span class="pre">(toutes</span> <span class="pre">)?(les|ses)</span> <span class="pre">pi[èe]ces</span> <span class="pre">jointes)?.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">80}\\\\b(confidentiel|destin[ée]</span> <span class="pre">exclusivement)'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bdetta</span> <span class="pre">(e-?post|meddelande).{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">80}\\\\bkonfidentiell'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bplease</span> <span class="pre">consider</span> <span class="pre">the</span> <span class="pre">environment</span> <span class="pre">before</span> <span class="pre">printing\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile(&quot;\\\\bpensez</span> <span class="pre">à</span> <span class="pre">l'environnement</span> <span class="pre">avant</span> <span class="pre">d'imprimer\\\\b&quot;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inline_announcements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('\\\\b(see</span> <span class="pre">)?(my</span> <span class="pre">)?(answers?|responses?|replies|comments?|notes?)</span> <span class="pre">(are</span> <span class="pre">)?(below|inline|in</span> <span class="pre">(red|blue|bold|green))\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(see|cf\\\\.?)</span> <span class="pre">below\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(réponses?|commentaires?)</span> <span class="pre">(ci-dessous|en</span> <span class="pre">(rouge|bleu|gras)|dans</span> <span class="pre">le</span> <span class="pre">texte)\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bvoir</span> <span class="pre">ci-dessous\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(svar|kommentarer)</span> <span class="pre">(nedan|i</span> <span class="pre">texten|med</span> <span class="pre">(rött|blått))\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(antworten|kommentare)</span> <span class="pre">(unten|im</span> <span class="pre">text|in</span> <span class="pre">rot)\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/authored.html#Markers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.authored.Markers" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>The patterns that recognise reply headers, forwards and footers. Every field is a tuple of compiled regexes matched against one stripped line.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="correspond.authored.Markers.contact">
+<span class="sig-name descname"><span class="pre">contact</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/re.html#re.Pattern" title="(in Python v3.14)"><span class="pre">Pattern</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(re.compile('(\\+|00)\\d[\\d</span> <span class="pre">().-]{6,}\\d',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\b\\.?\\s*:?',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('https?://|\\bwww\\.',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('[\\w.+-]+&#64;[\\w-]+\\.[\\w.]+',</span> <span class="pre">re.IGNORECASE))</span></span><a class="headerlink" href="#correspond.authored.Markers.contact" title="Link to this definition">#</a></dt>
+<dd><p>A line that looks like contact details (phone, URL, address) — the body of a signature block.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="correspond.authored.Markers.disclaimers">
+<span class="sig-name descname"><span class="pre">disclaimers</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/re.html#re.Pattern" title="(in Python v3.14)"><span class="pre">Pattern</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(re.compile('\\b(this|the)</span> <span class="pre">(e-?mail|message)(</span> <span class="pre">and</span> <span class="pre">any</span> <span class="pre">(attachments?|files?))?.{0,80}\\b(confidential|privileged|intended</span> <span class="pre">(solely</span> <span class="pre">|only</span> <span class="pre">)?for)\\b',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('\\bconfidentiality</span> <span class="pre">notice\\b',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('\\bce</span> <span class="pre">(message|courriel|mail)(</span> <span class="pre">et</span> <span class="pre">(toutes</span> <span class="pre">)?(les|ses)</span> <span class="pre">pi[èe]ces</span> <span class="pre">jointes)?.{0,80}\\b(confidentiel|destin[ée]</span> <span class="pre">exclusivement)',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('\\bdetta</span> <span class="pre">(e-?post|meddelande).{0,80}\\bkonfidentiell',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('\\bplease</span> <span class="pre">consider</span> <span class="pre">the</span> <span class="pre">environment</span> <span class="pre">before</span> <span class="pre">printing\\b',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile(&quot;\\bpensez</span> <span class="pre">à</span> <span class="pre">l'environnement</span> <span class="pre">avant</span> <span class="pre">d'imprimer\\b&quot;,</span> <span class="pre">re.IGNORECASE))</span></span><a class="headerlink" href="#correspond.authored.Markers.disclaimers" title="Link to this definition">#</a></dt>
+<dd><p>A line that opens a legal disclaimer; it and everything after it are dropped.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="correspond.authored.Markers.forward_headers">
+<span class="sig-name descname"><span class="pre">forward_headers</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/re.html#re.Pattern" title="(in Python v3.14)"><span class="pre">Pattern</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(re.compile('^-{2,}\\s*(forwarded</span> <span class="pre">message|message</span> <span class="pre">transf[ée]r[ée]|weitergeleitete</span> <span class="pre">nachricht|vidarebefordrat</span> <span class="pre">meddelande|mensaje</span> <span class="pre">reenviado|messaggio</span> <span class="pre">inoltrato|doorgestuurd</span> <span class="pre">bericht)\\s*-{2,}$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^begin</span> <span class="pre">forwarded</span> <span class="pre">message\\s*:$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^d[ée]but</span> <span class="pre">du</span> <span class="pre">message</span> <span class="pre">r[ée]exp[ée]di[ée]\\s*:$',</span> <span class="pre">re.IGNORECASE))</span></span><a class="headerlink" href="#correspond.authored.Markers.forward_headers" title="Link to this definition">#</a></dt>
+<dd><p>A line that starts a forwarded block.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="correspond.authored.Markers.header_field">
+<span class="sig-name descname"><span class="pre">header_field</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/re.html#re.Pattern" title="(in Python v3.14)"><span class="pre">Pattern</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(re.compile('^\\**(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\s*:\\**(\\s|$)',</span> <span class="pre">re.IGNORECASE),)</span></span><a class="headerlink" href="#correspond.authored.Markers.header_field" title="Link to this definition">#</a></dt>
+<dd><p>A line that must follow <code class="docutils literal notranslate"><span class="pre">header_from</span></code> within a few lines for it to count as a header block.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="correspond.authored.Markers.header_from">
+<span class="sig-name descname"><span class="pre">header_from</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/re.html#re.Pattern" title="(in Python v3.14)"><span class="pre">Pattern</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(re.compile('^\\**(from|de|från|von|van|da|fra)\\s*:\\**\\s*\\S.*$',</span> <span class="pre">re.IGNORECASE),)</span></span><a class="headerlink" href="#correspond.authored.Markers.header_from" title="Link to this definition">#</a></dt>
+<dd><p>Ada &lt;ada&#64;…&gt;”).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The first line of an Outlook-style header block (”From</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="correspond.authored.Markers.header_window">
+<span class="sig-name descname"><span class="pre">header_window</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">4</span></span><a class="headerlink" href="#correspond.authored.Markers.header_window" title="Link to this definition">#</a></dt>
+<dd><p>How many lines after <code class="docutils literal notranslate"><span class="pre">header_from</span></code> may hold the <code class="docutils literal notranslate"><span class="pre">header_field</span></code> that confirms it.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="correspond.authored.Markers.inline_announcements">
+<span class="sig-name descname"><span class="pre">inline_announcements</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/re.html#re.Pattern" title="(in Python v3.14)"><span class="pre">Pattern</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(re.compile('\\b(see</span> <span class="pre">)?(my</span> <span class="pre">)?(answers?|responses?|replies|comments?|notes?)</span> <span class="pre">(are</span> <span class="pre">)?(below|inline|in</span> <span class="pre">(red|blue|bold|green))\\b',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('\\b(see|cf\\.?)</span> <span class="pre">below\\b',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('\\b(réponses?|commentaires?)</span> <span class="pre">(ci-dessous|en</span> <span class="pre">(rouge|bleu|gras)|dans</span> <span class="pre">le</span> <span class="pre">texte)\\b',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('\\bvoir</span> <span class="pre">ci-dessous\\b',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('\\b(svar|kommentarer)</span> <span class="pre">(nedan|i</span> <span class="pre">texten|med</span> <span class="pre">(rött|blått))\\b',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('\\b(antworten|kommentare)</span> <span class="pre">(unten|im</span> <span class="pre">text|in</span> <span class="pre">rot)\\b',</span> <span class="pre">re.IGNORECASE))</span></span><a class="headerlink" href="#correspond.authored.Markers.inline_announcements" title="Link to this definition">#</a></dt>
+<dd><p>Short top text that announces answers written inside the quote (“Responses below.”).</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="correspond.authored.Markers.reply_header_tails">
+<span class="sig-name descname"><span class="pre">reply_header_tails</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/re.html#re.Pattern" title="(in Python v3.14)"><span class="pre">Pattern</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(re.compile('^.{0,120}\\b(wrote|a</span> <span class="pre">[ée]crit|schrieb|skrev|escribi[óo]|ha</span> <span class="pre">scritto|schreef)\\s*:$',</span> <span class="pre">re.IGNORECASE),)</span></span><a class="headerlink" href="#correspond.authored.Markers.reply_header_tails" title="Link to this definition">#</a></dt>
+<dd><p>“), never authored text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The second line of a wrapped reply header (”wrote</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="correspond.authored.Markers.reply_headers">
+<span class="sig-name descname"><span class="pre">reply_headers</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/re.html#re.Pattern" title="(in Python v3.14)"><span class="pre">Pattern</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(re.compile('^on\\b.{0,300}\\bwrote\\s*:$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^le\\b.{0,300}\\ba</span> <span class="pre">[ée]crit\\s*:$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^am\\b.{0,300}\\bschrieb\\b.{0,300}:$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^(den|on)\\b.{0,300}\\bskrev\\b.{0,300}:$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^el\\b.{0,300}\\bescribi[óo]\\s*:$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^il\\b.{0,300}\\bha</span> <span class="pre">scritto\\s*:$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^op\\b.{0,300}\\bschreef\\b.{0,300}:$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile(&quot;^-{2,}\\s*(original</span> <span class="pre">message|message</span> <span class="pre">d'origine|ursprüngliche</span> <span class="pre">nachricht|ursprungligt</span> <span class="pre">meddelande|mensaje</span> <span class="pre">original|messaggio</span> <span class="pre">originale|oorspronkelijk</span> <span class="pre">bericht)\\s*-{2,}$&quot;,</span> <span class="pre">re.IGNORECASE))</span></span><a class="headerlink" href="#correspond.authored.Markers.reply_headers" title="Link to this definition">#</a></dt>
+<dd><p>“, “—–Original Message—–“).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A line that, on its own, starts the quoted region (”On … wrote</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="correspond.authored.Markers.separators">
+<span class="sig-name descname"><span class="pre">separators</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/re.html#re.Pattern" title="(in Python v3.14)"><span class="pre">Pattern</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(re.compile('^_{10,}$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^-{20,}$',</span> <span class="pre">re.IGNORECASE))</span></span><a class="headerlink" href="#correspond.authored.Markers.separators" title="Link to this definition">#</a></dt>
+<dd><p>A separator line Outlook puts above its header block.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="correspond.authored.Markers.sign_offs">
+<span class="sig-name descname"><span class="pre">sign_offs</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/re.html#re.Pattern" title="(in Python v3.14)"><span class="pre">Pattern</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(re.compile('^/\\s?\\w[\\w</span> <span class="pre">.-]{0,30}$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^(best|best</span> <span class="pre">regards|kind</span> <span class="pre">regards|warm</span> <span class="pre">regards|regards|cheers|thanks|thank</span> <span class="pre">you|many</span> <span class="pre">thanks|all</span> <span class="pre">the</span> <span class="pre">best|br|brgds|rgds|cordialement|bien</span> <span class="pre">cordialement|bien</span> <span class="pre">à</span> <span class="pre">(vous|toi)|amitiés|bonne</span> <span class="pre">journée|merci|mvh|m,</span> <span class="pre">re.IGNORECASE))</span></span><a class="headerlink" href="#correspond.authored.Markers.sign_offs" title="Link to this definition">#</a></dt>
+<dd><p>what is after it, in a trailing block of short lines, is a signature.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A sign-off line</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="correspond.authored.Markers.signature_starts">
+<span class="sig-name descname"><span class="pre">signature_starts</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/re.html#re.Pattern" title="(in Python v3.14)"><span class="pre">Pattern</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">(re.compile('^--\\s*$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden)</span> <span class="pre">(from|de|depuis|från|von|desde|da|vanaf)</span> <span class="pre">(my|mon|ma|min|mein|meinem|mi|il</span> <span class="pre">mio|mijn)\\b.*$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^von</span> <span class="pre">meinem</span> <span class="pre">\\S+</span> <span class="pre">gesendet$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^get</span> <span class="pre">outlook</span> <span class="pre">for\\b.*$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^(obtenir|télécharger)</span> <span class="pre">outlook</span> <span class="pre">pour\\b.*$',</span> <span class="pre">re.IGNORECASE),</span> <span class="pre">re.compile('^h[äa]mta</span> <span class="pre">outlook</span> <span class="pre">f[öo]r\\b.*$',</span> <span class="pre">re.IGNORECASE))</span></span><a class="headerlink" href="#correspond.authored.Markers.signature_starts" title="Link to this definition">#</a></dt>
+<dd><p>A line that starts a signature on its own (”– “, a mobile footer).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.authored.authored">
+<span class="sig-prename descclassname"><span class="pre">correspond.authored.</span></span><span class="sig-name descname"><span class="pre">authored</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">earlier</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Markers(reply_headers=(re.compile('^on\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bwrote\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^le\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\ba</span> <span class="pre">[ée]crit\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^am\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bschrieb\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^(den|on)\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bskrev\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^el\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bescribi[óo]\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^il\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bha</span> <span class="pre">scritto\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^op\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bschreef\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile(&quot;^-{2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}\\\\s*(original</span> <span class="pre">message|message</span> <span class="pre">d'origine|ursprüngliche</span> <span class="pre">nachricht|ursprungligt</span> <span class="pre">meddelande|mensaje</span> <span class="pre">original|messaggio</span> <span class="pre">originale|oorspronkelijk</span> <span class="pre">bericht)\\\\s*-{2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}$&quot;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reply_header_tails</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">120}\\\\b(wrote|a</span> <span class="pre">[ée]crit|schrieb|skrev|escribi[óo]|ha</span> <span class="pre">scritto|schreef)\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forward_headers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^-{2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}\\\\s*(forwarded</span> <span class="pre">message|message</span> <span class="pre">transf[ée]r[ée]|weitergeleitete</span> <span class="pre">nachricht|vidarebefordrat</span> <span class="pre">meddelande|mensaje</span> <span class="pre">reenviado|messaggio</span> <span class="pre">inoltrato|doorgestuurd</span> <span class="pre">bericht)\\\\s*-{2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^begin</span> <span class="pre">forwarded</span> <span class="pre">message\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^d[ée]but</span> <span class="pre">du</span> <span class="pre">message</span> <span class="pre">r[ée]exp[ée]di[ée]\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_from</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^\\\\**(from|de|från|von|van|da|fra)\\\\s*:\\\\**\\\\s*\\\\S.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^\\\\**(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\s*:\\\\**(\\\\s|$)'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separators</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^_{10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^-{20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signature_starts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^--\\\\s*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden)</span> <span class="pre">(from|de|depuis|från|von|desde|da|vanaf)</span> <span class="pre">(my|mon|ma|min|mein|meinem|mi|il</span> <span class="pre">mio|mijn)\\\\b.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^von</span> <span class="pre">meinem</span> <span class="pre">\\\\S+</span> <span class="pre">gesendet$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^get</span> <span class="pre">outlook</span> <span class="pre">for\\\\b.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^(obtenir|télécharger)</span> <span class="pre">outlook</span> <span class="pre">pour\\\\b.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^h[äa]mta</span> <span class="pre">outlook</span> <span class="pre">f[öo]r\\\\b.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sign_offs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^/\\\\s?\\\\w[\\\\w</span> <span class="pre">.-]{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">30}$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^(best|best</span> <span class="pre">regards|kind</span> <span class="pre">regards|warm</span> <span class="pre">regards|regards|cheers|thanks|thank</span> <span class="pre">you|many</span> <span class="pre">thanks|all</span> <span class="pre">the</span> <span class="pre">best|br|brgds|rgds|cordialement|bien</span> <span class="pre">cordialement|bien</span> <span class="pre">à</span> <span class="pre">(vous|toi)|amitiés|bonne</span> <span class="pre">journée|merci|mvh|m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contact</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('(\\\\+|00)\\\\d[\\\\d</span> <span class="pre">().-]{6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}\\\\d'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\b\\\\.?\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">?'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('https?</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">//|\\\\bwww\\\\.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('[\\\\w.+-]+&#64;[\\\\w-]+\\\\.[\\\\w.]+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disclaimers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('\\\\b(this|the)</span> <span class="pre">(e-?mail|message)(</span> <span class="pre">and</span> <span class="pre">any</span> <span class="pre">(attachments?|files?))?.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">80}\\\\b(confidential|privileged|intended</span> <span class="pre">(solely</span> <span class="pre">|only</span> <span class="pre">)?for)\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bconfidentiality</span> <span class="pre">notice\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bce</span> <span class="pre">(message|courriel|mail)(</span> <span class="pre">et</span> <span class="pre">(toutes</span> <span class="pre">)?(les|ses)</span> <span class="pre">pi[èe]ces</span> <span class="pre">jointes)?.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">80}\\\\b(confidentiel|destin[ée]</span> <span class="pre">exclusivement)'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bdetta</span> <span class="pre">(e-?post|meddelande).{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">80}\\\\bkonfidentiell'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bplease</span> <span class="pre">consider</span> <span class="pre">the</span> <span class="pre">environment</span> <span class="pre">before</span> <span class="pre">printing\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile(&quot;\\\\bpensez</span> <span class="pre">à</span> <span class="pre">l'environnement</span> <span class="pre">avant</span> <span class="pre">d'imprimer\\\\b&quot;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inline_announcements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('\\\\b(see</span> <span class="pre">)?(my</span> <span class="pre">)?(answers?|responses?|replies|comments?|notes?)</span> <span class="pre">(are</span> <span class="pre">)?(below|inline|in</span> <span class="pre">(red|blue|bold|green))\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(see|cf\\\\.?)</span> <span class="pre">below\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(réponses?|commentaires?)</span> <span class="pre">(ci-dessous|en</span> <span class="pre">(rouge|bleu|gras)|dans</span> <span class="pre">le</span> <span class="pre">texte)\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bvoir</span> <span class="pre">ci-dessous\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(svar|kommentarer)</span> <span class="pre">(nedan|i</span> <span class="pre">texten|med</span> <span class="pre">(rött|blått))\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(antworten|kommentare)</span> <span class="pre">(unten|im</span> <span class="pre">text|in</span> <span class="pre">rot)\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_coverage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.6</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/authored.html#authored"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.authored.authored" title="Link to this definition">#</a></dt>
+<dd><p>Split one email body (plain text) into what its sender wrote and everything else.</p>
+<p><code class="docutils literal notranslate"><span class="pre">earlier</span></code> is the text of messages that came before it in the thread (raw bodies are
+fine); with it, answers written inside the quoted text are recovered into <code class="docutils literal notranslate"><span class="pre">inline</span></code>.
+They are trusted only when at least <code class="docutils literal notranslate"><span class="pre">min_coverage</span></code> of the quoted lines are found in
+<code class="docutils literal notranslate"><span class="pre">earlier</span></code>, since a thread missing its earlier messages would make every quoted line look new.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#correspond.authored.Authored" title="correspond.authored.Authored"><code class="xref py py-class docutils literal notranslate"><span class="pre">Authored</span></code></a></span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">authored</span><span class="p">(</span><span class="s2">"Thanks!</span><span class="se">\n\n</span><span class="s2">-- </span><span class="se">\n</span><span class="s2">Ada Lovelace</span><span class="se">\n</span><span class="s2">Analytical Engines Ltd"</span><span class="p">)</span><span class="o">.</span><span class="n">signature</span>
+<span class="go">'--\nAda Lovelace\nAnalytical Engines Ltd'</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.authored.authored_thread">
+<span class="sig-prename descclassname"><span class="pre">correspond.authored.</span></span><span class="sig-name descname"><span class="pre">authored_thread</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bodies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">markers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">Markers(reply_headers=(re.compile('^on\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bwrote\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^le\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\ba</span> <span class="pre">[ée]crit\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^am\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bschrieb\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^(den|on)\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bskrev\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^el\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bescribi[óo]\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^il\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bha</span> <span class="pre">scritto\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^op\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}\\\\bschreef\\\\b.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">300}</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile(&quot;^-{2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}\\\\s*(original</span> <span class="pre">message|message</span> <span class="pre">d'origine|ursprüngliche</span> <span class="pre">nachricht|ursprungligt</span> <span class="pre">meddelande|mensaje</span> <span class="pre">original|messaggio</span> <span class="pre">originale|oorspronkelijk</span> <span class="pre">bericht)\\\\s*-{2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}$&quot;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reply_header_tails</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">120}\\\\b(wrote|a</span> <span class="pre">[ée]crit|schrieb|skrev|escribi[óo]|ha</span> <span class="pre">scritto|schreef)\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forward_headers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^-{2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}\\\\s*(forwarded</span> <span class="pre">message|message</span> <span class="pre">transf[ée]r[ée]|weitergeleitete</span> <span class="pre">nachricht|vidarebefordrat</span> <span class="pre">meddelande|mensaje</span> <span class="pre">reenviado|messaggio</span> <span class="pre">inoltrato|doorgestuurd</span> <span class="pre">bericht)\\\\s*-{2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^begin</span> <span class="pre">forwarded</span> <span class="pre">message\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^d[ée]but</span> <span class="pre">du</span> <span class="pre">message</span> <span class="pre">r[ée]exp[ée]di[ée]\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_from</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^\\\\**(from|de|från|von|van|da|fra)\\\\s*:\\\\**\\\\s*\\\\S.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_field</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^\\\\**(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\s*:\\\\**(\\\\s|$)'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">separators</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^_{10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^-{20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">signature_starts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^--\\\\s*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden)</span> <span class="pre">(from|de|depuis|från|von|desde|da|vanaf)</span> <span class="pre">(my|mon|ma|min|mein|meinem|mi|il</span> <span class="pre">mio|mijn)\\\\b.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^von</span> <span class="pre">meinem</span> <span class="pre">\\\\S+</span> <span class="pre">gesendet$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^get</span> <span class="pre">outlook</span> <span class="pre">for\\\\b.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^(obtenir|télécharger)</span> <span class="pre">outlook</span> <span class="pre">pour\\\\b.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^h[äa]mta</span> <span class="pre">outlook</span> <span class="pre">f[öo]r\\\\b.*$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sign_offs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('^/\\\\s?\\\\w[\\\\w</span> <span class="pre">.-]{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">30}$'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('^(best|best</span> <span class="pre">regards|kind</span> <span class="pre">regards|warm</span> <span class="pre">regards|regards|cheers|thanks|thank</span> <span class="pre">you|many</span> <span class="pre">thanks|all</span> <span class="pre">the</span> <span class="pre">best|br|brgds|rgds|cordialement|bien</span> <span class="pre">cordialement|bien</span> <span class="pre">à</span> <span class="pre">(vous|toi)|amitiés|bonne</span> <span class="pre">journée|merci|mvh|m</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">contact</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('(\\\\+|00)\\\\d[\\\\d</span> <span class="pre">().-]{6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">}\\\\d'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\b\\\\.?\\\\s*</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">?'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('https?</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">//|\\\\bwww\\\\.'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('[\\\\w.+-]+&#64;[\\\\w-]+\\\\.[\\\\w.]+'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">disclaimers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('\\\\b(this|the)</span> <span class="pre">(e-?mail|message)(</span> <span class="pre">and</span> <span class="pre">any</span> <span class="pre">(attachments?|files?))?.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">80}\\\\b(confidential|privileged|intended</span> <span class="pre">(solely</span> <span class="pre">|only</span> <span class="pre">)?for)\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bconfidentiality</span> <span class="pre">notice\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bce</span> <span class="pre">(message|courriel|mail)(</span> <span class="pre">et</span> <span class="pre">(toutes</span> <span class="pre">)?(les|ses)</span> <span class="pre">pi[èe]ces</span> <span class="pre">jointes)?.{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">80}\\\\b(confidentiel|destin[ée]</span> <span class="pre">exclusivement)'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bdetta</span> <span class="pre">(e-?post|meddelande).{0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">80}\\\\bkonfidentiell'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bplease</span> <span class="pre">consider</span> <span class="pre">the</span> <span class="pre">environment</span> <span class="pre">before</span> <span class="pre">printing\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile(&quot;\\\\bpensez</span> <span class="pre">à</span> <span class="pre">l'environnement</span> <span class="pre">avant</span> <span class="pre">d'imprimer\\\\b&quot;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inline_announcements</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(re.compile('\\\\b(see</span> <span class="pre">)?(my</span> <span class="pre">)?(answers?|responses?|replies|comments?|notes?)</span> <span class="pre">(are</span> <span class="pre">)?(below|inline|in</span> <span class="pre">(red|blue|bold|green))\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(see|cf\\\\.?)</span> <span class="pre">below\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(réponses?|commentaires?)</span> <span class="pre">(ci-dessous|en</span> <span class="pre">(rouge|bleu|gras)|dans</span> <span class="pre">le</span> <span class="pre">texte)\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\bvoir</span> <span class="pre">ci-dessous\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(svar|kommentarer)</span> <span class="pre">(nedan|i</span> <span class="pre">texten|med</span> <span class="pre">(rött|blått))\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.compile('\\\\b(antworten|kommentare)</span> <span class="pre">(unten|im</span> <span class="pre">text|in</span> <span class="pre">rot)\\\\b'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">re.IGNORECASE))</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_window</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_coverage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.6</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/authored.html#authored_thread"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.authored.authored_thread" title="Link to this definition">#</a></dt>
+<dd><p><a class="reference internal" href="#correspond.authored.authored" title="correspond.authored.authored"><code class="xref py py-func docutils literal notranslate"><span class="pre">authored()</span></code></a> for each body of a thread, oldest first, each given every earlier body as <code class="docutils literal notranslate"><span class="pre">earlier</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="#correspond.authored.Authored" title="correspond.authored.Authored"><code class="xref py py-class docutils literal notranslate"><span class="pre">Authored</span></code></a>]</span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">first</span><span class="p">,</span> <span class="n">second</span> <span class="o">=</span> <span class="n">authored_thread</span><span class="p">([</span>
+<span class="gp">... </span>    <span class="s2">"Can we ship Friday?</span><span class="se">\n</span><span class="s2">And who writes the notes?"</span><span class="p">,</span>
+<span class="gp">... </span>    <span class="s2">"Answers below.</span><span class="se">\n\n</span><span class="s2">From: Ada &lt;ada@example.org&gt;</span><span class="se">\n</span><span class="s2">Sent: Monday</span><span class="se">\n</span><span class="s2">"</span>
+<span class="gp">... </span>    <span class="s2">"Can we ship Friday?</span><span class="se">\n</span><span class="s2">Yes, Friday works.</span><span class="se">\n</span><span class="s2">And who writes the notes?</span><span class="se">\n</span><span class="s2">Grace does."</span><span class="p">,</span>
+<span class="gp">... </span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">second</span><span class="o">.</span><span class="n">inline</span>
+<span class="go">('Yes, Friday works.', 'Grace does.')</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="correspond.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">correspond</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="correspond.channels.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">correspond.channels</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Authored"><code class="docutils literal notranslate"><span class="pre">Authored</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Authored.full_text"><code class="docutils literal notranslate"><span class="pre">Authored.full_text</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Authored.to_dict"><code class="docutils literal notranslate"><span class="pre">Authored.to_dict()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers"><code class="docutils literal notranslate"><span class="pre">Markers</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers.contact"><code class="docutils literal notranslate"><span class="pre">Markers.contact</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers.disclaimers"><code class="docutils literal notranslate"><span class="pre">Markers.disclaimers</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers.forward_headers"><code class="docutils literal notranslate"><span class="pre">Markers.forward_headers</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers.header_field"><code class="docutils literal notranslate"><span class="pre">Markers.header_field</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers.header_from"><code class="docutils literal notranslate"><span class="pre">Markers.header_from</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers.header_window"><code class="docutils literal notranslate"><span class="pre">Markers.header_window</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers.inline_announcements"><code class="docutils literal notranslate"><span class="pre">Markers.inline_announcements</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers.reply_header_tails"><code class="docutils literal notranslate"><span class="pre">Markers.reply_header_tails</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers.reply_headers"><code class="docutils literal notranslate"><span class="pre">Markers.reply_headers</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers.separators"><code class="docutils literal notranslate"><span class="pre">Markers.separators</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers.sign_offs"><code class="docutils literal notranslate"><span class="pre">Markers.sign_offs</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.Markers.signature_starts"><code class="docutils literal notranslate"><span class="pre">Markers.signature_starts</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.authored"><code class="docutils literal notranslate"><span class="pre">authored()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.authored.authored_thread"><code class="docutils literal notranslate"><span class="pre">authored_thread()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/_autosummary/correspond.authored.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=64cc4de3f052d77215f0"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=64cc4de3f052d77215f0"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.22.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

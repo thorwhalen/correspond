@@ -188,6 +188,23 @@ correspond.register_channel(
 
 `correspond.testing.FakeChannel` is an in-memory channel for tests, and `python -m correspond.testing` runs the CLI with it registered as `fake`.
 
+## What the sender actually wrote
+
+A reply body carries the whole conversation beneath it, so anything built from raw bodies (a summary, a profile, a search) mostly measures the people being quoted. `correspond.authored` keeps the sender’s own words:
+
+```python
+from correspond.authored import authored, authored_thread
+
+found = authored(body)
+found.text, found.signature, found.quoted, found.forwarded
+
+# Answers written inside the quote ("Responses below.") need the earlier messages:
+for part in authored_thread([first_body, reply_body]):
+    part.full_text  # top text + recovered inline answers
+```
+
+It recognises reply headers in English, French, German, Swedish, Spanish, Italian and Dutch clients (Gmail’s `On … wrote:`, Outlook’s `From: … Sent: …` block, `-----Original Message-----`), forwards, mobile footers, contact blocks after the sign-off, and legal disclaimers; the sign-off itself stays in the text. Other vocabularies go in through `markers=`. On the CLI: `correspond authored - < body.txt` and `correspond authored-thread thread.json --author someone@`.
+
 ## MCP
 
 ```bash
