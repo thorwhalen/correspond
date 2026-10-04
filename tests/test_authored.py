@@ -193,3 +193,80 @@ def test_the_tools_take_a_body_and_a_thread_file(tmp_path):
     assert result["messages"][0]["inline"][1] == "You do, end to end."
     assert result["messages"][0]["quoted"] is None
     assert result["messages"][0]["quoted_chars"] > 0
+
+
+def test_older_header_forms():
+    thunderbird = authored(
+        "Thanks, I will read it.\n/Ada\n\nGrace Hopper wrote:\n>\n> Here is the list.\n"
+    )
+    assert thunderbird.text == "Thanks, I will read it.\n/Ada"
+    old_gmail = authored(
+        "Agreed.\n\n2008/7/7 Grace Hopper <grace@example.org >:\n\n> Shall we?\n"
+    )
+    assert old_gmail.text == "Agreed."
+
+
+def test_outlook_mobile_footers():
+    found = authored(
+        "On my way.\n\nSent from Outlook for Android<https://example.org/app>\n"
+    )
+    assert found.text == "On my way."
+    assert authored("Yes.\n(from handheld)\n").text == "Yes."
+
+
+GRACE_SAYS = "No concerts these days, just friends and clients.\nMaybe again one day."
+
+
+def test_unmarked_text_above_a_marked_quote_is_not_an_answer():
+    # A mobile client quotes the previous reply unmarked and only the older levels with ">".
+    reply = (
+        "Good to hear!\n/Ada\n\n-----Original Message-----\nFrom: Grace <grace@example.org>\n"
+        f"Date: Thu, 10 Dec 2009 12:00\nTo: <ada@example.org>\nSubject: Re: news\n\n{GRACE_SAYS}\n\n"
+        "On Thu, Dec 10, 2009 at 8:47 AM, Ada <ada@example.org> wrote:\n\n"
+        "> Are you giving concerts?\n> Paths may cross.\n"
+    )
+    found = authored(
+        reply, earlier=["Are you giving concerts?\nPaths may cross.", GRACE_SAYS]
+    )
+    assert found.text == "Good to hear!\n/Ada" and found.inline == ()
+    assert authored(reply).inline == ()
+
+
+def test_a_pasted_back_quote_with_no_header_is_not_authored():
+    found = authored(
+        "Done, all four.\n\n/Ada\n\nIn the zone, change these records:\nthe apex A record to the new server\n"
+        "the www CNAME to the apex name\nthe mail MX to the provider\n",
+        earlier=[
+            "In the zone, change these records:\nthe apex A record to the new server\n"
+            "the www CNAME to the apex name\nthe mail MX to the provider"
+        ],
+    )
+    assert found.text == "Done, all four.\n\n/Ada"
+
+
+def test_only_the_replied_to_message_can_hold_inline_answers():
+    # The deeper quote holds a message from outside the thread: it is history, not an answer.
+    body = ADA_ANSWERS_INLINE + (
+        "\nFrom: Someone Else <someone@example.org>\nSent: Monday, March 3, 2025\n"
+        "To: Grace Hopper <grace@example.org>\nSubject: unrelated\n\nA message this thread never saw.\n"
+    )
+    _, answers = authored_thread([GRACE_ASKS, body])
+    assert answers.inline == (
+        "Equal shares for the three of us, with a small pool kept back.",
+        "You do, end to end.",
+    )
+
+
+def test_debris_is_never_an_inline_answer():
+    body = ADA_ANSWERS_INLINE.replace(
+        "Subject: Re: questions\n",
+        "Cc: Lin <lin@example.org>; 'Bo' <bo@example.org>; 'Karin\nVega' <karin@example.org>\nSubject: Re: questions\n",
+    ).replace(
+        "Thanks,\nGrace",
+        "[image: Image removed by sender.]\nThanks,\nGrace\nT: +33 1 00 00 00 00",
+    )
+    _, answers = authored_thread([GRACE_ASKS, body])
+    assert answers.inline == (
+        "Equal shares for the three of us, with a small pool kept back.",
+        "You do, end to end.",
+    )

@@ -64,7 +64,13 @@ class Markers:
         r"^el\b.{0,300}\bescribi[óo]\s*:$",
         r"^il\b.{0,300}\bha scritto\s*:$",
         r"^op\b.{0,300}\bschreef\b.{0,300}:$",
+        r"^\d{4}[/-]\d{1,2}[/-]\d{1,2}\b.{0,200}<[^>\s]+@[^>\s]+\s*>\s*:$",
         r"^-{2,}\s*(original message|message d'origine|ursprüngliche nachricht|ursprungligt meddelande|mensaje original|messaggio originale|oorspronkelijk bericht)\s*-{2,}$",
+    )
+    #: A line that starts the quote only when the next non-blank line is ``>``-quoted ("Ada Lovelace wrote:", "Ada <ada@…>:").
+    quote_leads: tuple[re.Pattern, ...] = _rx(
+        r"^.{1,200}\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\s*:$",
+        r"^.{0,200}<[^>\s]+@[^>\s]+>\s*:$",
     )
     #: The second line of a wrapped reply header ("wrote:"), never authored text.
     reply_header_tails: tuple[re.Pattern, ...] = _rx(
@@ -82,7 +88,7 @@ class Markers:
     )
     #: A line that must follow ``header_from`` within a few lines for it to count as a header block.
     header_field: tuple[re.Pattern, ...] = _rx(
-        r"^\**(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\s*:\**(\s|$)"
+        r"^\**(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|cc|bcc|cci|kopia|reply-to|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\s*:\**(\s|$)"
     )
     #: A separator line Outlook puts above its header block.
     separators: tuple[re.Pattern, ...] = _rx(r"^_{10,}$", r"^-{20,}$")
@@ -92,6 +98,8 @@ class Markers:
         r"^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf) (my|mon|ma|min|mein|meinem|mi|il mio|mijn)\b.*$",
         r"^von meinem \S+ gesendet$",
         r"^get outlook for\b.*$",
+        r"^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf|med|with|avec) (outlook|mail|gmail|yahoo|samsung|blackberry|android|ios|iphone|ipad)\b.*$",
+        r"^\((from|sent from|envoy[ée] (de|depuis)) (my )?(handheld|mobile|phone|iphone|portable)\)$",
         r"^(obtenir|télécharger) outlook pour\b.*$",
         r"^h[äa]mta outlook f[öo]r\b.*$",
     )
@@ -109,6 +117,15 @@ class Markers:
         r"\b(tel|tél|phone|mobile|mob|portable|cell|fax)\b\.?\s*:?",
         r"https?://|\bwww\.",
         r"[\w.+-]+@[\w-]+\.[\w.]+",
+    )
+    #: A line in a quote that is debris, never an inline answer (images, bare links, phone lines).
+    debris: tuple[re.Pattern, ...] = _rx(
+        r"^\[(image|cid|inline image)[^\]]*\]$",
+        r"^<?(https?|mailto|tel):\S+>?$",
+        r"^[\w .'-]{0,40}:?\s*<?(tel:)?(\+|00)?\d[\d ().-]{6,}\d>?$",
+        r"^[\w .,'\"-]{0,80}<[^>\s]+@[^>\s]+>[,;]?$",
+        r"^(['\"\w .-]{0,40}<?[\w.+-]*@[\w.-]+>?\s*[;,]\s*)+['\"\w .-]{0,40}$",
+        r"^(e-?mail|e|t|m|tel|tél|mob|mobile|phone|fax|web)\s*:\s*\S+",
     )
     #: A line that opens a legal disclaimer; it and everything after it are dropped.
     disclaimers: tuple[re.Pattern, ...] = _rx(
@@ -184,31 +201,68 @@ def _plain(line: str) -> str:
     return line.strip("*").strip() if line.startswith("*") else line
 
 
+def _header_len(
+    lines: Sequence[str], i: int, markers: Markers
+) -> tuple[int, bool] | None:
+    """If a reply or forward header starts at line ``i``: how many lines it spans, and whether it is a forward."""
+    line = _plain(lines[i])
+    if not line:
+        return None
+    if _matches(markers.forward_headers, line):
+        return 1, True
+    # "On <date>, <name> <address>\nwrote:" wraps; join up to three lines.
+    joined = line
+    for k in range(i, min(i + 3, len(lines))):
+        if k > i:
+            joined = f"{joined} {_plain(lines[k])}"
+        if _matches(markers.reply_headers, joined):
+            return k - i + 1, False
+    nxt = next((ln.strip() for ln in lines[i + 1 :] if ln.strip()), "")
+    if nxt.startswith(">") and not lines[i].lstrip().startswith(">"):
+        if _matches(markers.quote_leads, line):
+            return 1, False
+    if _matches(markers.header_from, line) and any(
+        _matches(markers.header_field, _plain(ln))
+        for ln in lines[i + 1 : i + 1 + markers.header_window]
+    ):
+        end = i + 1
+        while end < len(lines) and (
+            _matches(markers.header_field, _plain(lines[end]))
+            or re.search(r"@|[,;]$", _plain(lines[end]))  # a wrapped address list
+        ):
+            end += 1
+        return end - i, _is_forward_subject(lines[i:end])
+    return None
+
+
 def _quote_start(lines: Sequence[str], markers: Markers) -> tuple[int, bool] | None:
     """Index of the first line of the quoted region, and whether it is a forward; ``None`` if nothing is quoted."""
     for i, raw in enumerate(lines):
-        line = _plain(raw)
-        stripped = raw.strip()
-        if stripped.startswith(">") and _plain(raw) and _quote_run(lines, i):
+        if raw.strip().startswith(">") and _plain(raw) and _quote_run(lines, i):
             return i, False
-        if _matches(markers.forward_headers, line):
-            return i, True
-        # "On <date>, <name> <address>\nwrote:" wraps; join up to three lines.
-        joined = line
-        for k in range(i, min(i + 3, len(lines))):
-            if k > i:
-                joined = f"{joined} {_plain(lines[k])}"
-            if _matches(markers.reply_headers, joined):
-                return i, False
-        if _matches(markers.header_from, line) and any(
-            _matches(markers.header_field, _plain(nxt))
-            for nxt in lines[i + 1 : i + 1 + markers.header_window]
-        ):
-            start = (
-                i - 1 if i and _matches(markers.separators, lines[i - 1].strip()) else i
-            )
-            return start, _is_forward_subject(lines[i : i + 1 + markers.header_window])
+        found = _header_len(lines, i, markers)
+        if found:
+            above = i and _matches(markers.separators, lines[i - 1].strip())
+            return (i - 1 if above else i), found[1]
     return None
+
+
+def _first_segment(quoted: Sequence[str], markers: Markers) -> list[str]:
+    """The message being replied to: the quote after its own header, up to the next header (older history)."""
+    start = 0
+    if quoted and _matches(markers.separators, quoted[0].strip()):
+        start = 1
+    head = _header_len(quoted, start, markers) if start < len(quoted) else None
+    if head:
+        start += head[0]
+    for j in range(start, len(quoted)):
+        if _header_len(quoted, j, markers) or (
+            _matches(markers.separators, _plain(quoted[j]))
+            and j + 1 < len(quoted)
+            and _header_len(quoted, j + 1, markers)
+        ):
+            return list(quoted[start:j])
+    return list(quoted[start:])
 
 
 def _quote_run(lines: Sequence[str], i: int) -> bool:
@@ -301,17 +355,43 @@ def _is_header_line(line: str, markers: Markers) -> bool:
     )
 
 
-def _inline_additions(
-    quoted: list[str], earlier: Sequence[str], markers: Markers, *, min_coverage: float
-) -> tuple[tuple[str, ...], str | None]:
-    """Paragraphs of the quoted region found in none of the earlier messages, and a note when they cannot be trusted.
+def _is_debris(line: str, markers: Markers) -> bool:
+    return (
+        not line
+        or _is_header_line(line, markers)
+        or _matches(markers.debris, line)
+        or _matches(markers.signature_starts, line)
+    )
 
-    They are trusted only when one earlier message is itself found in the quote (at least
+
+def _paragraphs(indexed: Iterable[tuple[int, str]]) -> tuple[str, ...]:
+    """Group consecutive lines into paragraphs, keeping those with words in them."""
+    paragraphs: list[list[str]] = []
+    last = None
+    for i, line in indexed:
+        if last is not None and i == last + 1:
+            paragraphs[-1].append(line)
+        else:
+            paragraphs.append([line])
+        last = i
+    return tuple("\n".join(p) for p in paragraphs if _substantive(p))
+
+
+def _inline_additions(
+    segment: list[str],
+    earlier: Sequence[str],
+    markers: Markers,
+    *,
+    corpus: str,
+    min_coverage: float,
+) -> tuple[tuple[str, ...], str | None]:
+    """Lines of the replied-to message's quote found in none of the earlier messages, and a note when they cannot be trusted.
+
+    They are trusted only when one earlier message is itself found in that quote (at least
     ``min_coverage`` of its own lines): then the quote's source is known, and whatever the
     quote adds to it was written by this sender.
     """
-    corpus = " \n ".join(_normalise(e) for e in earlier)
-    quote_norm = _normalise("\n".join(quoted))
+    quote_norm = _normalise("\n".join(segment))
     best = 0.0
     for body in earlier:
         own = [
@@ -326,34 +406,12 @@ def _inline_additions(
             "inline answers not recovered: none of the earlier messages given was found in "
             f"the quote (best {best:.0%})"
         )
-    paragraphs: list[list[str]] = []
-    last = None
-    heads = _header_heads(quoted, markers)
-    for i, raw in enumerate(quoted):
-        line = _plain(raw)
-        if (
-            i in heads
-            or not line
-            or _is_header_line(line, markers)
-            or _normalise(line) in corpus
-        ):
-            continue
-        if last is not None and i == last + 1:
-            paragraphs[-1].append(line)
-        else:
-            paragraphs.append([line])
-        last = i
-    return tuple("\n".join(p) for p in paragraphs if _substantive(p)), None
-
-
-def _header_heads(quoted: Sequence[str], markers: Markers) -> set[int]:
-    """Lines that open a reply header wrapped onto the next line ("On …, Ada <…>" + "wrote:")."""
-    return {
-        i
-        for i in range(len(quoted) - 1)
-        if _matches(markers.reply_header_tails, _plain(quoted[i + 1]))
-        and not _matches(markers.reply_header_tails, _plain(quoted[i]))
-    }
+    lines = ((i, _plain(raw)) for i, raw in enumerate(segment))
+    return _paragraphs(
+        (i, line)
+        for i, line in lines
+        if not _is_debris(line, markers) and _normalise(line) not in corpus
+    ), None
 
 
 def _substantive(paragraph: list[str]) -> bool:
@@ -361,30 +419,36 @@ def _substantive(paragraph: list[str]) -> bool:
     return len(re.findall(r"[^\W\d_]{2,}", " ".join(paragraph))) >= 1
 
 
-def _marked_inline(quoted: list[str], markers: Markers) -> tuple[str, ...]:
-    """Unmarked paragraphs between ``>`` lines: answers written inline in a ``>``-quoting client."""
-    content = [ln for ln in quoted[1:] if ln.strip()]
-    marked = [ln for ln in content if ln.lstrip().startswith(">")]
+def _marked_inline(
+    segment: list[str], markers: Markers, *, corpus: str
+) -> tuple[str, ...]:
+    """Unmarked paragraphs after the first ``>`` line: answers written inline in a ``>``-quoting client."""
+    marked = [i for i, ln in enumerate(segment) if ln.lstrip().startswith(">")]
+    content = [ln for ln in segment[marked[0] :] if ln.strip()] if marked else []
     if not marked or len(marked) == len(content) or len(marked) < len(content) / 2:
         return ()
-    last_marked = max(i for i, ln in enumerate(quoted) if ln.lstrip().startswith(">"))
-    tail, _ = _split_signature(list(quoted[last_marked + 1 :]), markers)
-    region = list(quoted[: last_marked + 1]) + tail
-    paragraphs: list[list[str]] = [[]]
-    heads = _header_heads(quoted, markers)
-    for i, ln in enumerate(region[1:], start=1):
-        plain = ln.strip()
-        if (
-            i in heads
-            or not plain
-            or plain.startswith(">")
-            or _is_header_line(_plain(ln), markers)
-        ):
-            if paragraphs[-1]:
-                paragraphs.append([])
+    tail, _ = _split_signature(list(segment[marked[-1] + 1 :]), markers)
+    region = list(segment[: marked[-1] + 1]) + tail
+    lines = ((i, region[i].strip()) for i in range(marked[0], len(region)))
+    return _paragraphs(
+        (i, line)
+        for i, line in lines
+        if not line.startswith(">")
+        and not _is_debris(_plain(line), markers)
+        and not (corpus and _normalise(line) in corpus)
+    )
+
+
+def _inherited_tail(top: list[str], corpus: str, *, min_lines: int = 3) -> int | None:
+    """Where an unattributed copy of earlier text begins at the end of the top text (a quote with no header)."""
+    content = [i for i, ln in enumerate(top) if len(_WORD.findall(ln)) >= 3]
+    for n, i in enumerate(content):
+        rest = content[n:]
+        if len(rest) < min_lines or _normalise(top[i]) not in corpus:
             continue
-        paragraphs[-1].append(plain)
-    return tuple("\n".join(p) for p in paragraphs if p)
+        if sum(_normalise(top[k]) in corpus for k in rest) >= 0.8 * len(rest):
+            return i
+    return None
 
 
 def _clean(lines: list[str]) -> str:
@@ -402,18 +466,27 @@ def authored(
 
     ``earlier`` is the text of messages that came before it in the thread (raw bodies are
     fine); with it, answers written inside the quoted text are recovered into ``inline``.
-    They are trusted only when at least ``min_coverage`` of the quoted lines are found in
-    ``earlier``, since a thread missing its earlier messages would make every quoted line look new.
+    Only the quoted copy of the message being replied to (not the older history beneath it)
+    can hold them, and only when one earlier message is found in that copy (at least
+    ``min_coverage`` of its own lines), since a thread missing its earlier messages would make
+    every quoted line look new. Earlier text pasted back with no header counts as quoted.
 
     >>> authored("Thanks!\\n\\n-- \\nAda Lovelace\\nAnalytical Engines Ltd").signature
     '--\\nAda Lovelace\\nAnalytical Engines Ltd'
     """
     lines = text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
+    earlier = list(earlier)
+    corpus = " \n ".join(_normalise(e) for e in earlier)
     found = _quote_start(lines, markers)
     top, quoted = (lines, []) if found is None else (lines[: found[0]], lines[found[0] :])
     forwarded = bool(found and found[1])
     top, disclaimer = _split_disclaimer(top, markers)
     top, signature = _split_signature(top, markers)
+    cut = _inherited_tail(top, corpus) if corpus else None
+    if cut is not None:  # earlier text pasted back with no header: a quote
+        top, quoted = top[:cut], top[cut:] + quoted
+        top, more = _split_signature(top, markers)
+        signature = more + signature
     body = _clean(top)
     result = Authored(
         text=body,
@@ -425,13 +498,13 @@ def authored(
         and len(_WORD.findall(body)) <= 40
         and _matches(markers.inline_announcements, body),
     )
-    earlier = list(earlier)
-    marked = _marked_inline(quoted, markers) if quoted and not forwarded else ()
+    segment = _first_segment(quoted, markers) if quoted and not forwarded else []
+    marked = _marked_inline(segment, markers, corpus=corpus) if segment else ()
     if marked:
         result = replace(result, inline=marked)
-    elif quoted and earlier and not forwarded:
+    elif segment and earlier:
         inline, note = _inline_additions(
-            quoted, earlier, markers, min_coverage=min_coverage
+            segment, earlier, markers, corpus=corpus, min_coverage=min_coverage
         )
         result = replace(result, inline=inline, notes=(note,) if note else ())
     elif result.inline_announced and not earlier:
