@@ -25,6 +25,8 @@ TOOL_NAMES = [
     "react",
     "label",
     "unlabel",
+    "authored",
+    "authored_thread",
 ]
 WRITES = {"send", "edit", "react", "label", "unlabel"}
 SURFACE_LIBS = {

@@ -18,6 +18,7 @@ from collections.abc import Callable
 from datetime import timezone
 from typing import Any
 
+from correspond import authored as _authored
 from correspond import ops
 from correspond.errors import (
     ChannelError,
@@ -43,6 +44,8 @@ __all__ = [
     "SIDE_EFFECTS",
     "TOOLS",
     "audience",
+    "authored",
+    "authored_thread",
     "capabilities",
     "channels",
     "edit",
@@ -458,6 +461,92 @@ def unlabel(ref: str, labels: str, *, dry_run: bool = False) -> dict:
     return _write_result(ops.unlabel(ref, _addresses(labels), dry_run=dry_run))
 
 
+# --------------------------------------------------------------------------- authored text
+
+
+def _authored_text(found: _authored.Authored) -> str:
+    parts = [found.full_text or "(nothing authored: a bare forward or an empty reply)"]
+    if found.forwarded:
+        parts.append("[forwarded block not shown]")
+    parts.extend(f"note: {n}" for n in found.notes)
+    return "\n".join(parts)
+
+
+@_as_result
+def authored(text: str) -> dict:
+    """What the sender of one email body wrote: their text and inline answers, apart from quoted replies, forwards, signature and disclaimer. For inline answers ("Responses below."), use authored_thread, which can compare against the earlier messages."""
+    found = _authored.authored(text)
+    return {
+        "ok": True,
+        **found.to_dict(),
+        "summary": f"{len(found.full_text.split())} authored word(s) of {len(text.split())}",
+        "text": _authored_text(found),
+    }
+
+
+_BODY_KEYS = ("plaintextBody", "plaintext_body", "body", "text")
+_SENDER_KEYS = ("sender", "from", "author")
+
+
+def _thread_items(data: Any) -> list[dict]:
+    if isinstance(data, dict):
+        data = data.get("messages", [data])
+    items = []
+    for item in data:
+        if isinstance(item, str):
+            items.append({"body": item})
+            continue
+        body = next((item[k] for k in _BODY_KEYS if isinstance(item.get(k), str)), "")
+        sender = next((item[k] for k in _SENDER_KEYS if item.get(k)), "")
+        if isinstance(sender, dict):
+            sender = sender.get("handle") or sender.get("native_id") or ""
+        items.append(
+            {
+                **{k: item.get(k) for k in ("id", "date") if item.get(k)},
+                "sender": str(sender),
+                "body": body,
+            }
+        )
+    return items
+
+
+@_as_result
+def authored_thread(path: str, *, author: str | None = None) -> dict:
+    """What each sender of an email thread wrote, oldest first, with inline answers recovered by comparing each message with the earlier ones. `path` is a JSON file: a list of bodies, a list of message objects, or an object with `messages` (a Gmail get_thread result works as is); `author` keeps only senders containing that text."""
+    import json
+    from pathlib import Path
+
+    items = _thread_items(json.loads(Path(path).expanduser().read_text()))
+    found = _authored.authored_thread([i["body"] for i in items])
+    wanted = (author or "").lower()
+    kept = [
+        (item, result)
+        for item, result in zip(items, found)
+        if wanted in item.get("sender", "").lower()
+    ]
+    messages = [
+        {
+            **{k: v for k, v in item.items() if k != "body"},
+            **result.to_dict(),
+            "quoted": None,
+            "quoted_chars": len(result.quoted),
+        }
+        for item, result in kept
+    ]
+    text = "\n\n".join(
+        f"[{item.get('date', '')}] {item.get('sender', '')}\n{_authored_text(result)}"
+        for item, result in kept
+    )
+    return {
+        "ok": True,
+        "count": len(messages),
+        "messages": messages,
+        "summary": f"{len(messages)} of {len(items)} message(s)"
+        + (f" from {author}" if author else ""),
+        "text": text or "no messages",
+    }
+
+
 #: Every tool, in the order surfaces list them.
 TOOLS = [
     channels,
@@ -472,6 +561,8 @@ TOOLS = [
     react,
     label,
     unlabel,
+    authored,
+    authored_thread,
 ]
 
 #: What each tool touches, for surfaces deciding what to expose. ``read`` stays on this
@@ -490,4 +581,6 @@ SIDE_EFFECTS = {
     "react": "external",
     "label": "external",
     "unlabel": "external",
+    "authored": "read",
+    "authored_thread": "read",
 }

@@ -77,6 +77,13 @@ HELP = {
         },
         "dry_run": _DRY_RUN,
     },
+    "authored": {
+        "text": {"help": "one email body as plain text, or - to read it from stdin"}
+    },
+    "authored-thread": {
+        "path": {"help": "a JSON file: bodies, message objects, or {messages: [...]}"},
+        "author": {"help": "keep only senders containing this text"},
+    },
 }
 
 
@@ -109,7 +116,7 @@ def main(argv=None):
         command: {param: dict(spec) for param, spec in params.items()}
         for command, params in HELP.items()
     }
-    for command in ("send", "edit"):
+    for command in ("send", "edit", "authored"):
         config[command]["text"]["codec"] = lambda text: (
             sys.stdin.read() if text == "-" else text
         )
