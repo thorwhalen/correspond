@@ -14,6 +14,8 @@ Verifier        ``verify(headers, body) -> Authenticity``
 AudienceReader  ``audience(ref, *, draft=None) -> Audience``
 Labeler         ``label(ref, labels, *, dry_run=False) -> SendResult``
 Unlabeler       ``unlabel(ref, labels, *, dry_run=False) -> SendResult``
+Closer          ``close(ref, *, reason=None, dry_run=False) -> SendResult``
+Reopener        ``reopen(ref, *, dry_run=False) -> SendResult``
 ==============  =====================================================================
 
 The verbs here (:func:`read`, :func:`listen`, :func:`send`, …) take a reference string,
@@ -80,17 +82,20 @@ __all__ = [
     "PROTOCOLS",
     "AudienceReader",
     "Channel",
+    "Closer",
     "Editor",
     "Labeler",
     "Listener",
     "Reactor",
     "Reader",
+    "Reopener",
     "Unlabeler",
     "Uploader",
     "Verifier",
     "Writer",
     "audience",
     "capabilities",
+    "close",
     "edit",
     "get_channel",
     "implemented",
@@ -99,6 +104,7 @@ __all__ = [
     "parse_ref",
     "react",
     "read",
+    "reopen",
     "send",
     "unlabel",
     "upload",
@@ -228,6 +234,22 @@ class Unlabeler(Protocol):
     ) -> SendResult: ...
 
 
+@runtime_checkable
+class Closer(Protocol):
+    """Settle a conversation (close an issue), optionally saying why."""
+
+    def close(
+        self, ref: ConversationRef, *, reason: str | None = None, dry_run: bool = False
+    ) -> SendResult: ...
+
+
+@runtime_checkable
+class Reopener(Protocol):
+    """Unsettle a closed conversation."""
+
+    def reopen(self, ref: ConversationRef, *, dry_run: bool = False) -> SendResult: ...
+
+
 #: Operation name → the protocol an adapter implements to have it.
 PROTOCOLS: dict[str, type] = {
     "read": Reader,
@@ -240,6 +262,8 @@ PROTOCOLS: dict[str, type] = {
     "audience": AudienceReader,
     "label": Labeler,
     "unlabel": Unlabeler,
+    "close": Closer,
+    "reopen": Reopener,
 }
 
 
@@ -480,6 +504,10 @@ def _feature_check(adapter: Any, draft: Draft) -> str | None:
         raise NotSupported(
             "cc", adapter.name, alternatives=("send to each recipient separately",)
         )
+    unknown = sorted(set(draft.native) - set(caps.draft_fields))
+    if unknown:
+        accepted = ", ".join(caps.draft_fields) or "none"
+        return f"{adapter.name} does not take native draft field(s) {unknown}; it takes: {accepted}"
     if not draft.text.strip():
         return "nothing to send: the text is empty"
     if caps.max_text_length and len(draft.text) > caps.max_text_length:
@@ -579,6 +607,7 @@ def send(
     priority: str | None = None,
     cc: Iterable[str] = (),
     bcc: Iterable[str] = (),
+    native: Mapping[str, Any] | None = None,
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
@@ -588,6 +617,9 @@ def send(
     """Send ``text`` (or a :class:`~correspond.model.Draft`) to a conversation; ``dry_run`` shows the plan and sends nothing.
 
     ``cc`` and ``bcc`` copy further recipients, on channels that grade ``cc`` (email).
+    ``native`` carries channel-specific fields (``Draft.native``), checked against the
+    channel's ``capabilities.draft_fields``: an unknown key is a validation failure, never
+    silently dropped.
     ``before_send(ref, draft, audience)`` runs first, on the dry run too; when ``None``, the
     config's ``before_send`` reference, else :func:`correspond.outbound.notice`.
 
@@ -600,9 +632,9 @@ def send(
     plain one is checked, then set, which covers one process.
     """
     cc, bcc = tuple(cc), tuple(bcc)
-    if isinstance(text, Draft) and (title or reply_to or priority or cc or bcc):
+    if isinstance(text, Draft) and (title or reply_to or priority or cc or bcc or native):
         raise ValueError(
-            "pass a Draft or title/reply_to/priority/cc/bcc, not both: the Draft already carries them"
+            "pass a Draft or title/reply_to/priority/cc/bcc/native, not both: the Draft already carries them"
         )
     adapter, ref = _adapter_for(ref, "send", registry)
     draft = (
@@ -615,6 +647,7 @@ def send(
             priority=priority,
             cc=tuple(cc),
             bcc=tuple(bcc),
+            native=native or {},
         )
     )
     key = None if idempotency_key is None else check_key(idempotency_key)
@@ -986,4 +1019,48 @@ def upload(
         write=lambda rehearse: adapter.upload(
             ref, name, data, media_type=media_type, dry_run=rehearse
         ),
+    )
+
+
+def close(
+    ref: str | ConversationRef,
+    *,
+    reason: str | None = None,
+    dry_run: bool = False,
+    registry: Mapping[str, Any] | None = None,
+    before_send: Callable[..., None] | None = None,
+) -> SendResult:
+    """Close a conversation (an issue), with an optional ``reason`` in the channel's vocabulary; the ``before_send`` check sees the reason (or ``close``) as the draft's text."""
+    adapter, ref = _adapter_for(ref, "close", registry)
+    reason = (reason or "").strip() or None
+    return _checked_write(
+        adapter,
+        ref,
+        "close",
+        Draft(text=reason or "close"),
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
+        write=lambda rehearse: adapter.close(ref, reason=reason, dry_run=rehearse),
+    )
+
+
+def reopen(
+    ref: str | ConversationRef,
+    *,
+    dry_run: bool = False,
+    registry: Mapping[str, Any] | None = None,
+    before_send: Callable[..., None] | None = None,
+) -> SendResult:
+    """Reopen a closed conversation; the ``before_send`` check sees ``reopen`` as the draft's text."""
+    adapter, ref = _adapter_for(ref, "reopen", registry)
+    return _checked_write(
+        adapter,
+        ref,
+        "reopen",
+        Draft(text="reopen"),
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
+        write=lambda rehearse: adapter.reopen(ref, dry_run=rehearse),
     )

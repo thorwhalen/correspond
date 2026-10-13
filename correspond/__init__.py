@@ -11,7 +11,7 @@ Telegram and a web inbox, through one model and one set of verbs::
 
 A conversation reference is ``<channel>:<id>``. Each channel implements the operations it
 can (``read``, ``listen``, ``send``, ``edit``, ``react``, ``upload``, ``verify``,
-``audience``, ``label``, ``unlabel``); asking for one it lacks raises :class:`NotSupported`, and
+``audience``, ``label``, ``unlabel``, ``close``, ``reopen``); asking for one it lacks raises :class:`NotSupported`, and
 :func:`capabilities` says so in advance. :func:`audience` is the exception: it never
 refuses, because an audience nobody can compute is public.
 correspond knows no people: a message's ``author`` is what the platform attests, and its
@@ -52,16 +52,19 @@ from correspond.model import (
 from correspond.ops import (
     AudienceReader,
     Editor,
+    Closer,
     Labeler,
     Listener,
     Reactor,
     Reader,
+    Reopener,
     Unlabeler,
     Uploader,
     Verifier,
     Writer,
     audience,
     capabilities,
+    close,
     edit,
     get_channel,
     label,
@@ -69,6 +72,7 @@ from correspond.ops import (
     parse_ref,
     react,
     read,
+    reopen,
     send,
     unlabel,
     upload,
@@ -95,6 +99,7 @@ __all__ = [
     "Grade",
     "HistoryDepth",
     "InvalidRef",
+    "Closer",
     "Labeler",
     "Listener",
     "Message",
@@ -103,6 +108,7 @@ __all__ = [
     "NotSupported",
     "Reactor",
     "Reader",
+    "Reopener",
     "Refused",
     "RouteDecision",
     "Scope",
@@ -119,6 +125,7 @@ __all__ = [
     "channel_registry",
     "check_binding",
     "check_requirements",
+    "close",
     "edit",
     "get_channel",
     "label",
@@ -128,6 +135,7 @@ __all__ = [
     "react",
     "read",
     "register_channel",
+    "reopen",
     "route",
     "send",
     "unlabel",

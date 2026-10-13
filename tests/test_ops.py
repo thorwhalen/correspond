@@ -28,6 +28,8 @@ def registry():
         (lambda r: ops.verify("fake", {}, b"", registry=r), "verify"),
         (lambda r: ops.label("fake:example/demo", ["bug"], registry=r), "label"),
         (lambda r: ops.unlabel("fake:example/demo", ["bug"], registry=r), "unlabel"),
+        (lambda r: ops.close("fake:example/demo", registry=r), "close"),
+        (lambda r: ops.reopen("fake:example/demo", registry=r), "reopen"),
     ],
 )
 def test_an_operation_the_channel_lacks_raises_not_supported_naming_it(

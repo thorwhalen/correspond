@@ -25,10 +25,12 @@ TOOL_NAMES = [
     "react",
     "label",
     "unlabel",
+    "close",
+    "reopen",
     "authored",
     "authored_thread",
 ]
-WRITES = {"send", "edit", "react", "label", "unlabel"}
+WRITES = {"send", "edit", "react", "label", "unlabel", "close", "reopen"}
 SURFACE_LIBS = {
     "argh",
     "cw",
@@ -196,3 +198,13 @@ def test_the_mcp_command_refuses_unknown_arguments():
 
     with pytest.raises(SystemExit, match="--allow-send"):
         main(["--send-everything"])
+
+
+def test_send_takes_native_as_a_json_object_and_refuses_what_the_channel_does_not_take(fake):
+    refused = tools.send("fake:example/demo", "hi", native='{"labels": ["x"]}', dry_run=True)
+    assert refused["ok"] is False and refused["error_kind"] == "validation"
+    assert "labels" in refused["error"]
+    for bad in ("not json", '["a list"]'):
+        result = tools.send("fake:example/demo", "hi", native=bad, dry_run=True)
+        assert result["ok"] is False and result["error_kind"] == "validation"
+    assert tools.send("fake:example/demo", "hi", native="", dry_run=True)["ok"] is True

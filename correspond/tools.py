@@ -14,6 +14,7 @@ operation the channel lacks, a platform error) comes back as ``ok: false`` with 
 from __future__ import annotations
 
 import functools
+import json
 from collections.abc import Callable
 from datetime import timezone
 from typing import Any
@@ -48,12 +49,14 @@ __all__ = [
     "authored_thread",
     "capabilities",
     "channels",
+    "close",
     "edit",
     "label",
     "listen",
     "react",
     "read",
     "ref",
+    "reopen",
     "requirements",
     "send",
     "unlabel",
@@ -205,6 +208,8 @@ def capabilities(channel: str) -> dict:
             lines.append(f"{name}: {data[name]}")
     if caps.native_fields:
         lines.append(f"native fields: {', '.join(caps.native_fields)}")
+    if caps.draft_fields:
+        lines.append(f"draft fields: {', '.join(caps.draft_fields)}")
     if caps.reactions:
         lines.append(f"reactions: {' '.join(caps.reactions)}")
     lines += [f"rate limit: {r}" for r in caps.rate_limits]
@@ -313,6 +318,19 @@ def _addresses(text: str | None) -> tuple[str, ...]:
     return tuple(part.strip() for part in (text or "").split(",") if part.strip())
 
 
+def _native(text: str | None) -> dict:
+    """A draft's channel-specific fields, given flat as a JSON object (``None`` or blank: none)."""
+    if not (text or "").strip():
+        return {}
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError as error:
+        raise ValueError(f"native must be a JSON object; could not parse it: {error}") from None
+    if not isinstance(value, dict):
+        raise ValueError(f"native must be a JSON object, not {type(value).__name__}")
+    return value
+
+
 @_as_result
 def audience(ref: str, *, cc: str | None = None, bcc: str | None = None) -> dict:
     """Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does."""
@@ -353,6 +371,8 @@ _DONE = {
     "react": "reacted to {id} in {target}",
     "label": "labelled {target}",
     "unlabel": "unlabelled {target}",
+    "close": "closed {target}",
+    "reopen": "reopened {target}",
 }
 
 #: How a write the ``before_send`` check stopped is summarised, by ``error_kind``.
@@ -418,10 +438,11 @@ def send(
     priority: str | None = None,
     cc: str | None = None,
     bcc: str | None = None,
+    native: str | None = None,
     idempotency_key: str | None = None,
     dry_run: bool = False,
 ) -> dict:
-    """Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""
+    """Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens; the plan reports which of them stuck). Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""
     return _write_result(
         ops.send(
             ref,
@@ -431,6 +452,7 @@ def send(
             priority=priority,
             cc=_addresses(cc),
             bcc=_addresses(bcc),
+            native=_native(native),
             dry_run=dry_run,
             idempotency_key=idempotency_key or None,
         )
@@ -459,6 +481,18 @@ def label(ref: str, labels: str, *, dry_run: bool = False) -> dict:
 def unlabel(ref: str, labels: str, *, dry_run: bool = False) -> dict:
     """Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation. Run it with `dry_run` first. It passes the before_send check, as for `send`."""
     return _write_result(ops.unlabel(ref, _addresses(labels), dry_run=dry_run))
+
+
+@_as_result
+def close(ref: str, *, reason: str | None = None, dry_run: bool = False) -> dict:
+    """Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it). `reason` is in the channel's vocabulary (GitHub issues: completed, not_planned or duplicate). Run it with `dry_run` first. It passes the before_send check, as for `send`."""
+    return _write_result(ops.close(ref, reason=reason or None, dry_run=dry_run))
+
+
+@_as_result
+def reopen(ref: str, *, dry_run: bool = False) -> dict:
+    """Reopen a closed conversation. Run it with `dry_run` first. It passes the before_send check, as for `send`."""
+    return _write_result(ops.reopen(ref, dry_run=dry_run))
 
 
 # --------------------------------------------------------------------------- authored text
@@ -561,6 +595,8 @@ TOOLS = [
     react,
     label,
     unlabel,
+    close,
+    reopen,
     authored,
     authored_thread,
 ]
@@ -581,6 +617,8 @@ SIDE_EFFECTS = {
     "react": "external",
     "label": "external",
     "unlabel": "external",
+    "close": "external",
+    "reopen": "external",
     "authored": "read",
     "authored_thread": "read",
 }

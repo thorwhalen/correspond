@@ -12,7 +12,13 @@ References:
   title is required).
 - ``github:owner/repo#N``: an issue, a pull request, or a discussion. GitHub numbers the
   three in one sequence; correspond asks which. ``label`` and ``unlabel`` work on an issue
-  or pull request only: GitHub discussions have categories, not labels.
+  or pull request only: GitHub discussions have categories, not labels. ``close`` and
+  ``reopen`` likewise (a discussion closes through a different API, not covered yet).
+
+Opening an issue takes ``Draft.native`` keys ``labels``, ``assignees`` and ``milestone``,
+set in the creating request so watchers are notified once. GitHub silently drops an
+assignee who cannot be assigned, so the plan reports what the created issue actually
+carries (``landed``) and what did not stick (``not_applied``).
 
 Message ids match the anchors in GitHub's own URLs: ``issue-N`` (the opening post of issue
 or pull request N), ``issuecomment-ID``, ``discussion-N``, ``discussioncomment-ID``.
@@ -113,6 +119,10 @@ _GRAPHQL_REACTIONS = dict(
 )
 MAX_BODY_CHARS = 65_536
 MAX_TITLE_CHARS = 256
+#: The ``Draft.native`` keys opening an issue takes (``POST /repos/{owner}/{repo}/issues``).
+DRAFT_FIELDS = ("labels", "assignees", "milestone")
+#: An issue's ``state_reason`` when closing it.
+CLOSE_REASONS = ("completed", "not_planned", "duplicate")
 PAGE_SIZE = 100
 MAX_PAGES = 20
 READ_REPOSITORY_DEFAULT = 30
@@ -338,6 +348,48 @@ def _encode_cursor(position: datetime, openings_from: datetime, seen: set[str]) 
     )
 
 
+def _read_back(fields: Mapping[str, Any], issue: Mapping[str, Any]) -> dict:
+    """What of the creation ``fields`` the created ``issue`` actually carries.
+
+    GitHub answers 201 and silently drops an assignee it cannot assign (a login with no
+    access to the repository), so a successful call is not proof. The response is the
+    created issue, which is the read-back: ``landed`` per field, and ``not_applied`` for
+    what was asked and is not there. Logins compare without case, as GitHub's do.
+
+    >>> _read_back({"assignees": ["Ada", "eve"]}, {"assignees": [{"login": "ada"}]})
+    {'landed': {'assignees': ['Ada']}, 'not_applied': {'assignees': ['eve']}}
+    """
+    if not fields:
+        return {}
+    present = {
+        "labels": {
+            str(item.get("name")).lower()
+            for item in issue.get("labels") or ()
+            if isinstance(item, Mapping)
+        },
+        "assignees": {
+            str(item.get("login")).lower()
+            for item in issue.get("assignees") or ()
+            if isinstance(item, Mapping)
+        },
+    }
+    landed: dict[str, Any] = {}
+    missing: dict[str, Any] = {}
+    for name in ("labels", "assignees"):
+        if name in fields:
+            landed[name] = [v for v in fields[name] if v.lower() in present[name]]
+            gone = [v for v in fields[name] if v.lower() not in present[name]]
+            if gone:
+                missing[name] = gone
+    if "milestone" in fields:
+        number = (issue.get("milestone") or {}).get("number")
+        if number == fields["milestone"]:
+            landed["milestone"] = number
+        else:
+            missing["milestone"] = fields["milestone"]
+    return {"landed": landed, **({"not_applied": missing} if missing else {})}
+
+
 def _reader(user: Mapping[str, Any]) -> ChannelIdentity:
     """An account that can read a repository, as GitHub lists it; no ``is_self``, which would depend on who asks."""
     login = str(user.get("login") or "")
@@ -373,6 +425,8 @@ class GitHub:
             audience=Support.FULL,
             label=Support.FULL,
             unlabel=Support.FULL,
+            close=Support.PARTIAL,
+            reopen=Support.PARTIAL,
             initiate=Support.FULL,
             reply=Support.PARTIAL,
             history_depth=HistoryDepth.FULL,
@@ -382,6 +436,7 @@ class GitHub:
             max_title_length=MAX_TITLE_CHARS,
             reactions=REACTIONS,
             formats=("markdown",),
+            draft_fields=DRAFT_FIELDS,
             native_fields=(
                 "title",
                 "state",
@@ -406,6 +461,9 @@ class GitHub:
                 "audience is the repository's readership and never complete (installed apps, webhooks and security managers cannot be listed); a 404 or 403 resolves to public",
                 "label and unlabel apply to issues and pull requests, not discussions (GitHub discussions have categories, not labels); listen does not yet surface who applied a label",
                 "label and unlabel each cost one extra read (confirming the issue exists, to tell a label the issue never had apart from a missing issue) before their writes",
+                "native draft fields (labels, assignees, milestone) apply when opening an issue; on a comment they are refused",
+                "close and reopen apply to issues and pull requests, not discussions; close takes a reason of completed, not_planned or duplicate (issues only)",
+                "a dry run of close or reopen reads nothing, so a pull request given a reason, or a discussion, is refused only by the real call",
             ),
         )
 
@@ -1121,11 +1179,13 @@ class GitHub:
                     NAME,
                     alternatives=("comment on the issue: github:owner/repo#N",),
                 )
+            fields = self._creation_fields(draft.native)
             plan = {
                 "action": "open an issue",
                 "request": f"POST repos/{owner}/{repo}/issues",
                 "title": draft.title,
                 "body": draft.text,
+                **fields,
             }
             if dry_run:
                 return self._planned(ref, "send", plan)
@@ -1133,10 +1193,11 @@ class GitHub:
                 self._api(
                     f"repos/{owner}/{repo}/issues",
                     method="POST",
-                    payload={"title": draft.title, "body": draft.text},
+                    payload={"title": draft.title, "body": draft.text, **fields},
                 ).json()
                 or {}
             )
+            plan.update(_read_back(fields, data))
             return self._done(
                 f"github:{owner}/{repo}#{data.get('number')}",
                 "send",
@@ -1146,6 +1207,12 @@ class GitHub:
             )
         if draft.title:
             raise ChannelError("a comment has no title; leave it out", kind="validation")
+        if draft.native:
+            raise ChannelError(
+                f"native fields {sorted(draft.native)} apply when opening an issue "
+                f"(github:{owner}/{repo}); on an existing one use label",
+                kind="validation",
+            )
         target = f"{owner}/{repo}#{number}"
         if dry_run:
             return self._planned(
@@ -1356,19 +1423,23 @@ class GitHub:
             )
         return self._done(ref.encoded, "react", message_id, None, plan)
 
-    def _require_issue(self, owner: str, repo: str, number: int, operation: str) -> None:
-        """Raise unless ``#number`` is an issue or pull request: GitHub discussions have categories, not labels."""
+    def _require_issue(
+        self,
+        owner: str,
+        repo: str,
+        number: int,
+        operation: str,
+        *,
+        why: str = "labels apply to issues and pull requests, not discussions",
+    ) -> dict:
+        """The issue or pull request ``#number``; raise ``NotSupported`` (saying ``why``) when it is a discussion."""
         probe = self._api(f"repos/{owner}/{repo}/issues/{number}", allow=(404, 410))
         if probe.status < 400:
-            return
+            return probe.json() or {}
         self._discussion_id(
             owner, repo, number
         )  # raises not_found when there is nothing at all
-        raise NotSupported(
-            operation,
-            NAME,
-            alternatives=("labels apply to issues and pull requests, not discussions",),
-        )
+        raise NotSupported(operation, NAME, alternatives=(why,))
 
     @staticmethod
     def _labels(labels: Iterable[str]) -> list[str]:
@@ -1461,6 +1532,98 @@ class GitHub:
         if already_absent:
             plan["already_absent"] = already_absent
         return self._done(ref.encoded, "unlabel", f"issue-{number}", None, plan)
+
+    @staticmethod
+    def _creation_fields(native: Mapping[str, Any]) -> dict[str, Any]:
+        """``Draft.native`` as the issue-creation payload: labels, assignees, milestone."""
+        fields: dict[str, Any] = {}
+        for name in ("labels", "assignees"):
+            if name not in native:
+                continue
+            values = native[name]
+            if isinstance(values, str) or not isinstance(values, Iterable):
+                raise ChannelError(
+                    f"native {name} is a list of names, not {values!r}", kind="validation"
+                )
+            names = [str(value).strip() for value in values]
+            if not all(names):
+                raise ChannelError(f"a name in native {name} is empty", kind="validation")
+            fields[name] = list(dict.fromkeys(names))
+        if "milestone" in native and native["milestone"] is not None:
+            milestone = native["milestone"]
+            if isinstance(milestone, bool) or not isinstance(milestone, int):
+                raise ChannelError(
+                    f"native milestone is a milestone number, not {milestone!r}",
+                    kind="validation",
+                )
+            fields["milestone"] = milestone
+        return fields
+
+    def _set_state(
+        self,
+        ref: ConversationRef,
+        operation: str,
+        state: str,
+        *,
+        reason: str | None,
+        dry_run: bool,
+    ) -> SendResult:
+        owner, repo, number = self._parts(ref)
+        if number is None:
+            raise ChannelError(
+                f"{operation} applies to an issue or pull request: github:{owner}/{repo}#N",
+                kind="validation",
+            )
+        if reason is not None and reason not in CLOSE_REASONS:
+            raise ChannelError(
+                f"close reason {reason!r} is not one of {CLOSE_REASONS}", kind="validation"
+            )
+        path = f"repos/{owner}/{repo}/issues/{number}"
+        payload: dict[str, Any] = {"state": state}
+        if reason is not None:
+            payload["state_reason"] = reason
+        plan = {
+            "action": f"{operation} the issue or pull request",
+            "target": f"{owner}/{repo}#{number}",
+            "request": f"PATCH {path}",
+            **payload,
+        }
+        if dry_run:
+            return self._planned(ref, operation, plan)
+        before = self._require_issue(
+            owner,
+            repo,
+            number,
+            operation,
+            why="close and reopen apply to issues and pull requests here; a discussion closes through a different API",
+        )
+        if before.get("pull_request") and reason is not None:
+            raise ChannelError(
+                "a pull request closes without a reason; leave it out", kind="validation"
+            )
+        plan["was"] = before.get("state")
+        data = self._api(path, method="PATCH", payload=payload).json() or {}
+        # Read back what the issue now says, rather than assuming the request took.
+        plan["now"] = data.get("state")
+        if data.get("state_reason") is not None:
+            plan["now_reason"] = data.get("state_reason")
+        return self._done(
+            ref.encoded, operation, f"issue-{number}", data.get("html_url"), plan
+        )
+
+    def close(
+        self, ref: ConversationRef, *, reason: str | None = None, dry_run: bool = False
+    ) -> SendResult:
+        """Close an issue or pull request (``PATCH .../issues/N``), with an issue's ``state_reason``.
+
+        The plan reads the state back: ``was`` (before) and ``now`` / ``now_reason`` (what
+        the response says), so closing an already-closed issue is visible as such.
+        """
+        return self._set_state(ref, "close", "closed", reason=reason, dry_run=dry_run)
+
+    def reopen(self, ref: ConversationRef, *, dry_run: bool = False) -> SendResult:
+        """Reopen a closed issue or pull request; the plan reads the state back as for :meth:`close`."""
+        return self._set_state(ref, "reopen", "open", reason=None, dry_run=dry_run)
 
     # ----------------------------------------------------------------- verifying
 
