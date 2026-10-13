@@ -387,10 +387,22 @@ def test_a_multipart_newsletter_keeps_the_html_part_and_list_headers(monkeypatch
     assert message.native["list_post"] == "NO"
 
 
-def test_html_only_mail_also_exposes_the_html_in_native(monkeypatch):
+def test_html_only_mail_keeps_html_in_body_not_duplicated_in_native(monkeypatch):
     message = _read_one(monkeypatch, _mail(body="", html=_NEWSLETTER_HTML))
-    assert message.body_format == "html"
-    assert message.native["html"] == message.body
+    assert message.body_format == "html" and "item-1" in message.body
+    assert "html" not in message.native
+
+
+def test_repeated_and_dirty_list_headers_are_joined_and_cleaned(monkeypatch):
+    raw = _mail(headers={"List-Unsubscribe": "<https://example.org/u>"})
+    raw = raw.replace(
+        b"List-Unsubscribe: <https://example.org/u>",
+        b"List-Unsubscribe: <https://example.org/u>\nList-Unsubscribe: <mailto:unsub@example.org>\x00",
+    )
+    message = _read_one(monkeypatch, raw)
+    assert message.native["list_unsubscribe"] == (
+        "<https://example.org/u>, <mailto:unsub@example.org>"
+    )
 
 
 def test_plain_mail_without_list_headers_adds_no_keys(monkeypatch):
