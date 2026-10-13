@@ -29,8 +29,11 @@ def _mail(
     html=None,
     attachment=None,
     date="Fri, 11 Sep 2026 09:00:00 +0000",
+    headers=None,
 ):
     message = EmailMessage()
+    for name, value in (headers or {}).items():
+        message[name] = value
     for header in auth:
         message["Authentication-Results"] = header
     message["From"], message["To"], message["Subject"] = sender, to, subject
@@ -354,3 +357,61 @@ def test_the_native_fields_messages_carry_are_the_ones_capabilities_declare(mail
     declared = set(Email().capabilities.native_fields)
     for message in correspond.read("email:", registry=_registry(mailbox)):
         assert set(message.native) <= declared
+
+
+_NEWSLETTER_HTML = '<p>Issue 7</p><a href="https://example.org/item-1">First item</a>'
+_LIST_HEADERS = {
+    "List-Id": "Example Weekly <weekly.lists.example.org>",
+    "List-Unsubscribe": "<https://example.org/unsub/abc>, <mailto:unsub@example.org>",
+    "List-Post": "NO",
+}
+
+
+def _read_one(monkeypatch, raw):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    (message,) = correspond.read("email:", registry=_registry(FakeImap({1: raw})))
+    return message
+
+
+def test_a_multipart_newsletter_keeps_the_html_part_and_list_headers(monkeypatch):
+    message = _read_one(
+        monkeypatch,
+        _mail(body="Issue 7: see the web version", html=_NEWSLETTER_HTML, headers=_LIST_HEADERS),
+    )
+    assert message.body_format == "plain" and message.text.startswith("Issue 7")
+    assert "https://example.org/item-1" in message.native["html"]
+    assert message.native["list_id"] == "Example Weekly <weekly.lists.example.org>"
+    assert message.native["list_unsubscribe"] == (
+        "<https://example.org/unsub/abc>, <mailto:unsub@example.org>"
+    )
+    assert message.native["list_post"] == "NO"
+
+
+def test_html_only_mail_also_exposes_the_html_in_native(monkeypatch):
+    message = _read_one(monkeypatch, _mail(body="", html=_NEWSLETTER_HTML))
+    assert message.body_format == "html"
+    assert message.native["html"] == message.body
+
+
+def test_plain_mail_without_list_headers_adds_no_keys(monkeypatch):
+    message = _read_one(monkeypatch, _mail())
+    assert not {"html", "list_id", "list_unsubscribe", "list_post"} & set(message.native)
+
+
+def test_newsletter_native_keys_are_declared(monkeypatch):
+    message = _read_one(
+        monkeypatch, _mail(html=_NEWSLETTER_HTML, headers=_LIST_HEADERS)
+    )
+    assert set(message.native) <= set(Email().capabilities.native_fields)
+
+
+def test_folded_list_headers_are_unfolded(monkeypatch):
+    raw = _mail(headers={"List-Unsubscribe": "<https://example.org/u>"})
+    raw = raw.replace(
+        b"List-Unsubscribe: <https://example.org/u>",
+        b"List-Unsubscribe: <https://example.org/u>,\r\n <mailto:unsub@example.org>",
+    )
+    message = _read_one(monkeypatch, raw)
+    assert message.native["list_unsubscribe"] == (
+        "<https://example.org/u>, <mailto:unsub@example.org>"
+    )
