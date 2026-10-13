@@ -78,6 +78,8 @@ OPERATIONS = (
     "audience",
     "label",
     "unlabel",
+    "close",
+    "reopen",
 )
 #: Whose name a write goes out under.
 ACTS_AS = ("bot", "user", "app", "service")
@@ -565,6 +567,7 @@ _TUPLE_FIELDS = (
     "listen_modes",
     "reactions",
     "formats",
+    "draft_fields",
     "rate_limits",
     "notes",
 )
@@ -576,13 +579,17 @@ class Capabilities:
 
     One ``Support`` per operation in :data:`OPERATIONS` (``audience``: can the channel say
     who reads a conversation; ``label`` / ``unlabel``: can labels be added to or removed
-    from a conversation, apart from its opening send), plus four features of writing:
+    from a conversation, apart from its opening send; ``close`` / ``reopen``: can a
+    conversation be settled, and unsettled), plus four features of writing:
     ``initiate`` (can a write start a conversation; Telegram bots cannot), ``reply``
     (can a draft answer a specific message), ``priority``, and ``cc`` (can a draft copy
     further recipients, ``Draft.cc`` and ``Draft.bcc``). ``history_depth`` says how
     far back ``read`` sees; ``grades`` are the authenticity grades the channel can attest;
     ``native_fields`` are the keys its messages may carry in ``native`` (what a routing
-    condition can test), or ``None`` when the channel does not declare them.
+    condition can test), or ``None`` when the channel does not declare them;
+    ``draft_fields`` are the keys a :class:`Draft` may carry in its ``native`` for this
+    channel (GitHub: ``labels``, ``assignees``, ``milestone`` when opening an issue), and
+    any other key is refused rather than dropped.
     """
 
     channel: str
@@ -596,6 +603,8 @@ class Capabilities:
     audience: Support = Support.NONE
     label: Support = Support.NONE
     unlabel: Support = Support.NONE
+    close: Support = Support.NONE
+    reopen: Support = Support.NONE
     initiate: Support = Support.NONE
     reply: Support = Support.NONE
     priority: Support = Support.NONE
@@ -610,6 +619,7 @@ class Capabilities:
     reactions_per_message: int | None = None
     max_upload_bytes: int | None = None
     formats: tuple[str, ...] = ("plain",)
+    draft_fields: tuple[str, ...] = ()
     native_fields: tuple[str, ...] | None = None
     rate_limits: tuple[str, ...] = ()
     notes: tuple[str, ...] = ()
@@ -892,6 +902,14 @@ class Draft:
 
     >>> Draft(text="hi", cc=["bob@example.org", " "]).cc
     ('bob@example.org',)
+
+    ``native`` carries the fields only one channel has, in that channel's vocabulary --
+    the write-side mirror of :attr:`Message.native`. Which keys a channel takes is
+    :attr:`Capabilities.draft_fields`; ``send`` refuses any other key rather than
+    dropping it.
+
+    >>> Draft(text="hi", native={"labels": ["question"]}).native
+    {'labels': ['question']}
     """
 
     text: str
@@ -900,6 +918,7 @@ class Draft:
     priority: str | None = None
     cc: tuple[str, ...] = ()
     bcc: tuple[str, ...] = ()
+    native: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self):
         if not isinstance(self.text, str):
@@ -913,10 +932,17 @@ class Draft:
         for name in ("cc", "bcc"):
             values = _texts(name, getattr(self, name))
             object.__setattr__(self, name, tuple(v.strip() for v in values if v.strip()))
+        if not isinstance(self.native, Mapping):
+            raise TypeError(
+                f"draft native must be a mapping, not {type(self.native).__name__}"
+            )
+        object.__setattr__(self, "native", {str(k): v for k, v in self.native.items()})
 
     def to_dict(self) -> dict:
-        """JSON-ready."""
-        return {
+        """JSON-ready. ``native`` appears only when set, so a draft without one keeps the
+        dict -- and the idempotency fingerprint of a key claimed before ``native``
+        existed -- it always had."""
+        data = {
             "text": self.text,
             "title": self.title,
             "reply_to": self.reply_to,
@@ -924,6 +950,9 @@ class Draft:
             "cc": list(self.cc),
             "bcc": list(self.bcc),
         }
+        if self.native:
+            data["native"] = dict(self.native)
+        return data
 
 
 @dataclass(frozen=True, kw_only=True)

@@ -4,7 +4,7 @@ Run ``correspond-mcp`` (install the extra first: ``pip install "correspond[mcp]"
 are named by ``correspond.tools:<name>`` reference, so the core never imports an MCP
 library. By default the server exposes only the tools that read (``channels``,
 ``requirements``, ``capabilities``, ``ref``, ``read``, ``listen``, ``audience``). The writes (``send``,
-``edit``, ``react``, ``label``, ``unlabel``) are exposed only when the operator starts it with
+``edit``, ``react``, ``label``, ``unlabel``, ``close``, ``reopen``) are exposed only when the operator starts it with
 ``--allow-send``, and every write still takes ``dry_run``.
 
 The data root is the server's, never the model's: ``data_dir`` is removed from every tool's

@@ -20,6 +20,7 @@ from correspond.channels.github import (
     signature,
 )
 from correspond.errors import ChannelError, MissingRequirement, NotSupported
+from correspond.model import Draft
 
 REPO = "octocat/hello-world"
 
@@ -1410,3 +1411,189 @@ def test_correspond_audience_on_the_command_line(monkeypatch, capsys):
     assert code == 0 and "audience: full" in out.splitlines()
     code, out = _cli(monkeypatch, capsys, ScriptedGh(), "capabilities", "github", "--json")
     assert code == 0 and json.loads(out)["capabilities"]["audience"] == "full"
+
+
+# ---------------------------------------------------- create-time fields, close, reopen (#26)
+
+
+def _created(number=7, *, labels=(), assignees=(), milestone=None):
+    data = _issue(number, labels=labels)
+    data["assignees"] = [{"login": login} for login in assignees]
+    data["milestone"] = None if milestone is None else {"number": milestone}
+    return data
+
+
+def test_opening_an_issue_sets_labels_assignees_and_milestone_in_the_one_request():
+    gh = ScriptedGh(
+        WHOAMI,
+        (
+            "POST",
+            rf"repos/{REPO}/issues",
+            (201, _created(labels=("question",), assignees=("Ada",), milestone=3)),
+        ),
+    )
+    result = correspond.send(
+        f"github:{REPO}",
+        Draft(
+            title="Q20",
+            text="Where do the phase dates stop?",
+            native={"labels": ["question"], "assignees": ["ada"], "milestone": 3},
+        ),
+        registry={"github": GitHub(run=gh)},
+    )
+    assert result.ok and result.conversation == f"github:{REPO}#7"
+    (post,) = [c for c in gh.calls if c["method"] == "POST"]
+    assert post["payload"] == {
+        "title": "Q20",
+        "body": "Where do the phase dates stop?",
+        "labels": ["question"],
+        "assignees": ["ada"],
+        "milestone": 3,
+    }
+    assert result.plan["landed"] == {
+        "labels": ["question"],
+        "assignees": ["ada"],
+        "milestone": 3,
+    }
+    assert "not_applied" not in result.plan
+
+
+def test_an_assignee_github_silently_dropped_is_reported_as_not_applied():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("POST", rf"repos/{REPO}/issues", (201, _created(assignees=("ada",)))),
+    )
+    result = correspond.send(
+        f"github:{REPO}",
+        Draft(title="Q", text="?", native={"assignees": ["ada", "not-a-member"]}),
+        registry={"github": GitHub(run=gh)},
+    )
+    assert result.ok
+    assert result.plan["not_applied"] == {"assignees": ["not-a-member"]}
+
+
+def test_the_dry_run_plan_shows_the_creation_fields_and_posts_nothing():
+    gh = ScriptedGh(WHOAMI, ("GET", r".*", (404, {"message": "Not Found"})))
+    result = correspond.send(
+        f"github:{REPO}",
+        Draft(title="Q", text="?", native={"labels": ["question"]}),
+        dry_run=True,
+        registry={"github": GitHub(run=gh)},
+    )
+    assert result.ok and result.dry_run and result.plan["labels"] == ["question"]
+    assert "POST" not in {c["method"] for c in gh.calls}
+
+
+def test_an_unknown_native_field_is_refused_not_dropped():
+    gh = ScriptedGh()
+    result = correspond.send(
+        f"github:{REPO}",
+        Draft(title="Q", text="?", native={"assignee": "ada"}),
+        registry={"github": GitHub(run=gh)},
+    )
+    assert (result.ok, result.error_kind) == (False, "validation")
+    assert "assignee" in result.error and "assignees" in result.error
+    assert gh.calls == []
+
+
+def test_native_fields_on_a_comment_are_refused():
+    gh = ScriptedGh(WHOAMI)
+    result = correspond.send(
+        f"github:{REPO}#1",
+        Draft(text="hi", native={"labels": ["bug"]}),
+        registry={"github": GitHub(run=gh)},
+    )
+    assert (result.ok, result.error_kind) == (False, "validation")
+    assert "POST" not in {c["method"] for c in gh.calls}
+
+
+@pytest.mark.parametrize(
+    "native",
+    [{"labels": "bug"}, {"assignees": [""]}, {"milestone": "3"}, {"milestone": True}],
+)
+def test_malformed_native_values_are_validation_failures(native):
+    result = correspond.send(
+        f"github:{REPO}",
+        Draft(title="Q", text="?", native=native),
+        dry_run=True,
+        registry={"github": GitHub(run=ScriptedGh())},
+    )
+    assert (result.ok, result.error_kind) == (False, "validation")
+
+
+def test_close_patches_the_state_with_a_reason_and_reads_it_back():
+    closed = {**_issue(), "state": "closed", "state_reason": "completed"}
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        ("PATCH", rf"repos/{REPO}/issues/1", (200, closed)),
+    )
+    result = correspond.close(
+        f"github:{REPO}#1", reason="completed", registry={"github": GitHub(run=gh)}
+    )
+    assert result.ok and result.operation == "close"
+    (patch,) = [c for c in gh.calls if c["method"] == "PATCH"]
+    assert patch["payload"] == {"state": "closed", "state_reason": "completed"}
+    assert (result.plan["was"], result.plan["now"], result.plan["now_reason"]) == (
+        "open",
+        "closed",
+        "completed",
+    )
+
+
+def test_reopen_patches_the_state_back_to_open():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, {**_issue(), "state": "closed"})),
+        ("PATCH", rf"repos/{REPO}/issues/1", (200, _issue())),
+    )
+    result = correspond.reopen(f"github:{REPO}#1", registry={"github": GitHub(run=gh)})
+    assert result.ok and result.plan["now"] == "open" and result.plan["was"] == "closed"
+    (patch,) = [c for c in gh.calls if c["method"] == "PATCH"]
+    assert patch["payload"] == {"state": "open"}
+
+
+def test_close_dry_run_patches_nothing():
+    gh = ScriptedGh(WHOAMI, ("GET", r".*", (404, {"message": "Not Found"})))
+    result = correspond.close(
+        f"github:{REPO}#1", reason="not_planned", dry_run=True, registry={"github": GitHub(run=gh)}
+    )
+    assert result.ok and result.dry_run and result.plan["state_reason"] == "not_planned"
+    assert "PATCH" not in {c["method"] for c in gh.calls}
+
+
+def test_close_refuses_an_unknown_reason_and_a_bare_repository_with_no_gh_call():
+    registry = {"github": GitHub(run=ScriptedGh())}
+    for result in (
+        correspond.close(f"github:{REPO}#1", reason="done", registry=registry),
+        correspond.close(f"github:{REPO}", registry=registry),
+    ):
+        assert (result.ok, result.error_kind) == (False, "validation")
+
+
+def test_close_on_a_discussion_is_refused_by_name():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
+        ("POST", "graphql", (200, {"data": {"repository": {"discussion": {"id": "D_node5"}}}})),
+    )
+    with pytest.raises(NotSupported, match="close"):
+        correspond.close(f"github:{REPO}#5", registry={"github": GitHub(run=gh)})
+
+
+def test_close_with_a_reason_on_a_pull_request_is_refused():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/2", (200, _issue(2, pr=True))),
+    )
+    result = correspond.close(
+        f"github:{REPO}#2", reason="completed", registry={"github": GitHub(run=gh)}
+    )
+    assert (result.ok, result.error_kind) == (False, "validation")
+    assert "PATCH" not in {c["method"] for c in gh.calls}
+
+
+def test_close_reopen_and_draft_fields_are_in_capabilities():
+    caps = correspond.capabilities("github")
+    assert {"close", "reopen"} <= set(caps.operations)
+    assert caps.draft_fields == ("labels", "assignees", "milestone")

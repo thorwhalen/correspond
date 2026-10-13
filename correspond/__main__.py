@@ -49,6 +49,9 @@ HELP = {
         "priority": {"help": "low, normal, high or urgent (channels with priorities)"},
         "cc": _CC,
         "bcc": _BCC,
+        "native": {
+            "help": 'channel-specific fields as a JSON object, e.g. \'{"labels": ["question"], "assignees": ["octocat"]}\' when opening a GitHub issue (see capabilities: draft_fields)'
+        },
         "dry_run": _DRY_RUN,
     },
     "edit": {
@@ -75,6 +78,15 @@ HELP = {
         "labels": {
             "help": "comma-separated labels to remove (a label name may not itself contain a comma)"
         },
+        "dry_run": _DRY_RUN,
+    },
+    "close": {
+        "ref": _REF,
+        "reason": {"help": "why, in the channel's vocabulary (GitHub issues: completed, not_planned or duplicate)"},
+        "dry_run": _DRY_RUN,
+    },
+    "reopen": {
+        "ref": _REF,
         "dry_run": _DRY_RUN,
     },
     "authored": {
