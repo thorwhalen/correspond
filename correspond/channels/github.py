@@ -463,6 +463,7 @@ class GitHub:
                 "label and unlabel each cost one extra read (confirming the issue exists, to tell a label the issue never had apart from a missing issue) before their writes",
                 "native draft fields (labels, assignees, milestone) apply when opening an issue; on a comment they are refused",
                 "close and reopen apply to issues and pull requests, not discussions; close takes a reason of completed, not_planned or duplicate (issues only)",
+                "a dry run of close or reopen reads nothing, so a pull request given a reason, or a discussion, is refused only by the real call",
             ),
         )
 

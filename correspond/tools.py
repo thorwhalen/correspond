@@ -208,6 +208,8 @@ def capabilities(channel: str) -> dict:
             lines.append(f"{name}: {data[name]}")
     if caps.native_fields:
         lines.append(f"native fields: {', '.join(caps.native_fields)}")
+    if caps.draft_fields:
+        lines.append(f"draft fields: {', '.join(caps.draft_fields)}")
     if caps.reactions:
         lines.append(f"reactions: {' '.join(caps.reactions)}")
     lines += [f"rate limit: {r}" for r in caps.rate_limits]
@@ -320,7 +322,10 @@ def _native(text: str | None) -> dict:
     """A draft's channel-specific fields, given flat as a JSON object (``None`` or blank: none)."""
     if not (text or "").strip():
         return {}
-    value = json.loads(text)
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError as error:
+        raise ValueError(f"native must be a JSON object; could not parse it: {error}") from None
     if not isinstance(value, dict):
         raise ValueError(f"native must be a JSON object, not {type(value).__name__}")
     return value
