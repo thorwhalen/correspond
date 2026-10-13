@@ -82,7 +82,9 @@ HELP = {
     },
     "close": {
         "ref": _REF,
-        "reason": {"help": "why, in the channel's vocabulary (GitHub issues: completed, not_planned or duplicate)"},
+        "reason": {
+            "help": "why, in the channel's vocabulary (GitHub issues: completed, not_planned or duplicate)"
+        },
         "dry_run": _DRY_RUN,
     },
     "reopen": {

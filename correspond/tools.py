@@ -325,7 +325,9 @@ def _native(text: str | None) -> dict:
     try:
         value = json.loads(text)
     except json.JSONDecodeError as error:
-        raise ValueError(f"native must be a JSON object; could not parse it: {error}") from None
+        raise ValueError(
+            f"native must be a JSON object; could not parse it: {error}"
+        ) from None
     if not isinstance(value, dict):
         raise ValueError(f"native must be a JSON object, not {type(value).__name__}")
     return value

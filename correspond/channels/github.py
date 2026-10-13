@@ -1576,7 +1576,8 @@ class GitHub:
             )
         if reason is not None and reason not in CLOSE_REASONS:
             raise ChannelError(
-                f"close reason {reason!r} is not one of {CLOSE_REASONS}", kind="validation"
+                f"close reason {reason!r} is not one of {CLOSE_REASONS}",
+                kind="validation",
             )
         path = f"repos/{owner}/{repo}/issues/{number}"
         payload: dict[str, Any] = {"state": state}
