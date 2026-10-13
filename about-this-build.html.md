@@ -2,16 +2,18 @@
 
 # About this build
 
-This documentation was built on **2026-10-04 08:25 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/b7760b01b2d4b3b510755ee6de89f59cf24e9807"><code>b7760b0</code></a> on branch <code>main</code>, for **correspond 0.0.9** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-13 17:07 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/7f68ce65dc1926a6a4a7ab978cd47893095f1999"><code>7f68ce6</code></a> on branch <code>main</code>, for **correspond 0.0.10** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.10) is behind the latest release on PyPI (0.0.11): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/b7760b01b2d4b3b510755ee6de89f59cf24e9807"><code>b7760b01b2d4b3b510755ee6de89f59cf24e9807</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/7f68ce65dc1926a6a4a7ab978cd47893095f1999"><code>7f68ce65dc1926a6a4a7ab978cd47893095f1999</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -22,18 +24,18 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/37188823154">37188823154</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/38435906199">38435906199</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>b7760b01b2d4b3b510755ee6de89f59cf24e9807</code> (in the history of the built commit)  |
+| Event commit | <code>7f68ce65dc1926a6a4a7ab978cd47893095f1999</code> (in the history of the built commit)  |
 
 ## Tools
 
 |          |         |
 |----------|---------|
-| epythet  | 0.2.12  |
+| epythet  | 0.2.17  |
 | Sphinx   | 9.1.0   |
 | docutils | 0.22.4  |
-| Python   | 3.12.14 |
+| Python   | 3.12.15 |
 
 ## Configuration as resolved
 
@@ -49,14 +51,14 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.9/">0.0.9</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.11/">0.0.11</a>, newer than the documented version (0.0.10).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout b7760b01b2d4b3b510755ee6de89f59cf24e9807
-pip install "epythet==0.2.12"
+git checkout 7f68ce65dc1926a6a4a7ab978cd47893095f1999
+pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 
