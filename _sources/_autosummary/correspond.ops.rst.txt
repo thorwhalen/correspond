@@ -16,6 +16,7 @@ correspond.ops
    
       audience
       capabilities
+      close
       edit
       get_channel
       implemented
@@ -24,6 +25,7 @@ correspond.ops
       parse_ref
       react
       read
+      reopen
       send
       unlabel
       upload
@@ -37,11 +39,13 @@ correspond.ops
    
       AudienceReader
       Channel
+      Closer
       Editor
       Labeler
       Listener
       Reactor
       Reader
+      Reopener
       Unlabeler
       Uploader
       Verifier

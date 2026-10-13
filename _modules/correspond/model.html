@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=a83ce22a"></script>
+    <script src="../../_static/documentation_options.js?v=0c446633"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.10" />
+  <meta name="docsearch:version" content="0.0.11" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -791,6 +791,8 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"audience"</span><span class="p">,</span>
     <span class="s2">"label"</span><span class="p">,</span>
     <span class="s2">"unlabel"</span><span class="p">,</span>
+    <span class="s2">"close"</span><span class="p">,</span>
+    <span class="s2">"reopen"</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="c1">#: Whose name a write goes out under.</span>
 <span class="n">ACTS_AS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"bot"</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">,</span> <span class="s2">"app"</span><span class="p">,</span> <span class="s2">"service"</span><span class="p">)</span>
@@ -1368,6 +1370,7 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"listen_modes"</span><span class="p">,</span>
     <span class="s2">"reactions"</span><span class="p">,</span>
     <span class="s2">"formats"</span><span class="p">,</span>
+    <span class="s2">"draft_fields"</span><span class="p">,</span>
     <span class="s2">"rate_limits"</span><span class="p">,</span>
     <span class="s2">"notes"</span><span class="p">,</span>
 <span class="p">)</span>
@@ -1381,13 +1384,17 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    One ``Support`` per operation in :data:`OPERATIONS` (``audience``: can the channel say</span>
 <span class="sd">    who reads a conversation; ``label`` / ``unlabel``: can labels be added to or removed</span>
-<span class="sd">    from a conversation, apart from its opening send), plus four features of writing:</span>
+<span class="sd">    from a conversation, apart from its opening send; ``close`` / ``reopen``: can a</span>
+<span class="sd">    conversation be settled, and unsettled), plus four features of writing:</span>
 <span class="sd">    ``initiate`` (can a write start a conversation; Telegram bots cannot), ``reply``</span>
 <span class="sd">    (can a draft answer a specific message), ``priority``, and ``cc`` (can a draft copy</span>
 <span class="sd">    further recipients, ``Draft.cc`` and ``Draft.bcc``). ``history_depth`` says how</span>
 <span class="sd">    far back ``read`` sees; ``grades`` are the authenticity grades the channel can attest;</span>
 <span class="sd">    ``native_fields`` are the keys its messages may carry in ``native`` (what a routing</span>
-<span class="sd">    condition can test), or ``None`` when the channel does not declare them.</span>
+<span class="sd">    condition can test), or ``None`` when the channel does not declare them;</span>
+<span class="sd">    ``draft_fields`` are the keys a :class:`Draft` may carry in its ``native`` for this</span>
+<span class="sd">    channel (GitHub: ``labels``, ``assignees``, ``milestone`` when opening an issue), and</span>
+<span class="sd">    any other key is refused rather than dropped.</span>
 <span class="sd">    """</span>
 
     <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span>
@@ -1401,6 +1408,8 @@ window.runMermaid = runMermaid;</script>
     <span class="n">audience</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">label</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">unlabel</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">close</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
+    <span class="n">reopen</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">initiate</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">reply</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
     <span class="n">priority</span><span class="p">:</span> <span class="n">Support</span> <span class="o">=</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span>
@@ -1415,6 +1424,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">reactions_per_message</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">max_upload_bytes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">formats</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"plain"</span><span class="p">,)</span>
+    <span class="n">draft_fields</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
     <span class="n">native_fields</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">rate_limits</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
     <span class="n">notes</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
@@ -1724,6 +1734,14 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    &gt;&gt;&gt; Draft(text="hi", cc=["bob@example.org", " "]).cc</span>
 <span class="sd">    ('bob@example.org',)</span>
+
+<span class="sd">    ``native`` carries the fields only one channel has, in that channel's vocabulary --</span>
+<span class="sd">    the write-side mirror of :attr:`Message.native`. Which keys a channel takes is</span>
+<span class="sd">    :attr:`Capabilities.draft_fields`; ``send`` refuses any other key rather than</span>
+<span class="sd">    dropping it.</span>
+
+<span class="sd">    &gt;&gt;&gt; Draft(text="hi", native={"labels": ["question"]}).native</span>
+<span class="sd">    {'labels': ['question']}</span>
 <span class="sd">    """</span>
 
     <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
@@ -1732,6 +1750,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">priority</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">cc</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
     <span class="n">bcc</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">native</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -1745,19 +1764,29 @@ window.runMermaid = runMermaid;</script>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"cc"</span><span class="p">,</span> <span class="s2">"bcc"</span><span class="p">):</span>
             <span class="n">values</span> <span class="o">=</span> <span class="n">_texts</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span>
             <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">values</span> <span class="k">if</span> <span class="n">v</span><span class="o">.</span><span class="n">strip</span><span class="p">()))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">native</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"draft native must be a mapping, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">native</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"native"</span><span class="p">,</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">native</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
 
 <div class="viewcode-block" id="Draft.to_dict">
 <a class="viewcode-back" href="../../_autosummary/correspond.model.html#correspond.Draft.to_dict">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""JSON-ready."""</span>
-        <span class="k">return</span> <span class="p">{</span>
+<span class="w">        </span><span class="sd">"""JSON-ready. ``native`` appears only when set, so a draft without one keeps the</span>
+<span class="sd">        dict -- and the idempotency fingerprint of a key claimed before ``native``</span>
+<span class="sd">        existed -- it always had."""</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"text"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
             <span class="s2">"title"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
             <span class="s2">"reply_to"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
             <span class="s2">"priority"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span>
             <span class="s2">"cc"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cc</span><span class="p">),</span>
             <span class="s2">"bcc"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bcc</span><span class="p">),</span>
-        <span class="p">}</span></div>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">native</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">"native"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">native</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span></div>
 </div>
 
 

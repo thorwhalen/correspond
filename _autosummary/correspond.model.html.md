@@ -215,7 +215,7 @@ JSON-ready.
 Short phrases for reader classes, used by [`Audience.in_words()`](#correspond.model.Audience.in_words); a class not listed
 here is shown as written.
 
-### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -223,13 +223,17 @@ What a channel can do, graded, with its limits.
 
 One `Support` per operation in [`OPERATIONS`](#correspond.model.OPERATIONS) (`audience`: can the channel say
 who reads a conversation; `label` / `unlabel`: can labels be added to or removed
-from a conversation, apart from its opening send), plus four features of writing:
+from a conversation, apart from its opening send; `close` / `reopen`: can a
+conversation be settled, and unsettled), plus four features of writing:
 `initiate` (can a write start a conversation; Telegram bots cannot), `reply`
 (can a draft answer a specific message), `priority`, and `cc` (can a draft copy
 further recipients, `Draft.cc` and `Draft.bcc`). `history_depth` says how
 far back `read` sees; `grades` are the authenticity grades the channel can attest;
 `native_fields` are the keys its messages may carry in `native` (what a routing
-condition can test), or `None` when the channel does not declare them.
+condition can test), or `None` when the channel does not declare them;
+`draft_fields` are the keys a [`Draft`](#correspond.model.Draft) may carry in its `native` for this
+channel (GitHub: `labels`, `assignees`, `milestone` when opening an issue), and
+any other key is refused rather than dropped.
 
 #### *classmethod* from_dict(data)
 
@@ -347,7 +351,7 @@ readers (email notifications), an edit history anyone who reads can see.
 * **Type:**
   What a send leaves behind
 
-### *class* correspond.model.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=())
+### *class* correspond.model.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -361,9 +365,21 @@ What to write: the text, and the few things channels share (a title, the message
 ('bob@example.org',)
 ```
 
+`native` carries the fields only one channel has, in that channel’s vocabulary –
+the write-side mirror of `Message.native`. Which keys a channel takes is
+`Capabilities.draft_fields`; `send` refuses any other key rather than
+dropping it.
+
+```pycon
+>>> Draft(text="hi", native={"labels": ["question"]}).native
+{'labels': ['question']}
+```
+
 #### to_dict()
 
-JSON-ready.
+JSON-ready. `native` appears only when set, so a draft without one keeps the
+dict – and the idempotency fingerprint of a key claimed before `native`
+existed – it always had.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -441,7 +457,7 @@ JSON-ready; `raw` (the untouched payload) only when asked for.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.model.OPERATIONS *= ('read', 'listen', 'send', 'edit', 'react', 'upload', 'verify', 'audience', 'label', 'unlabel')*
+### correspond.model.OPERATIONS *= ('read', 'listen', 'send', 'edit', 'react', 'upload', 'verify', 'audience', 'label', 'unlabel', 'close', 'reopen')*
 
 The operations, in the order capabilities and surfaces list them.
 

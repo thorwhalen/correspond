@@ -20,12 +20,14 @@ correspond.tools
       authored_thread
       capabilities
       channels
+      close
       edit
       label
       listen
       react
       read
       ref
+      reopen
       requirements
       send
       unlabel

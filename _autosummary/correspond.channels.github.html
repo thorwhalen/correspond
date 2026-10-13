@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=a83ce22a"></script>
+    <script src="../_static/documentation_options.js?v=0c446633"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.10" />
+  <meta name="docsearch:version" content="0.0.11" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -424,8 +424,13 @@ requests, <code class="docutils literal notranslate"><span class="pre">listen</s
 title is required).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo#N</span></code>: an issue, a pull request, or a discussion. GitHub numbers the
 three in one sequence; correspond asks which. <code class="docutils literal notranslate"><span class="pre">label</span></code> and <code class="docutils literal notranslate"><span class="pre">unlabel</span></code> work on an issue
-or pull request only: GitHub discussions have categories, not labels.</p></li>
+or pull request only: GitHub discussions have categories, not labels. <code class="docutils literal notranslate"><span class="pre">close</span></code> and
+<code class="docutils literal notranslate"><span class="pre">reopen</span></code> likewise (a discussion closes through a different API, not covered yet).</p></li>
 </ul>
+<p>Opening an issue takes <code class="docutils literal notranslate"><span class="pre">Draft.native</span></code> keys <code class="docutils literal notranslate"><span class="pre">labels</span></code>, <code class="docutils literal notranslate"><span class="pre">assignees</span></code> and <code class="docutils literal notranslate"><span class="pre">milestone</span></code>,
+set in the creating request so watchers are notified once. GitHub silently drops an
+assignee who cannot be assigned, so the plan reports what the created issue actually
+carries (<code class="docutils literal notranslate"><span class="pre">landed</span></code>) and what did not stick (<code class="docutils literal notranslate"><span class="pre">not_applied</span></code>).</p>
 <p>Message ids match the anchors in GitHub’s own URLs: <code class="docutils literal notranslate"><span class="pre">issue-N</span></code> (the opening post of issue
 or pull request N), <code class="docutils literal notranslate"><span class="pre">issuecomment-ID</span></code>, <code class="docutils literal notranslate"><span class="pre">discussion-N</span></code>, <code class="docutils literal notranslate"><span class="pre">discussioncomment-ID</span></code>.</p>
 <p>Messages read through the API are <code class="docutils literal notranslate"><span class="pre">platform</span></code> (GitHub authenticated the account), with the
@@ -514,6 +519,19 @@ a transport failure raises; <a class="reference internal" href="correspond.ops.h
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.close">
+<span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.close" title="Link to this definition">#</a></dt>
+<dd><p>Close an issue or pull request (<code class="docutils literal notranslate"><span class="pre">PATCH</span> <span class="pre">.../issues/N</span></code>), with an issue’s <code class="docutils literal notranslate"><span class="pre">state_reason</span></code>.</p>
+<p>The plan reads the state back: <code class="docutils literal notranslate"><span class="pre">was</span></code> (before) and <code class="docutils literal notranslate"><span class="pre">now</span></code> / <code class="docutils literal notranslate"><span class="pre">now_reason</span></code> (what
+the response says), so closing an already-closed issue is visible as such.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.github.GitHub.edit">
 <span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.edit" title="Link to this definition">#</a></dt>
 <dd><p>Replace the body of an issue, a comment, a discussion or a discussion comment.</p>
@@ -586,6 +604,17 @@ accepted as a cursor.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="correspond.model.html#correspond.model.Message" title="correspond.model.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.github.GitHub.reopen">
+<span class="sig-name descname"><span class="pre">reopen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.reopen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.reopen" title="Link to this definition">#</a></dt>
+<dd><p>Reopen a closed issue or pull request; the plan reads the state back as for <a class="reference internal" href="#correspond.channels.github.GitHub.close" title="correspond.channels.github.GitHub.close"><code class="xref py py-meth docutils literal notranslate"><span class="pre">close()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -698,12 +727,14 @@ is read as “was not on the issue”, not as an error.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub"><code class="docutils literal notranslate"><span class="pre">GitHub</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.audience"><code class="docutils literal notranslate"><span class="pre">GitHub.audience()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.capabilities"><code class="docutils literal notranslate"><span class="pre">GitHub.capabilities</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.close"><code class="docutils literal notranslate"><span class="pre">GitHub.close()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.edit"><code class="docutils literal notranslate"><span class="pre">GitHub.edit()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.label"><code class="docutils literal notranslate"><span class="pre">GitHub.label()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.parse_ref"><code class="docutils literal notranslate"><span class="pre">GitHub.parse_ref()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.poll"><code class="docutils literal notranslate"><span class="pre">GitHub.poll()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.react"><code class="docutils literal notranslate"><span class="pre">GitHub.react()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.read"><code class="docutils literal notranslate"><span class="pre">GitHub.read()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.reopen"><code class="docutils literal notranslate"><span class="pre">GitHub.reopen()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.send"><code class="docutils literal notranslate"><span class="pre">GitHub.send()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.unlabel"><code class="docutils literal notranslate"><span class="pre">GitHub.unlabel()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.github.GitHub.verify"><code class="docutils literal notranslate"><span class="pre">GitHub.verify()</span></code></a></li>

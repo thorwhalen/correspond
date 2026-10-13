@@ -8,7 +8,7 @@ A check is a callable:
 before_send(ref, draft, audience, *, operation, dry_run, message_id, **context) -> None
 ```
 
-`operation` is `send`, `edit`, `react` or `upload`; `message_id` is the message
+`operation` is `send`, `edit`, `react`, `upload`, `label`, `unlabel`, `close` or `reopen`; `message_id` is the message
 an edit or a reaction targets (`None` otherwise); a reaction’s draft text is the reaction,
 an upload’s is the file name. Accept `**context`: later versions may pass more. Returning
 lets the write go ahead; raising [`Refused`](correspond.errors.html.md#correspond.errors.Refused) blocks it; raising

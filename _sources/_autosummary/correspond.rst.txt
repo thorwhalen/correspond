@@ -13,6 +13,7 @@
       channel_registry
       check_binding
       check_requirements
+      close
       edit
       get_channel
       label
@@ -22,6 +23,7 @@
       react
       read
       register_channel
+      reopen
       route
       send
       unlabel
@@ -46,11 +48,13 @@
       Event
       Grade
       HistoryDepth
+      Closer
       Labeler
       Listener
       Message
       Reactor
       Reader
+      Reopener
       RouteDecision
       Scope
       SendResult

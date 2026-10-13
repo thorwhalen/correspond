@@ -14,7 +14,13 @@ limit and never shows in the process table.
   title is required).
 - `github:owner/repo#N`: an issue, a pull request, or a discussion. GitHub numbers the
   three in one sequence; correspond asks which. `label` and `unlabel` work on an issue
-  or pull request only: GitHub discussions have categories, not labels.
+  or pull request only: GitHub discussions have categories, not labels. `close` and
+  `reopen` likewise (a discussion closes through a different API, not covered yet).
+
+Opening an issue takes `Draft.native` keys `labels`, `assignees` and `milestone`,
+set in the creating request so watchers are notified once. GitHub silently drops an
+assignee who cannot be assigned, so the plan reports what the created issue actually
+carries (`landed`) and what did not stick (`not_applied`).
 
 Message ids match the anchors in GitHub’s own URLs: `issue-N` (the opening post of issue
 or pull request N), `issuecomment-ID`, `discussion-N`, `discussioncomment-ID`.
@@ -89,6 +95,16 @@ a transport failure raises; [`correspond.ops.audience()`](correspond.ops.html.md
 
 Issues, pull request conversations and discussions.
 
+#### close(ref, , reason=None, dry_run=False)
+
+Close an issue or pull request (`PATCH .../issues/N`), with an issue’s `state_reason`.
+
+The plan reads the state back: `was` (before) and `now` / `now_reason` (what
+the response says), so closing an already-closed issue is visible as such.
+
+* **Return type:**
+  [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
+
 #### edit(ref, message_id, draft, , dry_run=False)
 
 Replace the body of an issue, a comment, a discussion or a discussion comment.
@@ -143,6 +159,13 @@ An issue, pull request or discussion with its comments; for a repository, recent
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Message`](correspond.model.html.md#correspond.model.Message)]
+
+#### reopen(ref, , dry_run=False)
+
+Reopen a closed issue or pull request; the plan reads the state back as for [`close()`](#correspond.channels.github.GitHub.close).
+
+* **Return type:**
+  [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
 #### send(ref, draft, , dry_run=False)
 

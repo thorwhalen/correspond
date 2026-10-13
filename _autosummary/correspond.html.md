@@ -15,7 +15,7 @@ Telegram and a web inbox, through one model and one set of verbs:
 
 A conversation reference is `<channel>:<id>`. Each channel implements the operations it
 can (`read`, `listen`, `send`, `edit`, `react`, `upload`, `verify`,
-`audience`, `label`, `unlabel`); asking for one it lacks raises [`NotSupported`](#correspond.NotSupported), and
+`audience`, `label`, `unlabel`, `close`, `reopen`); asking for one it lacks raises [`NotSupported`](#correspond.NotSupported), and
 [`capabilities()`](#correspond.capabilities) says so in advance. [`audience()`](#correspond.audience) is the exception: it never
 refuses, because an audience nobody can compute is public.
 correspond knows no people: a message’s `author` is what the platform attests, and its
@@ -32,6 +32,7 @@ the same verbs, through [`correspond.tools`](correspond.tools.html.md#module-cor
 | [`channel_registry`](#correspond.channel_registry)()                                 | The process registry: built on first use, then shared.                                                                                                                  |
 | [`check_binding`](#correspond.check_binding)(pattern, \*[, registry])             | What would make a binding never match, found when bindings are loaded instead of by messages quietly going unrouted.                                                    |
 | [`check_requirements`](#correspond.check_requirements)(channel, \*[, registry, ...])   | What a channel needs and what is missing: the install command, binaries, platform, and every setting's source.                                                          |
+| [`close`](#correspond.close)(ref, \*[, reason, dry_run, registry, ...])   | Close a conversation (an issue), with an optional `reason` in the channel's vocabulary; the `before_send` check sees the reason (or `close`) as the draft's text.       |
 | [`edit`](#correspond.edit)(ref, message_id, text, \*[, dry_run, ...])    | Replace the text of a message correspond's account wrote; the `before_send` check runs first, as for [`send()`](#correspond.send).           |
 | [`get_channel`](#correspond.get_channel)(name, \*[, registry])                  | The adapter registered under `name`; [`UnknownChannel`](correspond.errors.html.md#correspond.errors.UnknownChannel) says what to do if there is none. |
 | [`label`](#correspond.label)(ref, labels, \*[, dry_run, registry, ...])   | Add `labels` to a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                   |
@@ -41,6 +42,7 @@ the same verbs, through [`correspond.tools`](correspond.tools.html.md#module-cor
 | [`react`](#correspond.react)(ref, message_id, reaction, \*[, ...])        | Add a reaction to a message (the channel's capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft's text.                  |
 | [`read`](#correspond.read)(ref, \*[, since, limit, registry])            | The messages of a conversation, oldest first (`limit` keeps the most recent ones).                                                                                      |
 | [`register_channel`](#correspond.register_channel)(adapter, \*[, name, ...])         | Add an adapter (tests, or a channel defined outside correspond).                                                                                                        |
+| [`reopen`](#correspond.reopen)(ref, \*[, dry_run, registry, before_send])  | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                |
 | [`route`](#correspond.route)(message, \*[, bindings, threads, ...])       | Run the chain (bindings, thread continuity, metadata rules, classifier) and return the first decision, or `None`.                                                       |
 | [`send`](#correspond.send)(ref, text, \*[, title, reply_to, ...])        | Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.         |
 | [`unlabel`](#correspond.unlabel)(ref, labels, \*[, dry_run, registry, ...]) | Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                              |
@@ -64,11 +66,13 @@ the same verbs, through [`correspond.tools`](correspond.tools.html.md#module-cor
 | [`Event`](#correspond.Event)(\*, kind, channel, delivery_id[, ...])       | Something that happened on a channel, as a listener reports it: dedupe on `delivery_id`, resume from `cursor`.                               |
 | [`Grade`](#correspond.Grade)(\*values)                                    | How sure the channel is about who sent a message: a vocabulary, not a ranking.                                                               |
 | [`HistoryDepth`](#correspond.HistoryDepth)(\*values)                             | How far back `read` sees: all history, a 24-hour buffer, only what correspond has seen since it was linked or started listening, or nothing. |
+| [`Closer`](#correspond.Closer)(\*args, \*\*kwargs)                         | Settle a conversation (close an issue), optionally saying why.                                                                               |
 | [`Labeler`](#correspond.Labeler)(\*args, \*\*kwargs)                        | Add labels to a conversation, apart from its opening send.                                                                                   |
 | [`Listener`](#correspond.Listener)(\*args, \*\*kwargs)                       | Events since `cursor`, oldest first, each carrying the cursor to resume after it.                                                            |
 | [`Message`](#correspond.Message)(\*, id, conversation, author, ...[, ...])  | One message in a conversation, normalised, with the channel's own fields kept in `native`.                                                   |
 | [`Reactor`](#correspond.Reactor)(\*args, \*\*kwargs)                        | Add a reaction to a message.                                                                                                                 |
 | [`Reader`](#correspond.Reader)(\*args, \*\*kwargs)                         | Messages of a conversation, oldest first; `limit` keeps the most recent.                                                                     |
+| [`Reopener`](#correspond.Reopener)(\*args, \*\*kwargs)                       | Unsettle a closed conversation.                                                                                                              |
 | [`RouteDecision`](#correspond.RouteDecision)(\*, target, rule, reason)            | Where a message goes, which rule decided, and why.                                                                                           |
 | [`Scope`](#correspond.Scope)(\*values)                                    | The widest class of reader a conversation can reach.                                                                                         |
 | [`SendResult`](#correspond.SendResult)(\*, ok, channel, conversation[, ...])   | What a write did, or would do (`dry_run`), or why it failed and whether a retry could help.                                                  |
@@ -236,7 +240,7 @@ JSON-ready.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -244,13 +248,17 @@ What a channel can do, graded, with its limits.
 
 One `Support` per operation in `OPERATIONS` (`audience`: can the channel say
 who reads a conversation; `label` / `unlabel`: can labels be added to or removed
-from a conversation, apart from its opening send), plus four features of writing:
+from a conversation, apart from its opening send; `close` / `reopen`: can a
+conversation be settled, and unsettled), plus four features of writing:
 `initiate` (can a write start a conversation; Telegram bots cannot), `reply`
 (can a draft answer a specific message), `priority`, and `cc` (can a draft copy
 further recipients, `Draft.cc` and `Draft.bcc`). `history_depth` says how
 far back `read` sees; `grades` are the authenticity grades the channel can attest;
 `native_fields` are the keys its messages may carry in `native` (what a routing
-condition can test), or `None` when the channel does not declare them.
+condition can test), or `None` when the channel does not declare them;
+`draft_fields` are the keys a [`Draft`](#correspond.Draft) may carry in its `native` for this
+channel (GitHub: `labels`, `assignees`, `milestone` when opening an issue), and
+any other key is refused rather than dropped.
 
 #### *classmethod* from_dict(data)
 
@@ -322,6 +330,12 @@ JSON-ready.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
+### *class* correspond.Closer(\*args, \*\*kwargs)
+
+Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
+
+Settle a conversation (close an issue), optionally saying why.
+
 ### *class* correspond.ConversationRef(, channel, id='', kind='', parent=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
@@ -372,7 +386,7 @@ Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exceptio
 
 An expected failure, with a message meant for the person or agent that asked.
 
-### *class* correspond.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=())
+### *class* correspond.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -386,9 +400,21 @@ What to write: the text, and the few things channels share (a title, the message
 ('bob@example.org',)
 ```
 
+`native` carries the fields only one channel has, in that channel’s vocabulary –
+the write-side mirror of `Message.native`. Which keys a channel takes is
+`Capabilities.draft_fields`; `send` refuses any other key rather than
+dropping it.
+
+```pycon
+>>> Draft(text="hi", native={"labels": ["question"]}).native
+{'labels': ['question']}
+```
+
 #### to_dict()
 
-JSON-ready.
+JSON-ready. `native` appears only when set, so a draft without one keeps the
+dict – and the idempotency fingerprint of a key claimed before `native`
+existed – it always had.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -521,6 +547,12 @@ Messages of a conversation, oldest first; `limit` keeps the most recent.
 Bases: [`Stopped`](correspond.errors.html.md#correspond.errors.Stopped)
 
 Block: this draft does not go to this conversation as written. Raised by a `before_send` check.
+
+### *class* correspond.Reopener(\*args, \*\*kwargs)
+
+Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
+
+Unsettle a closed conversation.
 
 ### *class* correspond.RouteDecision(, target, rule, reason)
 
@@ -679,6 +711,13 @@ What a channel needs and what is missing: the install command, binaries, platfor
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
+### correspond.close(ref, , reason=None, dry_run=False, registry=None, before_send=None)
+
+Close a conversation (an issue), with an optional `reason` in the channel’s vocabulary; the `before_send` check sees the reason (or `close`) as the draft’s text.
+
+* **Return type:**
+  [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
+
 ### correspond.edit(ref, message_id, text, , dry_run=False, registry=None, before_send=None)
 
 Replace the text of a message correspond’s account wrote; the `before_send` check runs first, as for [`send()`](#correspond.send).
@@ -752,6 +791,13 @@ Add an adapter (tests, or a channel defined outside correspond). `replace` swaps
 * **Return type:**
   [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
 
+### correspond.reopen(ref, , dry_run=False, registry=None, before_send=None)
+
+Reopen a closed conversation; the `before_send` check sees `reopen` as the draft’s text.
+
+* **Return type:**
+  [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
+
 ### correspond.route(message, , bindings=None, threads=None, rules=(), classifier=None)
 
 Run the chain (bindings, thread continuity, metadata rules, classifier) and return the first decision, or `None`.
@@ -759,11 +805,14 @@ Run the chain (bindings, thread continuity, metadata rules, classifier) and retu
 * **Return type:**
   [`RouteDecision`](correspond.routing.html.md#correspond.routing.RouteDecision) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
 `cc` and `bcc` copy further recipients, on channels that grade `cc` (email).
+`native` carries channel-specific fields (`Draft.native`), checked against the
+channel’s `capabilities.draft_fields`: an unknown key is a validation failure, never
+silently dropped.
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](correspond.outbound.html.md#correspond.outbound.notice).
 
