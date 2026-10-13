@@ -212,14 +212,55 @@ def authenticity(
     )
 
 
+def _content(part: EmailMessage) -> str:
+    try:
+        return part.get_content()
+    except (LookupError, UnicodeError):
+        return (part.get_payload(decode=True) or b"").decode("utf-8", "replace")
+
+
+_CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
+
+#: Mailing-list headers kept in ``native`` (RFC 2369 / 2919), as ``native`` key -> header.
+LIST_HEADERS = {
+    "list_id": "List-Id",
+    "list_unsubscribe": "List-Unsubscribe",
+    "list_post": "List-Post",
+}
+
+
+def _other_html(message: EmailMessage, body_format: str) -> str | None:
+    """The raw HTML part when plain text won as the body; None when there is none.
+
+    When HTML is the body (``body_format == "html"``) it is already in ``body``,
+    so it is not carried a second time in ``native``.
+    """
+    if body_format == "html":
+        return None
+    part = message.get_body(preferencelist=("html",))
+    return None if part is None else _content(part)
+
+
+def _list_headers(message: EmailMessage) -> dict[str, str]:
+    """The List-* headers present, unfolded and control-free; repeated ones are
+    joined with ", "; absent or empty ones are left out."""
+    found = {}
+    for key, header in LIST_HEADERS.items():
+        values = (
+            " ".join(_CONTROL_CHARS.sub(" ", str(v)).split())
+            for v in message.get_all(header, [])
+        )
+        joined = ", ".join(v for v in values if v)
+        if joined:
+            found[key] = joined
+    return found
+
+
 def _body(message: EmailMessage) -> tuple[str, str | None, str]:
     part = message.get_body(preferencelist=("plain", "html"))
     if part is None:
         return "", None, "plain"
-    try:
-        content = part.get_content()
-    except (LookupError, UnicodeError):
-        content = (part.get_payload(decode=True) or b"").decode("utf-8", "replace")
+    content = _content(part)
     if part.get_content_type() == "text/html":
         return _html_text(content), content, "html"
     return content.strip(), content, "plain"
@@ -258,11 +299,23 @@ class Email:
             listen_modes=("poll",),
             grades=(Grade.DOMAIN, Grade.CLAIMED),
             formats=("plain", "html"),
-            native_fields=("subject", "to", "cc", "folder", "uid", "references"),
+            native_fields=(
+                "subject",
+                "to",
+                "cc",
+                "folder",
+                "uid",
+                "references",
+                "html",
+                "list_id",
+                "list_unsubscribe",
+                "list_post",
+            ),
             notes=(
                 "read and listen look at one folder (INBOX by default); your own sent mail is in another",
                 "listen polls by UID; IMAP IDLE is not used",
                 "priority sets Importance and X-Priority, which mail clients may ignore",
+                "native html is the HTML part when plain text won as the body (an HTML body is in body only); list_id, list_unsubscribe and list_post are the List-* headers when present",
                 "audience: the address plus cc and bcc; a list-shaped address has members nobody can list",
             ),
         )
@@ -468,6 +521,7 @@ class Email:
         elif sent_at.tzinfo is None:
             sent_at = sent_at.replace(tzinfo=timezone.utc)
         text, body, body_format = _body(parsed)
+        html = _other_html(parsed, body_format)
         references = str(parsed.get("References") or "").split()
         attachments = []
         for index, part in enumerate(parsed.iter_attachments()):
@@ -507,6 +561,8 @@ class Email:
                 "folder": folder,
                 "uid": uid,
                 "references": references,
+                **({"html": html} if html is not None else {}),
+                **_list_headers(parsed),
             },
         )
 
