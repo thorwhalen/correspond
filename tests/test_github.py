@@ -20,7 +20,7 @@ from correspond.channels.github import (
     signature,
 )
 from correspond.errors import ChannelError, MissingRequirement, NotSupported
-from correspond.model import Draft
+from correspond.model import Draft, Support
 
 REPO = "octocat/hello-world"
 
@@ -1571,14 +1571,166 @@ def test_close_refuses_an_unknown_reason_and_a_bare_repository_with_no_gh_call()
         assert (result.ok, result.error_kind) == (False, "validation")
 
 
-def test_close_on_a_discussion_is_refused_by_name():
+def _discussion_state(closed, reason=None, number=5):
+    return {
+        "data": {
+            "repository": {
+                "discussion": {
+                    "id": f"D_node{number}",
+                    "closed": closed,
+                    "stateReason": reason,
+                    "url": f"https://github.com/{REPO}/discussions/{number}",
+                }
+            }
+        }
+    }
+
+
+def _discussion_mutation(field, closed, reason=None, number=5):
+    return {
+        "data": {
+            field: {
+                "discussion": {
+                    "closed": closed,
+                    "stateReason": reason,
+                    "url": f"https://github.com/{REPO}/discussions/{number}",
+                }
+            }
+        }
+    }
+
+
+def _graphql_router(*, state, mutation):
+    """One graphql route: the state query, then the mutation (told apart by the query text)."""
+    seen = []
+
+    def reply(payload):
+        seen.append(payload)
+        query = payload.get("query", "")
+        return (200, mutation if "mutation" in query else state)
+
+    return reply, seen
+
+
+def test_close_a_discussion_through_graphql_and_read_it_back():
+    reply, seen = _graphql_router(
+        state=_discussion_state(False),
+        mutation=_discussion_mutation("closeDiscussion", True, "OUTDATED"),
+    )
     gh = ScriptedGh(
         WHOAMI,
         ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
-        ("POST", "graphql", (200, {"data": {"repository": {"discussion": {"id": "D_node5"}}}})),
+        ("POST", "graphql", reply),
     )
-    with pytest.raises(NotSupported, match="close"):
-        correspond.close(f"github:{REPO}#5", registry={"github": GitHub(run=gh)})
+    result = correspond.close(
+        f"github:{REPO}#5", reason="outdated", registry={"github": GitHub(run=gh)}
+    )
+    assert result.ok and result.operation == "close"
+    assert result.message_id == "discussion-5"
+    assert (result.plan["was"], result.plan["now"], result.plan["now_reason"]) == (
+        "open",
+        "closed",
+        "outdated",
+    )
+    mutation = seen[-1]
+    assert "closeDiscussion" in mutation["query"]
+    assert mutation["variables"] == {"discussionId": "D_node5", "reason": "OUTDATED"}
+    assert "PATCH" not in {c["method"] for c in gh.calls}
+
+
+def test_close_a_discussion_maps_completed_to_resolved():
+    reply, seen = _graphql_router(
+        state=_discussion_state(False),
+        mutation=_discussion_mutation("closeDiscussion", True, "RESOLVED"),
+    )
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
+        ("POST", "graphql", reply),
+    )
+    result = correspond.close(
+        f"github:{REPO}#5", reason="completed", registry={"github": GitHub(run=gh)}
+    )
+    assert result.ok and result.plan["reason"] == "resolved"
+    assert seen[-1]["variables"]["reason"] == "RESOLVED"
+
+
+def test_close_a_discussion_without_a_reason_sends_none():
+    reply, seen = _graphql_router(
+        state=_discussion_state(False),
+        mutation=_discussion_mutation("closeDiscussion", True, "RESOLVED"),
+    )
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
+        ("POST", "graphql", reply),
+    )
+    result = correspond.close(f"github:{REPO}#5", registry={"github": GitHub(run=gh)})
+    assert result.ok and "reason" not in seen[-1]["variables"]
+
+
+def test_close_a_discussion_with_an_issue_only_reason_is_refused_before_writing():
+    reply, seen = _graphql_router(
+        state=_discussion_state(False),
+        mutation=_discussion_mutation("closeDiscussion", True, "RESOLVED"),
+    )
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
+        ("POST", "graphql", reply),
+    )
+    result = correspond.close(
+        f"github:{REPO}#5", reason="not_planned", registry={"github": GitHub(run=gh)}
+    )
+    assert (result.ok, result.error_kind) == (False, "validation")
+    assert not any("mutation" in p.get("query", "") for p in seen)
+
+
+def test_close_an_issue_with_a_discussion_only_reason_is_refused():
+    gh = ScriptedGh(WHOAMI, ("GET", rf"repos/{REPO}/issues/1", (200, _issue())))
+    result = correspond.close(
+        f"github:{REPO}#1", reason="outdated", registry={"github": GitHub(run=gh)}
+    )
+    assert (result.ok, result.error_kind) == (False, "validation")
+    assert "PATCH" not in {c["method"] for c in gh.calls}
+
+
+def test_reopen_a_discussion_through_graphql():
+    reply, seen = _graphql_router(
+        state=_discussion_state(True, "RESOLVED"),
+        mutation=_discussion_mutation("reopenDiscussion", False, "REOPENED"),
+    )
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
+        ("POST", "graphql", reply),
+    )
+    result = correspond.reopen(f"github:{REPO}#5", registry={"github": GitHub(run=gh)})
+    assert result.ok and (result.plan["was"], result.plan["now"]) == ("closed", "open")
+    assert "now_reason" not in result.plan
+    assert "reopenDiscussion" in seen[-1]["query"]
+    assert seen[-1]["variables"] == {"discussionId": "D_node5"}
+
+
+def test_close_on_nothing_at_that_number_is_not_found():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/9", (404, {"message": "Not Found"})),
+        ("POST", "graphql", (200, {"data": {"repository": {"discussion": None}}})),
+    )
+    result = correspond.close(f"github:{REPO}#9", registry={"github": GitHub(run=gh)})
+    assert (result.ok, result.error_kind) == (False, "not_found")
+
+
+def test_close_dry_run_plans_for_either_kind_and_reads_nothing():
+    gh = ScriptedGh(WHOAMI)
+    result = correspond.close(
+        f"github:{REPO}#5", reason="resolved", dry_run=True, registry={"github": GitHub(run=gh)}
+    )
+    assert result.ok and result.dry_run
+    assert "closeDiscussion" in result.plan["request"] and "PATCH" in result.plan["request"]
+    # (the before_send audience may read the repository; the close itself reads nothing)
+    assert not [c for c in gh.calls if "/issues/" in c["path"] or c["path"] == "graphql"]
 
 
 def test_close_with_a_reason_on_a_pull_request_is_refused():
@@ -1596,4 +1748,5 @@ def test_close_with_a_reason_on_a_pull_request_is_refused():
 def test_close_reopen_and_draft_fields_are_in_capabilities():
     caps = correspond.capabilities("github")
     assert {"close", "reopen"} <= set(caps.operations)
+    assert (caps.close, caps.reopen) == (Support.FULL, Support.FULL)
     assert caps.draft_fields == ("labels", "assignees", "milestone")
