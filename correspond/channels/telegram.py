@@ -451,7 +451,9 @@ class Telegram:
             return draft
         bad = [n for n in draft.notify if not USERNAME_RE.match(handle(n))]
         if bad:
-            raise ChannelError(f"not a Telegram username: {', '.join(bad)}", kind="validation")
+            raise ChannelError(
+                f"not a Telegram username: {', '.join(bad)}", kind="validation"
+            )
         return replace(draft, text=with_mentions(draft.text, draft.notify))
 
     def send(
@@ -474,7 +476,9 @@ class Telegram:
             }
         plan = {"action": "sendMessage", **params, "title_prepended": bool(draft.title)}
         if draft.notify:
-            plan.update(notify=[handle(n) for n in draft.notify], mentions_added=list(added))
+            plan.update(
+                notify=[handle(n) for n in draft.notify], mentions_added=list(added)
+            )
         if dry_run:
             return SendResult(
                 ok=True, channel=NAME, conversation=ref.encoded, dry_run=True, plan=plan

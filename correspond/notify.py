@@ -82,9 +82,7 @@ def with_mentions(
     return f"{text.rstrip()}\n\n{line}"
 
 
-def with_copies(
-    to: str, cc: Iterable[str], names: Iterable[str]
-) -> tuple[str, ...]:
+def with_copies(to: str, cc: Iterable[str], names: Iterable[str]) -> tuple[str, ...]:
     """``cc`` plus every address in ``names`` that is neither ``to`` nor already copied (case-insensitive).
 
     >>> with_copies("a@example.org", ["b@example.org"], ["A@example.org", "c@example.org"])

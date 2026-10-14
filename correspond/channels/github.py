@@ -1212,7 +1212,10 @@ class GitHub:
             return self._send(ref, draft, dry_run=dry_run)
         added = missing_mentions(draft.text, draft.notify)
         result = self._send(ref, self.prepare(ref, draft), dry_run=dry_run)
-        notified = {"notify": [handle(n) for n in draft.notify], "mentions_added": list(added)}
+        notified = {
+            "notify": [handle(n) for n in draft.notify],
+            "mentions_added": list(added),
+        }
         return replace(result, plan={**result.plan, **notified})
 
     def prepare(self, ref: ConversationRef, draft: Draft) -> Draft:

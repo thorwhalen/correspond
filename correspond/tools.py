@@ -194,7 +194,13 @@ def capabilities(channel: str) -> dict:
     lines = [
         f"{name + ':':<10}{data[name]}"
         for name in (
-            *OPERATIONS, "initiate", "reply", "priority", "cc", "notify", "history_depth"
+            *OPERATIONS,
+            "initiate",
+            "reply",
+            "priority",
+            "cc",
+            "notify",
+            "history_depth",
         )
     ]
     if caps.grades:
