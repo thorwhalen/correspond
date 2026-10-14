@@ -342,7 +342,9 @@ def notifications(
         except CorrespondError as error:
             log(f"listening on {ref} failed: {error}")
         except Exception as error:  # noqa: BLE001 -- one broken adapter must not stop every channel
-            log(f"listening on {ref} failed unexpectedly: {type(error).__name__}: {error}")
+            log(
+                f"listening on {ref} failed unexpectedly: {type(error).__name__}: {error}"
+            )
 
 
 # ------------------------------------------------------------------- the server
