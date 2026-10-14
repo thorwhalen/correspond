@@ -504,6 +504,12 @@ def _feature_check(adapter: Any, draft: Draft) -> str | None:
         raise NotSupported(
             "cc", adapter.name, alternatives=("send to each recipient separately",)
         )
+    if draft.notify and caps.notify is Support.NONE:
+        raise NotSupported(
+            "notify",
+            adapter.name,
+            alternatives=("notify them on a channel that can, or send without notify",),
+        )
     unknown = sorted(set(draft.native) - set(caps.draft_fields))
     if unknown:
         accepted = ", ".join(caps.draft_fields) or "none"
@@ -608,6 +614,7 @@ def send(
     cc: Iterable[str] = (),
     bcc: Iterable[str] = (),
     native: Mapping[str, Any] | None = None,
+    notify: Iterable[str] = (),
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
@@ -620,6 +627,9 @@ def send(
     ``native`` carries channel-specific fields (``Draft.native``), checked against the
     channel's ``capabilities.draft_fields``: an unknown key is a validation failure, never
     silently dropped.
+    ``notify`` names who must be notified (``Draft.notify``); the channel's writer
+    guarantees it (a mention added, an address copied) or the send fails with
+    ``NotSupported("notify")``.
     ``before_send(ref, draft, audience)`` runs first, on the dry run too; when ``None``, the
     config's ``before_send`` reference, else :func:`correspond.outbound.notice`.
 
@@ -631,10 +641,12 @@ def send(
     ``claim(key, record) -> bool`` (as that store has) is exclusive across processes; a
     plain one is checked, then set, which covers one process.
     """
-    cc, bcc = tuple(cc), tuple(bcc)
-    if isinstance(text, Draft) and (title or reply_to or priority or cc or bcc or native):
+    cc, bcc, notify = tuple(cc), tuple(bcc), tuple(notify)
+    if isinstance(text, Draft) and (
+        title or reply_to or priority or cc or bcc or native or notify
+    ):
         raise ValueError(
-            "pass a Draft or title/reply_to/priority/cc/bcc/native, not both: the Draft already carries them"
+            "pass a Draft or title/reply_to/priority/cc/bcc/native/notify, not both: the Draft already carries them"
         )
     adapter, ref = _adapter_for(ref, "send", registry)
     draft = (
@@ -648,10 +660,23 @@ def send(
             cc=tuple(cc),
             bcc=tuple(bcc),
             native=native or {},
+            notify=notify,
         )
     )
     key = None if idempotency_key is None else check_key(idempotency_key)
-    problem = _feature_check(adapter, draft)
+    # The draft as the channel will send it (``notify`` materialised: a mention added,
+    # an address copied): what the length checks and the before_send check must see.
+    # The adapter is still handed ``draft`` and materialises it the same way.
+    prepare = getattr(adapter, "prepare", None)
+    effective = draft
+    if draft.notify and callable(prepare):
+        try:
+            effective = prepare(ref, draft)
+        except ChannelError as error:
+            return SendResult.failure(
+                error, channel=adapter.name, conversation=ref.encoded, dry_run=dry_run
+            )
+    problem = _feature_check(adapter, effective)
     if problem:
         return _invalid(adapter, ref, "send", dry_run, problem)
 
@@ -678,7 +703,7 @@ def send(
         adapter,
         ref,
         "send",
-        draft,
+        effective,
         dry_run=dry_run,
         before_send=before_send,
         registry=registry,

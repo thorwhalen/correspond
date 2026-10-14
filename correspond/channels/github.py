@@ -51,7 +51,7 @@ import re
 import subprocess
 import time
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from typing import Any
@@ -83,6 +83,7 @@ from correspond.model import (
     format_time,
     parse_time,
 )
+from correspond.notify import handle, missing_mentions, with_mentions
 from correspond.ops import window, with_final_cursor
 from correspond.registry import require
 
@@ -122,6 +123,10 @@ _GRAPHQL_REACTIONS = dict(
     )
 )
 MAX_BODY_CHARS = 65_536
+#: A handle GitHub notifies on mention: a user (``octocat``) or a team (``org/team``).
+GITHUB_HANDLE_RE = re.compile(
+    r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})(?:/[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9_])?)?$"
+)
 MAX_TITLE_CHARS = 256
 #: The ``Draft.native`` keys opening an issue takes (``POST /repos/{owner}/{repo}/issues``).
 DRAFT_FIELDS = ("labels", "assignees", "milestone")
@@ -458,6 +463,7 @@ class GitHub:
             reopen=Support.FULL,
             initiate=Support.FULL,
             reply=Support.PARTIAL,
+            notify=Support.PARTIAL,
             history_depth=HistoryDepth.FULL,
             listen_modes=("poll",),
             grades=(Grade.PLATFORM, Grade.CRYPTO, Grade.FORGED),
@@ -485,6 +491,7 @@ class GitHub:
             notes=(
                 "listen polls issue and comment activity of a repository or of one issue; discussions are read but not listened to",
                 "reply_to works in discussions only; issue and pull request comments are flat",
+                "notify mentions each handle the text lacks; GitHub notifies a mentioned user or team who can see the repository, so on a private one a non-member is not reached",
                 "pull request review comments on diffs are not read",
                 "listen can miss a change only when more than 2,000 issues or comments change within the same second",
                 "audience is the repository's readership and never complete (installed apps, webhooks and security managers cannot be listed); a 404 or 403 resolves to public",
@@ -1195,7 +1202,33 @@ class GitHub:
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
     ) -> SendResult:
-        """Comment on an issue, pull request or discussion; on a repository, open an issue (``title`` required)."""
+        """Comment on an issue, pull request or discussion; on a repository, open an issue (``title`` required).
+
+        ``draft.notify`` handles (``octocat``, ``org/team``) the text does not @mention yet
+        are mentioned on a closing ``cc`` line, which GitHub notifies; the plan lists them
+        under ``mentions_added``.
+        """
+        if not draft.notify:
+            return self._send(ref, draft, dry_run=dry_run)
+        added = missing_mentions(draft.text, draft.notify)
+        result = self._send(ref, self.prepare(ref, draft), dry_run=dry_run)
+        notified = {"notify": [handle(n) for n in draft.notify], "mentions_added": list(added)}
+        return replace(result, plan={**result.plan, **notified})
+
+    def prepare(self, ref: ConversationRef, draft: Draft) -> Draft:
+        """The draft as it will post: ``notify`` handles checked, the missing mentions added. Pure."""
+        if not draft.notify:
+            return draft
+        bad = [n for n in draft.notify if not GITHUB_HANDLE_RE.match(handle(n))]
+        if bad:
+            raise ChannelError(
+                f"not a GitHub user or team handle: {', '.join(bad)}", kind="validation"
+            )
+        return replace(draft, text=with_mentions(draft.text, draft.notify))
+
+    def _send(
+        self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
+    ) -> SendResult:
         owner, repo, number = self._parts(ref)
         if number is None:
             if not (draft.title or "").strip():

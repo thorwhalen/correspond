@@ -193,7 +193,9 @@ def capabilities(channel: str) -> dict:
     data = caps.to_dict()
     lines = [
         f"{name + ':':<10}{data[name]}"
-        for name in (*OPERATIONS, "initiate", "reply", "priority", "cc", "history_depth")
+        for name in (
+            *OPERATIONS, "initiate", "reply", "priority", "cc", "notify", "history_depth"
+        )
     ]
     if caps.grades:
         lines.append(f"{'grades:':<10}{', '.join(data['grades'])}")
@@ -334,8 +336,10 @@ def _native(text: str | None) -> dict:
 
 
 @_as_result
-def audience(ref: str, *, cc: str | None = None, bcc: str | None = None) -> dict:
-    """Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does."""
+def audience(
+    ref: str, *, cc: str | None = None, bcc: str | None = None, notify: str | None = None
+) -> dict:
+    """Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add, and `notify` the same send's notify list (on email those addresses go in Cc). Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does."""
     copies = {"cc": _addresses(cc), "bcc": _addresses(bcc)}
     draft = None
     if any(copies.values()):
@@ -353,6 +357,8 @@ def audience(ref: str, *, cc: str | None = None, bcc: str | None = None) -> dict
                 alternatives=("ask about each recipient's channel separately",),
             )
         draft = Draft(text="", **copies)
+    if _addresses(notify):
+        draft = Draft(text="", **copies, notify=_addresses(notify))
     found = ops.audience(ref, draft)
     words = found.in_words()
     return {
@@ -441,10 +447,11 @@ def send(
     cc: str | None = None,
     bcc: str | None = None,
     native: str | None = None,
+    notify: str | None = None,
     idempotency_key: str | None = None,
     dry_run: bool = False,
 ) -> dict:
-    """Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens; the plan reports which of them stuck). Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""
+    """Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens; the plan reports which of them stuck). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""
     return _write_result(
         ops.send(
             ref,
@@ -455,6 +462,7 @@ def send(
             cc=_addresses(cc),
             bcc=_addresses(bcc),
             native=_native(native),
+            notify=_addresses(notify),
             dry_run=dry_run,
             idempotency_key=idempotency_key or None,
         )

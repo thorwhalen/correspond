@@ -40,7 +40,12 @@ HELP = {
         "peek": {"help": "show new events without moving the cursor"},
         "data_dir": {"help": "where cursors are kept (default: the data root)"},
     },
-    "audience": {"ref": _REF, "cc": _CC, "bcc": _BCC},
+    "audience": {
+        "ref": _REF,
+        "cc": _CC,
+        "bcc": _BCC,
+        "notify": {"help": "the send's notify list (on email those addresses go in Cc)"},
+    },
     "send": {
         "ref": _REF,
         "text": {"help": "the message, or - to read it from stdin"},
@@ -51,6 +56,9 @@ HELP = {
         "bcc": _BCC,
         "native": {
             "help": 'channel-specific fields as a JSON object, e.g. \'{"labels": ["question"], "assignees": ["octocat"]}\' when opening a GitHub issue (see capabilities: draft_fields)'
+        },
+        "notify": {
+            "help": "comma-separated handles (GitHub, Telegram) or addresses (email) the channel must notify: a missing mention is added, an address goes in Cc"
         },
         "dry_run": _DRY_RUN,
     },

@@ -31,6 +31,7 @@ import ssl
 import subprocess
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from email import policy
 from email.message import EmailMessage
@@ -57,6 +58,7 @@ from correspond.model import (
     SendResult,
     Support,
 )
+from correspond.notify import with_copies
 from correspond.ops import window, with_final_cursor
 from correspond.registry import require, value
 
@@ -266,6 +268,14 @@ def _body(message: EmailMessage) -> tuple[str, str | None, str]:
     return content.strip(), content, "plain"
 
 
+def _with_notify(to: str, draft: Draft) -> tuple[Draft, tuple[str, ...]]:
+    """``draft`` with its ``notify`` addresses in Cc (and out of Bcc), and the addresses added."""
+    cc = with_copies(to, draft.cc, draft.notify)
+    copied = {a.lower() for a in cc}
+    bcc = tuple(a for a in draft.bcc if a.lower() not in copied)
+    return replace(draft, cc=cc, bcc=bcc), cc[len(draft.cc) :]
+
+
 class Email:
     """A mailbox over IMAP and SMTP."""
 
@@ -295,6 +305,7 @@ class Email:
             reply=Support.FULL,
             priority=Support.PARTIAL,
             cc=Support.FULL,
+            notify=Support.FULL,
             history_depth=HistoryDepth.FULL,
             listen_modes=("poll",),
             grades=(Grade.DOMAIN, Grade.CLAIMED),
@@ -659,6 +670,8 @@ class Email:
             return Audience.unknown(
                 ref.encoded, "email: is the folder, not a correspondence: name an address"
             )
+        if draft is not None and draft.notify:
+            draft, _ = _with_notify(ref.id, draft)  # the Cc a send will really carry
         copies = {"cc": draft.cc if draft else (), "bcc": draft.bcc if draft else ()}
         malformed = [
             a for a in (*copies["cc"], *copies["bcc"]) if not ADDRESS_RE.match(a)
@@ -714,12 +727,32 @@ class Email:
             evidence=tuple(evidence),
         )
 
+    def prepare(self, ref: ConversationRef, draft: Draft) -> Draft:
+        """The draft as it will go out: ``notify`` addresses checked and put in Cc (out of Bcc). Pure."""
+        if not draft.notify:
+            return draft
+        malformed = [a for a in draft.notify if not ADDRESS_RE.match(a)]
+        if malformed:
+            raise ChannelError(
+                f"notify on email takes addresses, not: {', '.join(malformed)}",
+                kind="validation",
+            )
+        return _with_notify(ref.id or "", draft)[0]
+
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
     ) -> SendResult:
-        """Send to ``ref``'s address, with ``In-Reply-To`` and ``References`` when replying; ``cc`` in a header, ``bcc`` only on the envelope."""
+        """Send to ``ref``'s address, with ``In-Reply-To`` and ``References`` when replying; ``cc`` in a header, ``bcc`` only on the envelope.
+
+        A ``draft.notify`` address that is neither the To address nor already in Cc is
+        added to Cc (and so leaves Bcc, which would hide it); the plan lists it under
+        ``cc_added``.
+        """
         if not ref.id:
             raise ChannelError("send to an address: email:<address>", kind="validation")
+        cc_before = draft.cc
+        draft = self.prepare(ref, draft)
+        cc_added = draft.cc[len(cc_before) :]
         if draft.reply_to and not MESSAGE_ID_RE.match(draft.reply_to):
             raise ChannelError(
                 f"reply_to is a Message-ID such as <abc@example.org>, not {draft.reply_to!r}",
@@ -766,6 +799,8 @@ class Email:
             "server": value(NAME, "smtp_host") or "(not set)",
             "text": draft.text,
         }
+        if draft.notify:
+            plan.update(notify=list(draft.notify), cc_added=list(cc_added))
         if dry_run:
             return SendResult(
                 ok=True, channel=NAME, conversation=ref.encoded, dry_run=True, plan=plan

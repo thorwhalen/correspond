@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable, Mapping
+import dataclasses
 from datetime import datetime, timedelta, timezone
 
 from correspond.errors import ChannelError, InvalidRef
@@ -33,6 +34,7 @@ from correspond.model import (
     SendResult,
     Support,
 )
+from correspond.notify import missing_mentions, with_mentions
 
 __all__ = ["DEMO_CONVERSATION", "FakeChannel", "demo_channel", "demo_message", "main"]
 
@@ -65,6 +67,7 @@ class FakeChannel:
             send=Support.FULL,
             initiate=Support.FULL,
             reply=Support.FULL,
+            notify=Support.FULL,
             history_depth=HistoryDepth.FULL,
             grades=(Grade.PLATFORM, Grade.CLAIMED),
             max_text_length=10_000,
@@ -88,16 +91,30 @@ class FakeChannel:
         ]
         return messages[-limit:] if limit else messages
 
+    def prepare(self, ref: ConversationRef, draft: Draft) -> Draft:
+        """The draft as it will post: the ``notify`` mentions the text lacks added. Pure."""
+        if not draft.notify:
+            return draft
+        return dataclasses.replace(draft, text=with_mentions(draft.text, draft.notify))
+
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
     ) -> SendResult:
-        """Append to the conversation (or, with ``dry_run``, say that it would)."""
+        """Append to the conversation (or, with ``dry_run``, say that it would).
+
+        ``draft.notify`` handles the text does not @mention are mentioned on a closing
+        ``cc`` line, as a mention platform's writer does (``sent`` keeps the draft as
+        given; the conversation holds the text as posted).
+        """
+        text = self.prepare(ref, draft).text
         plan = {
             "action": "append a message to the in-memory conversation",
             "conversation": ref.encoded,
-            "text": draft.text,
+            "text": text,
             "reply_to": draft.reply_to,
         }
+        if draft.notify:
+            plan["mentions_added"] = list(missing_mentions(draft.text, draft.notify))
         account = Account(channel=self.name, id="fake-bot", acts_as="bot")
         if dry_run:
             return SendResult(
@@ -111,7 +128,7 @@ class FakeChannel:
         thread = self.conversations.setdefault(ref.id, [])
         message = demo_message(
             conversation=ref.encoded,
-            text=draft.text,
+            text=text,
             message_id=f"m{len(thread) + 1}",
             handle="fake-bot",
             is_self=True,
