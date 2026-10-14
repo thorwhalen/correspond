@@ -10,6 +10,7 @@ correspond.channels
    :toctree:
    :recursive:
 
+   apprise
    github
    macos
    mail

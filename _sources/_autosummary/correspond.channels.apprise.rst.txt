@@ -1,0 +1,18 @@
+correspond.channels.apprise
+===========================
+
+.. automodule:: correspond.channels.apprise
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      alias_env
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Apprise
+   

@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=0c446633"></script>
+    <script src="../../_static/documentation_options.js?v=3bbcec59"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.11" />
+  <meta name="docsearch:version" content="0.0.12" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1073,9 +1073,22 @@ window.runMermaid = runMermaid;</script>
     <span class="p">),</span>
     <span class="n">ChannelInfo</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">"apprise"</span><span class="p">,</span>
-        <span class="n">summary</span><span class="o">=</span><span class="s2">"Apprise as a send-only writer for about 155 notification services"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Apprise: send-only notifications to about 155 services, each named by an alias (send only)"</span><span class="p">,</span>
+        <span class="n">factory</span><span class="o">=</span><span class="s2">"correspond.channels.apprise:Apprise"</span><span class="p">,</span>
+        <span class="n">modules</span><span class="o">=</span><span class="p">(</span><span class="s2">"apprise"</span><span class="p">,),</span>
         <span class="n">extra</span><span class="o">=</span><span class="s2">"apprise"</span><span class="p">,</span>
-        <span class="n">planned</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ISSUES</span><span class="si">}</span><span class="s2">/5"</span><span class="p">,</span>
+        <span class="n">settings</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"config"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_APPRISE_CONFIG"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"an Apprise config file (YAML or TEXT); an alias with no URL of its own is used as a tag in it"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s2">"https://pypi.org/project/apprise/ (its configuration-file documentation)"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"apprise:&lt;alias&gt; sends to the URL in CORRESPOND_APPRISE_URL_&lt;ALIAS&gt; (or the Keychain item correspond-apprise-url-&lt;alias&gt;), else to the URLs tagged &lt;alias&gt; in the config file"</span><span class="p">,</span>
+            <span class="s2">"a reference never holds an Apprise URL: the URL carries the service's credentials"</span><span class="p">,</span>
+        <span class="p">),</span>
     <span class="p">),</span>
 <span class="p">)</span>
 

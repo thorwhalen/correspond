@@ -1,4 +1,4 @@
-> built 2026-10-13 19:10 UTC from 71e5a3d (main) · correspond 0.0.11. Details: build_info.json
+> built 2026-10-14 03:27 UTC from 6087e85 (main) · correspond 0.0.12. Details: build_info.json
 
 # index.html.md
 
@@ -23,16 +23,19 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 
 ## Channels
 
-| Channel    | References                                                                           | Operations                                                                                                                                                                       | Built on                                              |
-|------------|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|
-| `github`   | `github:owner/repo`, `github:owner/repo#12`                                          | read, listen (issues and comments), send (opening an issue takes `native` labels, assignees, milestone), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
-| `email`    | `email:` (the folder), `email:someone@example.org`                                   | read, listen, send (with cc and bcc), audience                                                                                                                                   | `imaplib`, `smtplib`                                  |
-| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                          | send, audience                                                                                                                                                                   | `urllib`                                              |
-| `macos`    | `macos:`                                                                             | send, audience                                                                                                                                                                   | `terminal-notifier` or `osascript`                    |
-| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience                                                                                                                | the Bot API over `urllib`                             |
-| `webinbox` | `webinbox:<site>`                                                                    | read, listen, audience                                                                                                                                                           | the ASGI collector below, and `dol` stores            |
+| Channel    | References                                                                           | Operations                                                                                                                                                                       | Built on                                                                        |
+|------------|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| `github`   | `github:owner/repo`, `github:owner/repo#12`                                          | read, listen (issues and comments), send (opening an issue takes `native` labels, assignees, milestone), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token                           |
+| `email`    | `email:` (the folder), `email:someone@example.org`                                   | read, listen, send (with cc and bcc), audience                                                                                                                                   | `imaplib`, `smtplib`                                                            |
+| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                          | send, audience                                                                                                                                                                   | `urllib`                                                                        |
+| `macos`    | `macos:`                                                                             | send, audience                                                                                                                                                                   | `terminal-notifier` or `osascript`                                              |
+| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience                                                                                                                | the Bot API over `urllib`                                                       |
+| `webinbox` | `webinbox:<site>`                                                                    | read, listen, audience                                                                                                                                                           | the ASGI collector below, and `dol` stores                                      |
+| `apprise`  | `apprise:<alias>`                                                                    | send, audience                                                                                                                                                                   | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`) |
 
-Every v0.1 adapter uses the Python standard library. Discord ([#2](https://github.com/thorwhalen/correspond/issues/2)), Slack ([#3](https://github.com/thorwhalen/correspond/issues/3)), Signal ([#4](https://github.com/thorwhalen/correspond/issues/4)) and Apprise ([#5](https://github.com/thorwhalen/correspond/issues/5)) are planned as extras; `correspond channels` lists them with their issues.
+Every v0.1 adapter uses the Python standard library; Apprise is the first extra, and registers only when it is installed. Discord ([#2](https://github.com/thorwhalen/correspond/issues/2)), Slack ([#3](https://github.com/thorwhalen/correspond/issues/3)) and Signal ([#4](https://github.com/thorwhalen/correspond/issues/4)) are planned as extras; `correspond channels` lists them with their issues.
+
+**Apprise** reaches the long tail (Discord and Slack webhooks, Matrix, Pushover, Gotify, SMS gateways…) for sending only. A reference names an *alias*, never an Apprise URL, because the URL carries the service’s credentials. An alias is 1-64 of `a-z`, `0-9` and `-` (case folded; `all` and `always` are Apprise’s match-everything tags and are refused). `apprise:<alias>` sends to the one URL in `CORRESPOND_APPRISE_URL_<ALIAS>` (upper case, `-` as `_`), else the Keychain item `correspond-apprise-url-<alias>`, else every URL tagged exactly `<alias>` in the local Apprise config file named by `config` under `[apprise]` (or `$CORRESPOND_APPRISE_CONFIG`); URLs tagged `always` are not added, so a mistyped alias reaches nobody. Apprise’s own logging, which prints URLs, is silenced while correspond calls it. A plan names the service (the URL’s scheme), never the URL. A partial delivery is `unconfirmed`, never retried blindly. A draft’s priority is not sent (Apprise services take one in their URL, if at all).
 
 `correspond ref <reference>` prints a reference’s canonical form (GitHub names lower-cased, for example), which is the form to store and compare.
 
@@ -69,7 +72,7 @@ scope: public
 
 `correspond audience <reference>` says who can read a conversation, now and plausibly later, before anything is written to it. The first line is the answer in words; the rest is the record (`--json` prints it under `audience`, beside `hash` and `words`): a `scope` (`operator`, `named`, `group`, `org`, `public`), the `readers` known to read it with whether that list is `complete`, the reader `classes` that cannot be listed, whether `external` readers exist, what a send leaves behind (`durability`), how the readership can grow (`widening`), the `evidence` behind each value, and a `hash` that changes when the audience does (and only then, not with the time or the evidence).
 
-**Unknown resolves to public.** A failed or forbidden lookup, a channel without an audience reader and a planned channel (Discord, Slack, Signal, Apprise) all answer `public` with `defaulted: true` and the reason in `evidence`. Nothing is cached: ask again right before sending. `correspond capabilities <channel>` grades how much each reader can tell.
+**Unknown resolves to public.** A failed or forbidden lookup, a channel without an audience reader and a planned channel (Discord, Slack, Signal) all answer `public` with `defaulted: true` and the reason in `evidence`. Nothing is cached: ask again right before sending. `correspond capabilities <channel>` grades how much each reader can tell.
 
 | Channel                    | How the audience is computed                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 |----------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -78,6 +81,7 @@ scope: public
 | `telegram` (partial)       | `getChat`. A private chat is `named`, its reader identified by account id. A chat with a public username is `public`. A group, or a channel without a username, is `group`, and members are never listed. A linked discussion group or channel is read too, and makes the audience public when it is. New members read the history unless the chat hides it; forwards widen it unless its content is protected. A chat `getChat` cannot read is public, defaulted.                                                                                  |
 | `ntfy` (partial)           | `public`, with the classes “anyone who knows the topic name” and whoever runs the server, unless the config says `denies_anonymous_read`. The cache window is a class; its length is evidence. Nothing is asked of the server.                                                                                                                                                                                                                                                                                                                      |
 | `macos`, `webinbox` (full) | `operator`, retractable.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `apprise` (partial)        | `public`, never `complete`: the service behind an alias can be one phone or a public channel, and nothing is asked of it.                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 ## Writing: dry run first
 
@@ -437,6 +441,99 @@ every quoted line look new. Earlier text pasted back with no header counts as qu
 ```
 
 
+# _autosummary/correspond.channels.apprise.html.md
+
+# correspond.channels.apprise
+
+Apprise: send-only notifications to the long tail of services (about 155), each named by an alias.
+
+### References
+
+`apprise:<alias>`, an alias being 1-64 of `a-z`, `0-9` and `-` (case is
+folded; `all` and `always` are Apprise’s match-everything tags, so they are refused). A
+reference never holds an Apprise URL, because the URL
+carries the service’s credentials (`discord://webhook_id/webhook_token`,
+`tgram://bot_token/chat_id`…). The alias is resolved, in this order:
+
+1. `$CORRESPOND_APPRISE_URL_<ALIAS>` (upper case, `-` as `_`), holding ONE URL;
+2. on macOS, the Keychain item `correspond-apprise-url-<alias>`, likewise;
+3. the local Apprise configuration file named by `config` in the `[apprise]` table (or
+   `$CORRESPOND_APPRISE_CONFIG`), where the alias is an Apprise **tag**: every URL in the
+   file carrying exactly that tag is notified (see the configuration-file documentation
+   linked from [https://pypi.org/project/apprise/](https://pypi.org/project/apprise/)). URLs tagged `always` are NOT added:
+   an alias names its recipients, and a typo must not reach anyone.
+
+A dry run reads only the environment and the config file: a Keychain alias is looked up when
+sending, and the plan says so. The plan names the service (the URL’s scheme), never the URL,
+and Apprise’s own logging, which prints URLs, is silenced while correspond calls it.
+
+Needs the `apprise` extra: `pip install "correspond[apprise]"`. It is imported when a
+message is sent, not when the channel is listed.
+
+```pycon
+>>> Apprise().parse_ref("team-alerts").kind
+'alias'
+```
+
+### Functions
+
+| [`alias_env`](_autosummary/correspond.channels.apprise.html.md#correspond.channels.apprise.alias_env)(alias)   | The environment variable holding one alias's Apprise URL.   |
+|---------------------------------------------------------------------|-------------------------------------------------------------|
+
+### Classes
+
+| [`Apprise`](_autosummary/correspond.channels.apprise.html.md#correspond.channels.apprise.Apprise)(\*[, apprise, keychain, ...])   | Apprise URLs and tags, behind aliases: send only.   |
+|------------------------------------------------------------------------------------------|-----------------------------------------------------|
+
+### *class* correspond.channels.apprise.Apprise(\*, apprise=<function \_import_apprise>, keychain=None, keychain_available=None)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Apprise URLs and tags, behind aliases: send only.
+
+#### audience(ref, , draft=None)
+
+Public and incomplete: Apprise reaches anything from one phone to a public channel, and nothing here can tell which.
+
+Nothing is resolved or asked: not the URL, not the service.
+
+* **Return type:**
+  [`Audience`](_autosummary/correspond.model.html.md#correspond.model.Audience)
+
+#### *property* capabilities *: [Capabilities](_autosummary/correspond.model.html.md#correspond.model.Capabilities)*
+
+Send only, with a title; who reads depends on the service behind each alias.
+
+#### parse_ref(id)
+
+An alias: 1-64 of `a-z`, `0-9` and `-`, case folded; never `all` or `always`.
+
+One spelling per alias, so each has exactly one environment variable and one
+Keychain item (`a-b` and `a_b` would share `..._A_B`).
+
+* **Return type:**
+  [`ConversationRef`](_autosummary/correspond.model.html.md#correspond.model.ConversationRef)
+
+#### send(ref, draft, , dry_run=False)
+
+Notify every service behind the alias with `draft.text` (and its title).
+
+* **Return type:**
+  [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
+
+### correspond.channels.apprise.alias_env(alias)
+
+The environment variable holding one alias’s Apprise URL.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+```pycon
+>>> alias_env("team-alerts")
+'CORRESPOND_APPRISE_URL_TEAM_ALERTS'
+```
+
+
 # _autosummary/correspond.channels.github.html.md
 
 # correspond.channels.github
@@ -658,13 +755,14 @@ that channel.
 
 ### Modules
 
-| [`github`](_autosummary/correspond.channels.github.html.md#module-correspond.channels.github)     | GitHub: issues, pull request conversations and discussions, through the `gh` CLI.                 |
-|-----------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------|
-| [`macos`](_autosummary/correspond.channels.macos.html.md#module-correspond.channels.macos)       | macOS Notification Centre: a banner on this Mac (send only).                                      |
-| [`mail`](_autosummary/correspond.channels.mail.html.md#module-correspond.channels.mail)         | Email: IMAP to read and listen, SMTP to send, with the standard library.                          |
-| [`ntfy`](_autosummary/correspond.channels.ntfy.html.md#module-correspond.channels.ntfy)         | ntfy: push notifications to a phone or a desktop through an ntfy server (send only).              |
-| [`telegram`](_autosummary/correspond.channels.telegram.html.md#module-correspond.channels.telegram) | Telegram: a bot over the Bot API, with the standard library.                                      |
-| [`webinbox`](_autosummary/correspond.channels.webinbox.html.md#module-correspond.channels.webinbox) | The web inbox: a small ASGI collector web pages post reports to, and the channel that reads them. |
+| [`apprise`](_autosummary/correspond.channels.apprise.html.md#module-correspond.channels.apprise)   | Apprise: send-only notifications to the long tail of services (about 155), each named by an alias.   |
+|-----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| [`github`](_autosummary/correspond.channels.github.html.md#module-correspond.channels.github)     | GitHub: issues, pull request conversations and discussions, through the `gh` CLI.                    |
+| [`macos`](_autosummary/correspond.channels.macos.html.md#module-correspond.channels.macos)       | macOS Notification Centre: a banner on this Mac (send only).                                         |
+| [`mail`](_autosummary/correspond.channels.mail.html.md#module-correspond.channels.mail)         | Email: IMAP to read and listen, SMTP to send, with the standard library.                             |
+| [`ntfy`](_autosummary/correspond.channels.ntfy.html.md#module-correspond.channels.ntfy)         | ntfy: push notifications to a phone or a desktop through an ntfy server (send only).                 |
+| [`telegram`](_autosummary/correspond.channels.telegram.html.md#module-correspond.channels.telegram) | Telegram: a bot over the Bot API, with the standard library.                                         |
+| [`webinbox`](_autosummary/correspond.channels.webinbox.html.md#module-correspond.channels.webinbox) | The web inbox: a small ASGI collector web pages post reports to, and the channel that reads them.    |
 
 
 # _autosummary/correspond.channels.macos.html.md
@@ -3436,7 +3534,7 @@ One value a channel reads: its config key, its environment variable, what it is 
 A `secret` is never read from the config file: it comes from `env`, else (on macOS)
 the Keychain.
 
-### correspond.registry.build_registry(infos=(ChannelInfo(name='github', summary="GitHub issues, pull request conversations and discussions, through the gh CLI (the machine's gh login; correspond holds no token)", factory='correspond.channels.github:GitHub', modules=(), extra=None, binaries=(('gh',),), platforms=(), settings=(Setting(key='webhook_secret', env='GITHUB_WEBHOOK_SECRET', what='the webhook secret, used only to verify deliveries', where='the secret set on the repository or organization webhook (Settings, Webhooks)', secret=True, required=False, default=None),), notes=('log in once with \`gh auth login\` (https://cli.github.com/); check with \`gh auth status\`',), check='', planned=None), ChannelInfo(name='email', summary='Email: IMAP to read and listen, SMTP to send, with the standard library', factory='correspond.channels.mail:Email', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='imap_host', env='CORRESPOND_EMAIL_IMAP_HOST', what='the IMAP server', where="your mail provider's IMAP settings", secret=False, required=True, default=None), Setting(key='imap_port', env='CORRESPOND_EMAIL_IMAP_PORT', what='the IMAP port (TLS)', where='', secret=False, required=False, default='993'), Setting(key='smtp_host', env='CORRESPOND_EMAIL_SMTP_HOST', what='the SMTP server', where="your mail provider's SMTP settings", secret=False, required=True, default=None), Setting(key='smtp_port', env='CORRESPOND_EMAIL_SMTP_PORT', what='the SMTP port: 465 for TLS, 587 for STARTTLS', where='', secret=False, required=False, default='465'), Setting(key='user', env='CORRESPOND_EMAIL_USER', what='the mailbox login, usually its address', where='', secret=False, required=True, default=None), Setting(key='password', env='CORRESPOND_EMAIL_PASSWORD', what='the mailbox password, preferably an app password', where="your mail provider's app-password page (for Gmail: https://myaccount.google.com/apppasswords)", secret=True, required=True, default=None), Setting(key='from_address', env='CORRESPOND_EMAIL_FROM', what='the From address of sends (default: the login)', where='', secret=False, required=False, default=None), Setting(key='folder', env='CORRESPOND_EMAIL_FOLDER', what='the folder read and listened to', where='', secret=False, required=False, default='INBOX'), Setting(key='trusted_authserv_ids', env='CORRESPOND_EMAIL_TRUSTED_AUTHSERV_IDS', what='comma-separated authserv-ids of your own receiving server; only their Authentication-Results can make a sender \`domain\`', where='the topmost Authentication-Results header of a message your provider delivered (for Gmail: mx.google.com)', secret=False, required=False, default=None), Setting(key='own_domains', env='CORRESPOND_EMAIL_OWN_DOMAINS', what="comma-separated mail domains that are your own (and their subdomains); a recipient anywhere else makes an email's audience external", where='', secret=False, required=False, default=None), Setting(key='lists', env='CORRESPOND_EMAIL_LISTS', what='comma-separated mailing-list addresses, or @domain for a whole list server; local parts such as list, all, team, dev, announce and info count as lists anyway', where='', secret=False, required=False, default=None)), notes=(), check='', planned=None), ChannelInfo(name='ntfy', summary='Push notifications through an ntfy server (send only)', factory='correspond.channels.ntfy:Ntfy', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='url', env='NTFY_URL', what='the ntfy server', where='', secret=False, required=False, default='https://ntfy.sh'), Setting(key='topic', env='NTFY_TOPIC', what='the default topic, used by \`ntfy:\` with no topic', where='any long, hard-to-guess string; subscribe to it in the ntfy app (https://ntfy.sh)', secret=True, required=False, default=None), Setting(key='token', env='NTFY_TOKEN', what='an access token, for a server that requires one', where="your ntfy server's account page", secret=True, required=False, default=None), Setting(key='topic_remote', env='CORRESPOND_NTFY_TOPIC_REMOTE', what='an ssh host asked for the default topic when neither the environment nor the Keychain has it', where='', secret=False, required=False, default=None), Setting(key='topic_remote_file', env='CORRESPOND_NTFY_TOPIC_REMOTE_FILE', what='the file on that host holding a NTFY_TOPIC=... line', where='', secret=False, required=False, default=None), Setting(key='denies_anonymous_read', env='CORRESPOND_NTFY_DENIES_ANONYMOUS_READ', what='true when the server denies anonymous reads (its auth-default-access), so only the accounts it grants can read a topic; unset, anyone who knows a topic can', where='', secret=False, required=False, default=None), Setting(key='cache_duration', env='CORRESPOND_NTFY_CACHE_DURATION', what='how long the server keeps a message for subscribers who connect later (its cache-duration)', where='', secret=False, required=False, default='12h')), notes=('anyone who knows an unauthenticated topic can publish to it and read it: treat it as a secret',), check='', planned=None), ChannelInfo(name='macos', summary='Notification Centre banners on this Mac (send only)', factory='correspond.channels.macos:MacOS', modules=(), extra=None, binaries=(('terminal-notifier', 'osascript'),), platforms=('darwin',), settings=(), notes=('terminal-notifier (\`brew install terminal-notifier\`) keeps bodies intact; osascript is the fallback',), check='', planned=None), ChannelInfo(name='telegram', summary='A Telegram bot over the Bot API: listen with getUpdates, read what was logged, send, edit, react', factory='correspond.channels.telegram:Telegram', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='token', env='TELEGRAM_BOT_TOKEN', what='the bot token', where='create a bot with BotFather in Telegram (https://core.telegram.org/bots/tutorial)', secret=True, required=True, default=None), Setting(key='api_url', env='CORRESPOND_TELEGRAM_API_URL', what='the Bot API server', where='', secret=False, required=False, default='https://api.telegram.org')), notes=('a bot can write only to chats that wrote to it first, or groups it was added to', 'privacy mode (on by default) hides group messages that do not address the bot'), check='', planned=None), ChannelInfo(name='webinbox', summary="Reports posted from web pages to correspond's ASGI collector, and a reader over what it stored", factory='correspond.channels.webinbox:WebInbox', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='sites', env='CORRESPOND_WEBINBOX_SITES', what='comma-separated site names the collector accepts', where='', secret=False, required=False, default=None), Setting(key='origins', env='CORRESPOND_WEBINBOX_ORIGINS', what='comma-separated page origins allowed to post, e.g. https://app.example.org', where='', secret=False, required=False, default=None), Setting(key='secret', env='CORRESPOND_WEBINBOX_SECRET', what="the HMAC key shared with the host application's server, which signs its logged-in user (a single site; several sites need CORRESPOND_WEBINBOX_SECRET_<SITE> each)", where='generate one with: python -c "import secrets; print(secrets.token_hex(32))"', secret=True, required=False, default=None), Setting(key='max_age_s', env='CORRESPOND_WEBINBOX_MAX_AGE_S', what='how long a signed identity stays valid, in seconds', where='', secret=False, required=False, default='86400'), Setting(key='rate_per_minute', env='CORRESPOND_WEBINBOX_RATE_PER_MINUTE', what='reports accepted per client per minute, per site', where='', secret=False, required=False, default='10'), Setting(key='burst', env='CORRESPOND_WEBINBOX_BURST', what='reports a client may send in a burst', where='', secret=False, required=False, default='5'), Setting(key='max_body_bytes', env='CORRESPOND_WEBINBOX_MAX_BODY_BYTES', what='the largest request accepted, attachments included', where='', secret=False, required=False, default='5000000'), Setting(key='trusted_proxies', env='CORRESPOND_WEBINBOX_TRUSTED_PROXIES', what='how many reverse proxies of yours stand in front of the collector; the address rate-limited is read that many hops from the right of X-Forwarded-For (0: the connecting address)', where='', secret=False, required=False, default='0')), notes=('serve the collector on localhost behind your own server, e.g. \`uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1\`', 'for a reverse proxy on another host set CORRESPOND_WEBINBOX_TRUSTED_PROXIES (1 for one proxy), or every visitor shares one rate limit; uvicorn already resolves a proxy on 127.0.0.1', "several sites on one collector need a secret each, CORRESPOND_WEBINBOX_SECRET_<SITE> (upper case, - as \_) or the Keychain item correspond-webinbox-secret-<site>, so no site's server can sign for another"), check='correspond.channels.webinbox:requirements_problems', planned=None), ChannelInfo(name='discord', summary='Discord: read and post over REST, listen on the gateway', factory='', modules=(), extra='discord', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/2'), ChannelInfo(name='slack', summary='Slack: Socket Mode or the Events API', factory='', modules=(), extra='slack', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/3'), ChannelInfo(name='signal', summary='Signal through signal-cli-rest-api', factory='', modules=(), extra='signal', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/4'), ChannelInfo(name='apprise', summary='Apprise as a send-only writer for about 155 notification services', factory='', modules=(), extra='apprise', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/5')), , name='correspond channels')
+### correspond.registry.build_registry(infos=(ChannelInfo(name='github', summary="GitHub issues, pull request conversations and discussions, through the gh CLI (the machine's gh login; correspond holds no token)", factory='correspond.channels.github:GitHub', modules=(), extra=None, binaries=(('gh',),), platforms=(), settings=(Setting(key='webhook_secret', env='GITHUB_WEBHOOK_SECRET', what='the webhook secret, used only to verify deliveries', where='the secret set on the repository or organization webhook (Settings, Webhooks)', secret=True, required=False, default=None),), notes=('log in once with \`gh auth login\` (https://cli.github.com/); check with \`gh auth status\`',), check='', planned=None), ChannelInfo(name='email', summary='Email: IMAP to read and listen, SMTP to send, with the standard library', factory='correspond.channels.mail:Email', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='imap_host', env='CORRESPOND_EMAIL_IMAP_HOST', what='the IMAP server', where="your mail provider's IMAP settings", secret=False, required=True, default=None), Setting(key='imap_port', env='CORRESPOND_EMAIL_IMAP_PORT', what='the IMAP port (TLS)', where='', secret=False, required=False, default='993'), Setting(key='smtp_host', env='CORRESPOND_EMAIL_SMTP_HOST', what='the SMTP server', where="your mail provider's SMTP settings", secret=False, required=True, default=None), Setting(key='smtp_port', env='CORRESPOND_EMAIL_SMTP_PORT', what='the SMTP port: 465 for TLS, 587 for STARTTLS', where='', secret=False, required=False, default='465'), Setting(key='user', env='CORRESPOND_EMAIL_USER', what='the mailbox login, usually its address', where='', secret=False, required=True, default=None), Setting(key='password', env='CORRESPOND_EMAIL_PASSWORD', what='the mailbox password, preferably an app password', where="your mail provider's app-password page (for Gmail: https://myaccount.google.com/apppasswords)", secret=True, required=True, default=None), Setting(key='from_address', env='CORRESPOND_EMAIL_FROM', what='the From address of sends (default: the login)', where='', secret=False, required=False, default=None), Setting(key='folder', env='CORRESPOND_EMAIL_FOLDER', what='the folder read and listened to', where='', secret=False, required=False, default='INBOX'), Setting(key='trusted_authserv_ids', env='CORRESPOND_EMAIL_TRUSTED_AUTHSERV_IDS', what='comma-separated authserv-ids of your own receiving server; only their Authentication-Results can make a sender \`domain\`', where='the topmost Authentication-Results header of a message your provider delivered (for Gmail: mx.google.com)', secret=False, required=False, default=None), Setting(key='own_domains', env='CORRESPOND_EMAIL_OWN_DOMAINS', what="comma-separated mail domains that are your own (and their subdomains); a recipient anywhere else makes an email's audience external", where='', secret=False, required=False, default=None), Setting(key='lists', env='CORRESPOND_EMAIL_LISTS', what='comma-separated mailing-list addresses, or @domain for a whole list server; local parts such as list, all, team, dev, announce and info count as lists anyway', where='', secret=False, required=False, default=None)), notes=(), check='', planned=None), ChannelInfo(name='ntfy', summary='Push notifications through an ntfy server (send only)', factory='correspond.channels.ntfy:Ntfy', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='url', env='NTFY_URL', what='the ntfy server', where='', secret=False, required=False, default='https://ntfy.sh'), Setting(key='topic', env='NTFY_TOPIC', what='the default topic, used by \`ntfy:\` with no topic', where='any long, hard-to-guess string; subscribe to it in the ntfy app (https://ntfy.sh)', secret=True, required=False, default=None), Setting(key='token', env='NTFY_TOKEN', what='an access token, for a server that requires one', where="your ntfy server's account page", secret=True, required=False, default=None), Setting(key='topic_remote', env='CORRESPOND_NTFY_TOPIC_REMOTE', what='an ssh host asked for the default topic when neither the environment nor the Keychain has it', where='', secret=False, required=False, default=None), Setting(key='topic_remote_file', env='CORRESPOND_NTFY_TOPIC_REMOTE_FILE', what='the file on that host holding a NTFY_TOPIC=... line', where='', secret=False, required=False, default=None), Setting(key='denies_anonymous_read', env='CORRESPOND_NTFY_DENIES_ANONYMOUS_READ', what='true when the server denies anonymous reads (its auth-default-access), so only the accounts it grants can read a topic; unset, anyone who knows a topic can', where='', secret=False, required=False, default=None), Setting(key='cache_duration', env='CORRESPOND_NTFY_CACHE_DURATION', what='how long the server keeps a message for subscribers who connect later (its cache-duration)', where='', secret=False, required=False, default='12h')), notes=('anyone who knows an unauthenticated topic can publish to it and read it: treat it as a secret',), check='', planned=None), ChannelInfo(name='macos', summary='Notification Centre banners on this Mac (send only)', factory='correspond.channels.macos:MacOS', modules=(), extra=None, binaries=(('terminal-notifier', 'osascript'),), platforms=('darwin',), settings=(), notes=('terminal-notifier (\`brew install terminal-notifier\`) keeps bodies intact; osascript is the fallback',), check='', planned=None), ChannelInfo(name='telegram', summary='A Telegram bot over the Bot API: listen with getUpdates, read what was logged, send, edit, react', factory='correspond.channels.telegram:Telegram', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='token', env='TELEGRAM_BOT_TOKEN', what='the bot token', where='create a bot with BotFather in Telegram (https://core.telegram.org/bots/tutorial)', secret=True, required=True, default=None), Setting(key='api_url', env='CORRESPOND_TELEGRAM_API_URL', what='the Bot API server', where='', secret=False, required=False, default='https://api.telegram.org')), notes=('a bot can write only to chats that wrote to it first, or groups it was added to', 'privacy mode (on by default) hides group messages that do not address the bot'), check='', planned=None), ChannelInfo(name='webinbox', summary="Reports posted from web pages to correspond's ASGI collector, and a reader over what it stored", factory='correspond.channels.webinbox:WebInbox', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='sites', env='CORRESPOND_WEBINBOX_SITES', what='comma-separated site names the collector accepts', where='', secret=False, required=False, default=None), Setting(key='origins', env='CORRESPOND_WEBINBOX_ORIGINS', what='comma-separated page origins allowed to post, e.g. https://app.example.org', where='', secret=False, required=False, default=None), Setting(key='secret', env='CORRESPOND_WEBINBOX_SECRET', what="the HMAC key shared with the host application's server, which signs its logged-in user (a single site; several sites need CORRESPOND_WEBINBOX_SECRET_<SITE> each)", where='generate one with: python -c "import secrets; print(secrets.token_hex(32))"', secret=True, required=False, default=None), Setting(key='max_age_s', env='CORRESPOND_WEBINBOX_MAX_AGE_S', what='how long a signed identity stays valid, in seconds', where='', secret=False, required=False, default='86400'), Setting(key='rate_per_minute', env='CORRESPOND_WEBINBOX_RATE_PER_MINUTE', what='reports accepted per client per minute, per site', where='', secret=False, required=False, default='10'), Setting(key='burst', env='CORRESPOND_WEBINBOX_BURST', what='reports a client may send in a burst', where='', secret=False, required=False, default='5'), Setting(key='max_body_bytes', env='CORRESPOND_WEBINBOX_MAX_BODY_BYTES', what='the largest request accepted, attachments included', where='', secret=False, required=False, default='5000000'), Setting(key='trusted_proxies', env='CORRESPOND_WEBINBOX_TRUSTED_PROXIES', what='how many reverse proxies of yours stand in front of the collector; the address rate-limited is read that many hops from the right of X-Forwarded-For (0: the connecting address)', where='', secret=False, required=False, default='0')), notes=('serve the collector on localhost behind your own server, e.g. \`uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1\`', 'for a reverse proxy on another host set CORRESPOND_WEBINBOX_TRUSTED_PROXIES (1 for one proxy), or every visitor shares one rate limit; uvicorn already resolves a proxy on 127.0.0.1', "several sites on one collector need a secret each, CORRESPOND_WEBINBOX_SECRET_<SITE> (upper case, - as \_) or the Keychain item correspond-webinbox-secret-<site>, so no site's server can sign for another"), check='correspond.channels.webinbox:requirements_problems', planned=None), ChannelInfo(name='discord', summary='Discord: read and post over REST, listen on the gateway', factory='', modules=(), extra='discord', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/2'), ChannelInfo(name='slack', summary='Slack: Socket Mode or the Events API', factory='', modules=(), extra='slack', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/3'), ChannelInfo(name='signal', summary='Signal through signal-cli-rest-api', factory='', modules=(), extra='signal', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/4'), ChannelInfo(name='apprise', summary='Apprise: send-only notifications to about 155 services, each named by an alias (send only)', factory='correspond.channels.apprise:Apprise', modules=('apprise',), extra='apprise', binaries=(), platforms=(), settings=(Setting(key='config', env='CORRESPOND_APPRISE_CONFIG', what='an Apprise config file (YAML or TEXT); an alias with no URL of its own is used as a tag in it', where='https://pypi.org/project/apprise/ (its configuration-file documentation)', secret=False, required=False, default=None),), notes=('apprise:<alias> sends to the URL in CORRESPOND_APPRISE_URL_<ALIAS> (or the Keychain item correspond-apprise-url-<alias>), else to the URLs tagged <alias> in the config file', "a reference never holds an Apprise URL: the URL carries the service's credentials"), check='', planned=None)), , name='correspond channels')
 
 A fresh `xdol.Registry` with a lazy entry for every built channel whose optional modules import.
 
@@ -4179,16 +4277,18 @@ Remove labels (comma-separated; a label name may not itself contain a comma) fro
 
 # About this build
 
-This documentation was built on **2026-10-13 19:10 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/71e5a3d175c5a11a7cf86bb496c22a228f1273de"><code>71e5a3d</code></a> on branch <code>main</code>, for **correspond 0.0.11** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-14 03:27 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/6087e85fd935c1d994ecb0a3449c98ad7bd1db04"><code>6087e85</code></a> on branch <code>main</code>, for **correspond 0.0.12** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.12) is behind the latest release on PyPI (0.0.13): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/71e5a3d175c5a11a7cf86bb496c22a228f1273de"><code>71e5a3d175c5a11a7cf86bb496c22a228f1273de</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/6087e85fd935c1d994ecb0a3449c98ad7bd1db04"><code>6087e85fd935c1d994ecb0a3449c98ad7bd1db04</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -4199,9 +4299,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/38452512537">38452512537</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/38506196954">38506196954</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>71e5a3d175c5a11a7cf86bb496c22a228f1273de</code> (in the history of the built commit)  |
+| Event commit | <code>6087e85fd935c1d994ecb0a3449c98ad7bd1db04</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -4226,13 +4326,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.11/">0.0.11</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.13/">0.0.13</a>, newer than the documented version (0.0.12).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 71e5a3d175c5a11a7cf86bb496c22a228f1273de
+git checkout 6087e85fd935c1d994ecb0a3449c98ad7bd1db04
 pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
