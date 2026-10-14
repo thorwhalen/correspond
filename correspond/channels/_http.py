@@ -10,11 +10,14 @@ the URL (a URL path can carry a token). Tests pass a scripted function of the sa
 3.0
 >>> classify(404, "gone").kind
 'not_found'
+
+A file goes up as ``multipart/form-data``, built by :func:`multipart`.
 """
 
 from __future__ import annotations
 
 import json
+import secrets
 import time
 import urllib.error
 import urllib.request
@@ -30,6 +33,7 @@ __all__ = [
     "DEFAULT_TIMEOUT_S",
     "Response",
     "classify",
+    "multipart",
     "retry_after_seconds",
     "urllib_http",
 ]
@@ -89,6 +93,48 @@ def urllib_http(
             kind="network",
             retryable=True,
         ) from None
+
+
+def _quoted_param(text: str) -> str:
+    """A form-data parameter value, quoted, with ``"``, CR and LF percent-encoded as browsers do."""
+    return '"' + text.replace('"', "%22").replace("\r", "%0D").replace("\n", "%0A") + '"'
+
+
+def multipart(
+    fields: Mapping[str, str], files: Mapping[str, tuple[str, str, bytes]]
+) -> tuple[str, bytes]:
+    r"""A ``multipart/form-data`` body and its ``Content-Type``: text ``fields`` and ``files`` as ``name -> (file name, media type, bytes)``.
+
+    >>> content_type, body = multipart({"chat_id": "-4001"}, {"document": ('a".txt', "text/plain", b"hi")})
+    >>> content_type.startswith("multipart/form-data; boundary=")
+    True
+    >>> b'filename="a%22.txt"' in body and b"\r\n\r\nhi\r\n" in body
+    True
+    """
+    payloads = [v.encode("utf-8") for v in fields.values()]
+    payloads += [data for _, _, data in files.values()]
+    boundary = secrets.token_hex(16)
+    while any(boundary.encode() in p for p in payloads):  # pragma: no cover
+        boundary = secrets.token_hex(16)
+    parts = []
+    for name, text in fields.items():
+        parts.append(
+            f"--{boundary}\r\nContent-Disposition: form-data; name={_quoted_param(name)}"
+            f"\r\n\r\n".encode()
+            + text.encode("utf-8")
+            + b"\r\n"
+        )
+    for name, (filename, media_type, data) in files.items():
+        parts.append(
+            (
+                f"--{boundary}\r\nContent-Disposition: form-data; name={_quoted_param(name)}; "
+                f"filename={_quoted_param(filename)}\r\nContent-Type: {media_type}\r\n\r\n"
+            ).encode("utf-8")
+            + data
+            + b"\r\n"
+        )
+    body = b"".join(parts) + f"--{boundary}--\r\n".encode()
+    return f"multipart/form-data; boundary={boundary}", body
 
 
 def retry_after_seconds(headers: Mapping[str, str] | None) -> float | None:

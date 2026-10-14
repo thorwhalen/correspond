@@ -309,3 +309,111 @@ def test_the_native_fields_messages_carry_are_the_ones_capabilities_declare(toke
     declared = set(Telegram().capabilities.native_fields)
     for event in correspond.listen("telegram:", cursors={}, registry=_registry(api)):
         assert set(event.message.native) <= declared
+
+
+# ----------------------------------------------------------------- upload (#8)
+
+
+def _multipart(headers, body):
+    """The fields and files of a multipart/form-data body, parsed with the standard library."""
+    from email import policy
+    from email.parser import BytesParser
+
+    head = f"Content-Type: {headers['Content-Type']}\r\n\r\n".encode()
+    parsed = BytesParser(policy=policy.HTTP).parsebytes(head + body)
+    fields, files = {}, {}
+    for part in parsed.iter_parts():
+        name = part.get_param("name", header="content-disposition")
+        filename = part.get_filename()
+        payload = part.get_payload(decode=True)
+        if filename is None:
+            fields[name] = payload.decode()
+        else:
+            files[name] = (filename, part.get_content_type(), payload)
+    return fields, files
+
+
+class FakeUploadApi:
+    def __init__(self, result):
+        self.result = result
+        self.calls = []
+
+    def __call__(self, method, url, *, headers=None, body=None, timeout=None):
+        assert url == f"https://api.telegram.org/bot{TOKEN}/sendDocument"
+        self.calls.append(_multipart(headers, body))
+        return Response(200, {}, json.dumps({"ok": True, "result": self.result}).encode())
+
+
+def test_upload_sends_a_document_as_multipart_and_logs_it(token):
+    sent = _message(
+        77,
+        sender=BOT,
+        text="",
+        document={"file_name": "report.csv", "mime_type": "text/csv"},
+        message_thread_id=7,
+        is_topic_message=True,
+    )
+    api, log = FakeUploadApi(sent), {}
+    result = correspond.upload(
+        "telegram:-4001/7",
+        "report.csv",
+        b"a,b\n1,2\n",
+        media_type="text/csv",
+        registry=_registry(api, log),
+    )
+    assert result.ok and result.operation == "upload" and result.message_id == "77"
+    assert result.account.id == "@example_bot"
+    [(fields, files)] = api.calls
+    assert fields == {"chat_id": "-4001", "message_thread_id": "7"}
+    assert files == {"document": ("report.csv", "text/csv", b"a,b\n1,2\n")}
+    assert result.plan["action"] == "sendDocument" and result.plan["bytes"] == 8
+    assert "data" not in result.plan and TOKEN not in json.dumps(result.plan)
+    assert log["-4001/77.json"]["native"]["media"] == ["document"]
+
+
+def test_an_upload_dry_run_contacts_nothing_and_bad_files_are_refused(token):
+    api = FakeUploadApi({})
+    registry = _registry(api)
+    plan = correspond.upload(
+        "telegram:-4001", "a.txt", b"x", dry_run=True, registry=registry
+    )
+    assert plan.ok and plan.dry_run and api.calls == []
+    for name, data in (("", b"x"), ("a\r\nb.txt", b"x"), ("a.txt", b"")):
+        refused = correspond.upload("telegram:-4001", name, data, registry=registry)
+        assert not refused.ok and refused.error_kind == "validation", name
+    too_big = Telegram().capabilities.max_upload_bytes + 1
+    refused = correspond.upload(
+        "telegram:-4001", "big.bin", b"\0" * too_big, registry=registry
+    )
+    assert not refused.ok and refused.error_kind == "validation"
+    assert api.calls == []
+
+
+def test_a_quote_in_a_file_name_cannot_break_out_of_its_header(token):
+    api = FakeUploadApi(_message(78, sender=BOT, text="", document={}))
+    result = correspond.upload(
+        "telegram:-4001", 'a"; name="chat_id.txt', b"x", registry=_registry(api)
+    )
+    assert result.ok
+    [(fields, files)] = api.calls
+    assert fields == {"chat_id": "-4001"} and list(files) == ["document"]
+
+
+def test_upload_failures_never_show_the_token(token):
+    def failing(method, url, *, headers=None, body=None, timeout=None):
+        return Response(
+            400,
+            {},
+            json.dumps(
+                {"ok": False, "error_code": 400, "description": f"bad file for {TOKEN}"}
+            ).encode(),
+        )
+
+    result = correspond.upload(
+        "telegram:-4001",
+        "a.txt",
+        b"x",
+        registry={"telegram": Telegram(http=failing, log={})},
+    )
+    assert not result.ok and result.error_kind == "validation"
+    assert TOKEN not in result.error

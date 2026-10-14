@@ -41,6 +41,7 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 from __future__ import annotations
 
 import dataclasses
+import re
 from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping
 from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
@@ -1012,6 +1013,31 @@ def unlabel(
     )
 
 
+_MEDIA_TYPE_RE = re.compile(r"^[A-Za-z0-9][\w!#$&^.+-]*/[A-Za-z0-9][\w!#$&^.+-]*$")
+_CONTROL_RE = re.compile(r"[\x00-\x1f\x7f]")
+
+
+def _upload_problem(name: str, data: bytes, media_type: str) -> str | None:
+    r"""What makes a file unsendable on any channel, or ``None``.
+
+    >>> _upload_problem("a.txt", b"x", "text/plain") is None
+    True
+    >>> _upload_problem("a\nb.txt", b"x", "text/plain")
+    'a file name has no control characters (line breaks included)'
+    """
+    if not isinstance(name, str) or not name.strip():
+        return "a file needs a name"
+    if _CONTROL_RE.search(name):
+        return "a file name has no control characters (line breaks included)"
+    if not isinstance(data, (bytes, bytearray)):
+        return f"a file's content is bytes, not {type(data).__name__}"
+    if not data:
+        return "the file is empty"
+    if not isinstance(media_type, str) or not _MEDIA_TYPE_RE.match(media_type):
+        return f"a media type is type/subtype, such as text/plain, not {media_type!r}"
+    return None
+
+
 def upload(
     ref: str | ConversationRef,
     name: str,
@@ -1025,6 +1051,9 @@ def upload(
     """Send a file to a conversation. The ``before_send`` check sees only the file name as the draft's text (``operation="upload"``): a check that cannot vet the bytes should hold or refuse."""
     adapter, ref = _adapter_for(ref, "upload", registry)
     limit = adapter.capabilities.max_upload_bytes
+    problem = _upload_problem(name, data, media_type)
+    if problem:
+        return _invalid(adapter, ref, "upload", dry_run, problem)
     if limit and len(data) > limit:
         return _invalid(
             adapter,

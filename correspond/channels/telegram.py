@@ -19,6 +19,7 @@ update from the Bot API itself. The bot token never appears in an error or a pla
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import subprocess
@@ -27,7 +28,7 @@ from dataclasses import replace
 from datetime import datetime, timezone
 from typing import Any
 
-from correspond.channels._http import urllib_http
+from correspond.channels._http import DEFAULT_TIMEOUT_S, multipart, urllib_http
 from correspond.errors import ChannelError, InvalidRef, NotSupported
 from correspond.model import (
     Account,
@@ -54,6 +55,10 @@ __all__ = ["Telegram"]
 NAME = "telegram"
 CHAT_RE = re.compile(r"^(?:-?[1-9][0-9]{0,19}|@[A-Za-z][A-Za-z0-9_]{3,31})$")
 MAX_TEXT_CHARS = 4096
+#: What a bot may upload through the public Bot API.
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
+#: How long one upload may take: up to 50 MB goes in one request.
+UPLOAD_TIMEOUT_S = 300
 #: A public Telegram username, the only handle a bot's mention reaches.
 USERNAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]{3,31}$")
 MAX_UPDATES = 100
@@ -134,6 +139,7 @@ class Telegram:
             send=Support.FULL,
             edit=Support.FULL,
             react=Support.FULL,
+            upload=Support.FULL,
             audience=Support.PARTIAL,
             initiate=Support.NONE,
             reply=Support.FULL,
@@ -144,6 +150,7 @@ class Telegram:
             grades=(Grade.PLATFORM,),
             max_text_length=MAX_TEXT_CHARS,
             reactions_per_message=1,
+            max_upload_bytes=MAX_UPLOAD_BYTES,
             formats=("plain",),
             rate_limits=(
                 "about one message per second per chat, 20 per minute per group",
@@ -156,6 +163,7 @@ class Telegram:
                 "notify mentions @username in the text: it reaches a member of the chat with a public username, not anyone outside it",
                 "a title is prepended to the text: Telegram messages have none",
                 "audience comes from getChat: a public username, the chat type, history visibility; members are never listed",
+                "upload sends the file as a document (sendDocument, up to 50 MB), never recompressed as a photo, and without a caption",
             ),
         )
 
@@ -175,15 +183,34 @@ class Telegram:
 
     # ------------------------------------------------------------------ plumbing
 
-    def _call(self, method: str, params: Mapping[str, Any]) -> Any:
+    def _call(
+        self,
+        method: str,
+        params: Mapping[str, Any],
+        *,
+        files: Mapping[str, tuple[str, str, bytes]] | None = None,
+    ) -> Any:
+        """One Bot API call: JSON, or ``multipart/form-data`` when it carries ``files``."""
         token = require(NAME, "token", run=self.run)
         base = (value(NAME, "api_url") or "https://api.telegram.org").rstrip("/")
+        if files:
+            # Form fields are strings; the Bot API takes JSON for structured ones.
+            fields = {
+                k: v if isinstance(v, str) else json.dumps(v) for k, v in params.items()
+            }
+            content_type, body = multipart(fields, files)
+            timeout = UPLOAD_TIMEOUT_S
+        else:
+            content_type = "application/json"
+            body = json.dumps(dict(params)).encode("utf-8")
+            timeout = DEFAULT_TIMEOUT_S
         try:
             response = self.http(
                 "POST",
                 f"{base}/bot{token}/{method}",
-                headers={"Content-Type": "application/json"},
-                body=json.dumps(dict(params)).encode("utf-8"),
+                headers={"Content-Type": content_type},
+                body=body,
+                timeout=timeout,
             )
         except ChannelError as error:
             raise ChannelError(
@@ -564,5 +591,47 @@ class Telegram:
             conversation=ref.encoded,
             operation="react",
             message_id=str(message_id),
+            plan=plan,
+        )
+
+    def upload(
+        self,
+        ref: ConversationRef,
+        name: str,
+        data: bytes,
+        *,
+        media_type: str = "application/octet-stream",
+        dry_run: bool = False,
+    ) -> SendResult:
+        """``sendDocument``: the file as it is, in a chat or a forum topic. The plan names it, never its bytes."""
+        params = self._target(ref)
+        plan = {
+            "action": "sendDocument",
+            **params,
+            "file": name,
+            "media_type": media_type,
+            "bytes": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+        }
+        if dry_run:
+            return SendResult(
+                ok=True,
+                channel=NAME,
+                conversation=ref.encoded,
+                operation="upload",
+                dry_run=True,
+                plan=plan,
+            )
+        result = self._call(
+            "sendDocument", params, files={"document": (name, media_type, bytes(data))}
+        )
+        message = self._remember(result)
+        return SendResult(
+            ok=True,
+            channel=NAME,
+            conversation=ref.encoded,
+            operation="upload",
+            message_id=message.id if message else None,
+            account=self._account(result),
             plan=plan,
         )

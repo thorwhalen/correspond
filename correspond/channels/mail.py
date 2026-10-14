@@ -91,6 +91,9 @@ _FOLDER_ESCAPED = re.compile(r"[\s\x00-\x1f\x7f%]")
 LIST_LOCAL_PARTS = ("list", "all", "team", "dev", "announce", "info")
 _LOCAL_PART_SPLIT = re.compile(r"[-._+]")
 FETCH_BATCH = 50
+#: The largest file an upload emails: most providers cap a message near 25 MB, and base64
+#: makes a file a third larger.
+MAX_UPLOAD_BYTES = 18 * 1024 * 1024
 DEFAULT_READ_LIMIT = 50
 LISTEN_LOOKBACK = timedelta(days=1)
 TIMEOUT_S = 60
@@ -392,6 +395,7 @@ class Email:
             read=Support.FULL,
             listen=Support.FULL,
             send=Support.FULL,
+            upload=Support.PARTIAL,
             audience=Support.FULL,
             initiate=Support.FULL,
             reply=Support.FULL,
@@ -400,6 +404,7 @@ class Email:
             notify=Support.FULL,
             history_depth=HistoryDepth.FULL,
             listen_modes=("poll",),
+            max_upload_bytes=MAX_UPLOAD_BYTES,
             grades=(Grade.DOMAIN, Grade.CLAIMED),
             formats=("plain", "html"),
             native_fields=(
@@ -422,6 +427,7 @@ class Email:
                 "priority sets Importance and X-Priority, which mail clients may ignore",
                 "native html is the HTML part when plain text won as the body (an HTML body is in body only); list_id, list_unsubscribe and list_post are the List-* headers when present",
                 "audience: the address plus cc and bcc; a list-shaped address has members nobody can list",
+                "upload emails one file to one address as its own message, the file name as the subject, with no text; a provider may refuse a message under 18 MB",
             ),
         )
 
@@ -954,6 +960,65 @@ class Email:
             ok=True,
             channel=NAME,
             conversation=ref.encoded,
+            message_id=str(message["Message-ID"]),
+            account=Account(channel=NAME, id=user, acts_as="user"),
+            plan=plan,
+        )
+
+    def upload(
+        self,
+        ref: ConversationRef,
+        name: str,
+        data: bytes,
+        *,
+        media_type: str = "application/octet-stream",
+        dry_run: bool = False,
+    ) -> SendResult:
+        """Email one file to ``ref``'s address, as its own message with the file name as the subject. The plan names the file, never its bytes."""
+        to = self._address(ref)
+        maintype, _, subtype = media_type.partition("/")
+        user = value(NAME, "user") if dry_run else require(NAME, "user", run=self.run)
+        sender = value(NAME, "from_address") or user or "(not set)"
+        message = EmailMessage()
+        try:
+            message["From"] = sender
+            message["To"] = to
+            message["Subject"] = " ".join(name.split())
+            message["Date"] = formatdate(usegmt=True)
+            message["Message-ID"] = make_msgid(domain=sender.rpartition("@")[2] or None)
+            message.add_attachment(
+                bytes(data), maintype=maintype, subtype=subtype, filename=name
+            )
+        except (ValueError, TypeError) as error:
+            raise ChannelError(
+                f"the message could not be built: {error}", kind="validation"
+            ) from None
+        plan = {
+            "action": "email a file",
+            "from": sender,
+            "to": to,
+            "file": name,
+            "media_type": media_type,
+            "bytes": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "server": value(NAME, "smtp_host") or "(not set)",
+        }
+        if dry_run:
+            return SendResult(
+                ok=True,
+                channel=NAME,
+                conversation=ref.encoded,
+                operation="upload",
+                dry_run=True,
+                plan=plan,
+            )
+        with self._smtp() as server:
+            server.send_message(message)
+        return SendResult(
+            ok=True,
+            channel=NAME,
+            conversation=ref.encoded,
+            operation="upload",
             message_id=str(message["Message-ID"]),
             account=Account(channel=NAME, id=user, acts_as="user"),
             plan=plan,

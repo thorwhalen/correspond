@@ -20,10 +20,10 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 | Channel | References | Operations | Built on |
 |---|---|---|---|
 | `github` | `github:owner/repo`, `github:owner/repo#12` | read, listen (issues and comments), send (opening an issue takes `native` labels, assignees, milestone), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
-| `email` | `email:` (the folder), `email:someone@example.org`, `email:a@example.org,@example.net` (several senders or a domain, read only), each optionally followed by `#<folder>` (`email:#Topics/AI`) | read, listen, send (with cc and bcc), audience | `imaplib`, `smtplib` |
+| `email` | `email:` (the folder), `email:someone@example.org`, `email:a@example.org,@example.net` (several senders or a domain, read only), each optionally followed by `#<folder>` (`email:#Topics/AI`) | read, listen, send (with cc and bcc), upload (a file as its own email), audience | `imaplib`, `smtplib` |
 | `ntfy` | `ntfy:` (the default topic), `ntfy:<topic>` | send, audience | `urllib` |
 | `macos` | `macos:` | send, audience | `terminal-notifier` or `osascript` |
-| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience | the Bot API over `urllib` |
+| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, upload (a document, up to 50 MB), audience | the Bot API over `urllib` |
 | `webinbox` | `webinbox:<site>` | read, listen, audience | the ASGI collector below, and `dol` stores |
 | `apprise` | `apprise:<alias>` | send, audience | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`) |
 
@@ -190,10 +190,16 @@ result.plan
 for event in correspond.listen("webinbox:example-site"):
     ...
 
+result = correspond.upload(
+    "telegram:-4001", "report.csv", b"a,b\n1,2\n", media_type="text/csv", dry_run=True
+)  # a document on Telegram; on email, a message carrying the file
+
 correspond.register_channel(
     MyChannel()
 )  # anything with name, capabilities, parse_ref and the operations it has
 ```
+
+`upload` is Python only: the command line and the MCP tools do not offer it, since a tool that reads a local path would let a model send any file it can name. The `before_send` check sees the file name, never the bytes.
 
 `correspond.testing.FakeChannel` is an in-memory channel for tests, and `python -m correspond.testing` runs the CLI with it registered as `fake`.
 

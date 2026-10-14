@@ -627,3 +627,64 @@ def test_sends_need_one_address_and_ignore_the_folder(monkeypatch):
         assert "one address" in result.error
     audience = correspond.audience("email:@example.org", registry=registry)
     assert audience.defaulted and audience.scope.value == "public"
+
+
+# ----------------------------------------------------------------- upload (#8)
+
+
+def test_upload_emails_the_file_as_an_attachment(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    smtp = FakeSmtp()
+    result = correspond.upload(
+        "email:ada@example.org#Topics/AI",
+        "screen.png",
+        PNG,
+        media_type="image/png",
+        registry=_registry(smtp=smtp),
+    )
+    assert result.ok and result.operation == "upload"
+    [message] = smtp.sent
+    assert message["To"] == "ada@example.org" and message["Subject"] == "screen.png"
+    assert result.message_id == message["Message-ID"]
+    [attachment] = list(message.iter_attachments())
+    assert attachment.get_filename() == "screen.png"
+    assert attachment.get_content_type() == "image/png"
+    assert attachment.get_payload(decode=True) == PNG
+    assert result.plan["action"] == "email a file" and result.plan["bytes"] == len(PNG)
+    assert "data" not in result.plan
+
+
+def test_email_uploads_are_validated_and_dry_runs_connect_to_nothing(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+
+    def refuse():
+        raise AssertionError("a dry run must not connect")
+
+    registry = {"email": Email(smtp=refuse)}
+    plan = correspond.upload(
+        "email:ada@example.org", "a.txt", b"x", dry_run=True, registry=registry
+    )
+    assert plan.ok and plan.dry_run and plan.plan["to"] == "ada@example.org"
+    for ref, name, data in (
+        ("email:@example.org", "a.txt", b"x"),
+        ("email:", "a.txt", b"x"),
+        ("email:ada@example.org", "", b"x"),
+        ("email:ada@example.org", "a\nb.txt", b"x"),
+        ("email:ada@example.org", "a.txt", b""),
+        (
+            "email:ada@example.org",
+            "a.txt",
+            b"x" * (Email().capabilities.max_upload_bytes + 1),
+        ),
+    ):
+        refused = correspond.upload(ref, name, data, dry_run=True, registry=registry)
+        assert not refused.ok and refused.error_kind == "validation", (ref, name)
+    bad_type = correspond.upload(
+        "email:ada@example.org",
+        "a.txt",
+        b"x",
+        media_type="text",
+        dry_run=True,
+        registry=registry,
+    )
+    assert not bad_type.ok and bad_type.error_kind == "validation"
