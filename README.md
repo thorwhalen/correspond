@@ -155,6 +155,19 @@ identity = sign_identity(
 
 Any server language can do the same: HMAC-SHA256, hex, over the lines `v1`, site, issued-at (Unix seconds), user id, name, email. An invalid or expired signature is refused (401) and nothing is stored. The collector also enforces the origin allowlist (with CORS preflight), a per-client rate limit, and size and media-type limits.
 
+## Telegram webhook
+
+A bot listens with `getUpdates` by default. On a server, Telegram can push updates to a webhook instead; a bot has one or the other, and `correspond listen telegram:` fails while a webhook is set. `correspond.channels.telegram:webhook_app` is an ASGI app that checks each delivery's `X-Telegram-Bot-Api-Secret-Token` against `CORRESPOND_TELEGRAM_WEBHOOK_SECRET` (or the Keychain item `correspond-telegram-webhook_secret`) and logs a verified update exactly as listening would, so `correspond read telegram:<chat id>` sees it. It binds nothing itself:
+
+```bash
+export CORRESPOND_TELEGRAM_WEBHOOK_SECRET=...   # 1-256 of A-Z a-z 0-9 _ -
+uvicorn --factory correspond.channels.telegram:webhook_app --host 127.0.0.1 --port 8766
+# behind your TLS server, register the public URL once, with the same secret:
+# POST https://api.telegram.org/bot<token>/setWebhook  url=https://bot.example.org/telegram  secret_token=...
+```
+
+A delivery without the right token gets 401 and nothing is stored; with no secret configured every delivery gets 503. `Telegram().verify(headers, body)` grades a delivery (`platform` or `forged`) and `Telegram().receive(headers, body)` logs it, for a server that is not ASGI. The token is a shared secret, not a signature of the body, so the webhook URL must be HTTPS (Telegram requires it).
+
 ## Routing
 
 ```python

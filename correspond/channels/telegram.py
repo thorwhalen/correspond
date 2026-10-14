@@ -13,6 +13,13 @@ at once, which is why listening is account-wide: narrow to one chat when routing
 Senders are ``platform``: Telegram authenticated the account, and correspond pulled the
 update from the Bot API itself. The bot token never appears in an error or a plan.
 
+For a server, Telegram can push updates to a webhook instead (``setWebhook`` with a
+``secret_token``; a bot has one or the other, and ``getUpdates`` fails while a webhook is
+set). :meth:`Telegram.verify` grades a delivery by its ``X-Telegram-Bot-Api-Secret-Token``
+header, :meth:`Telegram.receive` logs a verified one exactly as polling would, and
+:func:`webhook_app` is an ASGI app doing both, which binds nothing itself: run it on
+localhost behind your own TLS server.
+
 >>> Telegram().parse_ref("-4001/7").parent.encoded
 'telegram:-4001'
 """
@@ -20,6 +27,7 @@ update from the Bot API itself. The bot token never appears in an error or a pla
 from __future__ import annotations
 
 import hashlib
+import hmac
 import json
 import re
 import subprocess
@@ -29,7 +37,12 @@ from datetime import datetime, timezone
 from typing import Any
 
 from correspond.channels._http import DEFAULT_TIMEOUT_S, multipart, urllib_http
-from correspond.errors import ChannelError, InvalidRef, NotSupported
+from correspond.errors import (
+    ChannelError,
+    InvalidRef,
+    MissingRequirement,
+    NotSupported,
+)
 from correspond.model import (
     Account,
     Audience,
@@ -50,7 +63,7 @@ from correspond.notify import handle, missing_mentions, with_mentions
 from correspond.ops import window, with_final_cursor
 from correspond.registry import require, value
 
-__all__ = ["Telegram"]
+__all__ = ["SECRET_TOKEN_HEADER", "Telegram", "webhook_app"]
 
 NAME = "telegram"
 CHAT_RE = re.compile(r"^(?:-?[1-9][0-9]{0,19}|@[A-Za-z][A-Za-z0-9_]{3,31})$")
@@ -67,6 +80,16 @@ _MEDIA = ("photo", "document", "voice", "video", "audio", "sticker", "animation"
 _PLATFORM = Authenticity(
     grade=Grade.PLATFORM, evidence={"attested_by": "the Telegram Bot API (getUpdates)"}
 )
+_PLATFORM_WEBHOOK = Authenticity(
+    grade=Grade.PLATFORM,
+    evidence={
+        "attested_by": "the Telegram Bot API (a webhook delivery, secret_token checked)"
+    },
+)
+#: The header Telegram sends a webhook's ``secret_token`` in.
+SECRET_TOKEN_HEADER = "X-Telegram-Bot-Api-Secret-Token"
+#: The largest webhook body the app reads: an update is a few kilobytes.
+MAX_WEBHOOK_BODY = 1024 * 1024
 
 
 def _log_key(message: Message) -> str:
@@ -140,14 +163,15 @@ class Telegram:
             edit=Support.FULL,
             react=Support.FULL,
             upload=Support.FULL,
+            verify=Support.FULL,
             audience=Support.PARTIAL,
             initiate=Support.NONE,
             reply=Support.FULL,
             notify=Support.PARTIAL,
             history_depth=HistoryDepth.BUFFER_24H,
-            listen_modes=("poll",),
+            listen_modes=("poll", "webhook"),
             native_fields=("chat_type", "chat_title", "message_thread_id", "media"),
-            grades=(Grade.PLATFORM,),
+            grades=(Grade.PLATFORM, Grade.FORGED),
             max_text_length=MAX_TEXT_CHARS,
             reactions_per_message=1,
             max_upload_bytes=MAX_UPLOAD_BYTES,
@@ -163,6 +187,7 @@ class Telegram:
                 "notify mentions @username in the text: it reaches a member of the chat with a public username, not anyone outside it",
                 "a title is prepended to the text: Telegram messages have none",
                 "audience comes from getChat: a public username, the chat type, history visibility; members are never listed",
+                "webhook: verify grades a delivery by its secret_token, receive logs a verified one, webhook_app serves both; a bot has a webhook or getUpdates, never both",
                 "upload sends the file as a document (sendDocument, up to 50 MB), never recompressed as a photo, and without a caption",
             ),
         )
@@ -230,7 +255,13 @@ class Telegram:
         retry_after = (data.get("parameters") or {}).get("retry_after")
         raise _error(code, method, description, retry_after)
 
-    def _message(self, data: Mapping[str, Any], *, is_self: bool = False) -> Message:
+    def _message(
+        self,
+        data: Mapping[str, Any],
+        *,
+        is_self: bool = False,
+        authenticity: Authenticity = _PLATFORM,
+    ) -> Message:
         chat = data.get("chat") or {}
         chat_id = str(chat.get("id", ""))
         thread = data.get("message_thread_id") if data.get("is_topic_message") else None
@@ -252,7 +283,7 @@ class Telegram:
                 is_bot=bool(sender.get("is_bot")),
                 is_self=is_self,
             ),
-            authenticity=_PLATFORM,
+            authenticity=authenticity,
             sent_at=datetime.fromtimestamp(int(data.get("date") or 0), tz=timezone.utc),
             edited_at=datetime.fromtimestamp(int(data["edit_date"]), tz=timezone.utc)
             if data.get("edit_date")
@@ -329,28 +360,88 @@ class Telegram:
         if limit:
             params["limit"] = max(1, min(MAX_UPDATES, int(limit)))
         updates = self._call("getUpdates", params) or []
-        events = []
-        for update in updates:
-            update_id = int(update["update_id"])
-            kind = next((k for k in UPDATE_TYPES if k in update), None)
-            if kind is None:
-                continue
-            message = self._message(update[kind])
-            self.log[_log_key(message)] = message.to_dict()
-            events.append(
-                Event(
-                    kind="message.updated"
-                    if kind.startswith("edited")
-                    else "message.created",
-                    channel=NAME,
-                    delivery_id=f"telegram:update-{update_id}",
-                    cursor=str(update_id + 1),
-                    message=message,
-                    payload={"update_id": update_id, "type": kind},
-                )
-            )
+        events = [e for e in map(self._logged_event, updates) if e is not None]
         final = str(int(updates[-1]["update_id"]) + 1) if updates else None
         return with_final_cursor(events, final)
+
+    def _logged_event(
+        self, update: Mapping[str, Any], authenticity: Authenticity = _PLATFORM
+    ) -> Event | None:
+        """The event an update is, logged before it is handed over; ``None`` for an update type not listened to."""
+        update_id = int(update["update_id"])
+        kind = next((k for k in UPDATE_TYPES if k in update), None)
+        if kind is None:
+            return None
+        message = self._message(update[kind], authenticity=authenticity)
+        self.log[_log_key(message)] = message.to_dict()
+        return Event(
+            kind="message.updated" if kind.startswith("edited") else "message.created",
+            channel=NAME,
+            delivery_id=f"telegram:update-{update_id}",
+            cursor=str(update_id + 1),
+            message=message,
+            payload={"update_id": update_id, "type": kind},
+        )
+
+    def verify(self, headers: Mapping[str, str], body: bytes) -> Authenticity:
+        """``platform`` when the delivery carries the webhook's ``secret_token``, ``forged`` otherwise.
+
+        The token is a shared secret, not a signature of the body: it shows the request
+        came from Telegram (over the TLS the webhook URL must use), which makes its sender
+        as trustworthy as an update pulled with ``getUpdates``. Without a configured
+        ``webhook_secret`` this raises rather than believe anything.
+        """
+        secret = require(NAME, "webhook_secret", run=self.run)
+        lowered = {str(k).lower(): str(v) for k, v in headers.items()}
+        received = lowered.get(SECRET_TOKEN_HEADER.lower(), "")
+        evidence: dict[str, Any] = {}
+        try:
+            update_id = json.loads(body).get("update_id")
+        except (ValueError, AttributeError, UnicodeDecodeError):
+            update_id = None
+        if isinstance(update_id, int):
+            evidence["update_id"] = update_id
+        if (
+            received
+            and received.isascii()
+            and hmac.compare_digest(received.encode(), secret.encode())
+        ):
+            return Authenticity(
+                grade=Grade.PLATFORM,
+                evidence={
+                    **evidence,
+                    "secret_token": "valid",
+                    **_PLATFORM_WEBHOOK.evidence,
+                },
+            )
+        return Authenticity(
+            grade=Grade.FORGED,
+            evidence={**evidence, "secret_token": "mismatch" if received else "missing"},
+        )
+
+    def receive(self, headers: Mapping[str, str], body: bytes) -> list[Event]:
+        """The events a webhook delivery carries, logged as polling would log them; only a verified delivery is believed.
+
+        Raises ``ChannelError`` of kind ``permission`` for a delivery :meth:`verify` grades
+        ``forged`` (nothing is logged), and of kind ``validation`` for a body that is not an
+        update.
+        """
+        graded = self.verify(headers, body)
+        if graded.grade is not Grade.PLATFORM:
+            raise ChannelError(
+                f"the webhook delivery's secret_token is {graded.evidence['secret_token']}",
+                kind="permission",
+            )
+        try:
+            update = json.loads(body)
+            int(update["update_id"])
+        except (ValueError, TypeError, KeyError, UnicodeDecodeError):
+            raise ChannelError(
+                "a webhook delivery is one JSON update with an update_id",
+                kind="validation",
+            ) from None
+        event = self._logged_event(update, _PLATFORM_WEBHOOK)
+        return [] if event is None else [event]
 
     def read(self, ref: ConversationRef, *, since=None, limit=None) -> list[Message]:
         """What the log holds for a chat or topic, oldest first."""
@@ -635,3 +726,68 @@ class Telegram:
             account=self._account(result),
             plan=plan,
         )
+
+
+async def _respond(send, status: int) -> None:
+    await send(
+        {
+            "type": "http.response.start",
+            "status": status,
+            "headers": [(b"content-length", b"0")],
+        }
+    )
+    await send({"type": "http.response.body", "body": b""})
+
+
+def webhook_app(
+    *, telegram: Telegram | None = None, max_body: int = MAX_WEBHOOK_BODY
+) -> Callable[..., Any]:
+    """An ASGI app for Telegram's webhook: each POST is verified, then logged as polling would log it.
+
+    It binds nothing itself. Run it on localhost behind your own TLS server, for example
+    ``uvicorn --factory correspond.channels.telegram:webhook_app --host 127.0.0.1``, and
+    register the public URL with ``setWebhook`` and the same ``secret_token``. Answers:
+    200 stored (or an update type not listened to), 401 without the right token (nothing
+    stored), 400 a body that is not an update, 405 not a POST, 413 a body over
+    ``max_body`` bytes, 503 no ``webhook_secret`` configured (nothing believed).
+    """
+    adapter = telegram or Telegram()
+
+    async def app(scope, receive, send):
+        if scope["type"] == "lifespan":
+            while True:
+                message = await receive()
+                if message["type"] == "lifespan.startup":
+                    await send({"type": "lifespan.startup.complete"})
+                elif message["type"] == "lifespan.shutdown":
+                    await send({"type": "lifespan.shutdown.complete"})
+                    return
+        if scope["type"] != "http":
+            return
+        if scope.get("method") != "POST":
+            return await _respond(send, 405)
+        chunks, size = [], 0
+        while True:
+            message = await receive()
+            if message["type"] == "http.disconnect":
+                return
+            chunk = message.get("body", b"") or b""
+            size += len(chunk)
+            if size > max_body:
+                return await _respond(send, 413)
+            chunks.append(chunk)
+            if not message.get("more_body", False):
+                break
+        headers = {
+            k.decode("latin-1"): v.decode("latin-1")
+            for k, v in scope.get("headers") or ()
+        }
+        try:
+            adapter.receive(headers, b"".join(chunks))
+        except MissingRequirement:  # no secret configured: believe nothing
+            return await _respond(send, 503)
+        except ChannelError as error:
+            return await _respond(send, 401 if error.kind == "permission" else 400)
+        await _respond(send, 200)
+
+    return app

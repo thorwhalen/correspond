@@ -417,3 +417,132 @@ def test_upload_failures_never_show_the_token(token):
     )
     assert not result.ok and result.error_kind == "validation"
     assert TOKEN not in result.error
+
+
+# ---------------------------------------------------- webhook delivery (#10)
+
+WEBHOOK_SECRET = "example-webhook-secret_1"
+SECRET_HEADER = "X-Telegram-Bot-Api-Secret-Token"
+
+
+@pytest.fixture
+def webhook_secret(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_TELEGRAM_WEBHOOK_SECRET", WEBHOOK_SECRET)
+
+
+def _update(update_id=31, **message):
+    return json.dumps(
+        {"update_id": update_id, "message": _message(9, **message)}
+    ).encode()
+
+
+def test_a_delivery_is_platform_graded_only_with_the_secret_token(webhook_secret):
+    telegram = Telegram(log={})
+    body = _update()
+    good = telegram.verify({SECRET_HEADER.lower(): WEBHOOK_SECRET}, body)
+    assert good.grade.value == "platform"
+    assert good.evidence["secret_token"] == "valid" and good.evidence["update_id"] == 31
+    wrong = telegram.verify({SECRET_HEADER: "not-the-secret"}, body)
+    assert wrong.grade.value == "forged" and wrong.evidence["secret_token"] == "mismatch"
+    missing = telegram.verify({}, body)
+    assert (
+        missing.grade.value == "forged" and missing.evidence["secret_token"] == "missing"
+    )
+    assert telegram.verify({SECRET_HEADER: "é"}, body).grade.value == "forged"
+    assert (
+        correspond.verify(
+            "telegram",
+            {SECRET_HEADER: WEBHOOK_SECRET},
+            body,
+            registry={"telegram": telegram},
+        ).grade.value
+        == "platform"
+    )
+
+
+def test_without_a_configured_secret_nothing_is_believed(monkeypatch):
+    monkeypatch.delenv("CORRESPOND_TELEGRAM_WEBHOOK_SECRET", raising=False)
+    monkeypatch.setenv("CORRESPOND_CONFIG", "/nonexistent/correspond.toml")
+    with pytest.raises(MissingRequirement):
+        Telegram(log={}, run=lambda *a, **k: None).verify({SECRET_HEADER: ""}, _update())
+
+
+def test_receive_logs_a_verified_update_as_polling_would(webhook_secret):
+    log = {}
+    events = Telegram(log=log).receive(
+        {SECRET_HEADER: WEBHOOK_SECRET}, _update(text="hi")
+    )
+    [event] = events
+    assert event.kind == "message.created" and event.delivery_id == "telegram:update-31"
+    assert (
+        event.message.text == "hi"
+        and event.message.authenticity.grade.value == "platform"
+    )
+    assert "webhook" in event.message.authenticity.evidence["attested_by"]
+    assert list(log) == ["-4001/9.json"]
+    with pytest.raises(ChannelError) as refused:
+        Telegram(log=log).receive(
+            {SECRET_HEADER: "nope"}, _update(update_id=32, text="x")
+        )
+    assert refused.value.kind == "permission" and list(log) == ["-4001/9.json"]
+    with pytest.raises(ChannelError) as malformed:
+        Telegram(log=log).receive({SECRET_HEADER: WEBHOOK_SECRET}, b"not json")
+    assert malformed.value.kind == "validation"
+
+
+def _post(app, body, headers=None, method="POST"):
+    import asyncio
+
+    scope = {
+        "type": "http",
+        "method": method,
+        "path": "/",
+        "headers": [(k.lower().encode(), v.encode()) for k, v in (headers or {}).items()],
+    }
+    incoming = [{"type": "http.request", "body": body, "more_body": False}]
+    sent = []
+
+    async def receive():
+        return incoming.pop(0) if incoming else {"type": "http.disconnect"}
+
+    async def send(message):
+        sent.append(message)
+
+    asyncio.run(app(scope, receive, send))
+    return sent[0]["status"]
+
+
+def test_the_webhook_app_stores_only_verified_updates(webhook_secret):
+    from correspond.channels.telegram import webhook_app
+
+    log = {}
+    app = webhook_app(telegram=Telegram(log=log))
+    assert _post(app, _update(), {SECRET_HEADER: WEBHOOK_SECRET}) == 200
+    assert list(log) == ["-4001/9.json"]
+    assert _post(app, _update(update_id=40), {SECRET_HEADER: "nope"}) == 401
+    assert _post(app, _update(update_id=41)) == 401
+    assert _post(app, b"{", {SECRET_HEADER: WEBHOOK_SECRET}) == 400
+    assert _post(app, b"", {SECRET_HEADER: WEBHOOK_SECRET}, method="GET") == 405
+    big = b"{" + b" " * (2 * 1024 * 1024) + b"}"
+    assert _post(app, big, {SECRET_HEADER: WEBHOOK_SECRET}) == 413
+    assert list(log) == ["-4001/9.json"]
+
+
+def test_the_webhook_app_fails_closed_without_a_secret(monkeypatch):
+    from correspond.channels.telegram import webhook_app
+
+    monkeypatch.delenv("CORRESPOND_TELEGRAM_WEBHOOK_SECRET", raising=False)
+    monkeypatch.setenv("CORRESPOND_CONFIG", "/nonexistent/correspond.toml")
+    log = {}
+    app = webhook_app(telegram=Telegram(log=log, run=lambda *a, **k: None))
+    assert _post(app, _update(), {SECRET_HEADER: ""}) == 503 and log == {}
+
+
+def test_capabilities_and_requirements_name_the_webhook():
+    caps = Telegram().capabilities
+    assert caps.verify.value == "full" and "webhook" in caps.listen_modes
+    assert {g.value for g in caps.grades} == {"platform", "forged"}
+    from correspond.registry import info
+
+    keys = {s.key for s in info("telegram").settings}
+    assert "webhook_secret" in keys
