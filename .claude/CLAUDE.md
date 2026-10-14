@@ -1,5 +1,5 @@
 Seams: (1) adapters `registry=` = lazily built `xdol.Registry` of stdlib adapters · (2) platform transport `run=` / `http=` / `imap=` + `smtp=` = subprocess / urllib / imaplib + smtplib · (3) state `cursors=` / `store=` / `blobs=` = dol files under the data root · (4) last routing rule `classifier=` = none (the rule chain decides) · (5) outbound check `before_send=` = the config's `module:attr`, else `correspond.outbound:notice` (the audience in the plan).
-Surfaces planned for v0.1: CLI (`cw` over `correspond.tools`), shipped `correspond` skill, MCP over stdio (`py2mcp` string refs, `[mcp]` extra). Asked, not built: Claude Code channel server, remote MCP / HTTP.
+Surfaces planned for v0.1: CLI (`cw` over `correspond.tools`), shipped `correspond` skill, MCP over stdio (`py2mcp` string refs, `[mcp]` extra). Built since: Claude Code channel server (`correspond.channel`, `correspond-channel`, issue #6). Asked, not built: remote MCP / HTTP.
 Rationale and the provisional defaults: the "v0.1 architecture: seams and surfaces" Discussion.
 
 # correspond — dev map
@@ -15,7 +15,7 @@ Rationale and the provisional defaults: the "v0.1 architecture: seams and surfac
 | 5 | the check every write runs before it leaves: `before_send=` on `send` / `edit` / `react` / `upload` / `label` / `unlabel` / `close` / `reopen`, called as `(ref, draft, audience, *, operation, dry_run, message_id)` (added by liaise discussion 32, slice C3) | the config's top-level `before_send = "module:attr"`, imported lazily; unset → `correspond.outbound:notice` (lets it go, the audience in the plan); unloadable → every write stops (`before_send_unavailable`) | `liaise.vet:before_send` (liaise slice L4) |
 
 ```
-Surfaces for v0.1: CLI + shipped skill + MCP stdio (write tools only with --allow-send); Claude Code channel server and remote MCP/HTTP asked, not built
+Surfaces for v0.1: CLI + shipped skill + MCP stdio (write tools only with --allow-send); since then the Claude Code channel server (correspond-channel: same tools, sender allowlist, grade-gated permission relay); remote MCP/HTTP asked, not built
 NOT seams: per-channel ref grammar, authenticity-grade and error-kind vocabularies, the operation names (audience joined them by design: liaise discussion 32), the built-in channel table format, config file format and env var names, data-root layout, web inbox payload and identity-token format, rate and size defaults (config values), CLI rendering, dry-run plan format
 ```
 

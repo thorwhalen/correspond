@@ -36,9 +36,11 @@ Issues = "https://github.com/thorwhalen/correspond/issues"
 [project.scripts]
 correspond = "correspond.__main__:main"
 correspond-mcp = "correspond.mcp:main"
+correspond-channel = "correspond.channel:main"
 
 [project.optional-dependencies]
-# MCP over stdio is an optional surface, so its dependency is an extra.
+# MCP over stdio (correspond-mcp) and the Claude Code channel (correspond-channel) are
+# optional surfaces, so their dependency is an extra.
 mcp = [
     "py2mcp",
 ]
