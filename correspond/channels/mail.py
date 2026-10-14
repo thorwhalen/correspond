@@ -5,6 +5,16 @@ References:
 - ``email:``: the whole folder (``INBOX`` unless configured), which is what ``listen`` watches.
 - ``email:<address>``: the correspondence with one address: its messages in the folder,
   and sends to it.
+- ``email:<sender>,<sender>``: messages from any of several senders, where a sender is an
+  address or a whole domain (``@example.org``). Matching is exact: the server's ``FROM``
+  search is a substring match, so what it returns is filtered again.
+- ``#<folder>`` after any of these names the folder (a Gmail label is one) for this
+  reference only: ``email:#Topics/AI``, ``email:@example.org#Topics/AI``. Whitespace, control
+  characters and ``%`` in a folder name are percent-encoded (``email:#Read%20Later``).
+  Without it the configured folder is used. Each reference keeps its own listen cursor.
+
+Only a single address can be written to; a folder in its reference changes nothing about
+the send.
 
 Message ids are ``Message-ID`` headers, angle brackets included. A draft's ``reply_to`` is
 one, and the send carries ``In-Reply-To`` and ``References``. Reading never marks a message
@@ -19,6 +29,8 @@ sender (not every server strips those), so a result recorded lower down fails sa
 
 >>> Email().parse_ref("Ada@Example.org").encoded
 'email:ada@example.org'
+>>> Email().parse_ref("news@example.net,@Example.org#Topics/AI").encoded
+'email:@example.org,news@example.net#Topics/AI'
 """
 
 from __future__ import annotations
@@ -39,6 +51,7 @@ from email.parser import BytesParser
 from email.utils import formatdate, getaddresses, make_msgid, parsedate_to_datetime
 from html.parser import HTMLParser
 from typing import Any
+from urllib.parse import unquote
 
 from correspond.errors import ChannelError, InvalidRef
 from correspond.model import (
@@ -69,10 +82,18 @@ ADDRESS_RE = re.compile(
     r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$"
 )
 MESSAGE_ID_RE = re.compile(r"^<[^<>\s]+@[^<>\s]+>$")
+DOMAIN_RE = re.compile(
+    r"^@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$"
+)
+#: What a folder name cannot carry as is in a reference: whitespace, control characters, ``%``.
+_FOLDER_ESCAPED = re.compile(r"[\s\x00-\x1f\x7f%]")
 #: Words that, as a part of an address's local part (``dev-team@``), mark it as a possible mailing list.
 LIST_LOCAL_PARTS = ("list", "all", "team", "dev", "announce", "info")
 _LOCAL_PART_SPLIT = re.compile(r"[-._+]")
 FETCH_BATCH = 50
+#: The largest file an upload emails: most providers cap a message near 25 MB, and base64
+#: makes a file a third larger.
+MAX_UPLOAD_BYTES = 18 * 1024 * 1024
 DEFAULT_READ_LIMIT = 50
 LISTEN_LOOKBACK = timedelta(days=1)
 TIMEOUT_S = 60
@@ -128,6 +149,80 @@ def _list_reason(address: str, lists: set[str]) -> str | None:
     words = set(_LOCAL_PART_SPLIT.split(address.rpartition("@")[0]))
     found = [w for w in LIST_LOCAL_PARTS if w in words]
     return f"its local part names a group ({found[0]!r})" if found else None
+
+
+def _folder_id(name: str) -> str:
+    """A folder name as a reference spells it: whitespace, control characters and ``%`` percent-encoded.
+
+    >>> _folder_id("Read Later")
+    'Read%20Later'
+    >>> unquote(_folder_id("100% done")) == "100% done"
+    True
+    """
+    return _FOLDER_ESCAPED.sub(
+        lambda m: "".join(f"%{b:02X}" for b in m.group().encode()), name
+    )
+
+
+def _parts(id: str) -> tuple[tuple[str, ...], str | None]:
+    """The senders (sorted, lower-cased, addresses and ``@domain``s) and the folder an email reference id names.
+
+    The folder is ``None`` when the reference names none (the configured one is then used).
+
+    >>> _parts("Ada@Example.org,@example.net#Topics/AI")
+    (('@example.net', 'ada@example.org'), 'Topics/AI')
+    >>> _parts("#inbox")
+    ((), 'INBOX')
+    >>> _parts("")
+    ((), None)
+    """
+    if ADDRESS_RE.match(id):  # one address, even one whose local part holds '#'
+        senders_text, folder = id, None
+    else:
+        senders_text, hash_mark, folder_text = id.partition("#")
+        folder = unquote(folder_text) if hash_mark else None
+        if folder is not None and not folder:
+            raise InvalidRef(f"email:{id} names an empty folder: write the name after #")
+        if folder is not None and folder.upper() == "INBOX":
+            folder = "INBOX"  # the one name IMAP treats case-insensitively
+    senders = []
+    for sender in senders_text.split(",") if senders_text else ():
+        sender = sender.strip().lower()
+        if not (ADDRESS_RE.match(sender) or DOMAIN_RE.match(sender)):
+            raise InvalidRef(
+                "email references are email: (the folder), email:<address>, several senders "
+                "separated by commas (an address or @domain each), and an optional "
+                f"#<folder> after any of them; not email:{id}"
+            )
+        senders.append(sender)
+    return tuple(sorted(set(senders))), folder
+
+
+def _from_criteria(senders: tuple[str, ...]) -> list[str]:
+    """IMAP search criteria matching mail from any of ``senders`` (a substring match on the server).
+
+    >>> _from_criteria(("a@example.org", "@example.net"))
+    ['OR', 'FROM', '"a@example.org"', 'FROM', '"@example.net"']
+    """
+    criteria = ["OR"] * (len(senders) - 1)
+    for sender in senders:
+        criteria += ["FROM", _quote(sender)]
+    return criteria
+
+
+def _sent_by(address: str, senders: tuple[str, ...]) -> bool:
+    """Whether ``address`` is one of ``senders`` exactly, or in one of their ``@domain``s.
+
+    >>> _sent_by("nada@example.org", ("ada@example.org",))
+    False
+    >>> _sent_by("ada@example.org", ("@example.org",)), _sent_by("a@example.org.example", ("@example.org",))
+    (True, False)
+    """
+    address = address.lower()
+    return any(
+        address.rpartition("@")[2] == s[1:] if s.startswith("@") else address == s
+        for s in senders
+    )
 
 
 def _last(response: Any) -> str | None:
@@ -300,6 +395,7 @@ class Email:
             read=Support.FULL,
             listen=Support.FULL,
             send=Support.FULL,
+            upload=Support.PARTIAL,
             audience=Support.FULL,
             initiate=Support.FULL,
             reply=Support.FULL,
@@ -308,6 +404,7 @@ class Email:
             notify=Support.FULL,
             history_depth=HistoryDepth.FULL,
             listen_modes=("poll",),
+            max_upload_bytes=MAX_UPLOAD_BYTES,
             grades=(Grade.DOMAIN, Grade.CLAIMED),
             formats=("plain", "html"),
             native_fields=(
@@ -323,24 +420,41 @@ class Email:
                 "list_post",
             ),
             notes=(
-                "read and listen look at one folder (INBOX by default); your own sent mail is in another",
+                "read and listen look at one folder: the configured one (INBOX by default), or the one a reference names after # (email:#Topics/AI; a Gmail label is a folder); your own sent mail is in another",
+                "a reference can name several senders, addresses or @domains, separated by commas; they match exactly, and only a single address can be written to",
+                "folder names are sent to the server as given: a non-ASCII name (modified UTF-7 on the wire) is not supported",
                 "listen polls by UID; IMAP IDLE is not used",
                 "priority sets Importance and X-Priority, which mail clients may ignore",
                 "native html is the HTML part when plain text won as the body (an HTML body is in body only); list_id, list_unsubscribe and list_post are the List-* headers when present",
                 "audience: the address plus cc and bcc; a list-shaped address has members nobody can list",
+                "upload emails one file to one address as its own message, the file name as the subject, with no text; a provider may refuse a message under 18 MB",
             ),
         )
 
     def parse_ref(self, id: str) -> ConversationRef:
-        """``""`` for the folder, or an address."""
-        folder = ConversationRef(channel=NAME, id="", kind="folder")
-        if id == "":
+        """``""`` for the folder, an address, or several senders; each optionally followed by ``#<folder>``."""
+        senders, named = _parts(id)
+        suffix = "" if named is None else f"#{_folder_id(named)}"
+        folder = ConversationRef(channel=NAME, id=suffix, kind="folder")
+        if not senders:
             return folder
-        if not ADDRESS_RE.match(id):
-            raise InvalidRef(
-                f"email references are email: (the folder) or email:<address>, not email:{id}"
+        one = len(senders) == 1 and not senders[0].startswith("@")
+        return ConversationRef(
+            channel=NAME,
+            id=",".join(senders) + suffix,
+            kind="address" if one else "senders",
+            parent=folder,
+        )
+
+    def _address(self, ref: ConversationRef) -> str:
+        """The one address a write goes to; anything else is a validation error."""
+        senders, _ = _parts(ref.id)
+        if len(senders) != 1 or senders[0].startswith("@"):
+            raise ChannelError(
+                f"send to one address: email:<address>, not {ref.encoded}",
+                kind="validation",
             )
-        return ConversationRef(channel=NAME, id=id.lower(), kind="address", parent=folder)
+        return senders[0]
 
     # ---------------------------------------------------------------- connections
 
@@ -503,7 +617,14 @@ class Email:
         return found
 
     def _message(
-        self, uid: int, raw: bytes, *, folder: str, user: str, trusted: set[str]
+        self,
+        uid: int,
+        raw: bytes,
+        *,
+        folder: str,
+        user: str,
+        trusted: set[str],
+        suffix: str = "",
     ) -> Message:
         parsed: EmailMessage = BytesParser(policy=policy.default).parsebytes(raw)
         senders = _addresses(parsed, "From")
@@ -512,11 +633,12 @@ class Email:
         cc = [a for _, a in _addresses(parsed, "Cc")]
         is_self = bool(user) and address == user.lower()
         counterpart = to[0] if is_self and to else address
-        conversation = (
-            self.parse_ref(counterpart)
-            if counterpart and ADDRESS_RE.match(counterpart)
-            else self.parse_ref("")
-        )
+        conversation = self.parse_ref(suffix)
+        if counterpart and ADDRESS_RE.match(counterpart):
+            try:  # in the folder it was read from, when the reference named one
+                conversation = self.parse_ref(counterpart + suffix)
+            except InvalidRef:  # an address holding '#' cannot carry a folder
+                conversation = self.parse_ref(counterpart)
         message_id = (
             str(parsed.get("Message-ID") or "").strip()
             or f"<uid-{uid}@correspond.invalid>"
@@ -577,11 +699,17 @@ class Email:
             },
         )
 
-    def _context(self) -> tuple[str, str, set[str]]:
-        user = value(NAME, "user") or ""
+    def _context(
+        self, ref: ConversationRef
+    ) -> tuple[tuple[str, ...], str, str, str, set[str]]:
+        """The senders, folder, conversation suffix, user and trusted servers for reading ``ref``."""
+        senders, named = _parts(ref.id)
+        suffix = "" if named is None else f"#{_folder_id(named)}"
         return (
-            value(NAME, "folder") or "INBOX",
-            user,
+            senders,
+            named or value(NAME, "folder") or "INBOX",
+            suffix,
+            value(NAME, "user") or "",
             _csv(value(NAME, "trusted_authserv_ids")),
         )
 
@@ -592,9 +720,13 @@ class Email:
         since: datetime | None = None,
         limit: int | None = None,
     ) -> list[Message]:
-        """Messages in the folder (from ``ref``'s address, if it has one), oldest first; never marked seen."""
-        folder, user, trusted = self._context()
-        criteria = ["FROM", _quote(ref.id)] if ref.id else ["ALL"]
+        """Messages in the folder (from ``ref``'s senders, if it names any), oldest first; never marked seen.
+
+        The newest ``limit`` messages the server's ``FROM`` search finds are fetched, then
+        those not sent by one of the senders exactly are dropped, so fewer can come back.
+        """
+        senders, folder, suffix, user, trusted = self._context(ref)
+        criteria = _from_criteria(senders) or ["ALL"]
         if since is not None:
             criteria += ["SINCE", _imap_date(since)]
         with self._imap() as conn:
@@ -602,16 +734,20 @@ class Email:
             uids = self._search(conn, criteria)[-(limit or DEFAULT_READ_LIMIT) :]
             fetched = self._fetch(conn, uids)
         messages = [
-            self._message(uid, raw, folder=folder, user=user, trusted=trusted)
+            self._message(
+                uid, raw, folder=folder, user=user, trusted=trusted, suffix=suffix
+            )
             for uid, raw in fetched
         ]
+        if senders:
+            messages = [m for m in messages if _sent_by(m.author.native_id, senders)]
         return window(messages, since=since, limit=limit)
 
     def poll(
         self, ref: ConversationRef, *, cursor: str | None = None, limit: int | None = None
     ):
         """New messages since ``cursor`` (``<uidvalidity>:<uid>``); a first poll, or a changed UIDVALIDITY, looks back a day."""
-        folder, user, trusted = self._context()
+        senders, folder, suffix, user, trusted = self._context(ref)
         seen_validity, _, seen_uid = (cursor or "").partition(":")
         with self._imap() as conn:
             validity, uidnext = self._select(conn, folder)
@@ -623,8 +759,7 @@ class Email:
                     "SINCE",
                     _imap_date(datetime.now(timezone.utc) - LISTEN_LOOKBACK),
                 ]
-            if ref.id:
-                criteria += ["FROM", _quote(ref.id)]
+            criteria += _from_criteria(senders)
             # "n:*" always includes the highest UID, even when it is below n.
             uids = [
                 u for u in self._search(conn, criteria) if not resume or u > int(seen_uid)
@@ -639,12 +774,16 @@ class Email:
                 channel=NAME,
                 delivery_id=f"email:{folder}:{validity}:{uid}",
                 cursor=f"{validity}:{uid}",
-                message=self._message(
-                    uid, raw, folder=folder, user=user, trusted=trusted
-                ),
+                message=message,
                 payload={"folder": folder, "uid": uid},
             )
             for uid, raw in fetched
+            for message in [
+                self._message(
+                    uid, raw, folder=folder, user=user, trusted=trusted, suffix=suffix
+                )
+            ]
+            if not senders or _sent_by(message.author.native_id, senders)
         ]
         final = None
         if not truncated:
@@ -666,12 +805,19 @@ class Email:
         class of its own, so moving it to Cc changes the hash. Every email is pushed to its
         recipients, can be forwarded, and cannot be recalled.
         """
-        if not ref.id:
+        senders, _ = _parts(ref.id)
+        if not senders:
             return Audience.unknown(
                 ref.encoded, "email: is the folder, not a correspondence: name an address"
             )
+        if len(senders) > 1 or senders[0].startswith("@"):
+            return Audience.unknown(
+                ref.encoded,
+                "several senders or a domain are read together, not written to: name one address",
+            )
+        to = senders[0]
         if draft is not None and draft.notify:
-            draft, _ = _with_notify(ref.id, draft)  # the Cc a send will really carry
+            draft, _ = _with_notify(to, draft)  # the Cc a send will really carry
         copies = {"cc": draft.cc if draft else (), "bcc": draft.bcc if draft else ()}
         malformed = [
             a for a in (*copies["cc"], *copies["bcc"]) if not ADDRESS_RE.match(a)
@@ -681,11 +827,10 @@ class Email:
                 ref.encoded, f"not an email address: {', '.join(malformed)}"
             )
         # Exact addresses: a local part may be case-sensitive, and SMTP receives each as given.
-        recipients = list(dict.fromkeys((ref.id, *copies["cc"], *copies["bcc"])))
+        recipients = list(dict.fromkeys((to, *copies["cc"], *copies["bcc"])))
         own, lists = _csv(value(NAME, "own_domains")), _csv(value(NAME, "lists"))
         evidence = [
-            f"to {ref.id}"
-            + "".join(f"; {k} {', '.join(v)}" for k, v in copies.items() if v)
+            f"to {to}" + "".join(f"; {k} {', '.join(v)}" for k, v in copies.items() if v)
         ]
         evidence.append(
             f"own domains: {', '.join(sorted(own))}"
@@ -737,7 +882,9 @@ class Email:
                 f"notify on email takes addresses, not: {', '.join(malformed)}",
                 kind="validation",
             )
-        return _with_notify(ref.id or "", draft)[0]
+        senders, _ = _parts(ref.id)
+        one = len(senders) == 1 and not senders[0].startswith("@")
+        return _with_notify(senders[0] if one else "", draft)[0]
 
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
@@ -748,8 +895,7 @@ class Email:
         added to Cc (and so leaves Bcc, which would hide it); the plan lists it under
         ``cc_added``.
         """
-        if not ref.id:
-            raise ChannelError("send to an address: email:<address>", kind="validation")
+        to = self._address(ref)
         cc_before = draft.cc
         draft = self.prepare(ref, draft)
         cc_added = draft.cc[len(cc_before) :]
@@ -768,7 +914,7 @@ class Email:
         message = EmailMessage()
         try:
             message["From"] = sender
-            message["To"] = ref.id
+            message["To"] = to
             if draft.cc:
                 message["Cc"] = ", ".join(draft.cc)
             if draft.title:
@@ -790,7 +936,7 @@ class Email:
         plan = {
             "action": "send an email",
             "from": sender,
-            "to": ref.id,
+            "to": to,
             "cc": ", ".join(draft.cc) or None,
             "bcc": ", ".join(draft.bcc) or None,
             "subject": draft.title,
@@ -807,13 +953,72 @@ class Email:
             )
         with self._smtp() as server:
             if draft.bcc:  # never in a header: only the envelope names them
-                server.send_message(message, to_addrs=[ref.id, *draft.cc, *draft.bcc])
+                server.send_message(message, to_addrs=[to, *draft.cc, *draft.bcc])
             else:
                 server.send_message(message)
         return SendResult(
             ok=True,
             channel=NAME,
             conversation=ref.encoded,
+            message_id=str(message["Message-ID"]),
+            account=Account(channel=NAME, id=user, acts_as="user"),
+            plan=plan,
+        )
+
+    def upload(
+        self,
+        ref: ConversationRef,
+        name: str,
+        data: bytes,
+        *,
+        media_type: str = "application/octet-stream",
+        dry_run: bool = False,
+    ) -> SendResult:
+        """Email one file to ``ref``'s address, as its own message with the file name as the subject. The plan names the file, never its bytes."""
+        to = self._address(ref)
+        maintype, _, subtype = media_type.partition("/")
+        user = value(NAME, "user") if dry_run else require(NAME, "user", run=self.run)
+        sender = value(NAME, "from_address") or user or "(not set)"
+        message = EmailMessage()
+        try:
+            message["From"] = sender
+            message["To"] = to
+            message["Subject"] = " ".join(name.split())
+            message["Date"] = formatdate(usegmt=True)
+            message["Message-ID"] = make_msgid(domain=sender.rpartition("@")[2] or None)
+            message.add_attachment(
+                bytes(data), maintype=maintype, subtype=subtype, filename=name
+            )
+        except (ValueError, TypeError) as error:
+            raise ChannelError(
+                f"the message could not be built: {error}", kind="validation"
+            ) from None
+        plan = {
+            "action": "email a file",
+            "from": sender,
+            "to": to,
+            "file": name,
+            "media_type": media_type,
+            "bytes": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "server": value(NAME, "smtp_host") or "(not set)",
+        }
+        if dry_run:
+            return SendResult(
+                ok=True,
+                channel=NAME,
+                conversation=ref.encoded,
+                operation="upload",
+                dry_run=True,
+                plan=plan,
+            )
+        with self._smtp() as server:
+            server.send_message(message)
+        return SendResult(
+            ok=True,
+            channel=NAME,
+            conversation=ref.encoded,
+            operation="upload",
             message_id=str(message["Message-ID"]),
             account=Account(channel=NAME, id=user, acts_as="user"),
             plan=plan,

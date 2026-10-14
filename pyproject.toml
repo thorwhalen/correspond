@@ -14,6 +14,21 @@ keywords = ["channels", "messaging", "notifications", "github", "email", "telegr
 authors = [
     { name = "Thor Whalen" },
 ]
+license = "MIT"
+license-files = ["LICENSE"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Communications",
+    "Topic :: Communications :: Chat",
+    "Topic :: Communications :: Email",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 # `xdol` provides the channel registry; `dol` the file stores under the data root (both
 # imported on first use, not at `import correspond`); `cw` builds the CLI from the same
 # functions `correspond.tools` exposes (imported only by `__main__`). Every v0.1 adapter
@@ -23,9 +38,6 @@ dependencies = [
     "dol",
     "xdol",
 ]
-
-[project.license]
-text = "mit"
 
 [project.urls]
 Homepage = "https://github.com/thorwhalen/correspond"
@@ -125,6 +137,11 @@ test = []
 post_test = []
 lint = []
 format = []
+
+# The MCP surfaces' tests (the channel server on the wire, through FastMCP internals)
+# are skipped without the mcp extra, so CI installs it.
+[tool.wads.ci.install]
+extras = "mcp"
 
 [tool.wads.ci.env]
 required_envvars = []

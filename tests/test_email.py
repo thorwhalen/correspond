@@ -376,7 +376,11 @@ def _read_one(monkeypatch, raw):
 def test_a_multipart_newsletter_keeps_the_html_part_and_list_headers(monkeypatch):
     message = _read_one(
         monkeypatch,
-        _mail(body="Issue 7: see the web version", html=_NEWSLETTER_HTML, headers=_LIST_HEADERS),
+        _mail(
+            body="Issue 7: see the web version",
+            html=_NEWSLETTER_HTML,
+            headers=_LIST_HEADERS,
+        ),
     )
     assert message.body_format == "plain" and message.text.startswith("Issue 7")
     assert "https://example.org/item-1" in message.native["html"]
@@ -411,9 +415,7 @@ def test_plain_mail_without_list_headers_adds_no_keys(monkeypatch):
 
 
 def test_newsletter_native_keys_are_declared(monkeypatch):
-    message = _read_one(
-        monkeypatch, _mail(html=_NEWSLETTER_HTML, headers=_LIST_HEADERS)
-    )
+    message = _read_one(monkeypatch, _mail(html=_NEWSLETTER_HTML, headers=_LIST_HEADERS))
     assert set(message.native) <= set(Email().capabilities.native_fields)
 
 
@@ -427,3 +429,262 @@ def test_folded_list_headers_are_unfolded(monkeypatch):
     assert message.native["list_unsubscribe"] == (
         "<https://example.org/u>, <mailto:unsub@example.org>"
     )
+
+
+# ------------------------------------------------- per-call folder and several senders (#39)
+
+
+class FolderImap(FakeImap):
+    """A mailbox with several folders, searched the way a real server searches.
+
+    ``FROM`` is a substring match, as in IMAP, and ``OR`` nests, so a test sees what an
+    adapter that trusts the server's ``FROM`` would wrongly return.
+    """
+
+    def __init__(self, folders, *, validity="42"):
+        super().__init__({}, validity=validity)
+        self.folders = {name: dict(messages) for name, messages in folders.items()}
+        self.selected = []
+
+    def select(self, mailbox, readonly=False):
+        self.commands.append(("SELECT", mailbox, readonly))
+        name = mailbox[1:-1].replace('\\"', '"').replace("\\\\", "\\")
+        if name not in self.folders:
+            return "NO", [b"no such folder"]
+        self.selected.append(name)
+        self.messages = self.folders[name]
+        return "OK", [str(len(self.messages)).encode()]
+
+    def _from(self, uid):
+        parsed = BytesParser(policy=policy.default).parsebytes(self.messages[uid])
+        return str(parsed["From"]).lower()
+
+    def _criterion(self, tokens, index):
+        token = tokens[index]
+        if token == "OR":
+            left, index = self._criterion(tokens, index + 1)
+            right, index = self._criterion(tokens, index)
+            return (lambda u: left(u) or right(u)), index
+        if token == "FROM":
+            needle = tokens[index + 1].strip('"').lower()
+            return (lambda u: needle in self._from(u)), index + 2
+        if token == "SINCE":
+            return (lambda u: True), index + 2
+        if token == "UID":
+            start = int(tokens[index + 1].split(":")[0])
+            return (lambda u: u >= start), index + 2
+        if token == "ALL":
+            return (lambda u: True), index + 1
+        raise AssertionError(token)
+
+    def uid(self, command, *args):
+        if command != "SEARCH":
+            return super().uid(command, *args)
+        self.commands.append((command, *args))
+        tokens, index, tests = list(args), 0, []
+        while index < len(tokens):
+            test, index = self._criterion(tokens, index)
+            tests.append(test)
+        uids = [u for u in sorted(self.messages) if all(t(u) for t in tests)]
+        return "OK", [" ".join(map(str, uids)).encode()]
+
+
+@pytest.fixture
+def folders(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    return FolderImap(
+        {
+            "INBOX": {1: _mail()},
+            "Topics/AI": {
+                1: _mail(sender="Ada <ada@example.org>", message_id="<ai1@example.org>"),
+                2: _mail(sender="news@example.net", message_id="<ai2@example.net>"),
+                3: _mail(sender="nada@example.org", message_id="<ai3@example.org>"),
+                4: _mail(sender="bot@example.org.example", message_id="<ai4@example>"),
+            },
+            "Topics/Space": {
+                7: _mail(sender="grace@example.org", message_id="<sp7@example.org>"),
+            },
+            "Read Later": {
+                9: _mail(sender="ada@example.org", message_id="<rl9@example.org>"),
+            },
+        }
+    )
+
+
+def test_two_reads_in_one_process_read_two_folders_with_since(folders):
+    registry = _registry(folders)
+    ai = correspond.read(
+        "email:#Topics/AI", since="2026-09-01T00:00:00Z", registry=registry
+    )
+    space = correspond.read(
+        "email:#Topics/Space", since="2026-09-01T00:00:00Z", registry=registry
+    )
+    assert [m.id for m in ai] == [
+        "<ai1@example.org>",
+        "<ai2@example.net>",
+        "<ai3@example.org>",
+        "<ai4@example>",
+    ]
+    assert [m.id for m in space] == ["<sp7@example.org>"]
+    assert folders.selected == ["Topics/AI", "Topics/Space"]
+    assert {m.native["folder"] for m in ai} == {"Topics/AI"}
+    searches = [c for c in folders.commands if c[0] == "SEARCH"]
+    assert all(c[1:] == ("ALL", "SINCE", "01-Sep-2026") for c in searches)
+    assert correspond.read("email:", registry=registry)[0].native["folder"] == "INBOX", (
+        "no folder in the reference is still the configured one"
+    )
+
+
+def test_a_message_read_from_a_named_folder_points_back_into_it(folders):
+    registry = _registry(folders)
+    [message] = correspond.read("email:ada@example.org#Topics/AI", registry=registry)
+    assert message.conversation.encoded == "email:ada@example.org#Topics/AI"
+    assert message.conversation.parent.encoded == "email:#Topics/AI"
+    again = correspond.read(message.conversation, registry=registry)
+    assert [m.id for m in again] == [message.id]
+
+
+def test_several_senders_and_a_domain_match_exact_addresses_only(folders):
+    registry = _registry(folders)
+    several = correspond.read(
+        "email:news@example.net,ada@example.org#Topics/AI", registry=registry
+    )
+    assert [m.id for m in several] == ["<ai1@example.org>", "<ai2@example.net>"], (
+        "nada@ contains ada@ but is not ada@"
+    )
+    domain = correspond.read("email:@example.org#Topics/AI", registry=registry)
+    assert [m.id for m in domain] == ["<ai1@example.org>", "<ai3@example.org>"], (
+        "@example.org.example is another domain"
+    )
+    one = correspond.read("email:ada@example.org#Topics/AI", registry=registry)
+    assert [m.id for m in one] == ["<ai1@example.org>"]
+    search = [c for c in folders.commands if c[0] == "SEARCH"][0]
+    assert search[1:] == (
+        "OR",
+        "FROM",
+        '"ada@example.org"',
+        "FROM",
+        '"news@example.net"',
+    )
+
+
+def test_listening_to_a_named_folder_keeps_its_own_cursor(folders):
+    registry, cursors = _registry(folders), {}
+    events = list(
+        correspond.listen(
+            "email:@example.org#Topics/AI", cursors=cursors, registry=registry
+        )
+    )
+    assert [e.message.id for e in events] == ["<ai1@example.org>", "<ai3@example.org>"]
+    assert {e.delivery_id for e in events} == {
+        "email:Topics/AI:42:1",
+        "email:Topics/AI:42:3",
+    }
+    list(correspond.listen("email:", cursors=cursors, registry=registry))
+    assert cursors == {"email:@example.org#Topics/AI": "42:4", "email:": "42:1"}
+
+
+def test_folder_references_are_canonical_and_round_trip():
+    email = Email()
+    assert email.parse_ref("#inbox").encoded == "email:#INBOX"
+    assert email.parse_ref("#Topics/AI").kind == "folder"
+    several = email.parse_ref("Ada@Example.org,@EXAMPLE.net,ada@example.org#Topics/AI")
+    assert several.encoded == "email:@example.net,ada@example.org#Topics/AI"
+    assert several.kind == "senders" and several.parent.encoded == "email:#Topics/AI"
+    spaced = email.parse_ref("#Read%20Later")
+    assert spaced.encoded == "email:#Read%20Later"
+    assert email.parse_ref(spaced.id) == spaced
+    assert email.parse_ref("a#b@example.org").encoded == "email:a#b@example.org", (
+        "an address whose local part holds # is still one address"
+    )
+    for bad in (
+        "ada",
+        "ada@example.org#",
+        "@",
+        "@example",
+        "ada@example.org,,x@example.org",
+    ):
+        with pytest.raises(correspond.errors.InvalidRef):
+            email.parse_ref(bad)
+
+
+def test_a_folder_with_a_space_is_selected_by_its_real_name(folders):
+    [message] = correspond.read("email:#Read%20Later", registry=_registry(folders))
+    assert message.id == "<rl9@example.org>"
+    assert ("SELECT", '"Read Later"', True) in folders.commands
+
+
+def test_sends_need_one_address_and_ignore_the_folder(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    registry = _registry(smtp=FakeSmtp())
+    plan = correspond.send(
+        "email:ada@example.org#Topics/AI", "Thanks.", dry_run=True, registry=registry
+    ).plan
+    assert plan["to"] == "ada@example.org"
+    for ref in ("email:ada@example.org,news@example.net", "email:@example.org"):
+        result = correspond.send(ref, "Thanks.", dry_run=True, registry=registry)
+        assert not result.ok and result.error_kind == "validation"
+        assert "one address" in result.error
+    audience = correspond.audience("email:@example.org", registry=registry)
+    assert audience.defaulted and audience.scope.value == "public"
+
+
+# ----------------------------------------------------------------- upload (#8)
+
+
+def test_upload_emails_the_file_as_an_attachment(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    smtp = FakeSmtp()
+    result = correspond.upload(
+        "email:ada@example.org#Topics/AI",
+        "screen.png",
+        PNG,
+        media_type="image/png",
+        registry=_registry(smtp=smtp),
+    )
+    assert result.ok and result.operation == "upload"
+    [message] = smtp.sent
+    assert message["To"] == "ada@example.org" and message["Subject"] == "screen.png"
+    assert result.message_id == message["Message-ID"]
+    [attachment] = list(message.iter_attachments())
+    assert attachment.get_filename() == "screen.png"
+    assert attachment.get_content_type() == "image/png"
+    assert attachment.get_payload(decode=True) == PNG
+    assert result.plan["action"] == "email a file" and result.plan["bytes"] == len(PNG)
+    assert "data" not in result.plan
+
+
+def test_email_uploads_are_validated_and_dry_runs_connect_to_nothing(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+
+    def refuse():
+        raise AssertionError("a dry run must not connect")
+
+    registry = {"email": Email(smtp=refuse)}
+    plan = correspond.upload(
+        "email:ada@example.org", "a.txt", b"x", dry_run=True, registry=registry
+    )
+    assert plan.ok and plan.dry_run and plan.plan["to"] == "ada@example.org"
+    for ref, name, data in (
+        ("email:@example.org", "a.txt", b"x"),
+        ("email:", "a.txt", b"x"),
+        ("email:ada@example.org", "", b"x"),
+        ("email:ada@example.org", "a\nb.txt", b"x"),
+        ("email:ada@example.org", "a.txt", b""),
+        (
+            "email:ada@example.org",
+            "a.txt",
+            b"x" * (Email().capabilities.max_upload_bytes + 1),
+        ),
+    ):
+        refused = correspond.upload(ref, name, data, dry_run=True, registry=registry)
+        assert not refused.ok and refused.error_kind == "validation", (ref, name)
+    bad_type = correspond.upload(
+        "email:ada@example.org",
+        "a.txt",
+        b"x",
+        media_type="text",
+        dry_run=True,
+        registry=registry,
+    )
+    assert not bad_type.ok and bad_type.error_kind == "validation"

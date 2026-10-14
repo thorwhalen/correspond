@@ -20,16 +20,18 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 | Channel | References | Operations | Built on |
 |---|---|---|---|
 | `github` | `github:owner/repo`, `github:owner/repo#12` | read, listen (issues and comments), send (opening an issue takes `native` labels, assignees, milestone), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
-| `email` | `email:` (the folder), `email:someone@example.org` | read, listen, send (with cc and bcc), audience | `imaplib`, `smtplib` |
+| `email` | `email:` (the folder), `email:someone@example.org`, `email:a@example.org,@example.net` (several senders or a domain, read only), each optionally followed by `#<folder>` (`email:#Topics/AI`) | read, listen, send (with cc and bcc), upload (a file as its own email), audience | `imaplib`, `smtplib` |
 | `ntfy` | `ntfy:` (the default topic), `ntfy:<topic>` | send, audience | `urllib` |
 | `macos` | `macos:` | send, audience | `terminal-notifier` or `osascript` |
-| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience | the Bot API over `urllib` |
+| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, upload (a document, up to 50 MB), audience | the Bot API over `urllib` |
 | `webinbox` | `webinbox:<site>` | read, listen, audience | the ASGI collector below, and `dol` stores |
 | `apprise` | `apprise:<alias>` | send, audience | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`) |
 
 Every v0.1 adapter uses the Python standard library; Apprise is the first extra, and registers only when it is installed. Discord ([#2](https://github.com/thorwhalen/correspond/issues/2)), Slack ([#3](https://github.com/thorwhalen/correspond/issues/3)) and Signal ([#4](https://github.com/thorwhalen/correspond/issues/4)) are planned as extras; `correspond channels` lists them with their issues.
 
 **Apprise** reaches the long tail (Discord and Slack webhooks, Matrix, Pushover, Gotify, SMS gateways...) for sending only. A reference names an *alias*, never an Apprise URL, because the URL carries the service's credentials. An alias is 1-64 of `a-z`, `0-9` and `-` (case folded; `all` and `always` are Apprise's match-everything tags and are refused). `apprise:<alias>` sends to the one URL in `CORRESPOND_APPRISE_URL_<ALIAS>` (upper case, `-` as `_`), else the Keychain item `correspond-apprise-url-<alias>`, else every URL tagged exactly `<alias>` in the local Apprise config file named by `config` under `[apprise]` (or `$CORRESPOND_APPRISE_CONFIG`); URLs tagged `always` are not added, so a mistyped alias reaches nobody. Apprise's own logging, which prints URLs, is silenced while correspond calls it. A plan names the service (the URL's scheme), never the URL. A partial delivery is `unconfirmed`, never retried blindly. A draft's priority is not sent (Apprise services take one in their URL, if at all).
+
+**Email folders and senders.** `#<folder>` at the end of an email reference reads that IMAP folder instead of the configured one (`CORRESPOND_EMAIL_FOLDER`, default `INBOX`), so one process can read several folders, and Gmail labels, which IMAP shows as folders. Whitespace and `%` in a folder name are percent-encoded (`email:#Read%20Later`). Before it, several senders separated by commas, each an address or a whole domain (`email:news@example.net,@example.org#Topics/AI`), are matched exactly, not by the server's substring search. Each reference keeps its own listen cursor. Only a single address can be written to.
 
 `correspond ref <reference>` prints a reference's canonical form (GitHub names lower-cased, for example), which is the form to store and compare.
 
@@ -153,6 +155,19 @@ identity = sign_identity(
 
 Any server language can do the same: HMAC-SHA256, hex, over the lines `v1`, site, issued-at (Unix seconds), user id, name, email. An invalid or expired signature is refused (401) and nothing is stored. The collector also enforces the origin allowlist (with CORS preflight), a per-client rate limit, and size and media-type limits.
 
+## Telegram webhook
+
+A bot listens with `getUpdates` by default. On a server, Telegram can push updates to a webhook instead; a bot has one or the other, and `correspond listen telegram:` fails while a webhook is set. `correspond.channels.telegram:webhook_app` is an ASGI app that checks each delivery's `X-Telegram-Bot-Api-Secret-Token` against `CORRESPOND_TELEGRAM_WEBHOOK_SECRET` (or the Keychain item `correspond-telegram-webhook_secret`) and logs a verified update exactly as listening would, so `correspond read telegram:<chat id>` sees it. It binds nothing itself:
+
+```bash
+export CORRESPOND_TELEGRAM_WEBHOOK_SECRET=...   # 1-256 of A-Z a-z 0-9 _ -
+uvicorn --factory correspond.channels.telegram:webhook_app --host 127.0.0.1 --port 8766
+# behind your TLS server, register the public URL once, with the same secret:
+# POST https://api.telegram.org/bot<token>/setWebhook  url=https://bot.example.org/telegram  secret_token=...
+```
+
+A delivery without the right token gets 401 and nothing is stored; with no secret configured every delivery gets 503. `Telegram().verify(headers, body)` grades a delivery (`platform` or `forged`) and `Telegram().receive(headers, body)` logs it, for a server that is not ASGI. The token is a shared secret, not a signature of the body, so the webhook URL must be HTTPS (Telegram requires it).
+
 ## Routing
 
 ```python
@@ -188,10 +203,16 @@ result.plan
 for event in correspond.listen("webinbox:example-site"):
     ...
 
+result = correspond.upload(
+    "telegram:-4001", "report.csv", b"a,b\n1,2\n", media_type="text/csv", dry_run=True
+)  # a document on Telegram; on email, a message carrying the file
+
 correspond.register_channel(
     MyChannel()
 )  # anything with name, capabilities, parse_ref and the operations it has
 ```
+
+`upload` is Python only: the command line and the MCP tools do not offer it, since a tool that reads a local path would let a model send any file it can name. The `before_send` check sees the file name, never the bytes.
 
 `correspond.testing.FakeChannel` is an in-memory channel for tests, and `python -m correspond.testing` runs the CLI with it registered as `fake`.
 

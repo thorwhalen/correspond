@@ -265,6 +265,13 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 what="the Bot API server",
                 default="https://api.telegram.org",
             ),
+            Setting(
+                key="webhook_secret",
+                env="CORRESPOND_TELEGRAM_WEBHOOK_SECRET",
+                what="the webhook's secret_token, used only to verify webhook deliveries",
+                where="any 1-256 characters of A-Z, a-z, 0-9, _ and -, given to setWebhook as secret_token",
+                secret=True,
+            ),
         ),
         notes=(
             "a bot can write only to chats that wrote to it first, or groups it was added to",
