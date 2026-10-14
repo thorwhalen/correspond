@@ -25,7 +25,7 @@ Add `--json` to any command for the full result. A result with `ok: false` exits
 |---|---|
 | `github:owner/repo` | a repository: read lists open issues and pull requests; send opens an issue (`--title` required) |
 | `github:owner/repo#12` | an issue, pull request or discussion, with its comments |
-| `email:` | the mail folder (INBOX); `email:someone@example.org` the correspondence with one address |
+| `email:` | the mail folder (INBOX); `email:someone@example.org` the correspondence with one address; `email:a@example.org,@example.net` several senders or a domain (read only); `#<folder>` at the end reads another folder or Gmail label (`email:#Topics/AI`) |
 | `ntfy:` | the operator's default notification topic; `ntfy:<topic>` a named one |
 | `macos:` | a banner on this Mac |
 | `telegram:` | the bot's update stream (listen); `telegram:<chat id>`, `telegram:@name` or `telegram:<chat id>/<topic id>` a chat |

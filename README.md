@@ -20,7 +20,7 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 | Channel | References | Operations | Built on |
 |---|---|---|---|
 | `github` | `github:owner/repo`, `github:owner/repo#12` | read, listen (issues and comments), send (opening an issue takes `native` labels, assignees, milestone), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
-| `email` | `email:` (the folder), `email:someone@example.org` | read, listen, send (with cc and bcc), audience | `imaplib`, `smtplib` |
+| `email` | `email:` (the folder), `email:someone@example.org`, `email:a@example.org,@example.net` (several senders or a domain, read only), each optionally followed by `#<folder>` (`email:#Topics/AI`) | read, listen, send (with cc and bcc), audience | `imaplib`, `smtplib` |
 | `ntfy` | `ntfy:` (the default topic), `ntfy:<topic>` | send, audience | `urllib` |
 | `macos` | `macos:` | send, audience | `terminal-notifier` or `osascript` |
 | `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience | the Bot API over `urllib` |
@@ -30,6 +30,8 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 Every v0.1 adapter uses the Python standard library; Apprise is the first extra, and registers only when it is installed. Discord ([#2](https://github.com/thorwhalen/correspond/issues/2)), Slack ([#3](https://github.com/thorwhalen/correspond/issues/3)) and Signal ([#4](https://github.com/thorwhalen/correspond/issues/4)) are planned as extras; `correspond channels` lists them with their issues.
 
 **Apprise** reaches the long tail (Discord and Slack webhooks, Matrix, Pushover, Gotify, SMS gateways...) for sending only. A reference names an *alias*, never an Apprise URL, because the URL carries the service's credentials. An alias is 1-64 of `a-z`, `0-9` and `-` (case folded; `all` and `always` are Apprise's match-everything tags and are refused). `apprise:<alias>` sends to the one URL in `CORRESPOND_APPRISE_URL_<ALIAS>` (upper case, `-` as `_`), else the Keychain item `correspond-apprise-url-<alias>`, else every URL tagged exactly `<alias>` in the local Apprise config file named by `config` under `[apprise]` (or `$CORRESPOND_APPRISE_CONFIG`); URLs tagged `always` are not added, so a mistyped alias reaches nobody. Apprise's own logging, which prints URLs, is silenced while correspond calls it. A plan names the service (the URL's scheme), never the URL. A partial delivery is `unconfirmed`, never retried blindly. A draft's priority is not sent (Apprise services take one in their URL, if at all).
+
+**Email folders and senders.** `#<folder>` at the end of an email reference reads that IMAP folder instead of the configured one (`CORRESPOND_EMAIL_FOLDER`, default `INBOX`), so one process can read several folders, and Gmail labels, which IMAP shows as folders. Whitespace and `%` in a folder name are percent-encoded (`email:#Read%20Later`). Before it, several senders separated by commas, each an address or a whole domain (`email:news@example.net,@example.org#Topics/AI`), are matched exactly, not by the server's substring search. Each reference keeps its own listen cursor. Only a single address can be written to.
 
 `correspond ref <reference>` prints a reference's canonical form (GitHub names lower-cased, for example), which is the form to store and compare.
 
