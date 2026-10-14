@@ -25,7 +25,7 @@ KeyError: "store key '../elsewhere' must be /-separated names of letters, digits
 
 | [`bytes_store`](#correspond.stores.bytes_store)(kind, \*[, data_dir])   | Binary files under `<data root>/<kind>/`.                                                                                                        |
 |--------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`cursor_store`](#correspond.stores.cursor_store)(\*[, data_dir])        | Listen cursors, keyed by encoded conversation reference, under `<data root>/cursors/`.                                                           |
+| [`cursor_store`](#correspond.stores.cursor_store)(\*[, data_dir, kind])  | Listen cursors, keyed by encoded conversation reference, under `<data root>/<kind>/`.                                                            |
 | [`json_store`](#correspond.stores.json_store)(kind, \*[, data_dir])    | JSON files under `<data root>/<kind>/` (keys end in `.json`).                                                                                    |
 | [`kind_dir`](#correspond.stores.kind_dir)(kind, \*[, data_dir])      | The folder for one kind of state under the data root.                                                                                            |
 | [`send_store`](#correspond.stores.send_store)(\*[, data_dir])          | What each idempotency key of [`correspond.send()`](correspond.html.md#correspond.send) did, under `<data root>/sends/`. |
@@ -102,9 +102,12 @@ Binary files under `<data root>/<kind>/`.
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`bytes`](https://docs.python.org/3/builtins/stdtypes.html#bytes)]
 
-### correspond.stores.cursor_store(, data_dir=None)
+### correspond.stores.cursor_store(, data_dir=None, kind='cursors')
 
-Listen cursors, keyed by encoded conversation reference, under `<data root>/cursors/`.
+Listen cursors, keyed by encoded conversation reference, under `<data root>/<kind>/`.
+
+A consumer that must not take events from another (the Claude Code channel server, next
+to manual `correspond listen` calls) keeps its own `kind`.
 
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]

@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+<link rel="alternate" type="text/markdown" href="correspond.channel.html.md">
+<link rel="describedby" href="../llms.txt" type="text/markdown">
+<link rel="alternate" type="text/markdown" href="correspond.channel.html.md">
+<link rel="describedby" href="llms.txt">
+    <title>correspond.channel &#8212; correspond</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=c6155191" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../_static/documentation_options.js?v=544df88d"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../_static/copybutton.js?v=fd10adb8"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_autosummary/correspond.channel';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="correspond.channels" href="correspond.channels.html" />
+    <link rel="prev" title="correspond.authored" href="correspond.authored.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.14" />
+  
+    
+    <script src="../_static/searchtools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <script src="../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">correspond</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/correspond" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+    <button type="button" class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item current active">
+  <a class="nav-link nav-internal" href="../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/correspond" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item pst-sidebar-collapse"><button type="button" id="pst-collapse-sidebar-button" aria-expanded="true" aria-controls="pst-primary-sidebar">
+  <svg class="pst-icon" role="img" aria-hidden="true" focusable="false" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+    <path fill="currentColor" d="M3 15.5C2.36232 15.5 1.74874 15.2564 1.28478 14.8189C0.820828 14.3815 0.541576 13.7832 0.504167 13.1467L0.5 13L0.5 3C0.499965 2.36232 0.743605 1.74874 1.18107 1.28478C1.61854 0.820828 2.21676 0.541576 2.85333 0.504167L3 0.5L13 0.5C13.6377 0.499965 14.2513 0.743605 14.7152 1.18107C15.1792 1.61854 15.4584 2.21676 15.4958 2.85333L15.5 3L15.5 13C15.5 13.6377 15.2564 14.2513 14.8189 14.7152C14.3815 15.1792 13.7832 15.4584 13.1467 15.4958L13 15.5L3 15.5ZM3 13.8333L10.5 13.8333L10.5 2.16667L3 2.16667C2.79589 2.16669 2.59889 2.24163 2.44636 2.37726C2.29383 2.5129 2.19638 2.69979 2.1725 2.9025L2.16667 3L2.16667 13C2.16669 13.2041 2.24163 13.4011 2.37726 13.5536C2.5129 13.7062 2.69979 13.8036 2.9025 13.8275L3 13.8333ZM6.65583 10.325L6.5775 10.2558L4.91083 8.58917C4.76735 8.44567 4.68116 8.25476 4.66843 8.05223C4.65569 7.84971 4.71729 7.6495 4.84167 7.48917L4.91083 7.41083L6.5775 5.74417C6.72747 5.59471 6.9287 5.50794 7.14032 5.50148C7.35194 5.49502 7.55809 5.56935 7.7169 5.70937C7.8757 5.8494 7.97525 6.04463 7.99533 6.25539C8.01541 6.46616 7.95451 6.67667 7.825 6.84417L7.75583 6.9225L6.67917 8L7.75583 9.0775C7.89931 9.22099 7.98551 9.41191 7.99824 9.61443C8.01097 9.81695 7.94938 10.0172 7.825 10.1775L7.75583 10.2558C7.61234 10.3993 7.42142 10.4855 7.2189 10.4982C7.01638 10.511 6.81617 10.4494 6.65583 10.325Z"/>
+  </svg>
+  <span class="pst-collapse-sidebar-label">Collapse Sidebar</span>
+  <span class="pst-expand-sidebar-label">Expand Sidebar</span>
+</button></div>
+        <div class="sidebar-primary-item">
+
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><ul class="current nav bd-sidenav">
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="correspond.html">correspond</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="correspond.authored.html">correspond.authored</a></li>
+<li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">correspond.channel</a></li>
+<li class="toctree-l2 has-children"><a class="reference internal" href="correspond.channels.html">correspond.channels</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.apprise.html">correspond.channels.apprise</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.github.html">correspond.channels.github</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.macos.html">correspond.channels.macos</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.mail.html">correspond.channels.mail</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.ntfy.html">correspond.channels.ntfy</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.telegram.html">correspond.channels.telegram</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.webinbox.html">correspond.channels.webinbox</a></li>
+</ul>
+</details></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.errors.html">correspond.errors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.idempotency.html">correspond.idempotency</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.mcp.html">correspond.mcp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.model.html">correspond.model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.ops.html">correspond.ops</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.outbound.html">correspond.outbound</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.registry.html">correspond.registry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.render.html">correspond.render</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.routing.html">correspond.routing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.settings.html">correspond.settings</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.stores.html">correspond.stores</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.testing.html">correspond.testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.tools.html">correspond.tools</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../api.html" class="nav-link">API reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="correspond.html" class="nav-link">correspond</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">correspond.channel</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="module-correspond.channel">
+<span id="correspond-channel"></span><h1>correspond.channel<a class="headerlink" href="#module-correspond.channel" title="Link to this heading">#</a></h1>
+<p>Serve listeners as a Claude Code channel: new messages pushed into a running session, replies through the ordinary tools.</p>
+<p>Run <code class="docutils literal notranslate"><span class="pre">correspond-channel</span></code> (install the extra first: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;correspond[mcp]&quot;</span></code>). It
+is an MCP stdio server that declares <code class="docutils literal notranslate"><span class="pre">experimental['claude/channel']</span></code>, polls
+<a class="reference internal" href="correspond.html#correspond.listen" title="correspond.listen"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.listen()</span></code></a> for the conversations it was given, and emits one
+<code class="docutils literal notranslate"><span class="pre">notifications/claude/channel</span></code> per new message, from an allowlisted sender, as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">"content"</span><span class="p">:</span> <span class="s2">"&lt;the text&gt;"</span><span class="p">,</span>
+ <span class="s2">"meta"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"channel"</span><span class="p">:</span> <span class="s2">"github"</span><span class="p">,</span> <span class="s2">"conversation"</span><span class="p">:</span> <span class="s2">"github:example/demo#1"</span><span class="p">,</span>
+          <span class="s2">"message_id"</span><span class="p">:</span> <span class="s2">"..."</span><span class="p">,</span> <span class="s2">"sender"</span><span class="p">:</span> <span class="s2">"github:ada"</span><span class="p">,</span> <span class="s2">"grade"</span><span class="p">:</span> <span class="s2">"platform"</span><span class="p">}}</span>
+</pre></div>
+</div>
+<p>which Claude sees as <code class="docutils literal notranslate"><span class="pre">&lt;channel</span> <span class="pre">source=&quot;correspond&quot;</span> <span class="pre">channel=&quot;github&quot;</span> <span class="pre">...&gt;text&lt;/channel&gt;</span></code>.
+Meta keys are identifiers only (Claude Code silently drops a key with a hyphen).</p>
+<p><strong>Replies are the ordinary correspond tools</strong> (<a class="reference internal" href="correspond.tools.html#module-correspond.tools" title="correspond.tools"><code class="xref py py-mod docutils literal notranslate"><span class="pre">correspond.tools</span></code></a>, through
+<a class="reference internal" href="correspond.mcp.html#correspond.mcp.mk_server" title="correspond.mcp.mk_server"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.mcp.mk_server()</span></code></a>): the reads by default, the writes only with
+<code class="docutils literal notranslate"><span class="pre">--allow-send</span></code>, each write dry-run first and through the operator’s <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check.</p>
+<p><strong>Senders.</strong> Only messages from senders on the allowlist (<code class="docutils literal notranslate"><span class="pre">--allow</span> <span class="pre">github:ada</span></code>, matched on
+the sender’s attested address or <code class="docutils literal notranslate"><span class="pre">&lt;channel&gt;:&lt;native</span> <span class="pre">id&gt;</span></code>, never the room) are forwarded;
+an empty allowlist forwards nothing unless <code class="docutils literal notranslate"><span class="pre">--allow-any-sender</span></code> opens it. A <code class="docutils literal notranslate"><span class="pre">forged</span></code>
+message is never forwarded, the bot’s own messages never loop back, and events without an
+attested sender (a bare reaction) are not forwarded.</p>
+<p><strong>Permission relay</strong> (<code class="docutils literal notranslate"><span class="pre">claude/channel/permission</span></code>). With <code class="docutils literal notranslate"><span class="pre">--relay-to</span> <span class="pre">&lt;ref&gt;</span></code> (which needs
+<code class="docutils literal notranslate"><span class="pre">--allow-send</span></code>, because relaying is a send) the server declares the permission capability;
+each <code class="docutils literal notranslate"><span class="pre">notifications/claude/channel/permission_request</span></code> is sent to that conversation as a
+prompt ending in <code class="docutils literal notranslate"><span class="pre">Reply</span> <span class="pre">&quot;yes</span> <span class="pre">&lt;id&gt;&quot;</span> <span class="pre">or</span> <span class="pre">&quot;no</span> <span class="pre">&lt;id&gt;&quot;</span></code>; and a reply in that conversation of
+that shape becomes a <code class="docutils literal notranslate"><span class="pre">notifications/claude/channel/permission</span></code> verdict, never chat, but
+only when its sender is on the explicit allowlist (<code class="docutils literal notranslate"><span class="pre">--allow-any-sender</span></code> does not count),
+its authenticity grade is one of <a class="reference internal" href="#correspond.channel.APPROVE_GRADES" title="correspond.channel.APPROVE_GRADES"><code class="xref py py-data docutils literal notranslate"><span class="pre">APPROVE_GRADES</span></code></a> (authenticated: not <code class="docutils literal notranslate"><span class="pre">claimed</span></code> or
+<code class="docutils literal notranslate"><span class="pre">forged</span></code>), and the id is one this server relayed and has not yet answered.</p>
+<p>How the Python MCP SDK does this (<code class="docutils literal notranslate"><span class="pre">mcp</span></code> 1.27, <code class="docutils literal notranslate"><span class="pre">fastmcp</span></code> 3.3, verified by the tests):</p>
+<ul class="simple">
+<li><p><em>Declaring the capability</em>: the low-level <code class="docutils literal notranslate"><span class="pre">mcp.server.lowlevel.Server</span></code> takes it as
+<code class="docutils literal notranslate"><span class="pre">create_initialization_options(experimental_capabilities={&quot;claude/channel&quot;:</span> <span class="pre">{}})</span></code>;
+FastMCP (what <code class="docutils literal notranslate"><span class="pre">py2mcp</span></code> builds) keeps a public <code class="docutils literal notranslate"><span class="pre">experimental_capabilities</span></code> dict that its
+low-level server merges into the same call. This module sets that dict.</p></li>
+<li><p><em>Emitting a custom method</em>: <code class="docutils literal notranslate"><span class="pre">ServerSession.send_notification</span></code> only <code class="docutils literal notranslate"><span class="pre">model_dump``s</span> <span class="pre">its</span>
+<span class="pre">argument</span> <span class="pre">into</span> <span class="pre">a</span> <span class="pre">``JSONRPCNotification</span></code>, so any model with <code class="docutils literal notranslate"><span class="pre">method</span></code> and <code class="docutils literal notranslate"><span class="pre">params</span></code>
+(<code class="docutils literal notranslate"><span class="pre">mcp.types.Notification</span></code>) goes out unvalidated. A background task has no session handle
+in FastMCP, so this module writes the same <code class="docutils literal notranslate"><span class="pre">SessionMessage(JSONRPCNotification(...))</span></code> onto
+the transport’s write stream, after the client’s <code class="docutils literal notranslate"><span class="pre">notifications/initialized</span></code>.</p></li>
+<li><p><em>Receiving a custom method</em>: the SDK validates incoming notifications against the closed
+<code class="docutils literal notranslate"><span class="pre">ClientNotification</span></code> union and drops anything else with a warning, so
+<code class="docutils literal notranslate"><span class="pre">permission_request</span></code> is taken off the read stream by a tap in front of the session.</p></li>
+</ul>
+<p class="rubric">Module Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channel.META_KEYS" title="correspond.channel.META_KEYS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">META_KEYS</span></code></a></p></td>
+<td><p>identifiers only.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channel.FORWARD_GRADES" title="correspond.channel.FORWARD_GRADES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">FORWARD_GRADES</span></code></a></p></td>
+<td><p>everything but a failed verification.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channel.APPROVE_GRADES" title="correspond.channel.APPROVE_GRADES"><code class="xref py py-obj docutils literal notranslate"><span class="pre">APPROVE_GRADES</span></code></a></p></td>
+<td><p>the authenticated ones.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channel.CURSOR_KIND" title="correspond.channel.CURSOR_KIND"><code class="xref py py-obj docutils literal notranslate"><span class="pre">CURSOR_KIND</span></code></a></p></td>
+<td><p>Where the channel server keeps its listen cursors, apart from <code class="docutils literal notranslate"><span class="pre">correspond</span> <span class="pre">listen</span></code>'s.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channel.channel_notification" title="correspond.channel.channel_notification"><code class="xref py py-obj docutils literal notranslate"><span class="pre">channel_notification</span></code></a>(event)</p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">notifications/claude/channel</span></code> message for one event that carries a message.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channel.main" title="correspond.channel.main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">main</span></code></a>([argv])</p></td>
+<td><p>Serve the channel over stdio (see <code class="xref py py-func docutils literal notranslate"><span class="pre">options()</span></code> for the arguments).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channel.notifications" title="correspond.channel.notifications"><code class="xref py py-obj docutils literal notranslate"><span class="pre">notifications</span></code></a>(refs, *, gate[, cursors, ...])</p></td>
+<td><p>One poll of every ref: the notifications its new events become, deduplicated on delivery id.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channel.parse_verdict" title="correspond.channel.parse_verdict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">parse_verdict</span></code></a>(text)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">(&quot;allow&quot;</span> <span class="pre">|</span> <span class="pre">&quot;deny&quot;,</span> <span class="pre">request_id)</span></code> for a reply like <code class="docutils literal notranslate"><span class="pre">yes</span> <span class="pre">abcde</span></code>, else <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channel.permission_prompt" title="correspond.channel.permission_prompt"><code class="xref py py-obj docutils literal notranslate"><span class="pre">permission_prompt</span></code></a>(params)</p></td>
+<td><p>The text sent to the relay conversation for one permission request.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channel.serve" title="correspond.channel.serve"><code class="xref py py-obj docutils literal notranslate"><span class="pre">serve</span></code></a>(**kwargs)</p></td>
+<td><p>Run the channel over stdio until the client goes away; <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> as for <a class="reference internal" href="#correspond.channel.serve_streams" title="correspond.channel.serve_streams"><code class="xref py py-func docutils literal notranslate"><span class="pre">serve_streams()</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channel.serve_streams" title="correspond.channel.serve_streams"><code class="xref py py-obj docutils literal notranslate"><span class="pre">serve_streams</span></code></a>(read_stream, write_stream, *, ...)</p></td>
+<td><p>Run the channel over a pair of MCP message streams (stdio in <a class="reference internal" href="#correspond.channel.serve" title="correspond.channel.serve"><code class="xref py py-func docutils literal notranslate"><span class="pre">serve()</span></code></a>, memory in tests).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channel.verdict_notification" title="correspond.channel.verdict_notification"><code class="xref py py-obj docutils literal notranslate"><span class="pre">verdict_notification</span></code></a>(request_id, behavior)</p></td>
+<td><p>The <code class="docutils literal notranslate"><span class="pre">notifications/claude/channel/permission</span></code> message carrying a verdict.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Classes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channel.Gate" title="correspond.channel.Gate"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Gate</span></code></a>([allow, allow_any, forward_grades, ...])</p></td>
+<td><p>Who gets through, as a pure policy: the allowlist, the grades forwarded, and who may approve.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="py data">
+<dt class="sig sig-object py" id="correspond.channel.APPROVE_GRADES">
+<span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">APPROVE_GRADES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">frozenset({Grade.BOUND,</span> <span class="pre">Grade.CRYPTO,</span> <span class="pre">Grade.DOMAIN,</span> <span class="pre">Grade.PLATFORM})</span></span><a class="headerlink" href="#correspond.channel.APPROVE_GRADES" title="Link to this definition">#</a></dt>
+<dd><p>the authenticated ones.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Grades whose sender may approve tool use</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="correspond.channel.CURSOR_KIND">
+<span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">CURSOR_KIND</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'channel-cursors'</span></span><a class="headerlink" href="#correspond.channel.CURSOR_KIND" title="Link to this definition">#</a></dt>
+<dd><p>Where the channel server keeps its listen cursors, apart from <code class="docutils literal notranslate"><span class="pre">correspond</span> <span class="pre">listen</span></code>’s.</p>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="correspond.channel.FORWARD_GRADES">
+<span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">FORWARD_GRADES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">frozenset({Grade.BOUND,</span> <span class="pre">Grade.CLAIMED,</span> <span class="pre">Grade.CRYPTO,</span> <span class="pre">Grade.DOMAIN,</span> <span class="pre">Grade.PLATFORM})</span></span><a class="headerlink" href="#correspond.channel.FORWARD_GRADES" title="Link to this definition">#</a></dt>
+<dd><p>everything but a failed verification.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Grades forwarded by default</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.channel.Gate">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">Gate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">allow</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">frozenset({})</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_any</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forward_grades</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">frozenset({Grade.BOUND,</span> <span class="pre">Grade.CLAIMED,</span> <span class="pre">Grade.CRYPTO,</span> <span class="pre">Grade.DOMAIN,</span> <span class="pre">Grade.PLATFORM})</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">approve_grades</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">frozenset({Grade.BOUND,</span> <span class="pre">Grade.CRYPTO,</span> <span class="pre">Grade.DOMAIN,</span> <span class="pre">Grade.PLATFORM})</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">relay_to</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channel.html#Gate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channel.Gate" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Who gets through, as a pure policy: the allowlist, the grades forwarded, and who may approve.</p>
+<p><code class="docutils literal notranslate"><span class="pre">allow</span></code> holds sender addresses (<code class="docutils literal notranslate"><span class="pre">github:ada</span></code>) or <code class="docutils literal notranslate"><span class="pre">&lt;channel&gt;:&lt;native</span> <span class="pre">id&gt;</span></code>; empty
+forwards nothing unless <code class="docutils literal notranslate"><span class="pre">allow_any</span></code>. <code class="docutils literal notranslate"><span class="pre">relay_to</span></code> is the canonical relay conversation
+(verdicts are read there only); approval needs the explicit allowlist and a grade in
+<code class="docutils literal notranslate"><span class="pre">approve_grades</span></code>, which may hold only authenticated grades.</p>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channel.Gate.allowed">
+<span class="sig-name descname"><span class="pre">allowed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channel.html#Gate.allowed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channel.Gate.allowed" title="Link to this definition">#</a></dt>
+<dd><p>Whether this event’s sender may put text in front of Claude.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channel.Gate.may_approve">
+<span class="sig-name descname"><span class="pre">may_approve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channel.html#Gate.may_approve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channel.Gate.may_approve" title="Link to this definition">#</a></dt>
+<dd><p>Whether this event’s sender may answer a permission prompt: allowlisted by name and authenticated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/functions.html#bool" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channel.Gate.route">
+<span class="sig-name descname"><span class="pre">route</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">pending</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channel.html#Gate.route"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channel.Gate.route" title="Link to this definition">#</a></dt>
+<dd><p>The notification an event becomes (a channel message or a verdict), or <code class="docutils literal notranslate"><span class="pre">None</span></code> when it is dropped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a> | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="correspond.channel.META_KEYS">
+<span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">META_KEYS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('channel',</span> <span class="pre">'conversation',</span> <span class="pre">'message_id',</span> <span class="pre">'sender',</span> <span class="pre">'grade')</span></span><a class="headerlink" href="#correspond.channel.META_KEYS" title="Link to this definition">#</a></dt>
+<dd><p>identifiers only.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The <code class="docutils literal notranslate"><span class="pre">meta</span></code> keys of every channel notification, in order</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channel.channel_notification">
+<span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">channel_notification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">event</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channel.html#channel_notification"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channel.channel_notification" title="Link to this definition">#</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">notifications/claude/channel</span></code> message for one event that carries a message.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">correspond.testing</span><span class="w"> </span><span class="kn">import</span> <span class="n">demo_message</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">note</span> <span class="o">=</span> <span class="n">channel_notification</span><span class="p">(</span><span class="n">Event</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s2">"message.created"</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s2">"fake"</span><span class="p">,</span> <span class="n">delivery_id</span><span class="o">=</span><span class="s2">"d1"</span><span class="p">,</span>
+<span class="gp">... </span>                                  <span class="n">message</span><span class="o">=</span><span class="n">demo_message</span><span class="p">()))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">note</span><span class="p">[</span><span class="s2">"method"</span><span class="p">],</span> <span class="n">note</span><span class="p">[</span><span class="s2">"params"</span><span class="p">][</span><span class="s2">"content"</span><span class="p">]</span>
+<span class="go">('notifications/claude/channel', 'The export drops the last row.')</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">note</span><span class="p">[</span><span class="s2">"params"</span><span class="p">][</span><span class="s2">"meta"</span><span class="p">]</span>
+<span class="go">{'channel': 'fake', 'conversation': 'fake:example/demo', 'message_id': 'm1', 'sender': 'fake:ada', 'grade': 'platform'}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channel.main">
+<span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channel.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channel.main" title="Link to this definition">#</a></dt>
+<dd><p>Serve the channel over stdio (see <code class="xref py py-func docutils literal notranslate"><span class="pre">options()</span></code> for the arguments).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channel.notifications">
+<span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">notifications</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">refs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seen</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pending</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seen_limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">_log&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channel.html#notifications"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channel.notifications" title="Link to this definition">#</a></dt>
+<dd><p>One poll of every ref: the notifications its new events become, deduplicated on delivery id.</p>
+<p>Lazy on purpose: <a class="reference internal" href="correspond.html#correspond.listen" title="correspond.listen"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.listen()</span></code></a> stores an event’s cursor only when the next one
+is asked for, so a consumer that emits each notification before asking for the next one
+gets at-least-once delivery, and <code class="docutils literal notranslate"><span class="pre">seen</span></code> makes it once per process. A ref that fails is
+logged and skipped; the others are still polled.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channel.parse_verdict">
+<span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">parse_verdict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channel.html#parse_verdict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channel.parse_verdict" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">(&quot;allow&quot;</span> <span class="pre">|</span> <span class="pre">&quot;deny&quot;,</span> <span class="pre">request_id)</span></code> for a reply like <code class="docutils literal notranslate"><span class="pre">yes</span> <span class="pre">abcde</span></code>, else <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#tuple" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>] | <a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">parse_verdict</span><span class="p">(</span><span class="s2">"Yes ABCDE"</span><span class="p">),</span> <span class="n">parse_verdict</span><span class="p">(</span><span class="s2">"no qwxyz"</span><span class="p">),</span> <span class="n">parse_verdict</span><span class="p">(</span><span class="s2">"yes"</span><span class="p">),</span> <span class="n">parse_verdict</span><span class="p">(</span><span class="s2">"yes hello"</span><span class="p">)</span>
+<span class="go">(('allow', 'abcde'), ('deny', 'qwxyz'), None, None)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channel.permission_prompt">
+<span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">permission_prompt</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channel.html#permission_prompt"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channel.permission_prompt" title="Link to this definition">#</a></dt>
+<dd><p>The text sent to the relay conversation for one permission request.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">permission_prompt</span><span class="p">({</span><span class="s2">"request_id"</span><span class="p">:</span> <span class="s2">"abcde"</span><span class="p">,</span> <span class="s2">"tool_name"</span><span class="p">:</span> <span class="s2">"Bash"</span><span class="p">,</span>
+<span class="gp">... </span>                         <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"List files"</span><span class="p">,</span> <span class="s2">"input_preview"</span><span class="p">:</span> <span class="s1">'{"command": "ls"}'</span><span class="p">}))</span>
+<span class="go">Claude wants to run Bash: List files</span>
+<span class="go">{"command": "ls"}</span>
+
+<span class="go">Reply "yes abcde" or "no abcde"</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channel.serve">
+<span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">serve</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channel.html#serve"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channel.serve" title="Link to this definition">#</a></dt>
+<dd><p>Run the channel over stdio until the client goes away; <code class="docutils literal notranslate"><span class="pre">kwargs</span></code> as for <a class="reference internal" href="#correspond.channel.serve_streams" title="correspond.channel.serve_streams"><code class="xref py py-func docutils literal notranslate"><span class="pre">serve_streams()</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channel.serve_streams">
+<span class="property"><span class="k"><span class="pre">async</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">serve_streams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">read_stream</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_stream</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gate</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">server</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">_log&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channel.html#serve_streams"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channel.serve_streams" title="Link to this definition">#</a></dt>
+<dd><p>Run the channel over a pair of MCP message streams (stdio in <a class="reference internal" href="#correspond.channel.serve" title="correspond.channel.serve"><code class="xref py py-func docutils literal notranslate"><span class="pre">serve()</span></code></a>, memory in tests).</p>
+<p><code class="docutils literal notranslate"><span class="pre">server</span></code> defaults to <a class="reference internal" href="correspond.mcp.html#correspond.mcp.mk_server" title="correspond.mcp.mk_server"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.mcp.mk_server()</span></code></a> with the channel instructions;
+<code class="docutils literal notranslate"><span class="pre">send</span></code> (the relay’s outbound) defaults to <a class="reference internal" href="correspond.html#correspond.send" title="correspond.send"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.send()</span></code></a> on <code class="docutils literal notranslate"><span class="pre">registry</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channel.verdict_notification">
+<span class="sig-prename descclassname"><span class="pre">correspond.channel.</span></span><span class="sig-name descname"><span class="pre">verdict_notification</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">request_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">behavior</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channel.html#verdict_notification"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channel.verdict_notification" title="Link to this definition">#</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">notifications/claude/channel/permission</span></code> message carrying a verdict.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="correspond.authored.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">correspond.authored</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="correspond.channels.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">correspond.channels</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <dialog id="pst-secondary-sidebar-modal"></dialog>
+                <div id="pst-secondary-sidebar" class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.APPROVE_GRADES"><code class="docutils literal notranslate"><span class="pre">APPROVE_GRADES</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.CURSOR_KIND"><code class="docutils literal notranslate"><span class="pre">CURSOR_KIND</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.FORWARD_GRADES"><code class="docutils literal notranslate"><span class="pre">FORWARD_GRADES</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.Gate"><code class="docutils literal notranslate"><span class="pre">Gate</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.Gate.allowed"><code class="docutils literal notranslate"><span class="pre">Gate.allowed()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.Gate.may_approve"><code class="docutils literal notranslate"><span class="pre">Gate.may_approve()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.Gate.route"><code class="docutils literal notranslate"><span class="pre">Gate.route()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.META_KEYS"><code class="docutils literal notranslate"><span class="pre">META_KEYS</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.channel_notification"><code class="docutils literal notranslate"><span class="pre">channel_notification()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.main"><code class="docutils literal notranslate"><span class="pre">main()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.notifications"><code class="docutils literal notranslate"><span class="pre">notifications()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.parse_verdict"><code class="docutils literal notranslate"><span class="pre">parse_verdict()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.permission_prompt"><code class="docutils literal notranslate"><span class="pre">permission_prompt()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.serve"><code class="docutils literal notranslate"><span class="pre">serve()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.serve_streams"><code class="docutils literal notranslate"><span class="pre">serve_streams()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channel.verdict_notification"><code class="docutils literal notranslate"><span class="pre">verdict_notification()</span></code></a></li>
+</ul>
+  </nav></div>
+
+  <div class="sidebar-secondary-item">
+
+  <div class="tocsection sourcelink">
+    <a href="../_sources/_autosummary/correspond.channel.rst.txt">
+      <i class="fa-solid fa-file-lines"></i> Show Source
+    </a>
+  </div>
+</div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>

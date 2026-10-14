@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=9fc46840"></script>
+    <script src="../../_static/documentation_options.js?v=544df88d"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.13" />
+  <meta name="docsearch:version" content="0.0.14" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -903,10 +903,14 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="cursor_store">
 <a class="viewcode-back" href="../../_autosummary/correspond.stores.html#correspond.stores.cursor_store">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">cursor_store</span><span class="p">(</span>
-    <span class="o">*</span><span class="p">,</span> <span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="o">*</span><span class="p">,</span> <span class="n">data_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"cursors"</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
-<span class="w">    </span><span class="sd">"""Listen cursors, keyed by encoded conversation reference, under ``&lt;data root&gt;/cursors/``."""</span>
-    <span class="k">return</span> <span class="n">QuotedKeys</span><span class="p">(</span><span class="n">text_store</span><span class="p">(</span><span class="s2">"cursors"</span><span class="p">,</span> <span class="n">data_dir</span><span class="o">=</span><span class="n">data_dir</span><span class="p">),</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">".txt"</span><span class="p">)</span></div>
+<span class="w">    </span><span class="sd">"""Listen cursors, keyed by encoded conversation reference, under ``&lt;data root&gt;/&lt;kind&gt;/``.</span>
+
+<span class="sd">    A consumer that must not take events from another (the Claude Code channel server, next</span>
+<span class="sd">    to manual ``correspond listen`` calls) keeps its own ``kind``.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">QuotedKeys</span><span class="p">(</span><span class="n">text_store</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="n">data_dir</span><span class="o">=</span><span class="n">data_dir</span><span class="p">),</span> <span class="n">suffix</span><span class="o">=</span><span class="s2">".txt"</span><span class="p">)</span></div>
 
 
 

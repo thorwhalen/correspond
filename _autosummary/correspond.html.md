@@ -859,6 +859,7 @@ Grade an inbound delivery on `channel` from its headers and raw body.
 
 | [`authored`](correspond.authored.html.md#module-correspond.authored)       | What the sender of an email actually wrote: their text, apart from quoted replies, forwarded blocks, signatures and disclaimers.   |
 |--------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| [`channel`](correspond.channel.html.md#module-correspond.channel)         | Serve listeners as a Claude Code channel: new messages pushed into a running session, replies through the ordinary tools.          |
 | [`channels`](correspond.channels.html.md#module-correspond.channels)       | The built-in channel adapters, one module each.                                                                                    |
 | [`errors`](correspond.errors.html.md#module-correspond.errors)           | What correspond raises, and the vocabulary a failed write reports.                                                                 |
 | [`idempotency`](correspond.idempotency.html.md#module-correspond.idempotency) | Idempotent sends: an `idempotency_key` keeps a message from going out twice.                                                       |

@@ -1,0 +1,34 @@
+correspond.channel
+==================
+
+.. automodule:: correspond.channel
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      META_KEYS
+      FORWARD_GRADES
+      APPROVE_GRADES
+      CURSOR_KIND
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      channel_notification
+      main
+      notifications
+      parse_verdict
+      permission_prompt
+      serve
+      serve_streams
+      verdict_notification
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Gate
+   

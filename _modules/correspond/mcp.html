@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=9fc46840"></script>
+    <script src="../../_static/documentation_options.js?v=544df88d"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.13" />
+  <meta name="docsearch:version" content="0.0.14" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -800,14 +800,18 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="mk_server">
 <a class="viewcode-back" href="../../_autosummary/correspond.mcp.html#correspond.mcp.mk_server">[docs]</a>
-<span class="k">def</span><span class="w"> </span><span class="nf">mk_server</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">allow_send</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">"""A FastMCP server over the exposed tools, with ``data_dir`` hidden (not started)."""</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">mk_server</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">allow_send</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">instructions</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">INSTRUCTIONS</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""A FastMCP server over the exposed tools, with ``data_dir`` hidden (not started).</span>
+
+<span class="sd">    ``instructions`` lets another surface over the same tools (the Claude Code channel in</span>
+<span class="sd">    :mod:`correspond.channel`) say more; the tool list is always :func:`refs`.</span>
+<span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">py2mcp</span><span class="w"> </span><span class="kn">import</span> <span class="n">mk_mcp_server</span>
 
     <span class="k">return</span> <span class="n">mk_mcp_server</span><span class="p">(</span>
         <span class="p">[</span><span class="n">_without</span><span class="p">(</span><span class="n">_resolve</span><span class="p">(</span><span class="n">ref</span><span class="p">))</span> <span class="k">for</span> <span class="n">ref</span> <span class="ow">in</span> <span class="n">refs</span><span class="p">(</span><span class="n">allow_send</span><span class="o">=</span><span class="n">allow_send</span><span class="p">)],</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">"correspond"</span><span class="p">,</span>
-        <span class="n">instructions</span><span class="o">=</span><span class="n">INSTRUCTIONS</span><span class="p">,</span>
+        <span class="n">instructions</span><span class="o">=</span><span class="n">instructions</span><span class="p">,</span>
     <span class="p">)</span></div>
 
 

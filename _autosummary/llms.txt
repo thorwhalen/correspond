@@ -7,6 +7,7 @@
 
 - [correspond](correspond.html.md): correspond: a channel facade for AI agents.
 - [correspond.authored](correspond.authored.html.md): What the sender of an email actually wrote: their text, apart from quoted replies, forwarded blocks,...
+- [correspond.channel](correspond.channel.html.md): Serve listeners as a Claude Code channel: new messages pushed into a running session, replies throug...
 - [correspond.channels](correspond.channels.html.md): The built-in channel adapters, one module each.
 - [correspond.channels.apprise](correspond.channels.apprise.html.md): Apprise: send-only notifications to the long tail of services (about 155), each named by an alias.
 - [correspond.channels.github](correspond.channels.github.html.md): GitHub: issues, pull request conversations and discussions, through the &#96;gh&#96; CLI.
