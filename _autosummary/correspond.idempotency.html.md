@@ -122,6 +122,9 @@ What a key is bound to: the conversation and everything the draft says, as SHA-2
 
 The latest of `messages` written by correspond’s own account with `draft`’s text, at or after `since` less [`READ_BACK_SKEW`](#correspond.idempotency.READ_BACK_SKEW).
 
+With `draft.notify`, the text as a mention writer posts it (the mentions it lacked
+added, [`correspond.notify.with_mentions()`](correspond.notify.html.md#correspond.notify.with_mentions)) matches too.
+
 * **Return type:**
   [`Message`](correspond.model.html.md#correspond.model.Message) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 

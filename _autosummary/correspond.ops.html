@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=544df88d"></script>
+    <script src="../_static/documentation_options.js?v=f0357c94"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -53,11 +53,11 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="correspond.outbound" href="correspond.outbound.html" />
-    <link rel="prev" title="correspond.model" href="correspond.model.html" />
+    <link rel="prev" title="correspond.notify" href="correspond.notify.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.14" />
+  <meta name="docsearch:version" content="0.0.15" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -335,6 +335,7 @@
 <li class="toctree-l2"><a class="reference internal" href="correspond.idempotency.html">correspond.idempotency</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.mcp.html">correspond.mcp</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.model.html">correspond.model</a></li>
+<li class="toctree-l2"><a class="reference internal" href="correspond.notify.html">correspond.notify</a></li>
 <li class="toctree-l2 current active"><a aria-current="page" class="current reference internal" href="#">correspond.ops</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.outbound.html">correspond.outbound</a></li>
 <li class="toctree-l2"><a class="reference internal" href="correspond.registry.html">correspond.registry</a></li>
@@ -822,12 +823,15 @@ early <code class="docutils literal notranslate"><span class="pre">break</span><
 
 <dl class="py function">
 <dt class="sig sig-object py" id="correspond.ops.send">
-<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reply_to</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bcc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">native</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idempotency_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sends</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.send" title="Link to this definition">#</a></dt>
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reply_to</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">priority</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bcc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">native</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">notify</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">idempotency_key</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sends</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.send" title="Link to this definition">#</a></dt>
 <dd><p>Send <code class="docutils literal notranslate"><span class="pre">text</span></code> (or a <a class="reference internal" href="correspond.model.html#correspond.model.Draft" title="correspond.model.Draft"><code class="xref py py-class docutils literal notranslate"><span class="pre">Draft</span></code></a>) to a conversation; <code class="docutils literal notranslate"><span class="pre">dry_run</span></code> shows the plan and sends nothing.</p>
 <p><code class="docutils literal notranslate"><span class="pre">cc</span></code> and <code class="docutils literal notranslate"><span class="pre">bcc</span></code> copy further recipients, on channels that grade <code class="docutils literal notranslate"><span class="pre">cc</span></code> (email).
 <code class="docutils literal notranslate"><span class="pre">native</span></code> carries channel-specific fields (<code class="docutils literal notranslate"><span class="pre">Draft.native</span></code>), checked against the
 channel’s <code class="docutils literal notranslate"><span class="pre">capabilities.draft_fields</span></code>: an unknown key is a validation failure, never
 silently dropped.
+<code class="docutils literal notranslate"><span class="pre">notify</span></code> names who must be notified (<code class="docutils literal notranslate"><span class="pre">Draft.notify</span></code>); the channel’s writer
+guarantees it (a mention added, an address copied) or the send fails with
+<code class="docutils literal notranslate"><span class="pre">NotSupported(&quot;notify&quot;)</span></code>.
 <code class="docutils literal notranslate"><span class="pre">before_send(ref,</span> <span class="pre">draft,</span> <span class="pre">audience)</span></code> runs first, on the dry run too; when <code class="docutils literal notranslate"><span class="pre">None</span></code>, the
 config’s <code class="docutils literal notranslate"><span class="pre">before_send</span></code> reference, else <a class="reference internal" href="correspond.outbound.html#correspond.outbound.notice" title="correspond.outbound.notice"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.outbound.notice()</span></code></a>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">idempotency_key</span></code> makes sending the same message again safe: a key that already sent
@@ -912,12 +916,12 @@ plain one is checked, then set, which covers one process.</p>
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="correspond.model.html"
+       href="correspond.notify.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">correspond.model</p>
+        <p class="prev-next-title">correspond.notify</p>
       </div>
     </a>
     <a class="right-next"

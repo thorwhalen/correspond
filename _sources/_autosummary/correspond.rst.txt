@@ -91,6 +91,7 @@
    idempotency
    mcp
    model
+   notify
    ops
    outbound
    registry

@@ -240,7 +240,7 @@ JSON-ready.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, notify=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -249,10 +249,12 @@ What a channel can do, graded, with its limits.
 One `Support` per operation in `OPERATIONS` (`audience`: can the channel say
 who reads a conversation; `label` / `unlabel`: can labels be added to or removed
 from a conversation, apart from its opening send; `close` / `reopen`: can a
-conversation be settled, and unsettled), plus four features of writing:
+conversation be settled, and unsettled), plus five features of writing:
 `initiate` (can a write start a conversation; Telegram bots cannot), `reply`
-(can a draft answer a specific message), `priority`, and `cc` (can a draft copy
-further recipients, `Draft.cc` and `Draft.bcc`). `history_depth` says how
+(can a draft answer a specific message), `priority`, `cc` (can a draft copy
+further recipients, `Draft.cc` and `Draft.bcc`), and `notify` (can the writer
+guarantee that the people in `Draft.notify` are notified: a mention it adds, an
+address it copies). `history_depth` says how
 far back `read` sees; `grades` are the authenticity grades the channel can attest;
 `native_fields` are the keys its messages may carry in `native` (what a routing
 condition can test), or `None` when the channel does not declare them;
@@ -386,7 +388,7 @@ Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exceptio
 
 An expected failure, with a message meant for the person or agent that asked.
 
-### *class* correspond.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>)
+### *class* correspond.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>, notify=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -410,9 +412,19 @@ dropping it.
 {'labels': ['question']}
 ```
 
+`notify` names who must be notified: handles on a mention platform (`octocat`
+or `@octocat`), addresses on email. The writer guarantees it – a mention added
+when the text lacks one, an address put in Cc when it is not in To or Cc – and a
+channel that cannot raises `NotSupported("notify")` (see [`correspond.notify`](correspond.notify.html.md#module-correspond.notify)).
+
+```pycon
+>>> Draft(text="hi", notify=["octocat", " ", "Octocat", "hubot"]).notify
+('octocat', 'hubot')
+```
+
 #### to_dict()
 
-JSON-ready. `native` appears only when set, so a draft without one keeps the
+JSON-ready. `native` and `notify` appear only when set, so a draft without them keeps the
 dict – and the idempotency fingerprint of a key claimed before `native`
 existed – it always had.
 
@@ -805,7 +817,7 @@ Run the chain (bindings, thread continuity, metadata rules, classifier) and retu
 * **Return type:**
   [`RouteDecision`](correspond.routing.html.md#correspond.routing.RouteDecision) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
@@ -813,6 +825,9 @@ Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to
 `native` carries channel-specific fields (`Draft.native`), checked against the
 channel’s `capabilities.draft_fields`: an unknown key is a validation failure, never
 silently dropped.
+`notify` names who must be notified (`Draft.notify`); the channel’s writer
+guarantees it (a mention added, an address copied) or the send fails with
+`NotSupported("notify")`.
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](correspond.outbound.html.md#correspond.outbound.notice).
 
@@ -865,6 +880,7 @@ Grade an inbound delivery on `channel` from its headers and raw body.
 | [`idempotency`](correspond.idempotency.html.md#module-correspond.idempotency) | Idempotent sends: an `idempotency_key` keeps a message from going out twice.                                                       |
 | [`mcp`](correspond.mcp.html.md#module-correspond.mcp)                 | MCP over stdio: the same tools, for Claude Desktop and other local MCP clients.                                                    |
 | [`model`](correspond.model.html.md#module-correspond.model)             | The data model every channel is described in.                                                                                      |
+| [`notify`](correspond.notify.html.md#module-correspond.notify)           | Make a draft's `notify` list a property of sending, not a rule a sender can forget.                                                |
 | [`ops`](correspond.ops.html.md#module-correspond.ops)                 | The operations: small protocols an adapter implements a subset of, and the verbs that call them.                                   |
 | [`outbound`](correspond.outbound.html.md#module-correspond.outbound)       | The `before_send` check: what every write runs, with the conversation's audience, before anything leaves.                          |
 | [`registry`](correspond.registry.html.md#module-correspond.registry)       | Which channels exist: the built-in channel table, the registry built from it, and what each channel needs.                         |

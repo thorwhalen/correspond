@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=544df88d"></script>
+    <script src="../../_static/documentation_options.js?v=f0357c94"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.14" />
+  <meta name="docsearch:version" content="0.0.15" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1286,6 +1286,12 @@ window.runMermaid = runMermaid;</script>
         <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
             <span class="s2">"cc"</span><span class="p">,</span> <span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"send to each recipient separately"</span><span class="p">,)</span>
         <span class="p">)</span>
+    <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span> <span class="ow">and</span> <span class="n">caps</span><span class="o">.</span><span class="n">notify</span> <span class="ow">is</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
+            <span class="s2">"notify"</span><span class="p">,</span>
+            <span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"notify them on a channel that can, or send without notify"</span><span class="p">,),</span>
+        <span class="p">)</span>
     <span class="n">unknown</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">native</span><span class="p">)</span> <span class="o">-</span> <span class="nb">set</span><span class="p">(</span><span class="n">caps</span><span class="o">.</span><span class="n">draft_fields</span><span class="p">))</span>
     <span class="k">if</span> <span class="n">unknown</span><span class="p">:</span>
         <span class="n">accepted</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">caps</span><span class="o">.</span><span class="n">draft_fields</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"none"</span>
@@ -1392,6 +1398,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">cc</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
     <span class="n">bcc</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
     <span class="n">native</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">notify</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">(),</span>
     <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">before_send</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -1404,6 +1411,9 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ``native`` carries channel-specific fields (``Draft.native``), checked against the</span>
 <span class="sd">    channel's ``capabilities.draft_fields``: an unknown key is a validation failure, never</span>
 <span class="sd">    silently dropped.</span>
+<span class="sd">    ``notify`` names who must be notified (``Draft.notify``); the channel's writer</span>
+<span class="sd">    guarantees it (a mention added, an address copied) or the send fails with</span>
+<span class="sd">    ``NotSupported("notify")``.</span>
 <span class="sd">    ``before_send(ref, draft, audience)`` runs first, on the dry run too; when ``None``, the</span>
 <span class="sd">    config's ``before_send`` reference, else :func:`correspond.outbound.notice`.</span>
 
@@ -1415,10 +1425,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    ``claim(key, record) -&gt; bool`` (as that store has) is exclusive across processes; a</span>
 <span class="sd">    plain one is checked, then set, which covers one process.</span>
 <span class="sd">    """</span>
-    <span class="n">cc</span><span class="p">,</span> <span class="n">bcc</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">cc</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">bcc</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">Draft</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">title</span> <span class="ow">or</span> <span class="n">reply_to</span> <span class="ow">or</span> <span class="n">priority</span> <span class="ow">or</span> <span class="n">cc</span> <span class="ow">or</span> <span class="n">bcc</span> <span class="ow">or</span> <span class="n">native</span><span class="p">):</span>
+    <span class="n">cc</span><span class="p">,</span> <span class="n">bcc</span><span class="p">,</span> <span class="n">notify</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">cc</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">bcc</span><span class="p">),</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">notify</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">Draft</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
+        <span class="n">title</span> <span class="ow">or</span> <span class="n">reply_to</span> <span class="ow">or</span> <span class="n">priority</span> <span class="ow">or</span> <span class="n">cc</span> <span class="ow">or</span> <span class="n">bcc</span> <span class="ow">or</span> <span class="n">native</span> <span class="ow">or</span> <span class="n">notify</span>
+    <span class="p">):</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
-            <span class="s2">"pass a Draft or title/reply_to/priority/cc/bcc/native, not both: the Draft already carries them"</span>
+            <span class="s2">"pass a Draft or title/reply_to/priority/cc/bcc/native/notify, not both: the Draft already carries them"</span>
         <span class="p">)</span>
     <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
     <span class="n">draft</span> <span class="o">=</span> <span class="p">(</span>
@@ -1432,10 +1444,23 @@ window.runMermaid = runMermaid;</script>
             <span class="n">cc</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">cc</span><span class="p">),</span>
             <span class="n">bcc</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">bcc</span><span class="p">),</span>
             <span class="n">native</span><span class="o">=</span><span class="n">native</span> <span class="ow">or</span> <span class="p">{},</span>
+            <span class="n">notify</span><span class="o">=</span><span class="n">notify</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">)</span>
     <span class="n">key</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">idempotency_key</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">check_key</span><span class="p">(</span><span class="n">idempotency_key</span><span class="p">)</span>
-    <span class="n">problem</span> <span class="o">=</span> <span class="n">_feature_check</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span>
+    <span class="c1"># The draft as the channel will send it (``notify`` materialised: a mention added,</span>
+    <span class="c1"># an address copied): what the length checks and the before_send check must see.</span>
+    <span class="c1"># The adapter is still handed ``draft`` and materialises it the same way.</span>
+    <span class="n">prepare</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="s2">"prepare"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">effective</span> <span class="o">=</span> <span class="n">draft</span>
+    <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span> <span class="ow">and</span> <span class="nb">callable</span><span class="p">(</span><span class="n">prepare</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">effective</span> <span class="o">=</span> <span class="n">prepare</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SendResult</span><span class="o">.</span><span class="n">failure</span><span class="p">(</span>
+                <span class="n">error</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span>
+            <span class="p">)</span>
+    <span class="n">problem</span> <span class="o">=</span> <span class="n">_feature_check</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">effective</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">problem</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_invalid</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">,</span> <span class="n">problem</span><span class="p">)</span>
 
@@ -1462,7 +1487,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">adapter</span><span class="p">,</span>
         <span class="n">ref</span><span class="p">,</span>
         <span class="s2">"send"</span><span class="p">,</span>
-        <span class="n">draft</span><span class="p">,</span>
+        <span class="n">effective</span><span class="p">,</span>
         <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
         <span class="n">before_send</span><span class="o">=</span><span class="n">before_send</span><span class="p">,</span>
         <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>

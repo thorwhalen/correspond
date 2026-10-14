@@ -79,6 +79,13 @@ Every message this bot has received or sent, as JSON, keyed `<chat id>/<message 
 
 Updates since `cursor` (an update offset), every one logged before it is handed over.
 
+#### prepare(ref, draft)
+
+The draft as it will post: `notify` usernames checked, the missing mentions added. Pure.
+
+* **Return type:**
+  [`Draft`](correspond.model.html.md#correspond.model.Draft)
+
 #### react(ref, message_id, reaction, , dry_run=False)
 
 `setMessageReaction` with one emoji (a bot has one reaction per message).
@@ -95,7 +102,7 @@ What the log holds for a chat or topic, oldest first.
 
 #### send(ref, draft, , dry_run=False)
 
-`sendMessage`, the title (if any) prepended.
+`sendMessage`, the title (if any) prepended; `draft.notify` usernames the text does not @mention yet are mentioned on a closing `cc` line.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)

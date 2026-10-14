@@ -1,4 +1,4 @@
-> built 2026-10-14 05:21 UTC from 5a57b26 (main) · correspond 0.0.14. Details: build_info.json
+> built 2026-10-14 06:02 UTC from a8605e3 (main) · correspond 0.0.15. Details: build_info.json
 
 # index.html.md
 
@@ -87,6 +87,7 @@ scope: public
 
 - `--dry-run` on `send`, `edit` and `react` sends nothing and changes nothing. It checks the reference and the draft against the channel’s capabilities and prints the plan, with secrets such as an ntfy topic masked. A dry run reads only the environment and the config file, plus the audience lookup (a `gh api` call for GitHub, `getChat` with the bot token for Telegram): a value kept in the Keychain or on a remote host is otherwise looked up when sending, and the plan says so.
 - `--cc` and `--bcc` (comma-separated) copy further recipients on channels that grade `cc` (email); elsewhere they are refused by name. Bcc addresses go on the envelope only, never in a header, and they count in the audience.
+- `--notify` (comma-separated, `notify=` in Python) names who must be notified, and the writer guarantees it: on GitHub (and Telegram, for a member of the chat with a public username) a mention (`@octocat`) the text lacks is added on a closing `cc` line; on email an address that is neither To nor Cc goes in Cc, and so counts in the audience. The plan shows what was added (`mentions_added`, `cc_added`). A channel that cannot guarantee it refuses the draft with `NotSupported("notify")` rather than sending without it.
 - **Every write (`send`, `edit`, `react`, and `upload` in Python) passes the `before_send` check first**, on the dry run too. The plan shows `audience` (who can read it, in words), `audience_hash`, and `before_send` (the verdict). With nothing configured the check lets the write go ahead, so the audience line is all it adds. A check can stop the write: `refused` (not as written, not here) or `needs_approval` (wait for the operator), with any details it attached in `before_send_details`. A configured check that does not load stops every write (`before_send_unavailable`), and one that crashes stops that write (`before_send_failed`). Nothing is sent in any of these cases, and `--allow-send` on the MCP server does not skip the check.
 - The check guards drafts, not the process running correspond: whoever sets its environment or edits the config file (`$CORRESPOND_CONFIG` can point at another file) chooses the check. Commands that write without correspond (`gh issue comment`, say) are covered by liaise’s hook, not by this check.
 - A write that fails is a result, not an exception: `ok: false`, an `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`, `unconfirmed`, or one of the four check kinds above), and whether a retry can help (`retryable`, `retry_after`).
@@ -935,6 +936,13 @@ within one second can make a poll repeat itself, and a list cut short (more than
 `MAX_PAGES` pages changed) is resumed from where it was cut. A bare ISO time is also
 accepted as a cursor.
 
+#### prepare(ref, draft)
+
+The draft as it will post: `notify` handles checked, the missing mentions added. Pure.
+
+* **Return type:**
+  [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)
+
 #### react(ref, message_id, reaction, , dry_run=False)
 
 Add one of `REACTIONS` to an issue, a comment, a discussion or a discussion comment.
@@ -959,6 +967,10 @@ Reopen a closed issue, pull request or discussion; the plan reads the state back
 #### send(ref, draft, , dry_run=False)
 
 Comment on an issue, pull request or discussion; on a repository, open an issue (`title` required).
+
+`draft.notify` handles (`octocat`, `org/team`) the text does not @mention yet
+are mentioned on a closing `cc` line, which GitHub notifies; the plan lists them
+under `mentions_added`.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -1149,6 +1161,13 @@ Read and listen to one folder; send with threading headers.
 
 New messages since `cursor` (`<uidvalidity>:<uid>`); a first poll, or a changed UIDVALIDITY, looks back a day.
 
+#### prepare(ref, draft)
+
+The draft as it will go out: `notify` addresses checked and put in Cc (out of Bcc). Pure.
+
+* **Return type:**
+  [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)
+
 #### read(ref, , since=None, limit=None)
 
 Messages in the folder (from `ref`’s address, if it has one), oldest first; never marked seen.
@@ -1159,6 +1178,10 @@ Messages in the folder (from `ref`’s address, if it has one), oldest first; ne
 #### send(ref, draft, , dry_run=False)
 
 Send to `ref`’s address, with `In-Reply-To` and `References` when replying; `cc` in a header, `bcc` only on the envelope.
+
+A `draft.notify` address that is neither the To address nor already in Cc is
+added to Cc (and so leaves Bcc, which would hide it); the plan lists it under
+`cc_added`.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -1331,6 +1354,13 @@ Every message this bot has received or sent, as JSON, keyed `<chat id>/<message 
 
 Updates since `cursor` (an update offset), every one logged before it is handed over.
 
+#### prepare(ref, draft)
+
+The draft as it will post: `notify` usernames checked, the missing mentions added. Pure.
+
+* **Return type:**
+  [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)
+
 #### react(ref, message_id, reaction, , dry_run=False)
 
 `setMessageReaction` with one emoji (a bot has one reaction per message).
@@ -1347,7 +1377,7 @@ What the log holds for a chat or topic, oldest first.
 
 #### send(ref, draft, , dry_run=False)
 
-`sendMessage`, the title (if any) prepended.
+`sendMessage`, the title (if any) prepended; `draft.notify` usernames the text does not @mention yet are mentioned on a closing `cc` line.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -1920,7 +1950,7 @@ JSON-ready.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, notify=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -1929,10 +1959,12 @@ What a channel can do, graded, with its limits.
 One `Support` per operation in `OPERATIONS` (`audience`: can the channel say
 who reads a conversation; `label` / `unlabel`: can labels be added to or removed
 from a conversation, apart from its opening send; `close` / `reopen`: can a
-conversation be settled, and unsettled), plus four features of writing:
+conversation be settled, and unsettled), plus five features of writing:
 `initiate` (can a write start a conversation; Telegram bots cannot), `reply`
-(can a draft answer a specific message), `priority`, and `cc` (can a draft copy
-further recipients, `Draft.cc` and `Draft.bcc`). `history_depth` says how
+(can a draft answer a specific message), `priority`, `cc` (can a draft copy
+further recipients, `Draft.cc` and `Draft.bcc`), and `notify` (can the writer
+guarantee that the people in `Draft.notify` are notified: a mention it adds, an
+address it copies). `history_depth` says how
 far back `read` sees; `grades` are the authenticity grades the channel can attest;
 `native_fields` are the keys its messages may carry in `native` (what a routing
 condition can test), or `None` when the channel does not declare them;
@@ -2066,7 +2098,7 @@ Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exceptio
 
 An expected failure, with a message meant for the person or agent that asked.
 
-### *class* correspond.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>)
+### *class* correspond.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>, notify=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2090,9 +2122,19 @@ dropping it.
 {'labels': ['question']}
 ```
 
+`notify` names who must be notified: handles on a mention platform (`octocat`
+or `@octocat`), addresses on email. The writer guarantees it – a mention added
+when the text lacks one, an address put in Cc when it is not in To or Cc – and a
+channel that cannot raises `NotSupported("notify")` (see [`correspond.notify`](_autosummary/correspond.notify.html.md#module-correspond.notify)).
+
+```pycon
+>>> Draft(text="hi", notify=["octocat", " ", "Octocat", "hubot"]).notify
+('octocat', 'hubot')
+```
+
 #### to_dict()
 
-JSON-ready. `native` appears only when set, so a draft without one keeps the
+JSON-ready. `native` and `notify` appear only when set, so a draft without them keeps the
 dict – and the idempotency fingerprint of a key claimed before `native`
 existed – it always had.
 
@@ -2485,7 +2527,7 @@ Run the chain (bindings, thread continuity, metadata rules, classifier) and retu
 * **Return type:**
   [`RouteDecision`](_autosummary/correspond.routing.html.md#correspond.routing.RouteDecision) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
@@ -2493,6 +2535,9 @@ Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.mod
 `native` carries channel-specific fields (`Draft.native`), checked against the
 channel’s `capabilities.draft_fields`: an unknown key is a validation failure, never
 silently dropped.
+`notify` names who must be notified (`Draft.notify`); the channel’s writer
+guarantees it (a mention added, an address copied) or the send fails with
+`NotSupported("notify")`.
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice).
 
@@ -2545,6 +2590,7 @@ Grade an inbound delivery on `channel` from its headers and raw body.
 | [`idempotency`](_autosummary/correspond.idempotency.html.md#module-correspond.idempotency) | Idempotent sends: an `idempotency_key` keeps a message from going out twice.                                                       |
 | [`mcp`](_autosummary/correspond.mcp.html.md#module-correspond.mcp)                 | MCP over stdio: the same tools, for Claude Desktop and other local MCP clients.                                                    |
 | [`model`](_autosummary/correspond.model.html.md#module-correspond.model)             | The data model every channel is described in.                                                                                      |
+| [`notify`](_autosummary/correspond.notify.html.md#module-correspond.notify)           | Make a draft's `notify` list a property of sending, not a rule a sender can forget.                                                |
 | [`ops`](_autosummary/correspond.ops.html.md#module-correspond.ops)                 | The operations: small protocols an adapter implements a subset of, and the verbs that call them.                                   |
 | [`outbound`](_autosummary/correspond.outbound.html.md#module-correspond.outbound)       | The `before_send` check: what every write runs, with the conversation's audience, before anything leaves.                          |
 | [`registry`](_autosummary/correspond.registry.html.md#module-correspond.registry)       | Which channels exist: the built-in channel table, the registry built from it, and what each channel needs.                         |
@@ -2681,6 +2727,9 @@ What a key is bound to: the conversation and everything the draft says, as SHA-2
 ### correspond.idempotency.matching_message(messages, draft, , since)
 
 The latest of `messages` written by correspond’s own account with `draft`’s text, at or after `since` less [`READ_BACK_SKEW`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.READ_BACK_SKEW).
+
+With `draft.notify`, the text as a mention writer posts it (the mentions it lacked
+added, [`correspond.notify.with_mentions()`](_autosummary/correspond.notify.html.md#correspond.notify.with_mentions)) matches too.
 
 * **Return type:**
   [`Message`](_autosummary/correspond.model.html.md#correspond.model.Message) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
@@ -2973,7 +3022,7 @@ JSON-ready.
 Short phrases for reader classes, used by [`Audience.in_words()`](_autosummary/correspond.model.html.md#correspond.model.Audience.in_words); a class not listed
 here is shown as written.
 
-### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, notify=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2982,10 +3031,12 @@ What a channel can do, graded, with its limits.
 One `Support` per operation in [`OPERATIONS`](_autosummary/correspond.model.html.md#correspond.model.OPERATIONS) (`audience`: can the channel say
 who reads a conversation; `label` / `unlabel`: can labels be added to or removed
 from a conversation, apart from its opening send; `close` / `reopen`: can a
-conversation be settled, and unsettled), plus four features of writing:
+conversation be settled, and unsettled), plus five features of writing:
 `initiate` (can a write start a conversation; Telegram bots cannot), `reply`
-(can a draft answer a specific message), `priority`, and `cc` (can a draft copy
-further recipients, `Draft.cc` and `Draft.bcc`). `history_depth` says how
+(can a draft answer a specific message), `priority`, `cc` (can a draft copy
+further recipients, `Draft.cc` and `Draft.bcc`), and `notify` (can the writer
+guarantee that the people in `Draft.notify` are notified: a mention it adds, an
+address it copies). `history_depth` says how
 far back `read` sees; `grades` are the authenticity grades the channel can attest;
 `native_fields` are the keys its messages may carry in `native` (what a routing
 condition can test), or `None` when the channel does not declare them;
@@ -3109,7 +3160,7 @@ readers (email notifications), an edit history anyone who reads can see.
 * **Type:**
   What a send leaves behind
 
-### *class* correspond.model.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>)
+### *class* correspond.model.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>, notify=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -3133,9 +3184,19 @@ dropping it.
 {'labels': ['question']}
 ```
 
+`notify` names who must be notified: handles on a mention platform (`octocat`
+or `@octocat`), addresses on email. The writer guarantees it – a mention added
+when the text lacks one, an address put in Cc when it is not in To or Cc – and a
+channel that cannot raises `NotSupported("notify")` (see [`correspond.notify`](_autosummary/correspond.notify.html.md#module-correspond.notify)).
+
+```pycon
+>>> Draft(text="hi", notify=["octocat", " ", "Octocat", "hubot"]).notify
+('octocat', 'hubot')
+```
+
 #### to_dict()
 
-JSON-ready. `native` appears only when set, so a draft without one keeps the
+JSON-ready. `native` and `notify` appear only when set, so a draft without them keeps the
 dict – and the idempotency fingerprint of a key claimed before `native`
 existed – it always had.
 
@@ -3295,6 +3356,106 @@ The inverse of [`format_time()`](_autosummary/correspond.model.html.md#correspon
 >>> parse_time("2026-09-11T12:30:00Z") == datetime(2026, 9, 11, 12, 30, tzinfo=timezone.utc)
 True
 ```
+
+
+# _autosummary/correspond.notify.html.md
+
+# correspond.notify
+
+Make a draft’s `notify` list a property of sending, not a rule a sender can forget.
+
+A [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft) may name who must be notified (`Draft.notify`).
+Each writer then guarantees it in its platform’s terms: a mention added to the text
+when it is absent (GitHub, Telegram), an address in To or Cc (email). A channel whose
+`capabilities.notify` is `none` refuses such a draft with `NotSupported("notify")`
+before anything is planned, so a notification is never silently dropped.
+
+These helpers are pure: the writers call them while building the plan, so the dry run
+shows the exact text, or the exact Cc, that will go out.
+
+```pycon
+>>> with_mentions("Fixed in #12.", ["octocat", "@hubot"])
+'Fixed in #12.\n\ncc @octocat @hubot'
+>>> with_mentions("Thanks @Octocat, fixed.", ["octocat"])
+'Thanks @Octocat, fixed.'
+```
+
+### Module Attributes
+
+| [`DFLT_MENTION_LEAD`](_autosummary/correspond.notify.html.md#correspond.notify.DFLT_MENTION_LEAD)   | The line that carries the mentions a text lacked, before the handles.   |
+|----------------------------------------------------------------------|-------------------------------------------------------------------------|
+
+### Functions
+
+| [`handle`](_autosummary/correspond.notify.html.md#correspond.notify.handle)(name)                           | A handle without its leading `@`.                                                              |
+|-----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
+| [`is_mentioned`](_autosummary/correspond.notify.html.md#correspond.notify.is_mentioned)(text, name)               | Is `@name` in `text` as a whole mention that notifies? Case-insensitive.                       |
+| [`missing_mentions`](_autosummary/correspond.notify.html.md#correspond.notify.missing_mentions)(text, names)          | The handles in `names` that `text` does not mention yet, in order, each once.                  |
+| [`with_copies`](_autosummary/correspond.notify.html.md#correspond.notify.with_copies)(to, cc, names)             | `cc` plus every address in `names` that is neither `to` nor already copied (case-insensitive). |
+| [`with_mentions`](_autosummary/correspond.notify.html.md#correspond.notify.with_mentions)(text, names, \*[, lead]) | `text` with a closing `cc @a @b` line naming every handle it did not mention.                  |
+
+### correspond.notify.DFLT_MENTION_LEAD *= 'cc'*
+
+The line that carries the mentions a text lacked, before the handles.
+
+### correspond.notify.handle(name)
+
+A handle without its leading `@`.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
+
+```pycon
+>>> handle("@octocat"), handle("octocat")
+('octocat', 'octocat')
+```
+
+### correspond.notify.is_mentioned(text, name)
+
+Is `@name` in `text` as a whole mention that notifies? Case-insensitive.
+
+Not inside an address or a longer handle, and not inside code or an HTML comment,
+where platforms render it without notifying anyone.
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
+```pycon
+>>> is_mentioned("ping @octocat.", "octocat")
+True
+>>> is_mentioned("mail octocat@example.org", "octocat")
+False
+>>> is_mentioned("ping @octocat-two", "octocat")
+False
+>>> is_mentioned("see `@octocat` and <!-- @octocat -->", "octocat")
+False
+```
+
+### correspond.notify.missing_mentions(text, names)
+
+The handles in `names` that `text` does not mention yet, in order, each once.
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
+
+### correspond.notify.with_copies(to, cc, names)
+
+`cc` plus every address in `names` that is neither `to` nor already copied (case-insensitive).
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
+
+```pycon
+>>> with_copies("a@example.org", ["b@example.org"], ["A@example.org", "c@example.org"])
+('b@example.org', 'c@example.org')
+```
+
+### correspond.notify.with_mentions(text, names, , lead='cc')
+
+`text` with a closing `cc @a @b` line naming every handle it did not mention.
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 
 # _autosummary/correspond.ops.html.md
@@ -3557,7 +3718,7 @@ Reopen a closed conversation; the `before_send` check sees `reopen` as the draft
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
@@ -3565,6 +3726,9 @@ Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.mod
 `native` carries channel-specific fields (`Draft.native`), checked against the
 channel’s `capabilities.draft_fields`: an unknown key is a validation failure, never
 silently dropped.
+`notify` names who must be notified (`Draft.notify`); the channel’s writer
+guarantees it (a mention added, an address copied) or the send fails with
+`NotSupported("notify")`.
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice).
 
@@ -4328,6 +4492,13 @@ Any non-empty id of letters, digits and `._/#-`.
 * **Return type:**
   [`ConversationRef`](_autosummary/correspond.model.html.md#correspond.model.ConversationRef)
 
+#### prepare(ref, draft)
+
+The draft as it will post: the `notify` mentions the text lacks added. Pure.
+
+* **Return type:**
+  [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)
+
 #### read(ref, , since=None, limit=None)
 
 The seeded (and sent) messages of a conversation.
@@ -4338,6 +4509,10 @@ The seeded (and sent) messages of a conversation.
 #### send(ref, draft, , dry_run=False)
 
 Append to the conversation (or, with `dry_run`, say that it would).
+
+`draft.notify` handles the text does not @mention are mentioned on a closing
+`cc` line, as a mention platform’s writer does (`sent` keeps the draft as
+given; the conversation holds the text as posted).
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -4388,7 +4563,7 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 
 ### Functions
 
-| [`audience`](_autosummary/correspond.tools.html.md#correspond.tools.audience)(ref, \*[, cc, bcc])                    | Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow.   |
+| [`audience`](_autosummary/correspond.tools.html.md#correspond.tools.audience)(ref, \*[, cc, bcc, notify])            | Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow.   |
 |--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`authored`](_autosummary/correspond.tools.html.md#correspond.tools.authored)(text)                                  | What the sender of one email body wrote: their text and inline answers, apart from quoted replies, forwards, signature and disclaimer.                                                                         |
 | [`authored_thread`](_autosummary/correspond.tools.html.md#correspond.tools.authored_thread)(path, \*[, author])             | What each sender of an email thread wrote, oldest first, with inline answers recovered by comparing each message with the earlier ones.                                                                        |
@@ -4416,9 +4591,9 @@ locally); `external` writes to a remote service, where people see it.
 
 Every tool, in the order surfaces list them.
 
-### correspond.tools.audience(ref, , cc=None, bcc=None)
+### correspond.tools.audience(ref, , cc=None, bcc=None, notify=None)
 
-Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does.
+Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add, and `notify` the same send’s notify list (on email those addresses go in Cc). Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -4514,9 +4689,9 @@ What a channel needs (install command, binaries, platform, each setting and wher
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, native=None, idempotency_key=None, dry_run=False)
+### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, native=None, notify=None, idempotency_key=None, dry_run=False)
 
-Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens; the plan reports which of them stuck). Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
+Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens; the plan reports which of them stuck). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -4535,16 +4710,18 @@ Remove labels (comma-separated; a label name may not itself contain a comma) fro
 
 # About this build
 
-This documentation was built on **2026-10-14 05:21 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/5a57b266ed6e1d3a3dd9754d83997bc26182548f"><code>5a57b26</code></a> on branch <code>main</code>, for **correspond 0.0.14** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-14 06:02 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/a8605e38c71b5bc41c5c3a0733df005f0c83ce0f"><code>a8605e3</code></a> on branch <code>main</code>, for **correspond 0.0.15** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.15) is behind the latest release on PyPI (0.0.16): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/5a57b266ed6e1d3a3dd9754d83997bc26182548f"><code>5a57b266ed6e1d3a3dd9754d83997bc26182548f</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/a8605e38c71b5bc41c5c3a0733df005f0c83ce0f"><code>a8605e38c71b5bc41c5c3a0733df005f0c83ce0f</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -4555,9 +4732,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/38516070257">38516070257</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/38519758000">38519758000</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>5a57b266ed6e1d3a3dd9754d83997bc26182548f</code> (in the history of the built commit)  |
+| Event commit | <code>a8605e38c71b5bc41c5c3a0733df005f0c83ce0f</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -4582,13 +4759,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.14/">0.0.14</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.16/">0.0.16</a>, newer than the documented version (0.0.15).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 5a57b266ed6e1d3a3dd9754d83997bc26182548f
+git checkout a8605e38c71b5bc41c5c3a0733df005f0c83ce0f
 pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

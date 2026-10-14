@@ -20,7 +20,7 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 
 ### Functions
 
-| [`audience`](#correspond.tools.audience)(ref, \*[, cc, bcc])                    | Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow.   |
+| [`audience`](#correspond.tools.audience)(ref, \*[, cc, bcc, notify])            | Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow.   |
 |--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | [`authored`](#correspond.tools.authored)(text)                                  | What the sender of one email body wrote: their text and inline answers, apart from quoted replies, forwards, signature and disclaimer.                                                                         |
 | [`authored_thread`](#correspond.tools.authored_thread)(path, \*[, author])             | What each sender of an email thread wrote, oldest first, with inline answers recovered by comparing each message with the earlier ones.                                                                        |
@@ -48,9 +48,9 @@ locally); `external` writes to a remote service, where people see it.
 
 Every tool, in the order surfaces list them.
 
-### correspond.tools.audience(ref, , cc=None, bcc=None)
+### correspond.tools.audience(ref, , cc=None, bcc=None, notify=None)
 
-Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does.
+Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add, and `notify` the same send’s notify list (on email those addresses go in Cc). Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -146,9 +146,9 @@ What a channel needs (install command, binaries, platform, each setting and wher
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, native=None, idempotency_key=None, dry_run=False)
+### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, native=None, notify=None, idempotency_key=None, dry_run=False)
 
-Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens; the plan reports which of them stuck). Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
+Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens; the plan reports which of them stuck). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

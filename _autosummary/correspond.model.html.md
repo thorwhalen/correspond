@@ -215,7 +215,7 @@ JSON-ready.
 Short phrases for reader classes, used by [`Audience.in_words()`](#correspond.model.Audience.in_words); a class not listed
 here is shown as written.
 
-### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, notify=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -224,10 +224,12 @@ What a channel can do, graded, with its limits.
 One `Support` per operation in [`OPERATIONS`](#correspond.model.OPERATIONS) (`audience`: can the channel say
 who reads a conversation; `label` / `unlabel`: can labels be added to or removed
 from a conversation, apart from its opening send; `close` / `reopen`: can a
-conversation be settled, and unsettled), plus four features of writing:
+conversation be settled, and unsettled), plus five features of writing:
 `initiate` (can a write start a conversation; Telegram bots cannot), `reply`
-(can a draft answer a specific message), `priority`, and `cc` (can a draft copy
-further recipients, `Draft.cc` and `Draft.bcc`). `history_depth` says how
+(can a draft answer a specific message), `priority`, `cc` (can a draft copy
+further recipients, `Draft.cc` and `Draft.bcc`), and `notify` (can the writer
+guarantee that the people in `Draft.notify` are notified: a mention it adds, an
+address it copies). `history_depth` says how
 far back `read` sees; `grades` are the authenticity grades the channel can attest;
 `native_fields` are the keys its messages may carry in `native` (what a routing
 condition can test), or `None` when the channel does not declare them;
@@ -351,7 +353,7 @@ readers (email notifications), an edit history anyone who reads can see.
 * **Type:**
   What a send leaves behind
 
-### *class* correspond.model.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>)
+### *class* correspond.model.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>, notify=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -375,9 +377,19 @@ dropping it.
 {'labels': ['question']}
 ```
 
+`notify` names who must be notified: handles on a mention platform (`octocat`
+or `@octocat`), addresses on email. The writer guarantees it – a mention added
+when the text lacks one, an address put in Cc when it is not in To or Cc – and a
+channel that cannot raises `NotSupported("notify")` (see [`correspond.notify`](correspond.notify.html.md#module-correspond.notify)).
+
+```pycon
+>>> Draft(text="hi", notify=["octocat", " ", "Octocat", "hubot"]).notify
+('octocat', 'hubot')
+```
+
 #### to_dict()
 
-JSON-ready. `native` appears only when set, so a draft without one keeps the
+JSON-ready. `native` and `notify` appear only when set, so a draft without them keeps the
 dict – and the idempotency fingerprint of a key claimed before `native`
 existed – it always had.
 

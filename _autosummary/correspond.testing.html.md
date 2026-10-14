@@ -47,6 +47,13 @@ Any non-empty id of letters, digits and `._/#-`.
 * **Return type:**
   [`ConversationRef`](correspond.model.html.md#correspond.model.ConversationRef)
 
+#### prepare(ref, draft)
+
+The draft as it will post: the `notify` mentions the text lacks added. Pure.
+
+* **Return type:**
+  [`Draft`](correspond.model.html.md#correspond.model.Draft)
+
 #### read(ref, , since=None, limit=None)
 
 The seeded (and sent) messages of a conversation.
@@ -57,6 +64,10 @@ The seeded (and sent) messages of a conversation.
 #### send(ref, draft, , dry_run=False)
 
 Append to the conversation (or, with `dry_run`, say that it would).
+
+`draft.notify` handles the text does not @mention are mentioned on a closing
+`cc` line, as a mention platform’s writer does (`sent` keeps the draft as
+given; the conversation holds the text as posted).
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)

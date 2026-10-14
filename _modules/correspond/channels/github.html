@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=544df88d"></script>
+    <script src="../../../_static/documentation_options.js?v=f0357c94"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.14" />
+  <meta name="docsearch:version" content="0.0.15" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -764,7 +764,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">replace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">email.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">parsedate_to_datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
@@ -796,6 +796,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">format_time</span><span class="p">,</span>
     <span class="n">parse_time</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.notify</span><span class="w"> </span><span class="kn">import</span> <span class="n">handle</span><span class="p">,</span> <span class="n">missing_mentions</span><span class="p">,</span> <span class="n">with_mentions</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">with_final_cursor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">require</span>
 
@@ -835,6 +836,10 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
 <span class="p">)</span>
 <span class="n">MAX_BODY_CHARS</span> <span class="o">=</span> <span class="mi">65_536</span>
+<span class="c1">#: A handle GitHub notifies on mention: a user (``octocat``) or a team (``org/team``).</span>
+<span class="n">GITHUB_HANDLE_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">r</span><span class="s2">"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})(?:/[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9_])?)?$"</span>
+<span class="p">)</span>
 <span class="n">MAX_TITLE_CHARS</span> <span class="o">=</span> <span class="mi">256</span>
 <span class="c1">#: The ``Draft.native`` keys opening an issue takes (``POST /repos/{owner}/{repo}/issues``).</span>
 <span class="n">DRAFT_FIELDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"labels"</span><span class="p">,</span> <span class="s2">"assignees"</span><span class="p">,</span> <span class="s2">"milestone"</span><span class="p">)</span>
@@ -1176,6 +1181,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">reopen</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">initiate</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">reply</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
+            <span class="n">notify</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
             <span class="n">history_depth</span><span class="o">=</span><span class="n">HistoryDepth</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">listen_modes</span><span class="o">=</span><span class="p">(</span><span class="s2">"poll"</span><span class="p">,),</span>
             <span class="n">grades</span><span class="o">=</span><span class="p">(</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span> <span class="n">Grade</span><span class="o">.</span><span class="n">CRYPTO</span><span class="p">,</span> <span class="n">Grade</span><span class="o">.</span><span class="n">FORGED</span><span class="p">),</span>
@@ -1203,6 +1209,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
                 <span class="s2">"listen polls issue and comment activity of a repository or of one issue; discussions are read but not listened to"</span><span class="p">,</span>
                 <span class="s2">"reply_to works in discussions only; issue and pull request comments are flat"</span><span class="p">,</span>
+                <span class="s2">"notify mentions each handle the text lacks; GitHub notifies a mentioned user or team who can see the repository, so on a private one a non-member is not reached"</span><span class="p">,</span>
                 <span class="s2">"pull request review comments on diffs are not read"</span><span class="p">,</span>
                 <span class="s2">"listen can miss a change only when more than 2,000 issues or comments change within the same second"</span><span class="p">,</span>
                 <span class="s2">"audience is the repository's readership and never complete (installed apps, webhooks and security managers cannot be listed); a 404 or 403 resolves to public"</span><span class="p">,</span>
@@ -1927,7 +1934,37 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Comment on an issue, pull request or discussion; on a repository, open an issue (``title`` required)."""</span>
+<span class="w">        </span><span class="sd">"""Comment on an issue, pull request or discussion; on a repository, open an issue (``title`` required).</span>
+
+<span class="sd">        ``draft.notify`` handles (``octocat``, ``org/team``) the text does not @mention yet</span>
+<span class="sd">        are mentioned on a closing ``cc`` line, which GitHub notifies; the plan lists them</span>
+<span class="sd">        under ``mentions_added``.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
+        <span class="n">added</span> <span class="o">=</span> <span class="n">missing_mentions</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">),</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
+        <span class="n">notified</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"notify"</span><span class="p">:</span> <span class="p">[</span><span class="n">handle</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">],</span> <span class="s2">"mentions_added"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">added</span><span class="p">)}</span>
+        <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">result</span><span class="o">.</span><span class="n">plan</span><span class="p">,</span> <span class="o">**</span><span class="n">notified</span><span class="p">})</span></div>
+
+
+<div class="viewcode-block" id="GitHub.prepare">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.github.html#correspond.channels.github.GitHub.prepare">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Draft</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The draft as it will post: ``notify`` handles checked, the missing mentions added. Pure."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">draft</span>
+        <span class="n">bad</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">GITHUB_HANDLE_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">handle</span><span class="p">(</span><span class="n">n</span><span class="p">))]</span>
+        <span class="k">if</span> <span class="n">bad</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"not a GitHub user or team handle: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bad</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">draft</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">with_mentions</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">))</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_send</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
         <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parts</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">number</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
@@ -2042,8 +2079,7 @@ window.runMermaid = runMermaid;</script>
             <span class="sa">f</span><span class="s2">"discussioncomment-</span><span class="si">{</span><span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'databaseId'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
             <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"url"</span><span class="p">),</span>
             <span class="n">plan</span><span class="p">,</span>
-        <span class="p">)</span></div>
-
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_discussion_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>

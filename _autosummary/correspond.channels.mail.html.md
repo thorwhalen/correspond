@@ -76,6 +76,13 @@ Read and listen to one folder; send with threading headers.
 
 New messages since `cursor` (`<uidvalidity>:<uid>`); a first poll, or a changed UIDVALIDITY, looks back a day.
 
+#### prepare(ref, draft)
+
+The draft as it will go out: `notify` addresses checked and put in Cc (out of Bcc). Pure.
+
+* **Return type:**
+  [`Draft`](correspond.model.html.md#correspond.model.Draft)
+
 #### read(ref, , since=None, limit=None)
 
 Messages in the folder (from `ref`’s address, if it has one), oldest first; never marked seen.
@@ -86,6 +93,10 @@ Messages in the folder (from `ref`’s address, if it has one), oldest first; ne
 #### send(ref, draft, , dry_run=False)
 
 Send to `ref`’s address, with `In-Reply-To` and `References` when replying; `cc` in a header, `bcc` only on the envelope.
+
+A `draft.notify` address that is neither the To address nor already in Cc is
+added to Cc (and so leaves Bcc, which would hide it); the plan lists it under
+`cc_added`.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)

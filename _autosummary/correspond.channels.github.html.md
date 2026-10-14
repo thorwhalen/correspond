@@ -154,6 +154,13 @@ within one second can make a poll repeat itself, and a list cut short (more than
 `MAX_PAGES` pages changed) is resumed from where it was cut. A bare ISO time is also
 accepted as a cursor.
 
+#### prepare(ref, draft)
+
+The draft as it will post: `notify` handles checked, the missing mentions added. Pure.
+
+* **Return type:**
+  [`Draft`](correspond.model.html.md#correspond.model.Draft)
+
 #### react(ref, message_id, reaction, , dry_run=False)
 
 Add one of `REACTIONS` to an issue, a comment, a discussion or a discussion comment.
@@ -178,6 +185,10 @@ Reopen a closed issue, pull request or discussion; the plan reads the state back
 #### send(ref, draft, , dry_run=False)
 
 Comment on an issue, pull request or discussion; on a repository, open an issue (`title` required).
+
+`draft.notify` handles (`octocat`, `org/team`) the text does not @mention yet
+are mentioned on a closing `cc` line, which GitHub notifies; the plan lists them
+under `mentions_added`.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)

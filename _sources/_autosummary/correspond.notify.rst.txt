@@ -1,0 +1,22 @@
+correspond.notify
+=================
+
+.. automodule:: correspond.notify
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_MENTION_LEAD
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      handle
+      is_mentioned
+      missing_mentions
+      with_copies
+      with_mentions
+   

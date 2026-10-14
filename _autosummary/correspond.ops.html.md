@@ -256,7 +256,7 @@ Reopen a closed conversation; the `before_send` check sees `reopen` as the draft
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
@@ -264,6 +264,9 @@ Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to
 `native` carries channel-specific fields (`Draft.native`), checked against the
 channel’s `capabilities.draft_fields`: an unknown key is a validation failure, never
 silently dropped.
+`notify` names who must be notified (`Draft.notify`); the channel’s writer
+guarantees it (a mention added, an address copied) or the send fails with
+`NotSupported("notify")`.
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](correspond.outbound.html.md#correspond.outbound.notice).
 

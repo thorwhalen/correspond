@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=544df88d"></script>
+    <script src="../../_static/documentation_options.js?v=f0357c94"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.14" />
+  <meta name="docsearch:version" content="0.0.15" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -730,6 +730,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span>
@@ -746,6 +747,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">SendResult</span><span class="p">,</span>
     <span class="n">Support</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.notify</span><span class="w"> </span><span class="kn">import</span> <span class="n">missing_mentions</span><span class="p">,</span> <span class="n">with_mentions</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"DEMO_CONVERSATION"</span><span class="p">,</span> <span class="s2">"FakeChannel"</span><span class="p">,</span> <span class="s2">"demo_channel"</span><span class="p">,</span> <span class="s2">"demo_message"</span><span class="p">,</span> <span class="s2">"main"</span><span class="p">]</span>
 
@@ -780,6 +782,7 @@ window.runMermaid = runMermaid;</script>
             <span class="n">send</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">initiate</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">reply</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">notify</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">history_depth</span><span class="o">=</span><span class="n">HistoryDepth</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">grades</span><span class="o">=</span><span class="p">(</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span> <span class="n">Grade</span><span class="o">.</span><span class="n">CLAIMED</span><span class="p">),</span>
             <span class="n">max_text_length</span><span class="o">=</span><span class="mi">10_000</span><span class="p">,</span>
@@ -809,18 +812,35 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="n">messages</span><span class="p">[</span><span class="o">-</span><span class="n">limit</span><span class="p">:]</span> <span class="k">if</span> <span class="n">limit</span> <span class="k">else</span> <span class="n">messages</span></div>
 
 
+<div class="viewcode-block" id="FakeChannel.prepare">
+<a class="viewcode-back" href="../../_autosummary/correspond.testing.html#correspond.testing.FakeChannel.prepare">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">prepare</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Draft</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The draft as it will post: the ``notify`` mentions the text lacks added. Pure."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">draft</span>
+        <span class="k">return</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">draft</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="n">with_mentions</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">))</span></div>
+
+
 <div class="viewcode-block" id="FakeChannel.send">
 <a class="viewcode-back" href="../../_autosummary/correspond.testing.html#correspond.testing.FakeChannel.send">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Append to the conversation (or, with ``dry_run``, say that it would)."""</span>
+<span class="w">        </span><span class="sd">"""Append to the conversation (or, with ``dry_run``, say that it would).</span>
+
+<span class="sd">        ``draft.notify`` handles the text does not @mention are mentioned on a closing</span>
+<span class="sd">        ``cc`` line, as a mention platform's writer does (``sent`` keeps the draft as</span>
+<span class="sd">        given; the conversation holds the text as posted).</span>
+<span class="sd">        """</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span><span class="o">.</span><span class="n">text</span>
         <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"append a message to the in-memory conversation"</span><span class="p">,</span>
             <span class="s2">"conversation"</span><span class="p">:</span> <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
-            <span class="s2">"text"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="s2">"text"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
             <span class="s2">"reply_to"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
         <span class="p">}</span>
+        <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">:</span>
+            <span class="n">plan</span><span class="p">[</span><span class="s2">"mentions_added"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">missing_mentions</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">))</span>
         <span class="n">account</span> <span class="o">=</span> <span class="n">Account</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">"fake-bot"</span><span class="p">,</span> <span class="n">acts_as</span><span class="o">=</span><span class="s2">"bot"</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
@@ -834,7 +854,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">thread</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conversations</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="p">[])</span>
         <span class="n">message</span> <span class="o">=</span> <span class="n">demo_message</span><span class="p">(</span>
             <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
-            <span class="n">text</span><span class="o">=</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
             <span class="n">message_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"m</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">thread</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
             <span class="n">handle</span><span class="o">=</span><span class="s2">"fake-bot"</span><span class="p">,</span>
             <span class="n">is_self</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
