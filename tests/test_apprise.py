@@ -33,15 +33,19 @@ class _Notifier:
     def __init__(self, log, *, accepts=True, outcome=True, tags=("ops",)):
         self.log, self.accepts, self.outcome, self.tags = log, accepts, outcome, tags
 
-    def find(self, tag):
+    def find(self, tag, match_always=True):
+        self.log.append(("find", tag, match_always))
         return iter([tag] if tag in self.tags else [])
 
     def add(self, target):
         self.log.append(("add", target if isinstance(target, str) else "config-book"))
         return self.accepts
 
-    def notify(self, *, body, title, tag):
-        self.log.append(("notify", body, title, tag))
+    def notify(self, *, body, title, tag, match_always=True):
+        import logging
+
+        assert logging.getLogger("apprise").disabled, "apprise logs URLs; it must be silenced"
+        self.log.append(("notify", body, title, tag, match_always))
         return self.outcome
 
 
@@ -59,7 +63,8 @@ def _channel(log, **kw):
 
 def test_a_reference_is_an_alias_never_a_url():
     assert Apprise().parse_ref("team-alerts").id == "team-alerts"
-    for bad in ("", "discord://123/token", "a b", "x" * 65):
+    assert Apprise().parse_ref("Team-Alerts").id == "team-alerts"  # case folded
+    for bad in ("", "discord://123/token", "a b", "x" * 65, "a_b", "all", "ALWAYS"):
         with pytest.raises(InvalidRef):
             Apprise().parse_ref(bad)
 
@@ -71,7 +76,7 @@ def test_sending_to_an_alias_from_the_environment(monkeypatch):
         "apprise:team-alerts", "backup finished", title="Backups", registry=_channel(log)
     )
     assert result.ok and not result.dry_run
-    assert log == [("add", SECRET_URL), ("notify", "backup finished", "Backups", None)]
+    assert log == [("add", SECRET_URL), ("notify", "backup finished", "Backups", None, False)]
     assert result.plan["service"] == "discord" and result.plan["source"] == "env"
     assert "example-secret-token" not in json.dumps(result.to_dict())
 
@@ -92,12 +97,20 @@ def test_an_alias_is_a_tag_in_the_apprise_config_file(monkeypatch, tmp_path):
     log = []
     result = correspond.send("apprise:ops", "disk at 95%", registry=_channel(log))
     assert result.ok and result.plan["tag"] == "ops" and result.plan["source"] == "config"
-    assert log == [("config", str(book)), ("add", "config-book"), ("notify", "disk at 95%", "", "ops")]
+    assert log == [
+        ("config", str(book)),
+        ("add", "config-book"),
+        ("find", "ops", False),
+        ("notify", "disk at 95%", "", "ops", False),
+    ]
 
 
 def test_a_tag_nothing_carries_is_said_so_and_nothing_is_sent(monkeypatch, tmp_path):
-    """Apprise answers an unmatched tag with False, like a failed delivery."""
-    monkeypatch.setenv("CORRESPOND_APPRISE_CONFIG", str(tmp_path / "apprise.yml"))
+    """Apprise answers an unmatched tag with False, like a failed delivery; and an
+    ``always``-tagged URL must not catch a typo (find/notify with match_always=False)."""
+    book = tmp_path / "apprise.yml"
+    book.write_text("urls: []\n")
+    monkeypatch.setenv("CORRESPOND_APPRISE_CONFIG", str(book))
     log = []
     result = correspond.send("apprise:nobody", "hi", registry=_channel(log, outcome=False))
     assert not result.ok and "no URL in" in str(result.error) and "nobody" in str(result.error)
@@ -162,7 +175,10 @@ def test_check_requirements_names_the_extra_when_apprise_is_missing(monkeypatch)
     monkeypatch.setattr(
         importlib.util, "find_spec", lambda name, *a: None if name == "apprise" else real(name, *a)
     )
-    found = registry.check_requirements("apprise")
+    try:
+        found = registry.check_requirements("apprise")
+    finally:
+        registry.channels.cache_clear()  # it was built while apprise was hidden
     assert not found["ok"] and any('correspond[apprise]' in p for p in found["problems"])
 
 
@@ -184,3 +200,37 @@ def test_the_default_install_does_not_pull_apprise_in():
     project = tomllib.loads((Path(__file__).resolve().parent.parent / "pyproject.toml").read_text())["project"]
     assert not any(dep.startswith("apprise") for dep in project["dependencies"])
     assert any(dep.startswith("apprise") for dep in project["optional-dependencies"]["apprise"])
+
+
+# --- review of #45 ----------------------------------------------------------------
+
+
+def test_one_alias_holds_one_url(monkeypatch):
+    """Apprise splits on commas: two services would get it while the plan named one."""
+    monkeypatch.setenv(alias_env("team"), "json://a/, mailto://b@example.org")
+    result = correspond.send("apprise:team", "hi", dry_run=True, registry=_channel([]))
+    assert not result.ok and "exactly one Apprise URL" in str(result.error)
+
+
+def test_the_config_setting_is_a_local_path_never_a_url(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_APPRISE_CONFIG", "https://host.example/cfg?token=example-secret")
+    result = correspond.send("apprise:ops", "hi", dry_run=True, registry=_channel([]))
+    assert not result.ok and "local file path" in str(result.error)
+    assert "example-secret" not in json.dumps(result.to_dict())
+
+
+def test_a_missing_config_file_is_said_so_in_a_dry_run_too(monkeypatch, tmp_path):
+    monkeypatch.setenv("CORRESPOND_APPRISE_CONFIG", str(tmp_path / "nope.yml"))
+    result = correspond.send("apprise:ops", "hi", dry_run=True, registry=_channel([]))
+    assert not result.ok and "does not exist" in str(result.error)
+
+
+def test_a_dry_run_with_a_keychain_says_the_keychain_comes_first(monkeypatch, tmp_path):
+    book = tmp_path / "apprise.yml"
+    book.write_text("urls: []\n")
+    monkeypatch.setenv("CORRESPOND_APPRISE_CONFIG", str(book))
+    channel = Apprise(apprise=_fake_apprise([]), keychain=lambda s: "", keychain_available=lambda: True)
+    planned = channel.send(channel.parse_ref("ops"), correspond.Draft(text="hi"), dry_run=True)
+    assert planned.plan["source"].startswith("looked up when sending, in the Keychain")
+    assert planned.plan["source"].endswith("else the tag in the config file")
+    assert planned.plan["looked_up_when_sending"] == ["url"] and planned.plan["tag"] == "ops"

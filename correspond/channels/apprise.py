@@ -1,17 +1,22 @@
 """Apprise: send-only notifications to the long tail of services (about 155), each named by an alias.
 
-References: ``apprise:<alias>``. A reference never holds an Apprise URL, because the URL
+References: ``apprise:<alias>``, an alias being 1-64 of ``a-z``, ``0-9`` and ``-`` (case is
+folded; ``all`` and ``always`` are Apprise's match-everything tags, so they are refused). A
+reference never holds an Apprise URL, because the URL
 carries the service's credentials (``discord://webhook_id/webhook_token``,
 ``tgram://bot_token/chat_id``...). The alias is resolved, in this order:
 
-1. ``$CORRESPOND_APPRISE_URL_<ALIAS>`` (upper case, ``-`` as ``_``);
-2. on macOS, the Keychain item ``correspond-apprise-url-<alias>``;
-3. the Apprise configuration file named by ``config`` in the ``[apprise]`` table (or
+1. ``$CORRESPOND_APPRISE_URL_<ALIAS>`` (upper case, ``-`` as ``_``), holding ONE URL;
+2. on macOS, the Keychain item ``correspond-apprise-url-<alias>``, likewise;
+3. the local Apprise configuration file named by ``config`` in the ``[apprise]`` table (or
    ``$CORRESPOND_APPRISE_CONFIG``), where the alias is an Apprise **tag**: every URL in the
-   file carrying that tag is notified (see the configuration-file documentation linked from https://pypi.org/project/apprise/).
+   file carrying exactly that tag is notified (see the configuration-file documentation
+   linked from https://pypi.org/project/apprise/). URLs tagged ``always`` are NOT added:
+   an alias names its recipients, and a typo must not reach anyone.
 
 A dry run reads only the environment and the config file: a Keychain alias is looked up when
-sending, and the plan says so. The plan names the service (the URL's scheme), never the URL.
+sending, and the plan says so. The plan names the service (the URL's scheme), never the URL,
+and Apprise's own logging, which prints URLs, is silenced while correspond calls it.
 
 Needs the ``apprise`` extra: ``pip install "correspond[apprise]"``. It is imported when a
 message is sent, not when the channel is listed.
@@ -23,9 +28,11 @@ message is sent, not when the channel is listed.
 from __future__ import annotations
 
 import importlib
+import logging
 import os
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from correspond import settings as _settings
@@ -46,7 +53,9 @@ from correspond.registry import value
 __all__ = ["Apprise", "alias_env"]
 
 NAME = "apprise"
-ALIAS_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+ALIAS_RE = re.compile(r"^[a-z0-9-]{1,64}$")
+#: Apprise tags that match more than their own name.
+RESERVED_TAGS = frozenset({"all", "always"})
 
 
 def alias_env(alias: str) -> str:
@@ -79,6 +88,27 @@ def _service(url: str) -> str:
     return scheme.lower() if sep and re.fullmatch(r"[A-Za-z][A-Za-z0-9+.-]*", scheme) else "(unrecognised)"
 
 
+@contextmanager
+def _quiet_apprise() -> Iterator[None]:
+    """Silence the ``apprise`` logger, which prints full URLs (credentials) on errors."""
+    logger = logging.getLogger("apprise")
+    was = logger.disabled
+    logger.disabled = True
+    try:
+        yield
+    finally:
+        logger.disabled = was
+
+
+def _url_count(url: str) -> int:
+    """How many URLs a value holds (Apprise splits on commas and spaces).
+
+    >>> _url_count("json://a/"), _url_count("json://a/, mailto://b")
+    (1, 2)
+    """
+    return url.count("://")
+
+
 def _untagged(alias: str, config: str | None) -> MissingRequirement:
     return MissingRequirement(
         NAME,
@@ -86,6 +116,36 @@ def _untagged(alias: str, config: str | None) -> MissingRequirement:
         fix=f"tag a URL {alias!r} in that file, or set {alias_env(alias)}",
         kind="validation",
     )
+
+
+def _one_url(alias: str, url: str, source: str) -> str:
+    if _url_count(url) != 1:
+        raise ChannelError(
+            f"the {source} value for alias {alias!r} does not hold exactly one Apprise URL; "
+            "give each service its own alias, or tag several URLs in the config file",
+            kind="validation",
+        )
+    return url
+
+
+def _config_path(setting: str | None) -> str | None:
+    """The config file as a local path; a URL is refused, since it may carry credentials."""
+    if not setting:
+        return None
+    if "://" in setting:
+        raise ChannelError(
+            "the apprise config setting must be a local file path, not a URL",
+            kind="validation",
+        )
+    path = os.path.expanduser(setting)
+    if not os.path.isfile(path):
+        raise MissingRequirement(
+            NAME,
+            f"the Apprise config file {path} does not exist",
+            fix="point config under [apprise] (or CORRESPOND_APPRISE_CONFIG) at an existing file",
+            kind="validation",
+        )
+    return path
 
 
 def _import_apprise() -> Any:
@@ -165,28 +225,44 @@ class Apprise:
         )
 
     def parse_ref(self, id: str) -> ConversationRef:
-        """An alias: 1-64 letters, digits, ``-`` or ``_``."""
-        if not ALIAS_RE.match(id or ""):
+        """An alias: 1-64 of ``a-z``, ``0-9`` and ``-``, case folded; never ``all`` or ``always``.
+
+        One spelling per alias, so each has exactly one environment variable and one
+        Keychain item (``a-b`` and ``a_b`` would share ``..._A_B``).
+        """
+        alias = (id or "").lower()
+        if not ALIAS_RE.match(alias):
             raise InvalidRef(
-                f"apprise references name an alias (1-64 letters, digits, '-' or '_'), never a URL, not {id!r}"
+                f"apprise references name an alias (1-64 letters, digits or '-'), never a URL, not {id!r}"
             )
-        return ConversationRef(channel=NAME, id=id, kind="alias")
+        if alias in RESERVED_TAGS:
+            raise InvalidRef(
+                f"{alias!r} is an Apprise match-everything tag, so it cannot be an alias"
+            )
+        return ConversationRef(channel=NAME, id=alias, kind="alias")
 
     def _target(self, alias: str, *, dry_run: bool) -> tuple[str | None, str | None, str]:
-        """``(url, config_path, source)`` for an alias; neither found is ``(None, None, ...)``."""
+        """``(url, config_path, source)`` for an alias; neither found is ``(None, None, ...)``.
+
+        In a dry run with a Keychain, the Keychain is not read, so the source says the
+        URL is looked up there first and the config tag is only the fallback.
+        """
         url = os.environ.get(alias_env(alias), "").strip()
         if url:
-            return url, None, "env"
+            return _one_url(alias, url, "env"), None, "env"
         keychain = self._has_keychain()
         if keychain and not dry_run:
             url = self._keychain_get(alias_keychain_service(alias)).strip()
             if url:
-                return url, None, "keychain"
-        config = value(NAME, "config")
+                return _one_url(alias, url, "keychain"), None, "keychain"
+        config = _config_path(value(NAME, "config"))
+        later = f"looked up when sending, in the Keychain ({alias_keychain_service(alias)})"
         if config:
-            return None, os.path.expanduser(config), "config"
+            if keychain and dry_run:
+                return None, config, f"{later}; else the tag in the config file"
+            return None, config, "config"
         if keychain and dry_run:
-            return None, None, f"looked up when sending, in the Keychain ({alias_keychain_service(alias)})"
+            return None, None, later
         return None, None, "missing"
 
     def send(
@@ -215,11 +291,12 @@ class Apprise:
         }
         if url is not None:
             plan["service"] = _service(url)
-        elif config is not None:
-            plan["config"] = config
-            plan["tag"] = alias
         else:
-            plan["looked_up_when_sending"] = ["url"]
+            if source != "config":
+                plan["looked_up_when_sending"] = ["url"]
+            if config is not None:
+                plan["config"] = config
+                plan["tag"] = alias
         if draft.priority:
             plan["priority_not_sent"] = draft.priority
         if dry_run:
@@ -228,6 +305,11 @@ class Apprise:
             )
 
         apprise = self._apprise()
+        with _quiet_apprise():
+            return self._notify(apprise, ref, draft, url=url, config=config, plan=plan)
+
+    def _notify(self, apprise, ref, draft, *, url, config, plan) -> SendResult:
+        alias = ref.id
         notifier = apprise.Apprise()
         if url is not None:
             if not notifier.add(url):
@@ -246,9 +328,11 @@ class Apprise:
             tag = alias
             # Apprise answers an unmatched tag with False, the same answer as a
             # failed delivery; ask first, so "nothing is tagged" is said as such.
-            if not any(True for _ in notifier.find(tag=tag)):
+            if not any(True for _ in notifier.find(tag=tag, match_always=False)):
                 raise _untagged(alias, config)
-        sent = notifier.notify(body=draft.text, title=draft.title or "", tag=tag)
+        sent = notifier.notify(
+            body=draft.text, title=draft.title or "", tag=tag, match_always=False
+        )
         if sent is None:  # what some Apprise versions answer for an unmatched tag
             raise _untagged(alias, config)
         if not sent:
