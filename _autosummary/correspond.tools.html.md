@@ -85,7 +85,7 @@ List the channels correspond knows: available, missing a module, planned (with i
 
 ### correspond.tools.close(ref, , reason=None, dry_run=False)
 
-Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it). `reason` is in the channel’s vocabulary (GitHub issues: completed, not_planned or duplicate). Run it with `dry_run` first. It passes the before_send check, as for `send`.
+Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it). `reason` is in the channel’s vocabulary (GitHub issues: completed, not_planned or duplicate; GitHub discussions: resolved, outdated or duplicate). Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

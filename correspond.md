@@ -1,4 +1,4 @@
-> built 2026-10-14 03:27 UTC from 6087e85 (main) · correspond 0.0.12. Details: build_info.json
+> built 2026-10-14 04:23 UTC from d075986 (main) · correspond 0.0.13. Details: build_info.json
 
 # index.html.md
 
@@ -553,7 +553,11 @@ limit and never shows in the process table.
 - `github:owner/repo#N`: an issue, a pull request, or a discussion. GitHub numbers the
   three in one sequence; correspond asks which. `label` and `unlabel` work on an issue
   or pull request only: GitHub discussions have categories, not labels. `close` and
-  `reopen` likewise (a discussion closes through a different API, not covered yet).
+  `reopen` work on all three: an issue or pull request through `PATCH .../issues/N`,
+  a discussion through GraphQL `closeDiscussion` / `reopenDiscussion`. Each kind
+  takes its own close reasons (issue: `completed`, `not_planned`, `duplicate`;
+  discussion: `resolved`, `outdated`, `duplicate`, with `completed` accepted as
+  `resolved`).
 
 Opening an issue takes `Draft.native` keys `labels`, `assignees` and `milestone`,
 set in the creating request so watchers are notified once. GitHub silently drops an
@@ -635,10 +639,14 @@ Issues, pull request conversations and discussions.
 
 #### close(ref, , reason=None, dry_run=False)
 
-Close an issue or pull request (`PATCH .../issues/N`), with an issue’s `state_reason`.
+Close an issue or pull request (`PATCH .../issues/N`) or a discussion (GraphQL).
 
-The plan reads the state back: `was` (before) and `now` / `now_reason` (what
-the response says), so closing an already-closed issue is visible as such.
+`reason` is the kind’s own: an issue’s `state_reason` (`completed`,
+`not_planned`, `duplicate`) or a discussion’s (`resolved`, `outdated`,
+`duplicate`; `completed` is accepted as `resolved`); a pull request takes
+none. The plan reads the state back: `was` (before) and `now` /
+`now_reason` (what the response says), so closing an already-closed
+conversation is visible as such.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -700,7 +708,7 @@ An issue, pull request or discussion with its comments; for a repository, recent
 
 #### reopen(ref, , dry_run=False)
 
-Reopen a closed issue or pull request; the plan reads the state back as for [`close()`](_autosummary/correspond.channels.github.html.md#correspond.channels.github.GitHub.close).
+Reopen a closed issue, pull request or discussion; the plan reads the state back as for [`close()`](_autosummary/correspond.channels.github.html.md#correspond.channels.github.GitHub.close).
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -1455,29 +1463,29 @@ the same verbs, through [`correspond.tools`](_autosummary/correspond.tools.html.
 
 ### Functions
 
-| [`audience`](_autosummary/correspond.html.md#correspond.audience)(ref[, draft, registry])                   | Who can read a conversation, asked of its channel now.                                                                                                                  |
-|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`capabilities`](_autosummary/correspond.html.md#correspond.capabilities)(channel, \*[, registry])              | What a channel can do, graded, with its limits.                                                                                                                         |
-| [`channel_registry`](_autosummary/correspond.html.md#correspond.channel_registry)()                                 | The process registry: built on first use, then shared.                                                                                                                  |
-| [`check_binding`](_autosummary/correspond.html.md#correspond.check_binding)(pattern, \*[, registry])             | What would make a binding never match, found when bindings are loaded instead of by messages quietly going unrouted.                                                    |
-| [`check_requirements`](_autosummary/correspond.html.md#correspond.check_requirements)(channel, \*[, registry, ...])   | What a channel needs and what is missing: the install command, binaries, platform, and every setting's source.                                                          |
-| [`close`](_autosummary/correspond.html.md#correspond.close)(ref, \*[, reason, dry_run, registry, ...])   | Close a conversation (an issue), with an optional `reason` in the channel's vocabulary; the `before_send` check sees the reason (or `close`) as the draft's text.       |
-| [`edit`](_autosummary/correspond.html.md#correspond.edit)(ref, message_id, text, \*[, dry_run, ...])    | Replace the text of a message correspond's account wrote; the `before_send` check runs first, as for [`send()`](_autosummary/correspond.html.md#correspond.send).           |
-| [`get_channel`](_autosummary/correspond.html.md#correspond.get_channel)(name, \*[, registry])                  | The adapter registered under `name`; [`UnknownChannel`](_autosummary/correspond.errors.html.md#correspond.errors.UnknownChannel) says what to do if there is none. |
-| [`label`](_autosummary/correspond.html.md#correspond.label)(ref, labels, \*[, dry_run, registry, ...])   | Add `labels` to a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                   |
-| [`listen`](_autosummary/correspond.html.md#correspond.listen)(ref, \*[, cursors, limit, commit, ...])     | Events since the cursor stored for `ref`; each cursor is stored once the consumer moves past its event.                                                                 |
-| [`metadata_rule`](_autosummary/correspond.html.md#correspond.metadata_rule)(target, \*[, name])                  | A rule sending messages to `target` when every `field=glob` condition holds.                                                                                            |
-| [`parse_ref`](_autosummary/correspond.html.md#correspond.parse_ref)(ref, \*[, registry])                     | A reference normalised by its channel's adapter (kind and parent filled in, the id validated).                                                                          |
-| [`react`](_autosummary/correspond.html.md#correspond.react)(ref, message_id, reaction, \*[, ...])        | Add a reaction to a message (the channel's capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft's text.                  |
-| [`read`](_autosummary/correspond.html.md#correspond.read)(ref, \*[, since, limit, registry])            | The messages of a conversation, oldest first (`limit` keeps the most recent ones).                                                                                      |
-| [`register_channel`](_autosummary/correspond.html.md#correspond.register_channel)(adapter, \*[, name, ...])         | Add an adapter (tests, or a channel defined outside correspond).                                                                                                        |
-| [`reopen`](_autosummary/correspond.html.md#correspond.reopen)(ref, \*[, dry_run, registry, before_send])  | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                |
-| [`route`](_autosummary/correspond.html.md#correspond.route)(message, \*[, bindings, threads, ...])       | Run the chain (bindings, thread continuity, metadata rules, classifier) and return the first decision, or `None`.                                                       |
-| [`send`](_autosummary/correspond.html.md#correspond.send)(ref, text, \*[, title, reply_to, ...])        | Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.         |
-| [`unlabel`](_autosummary/correspond.html.md#correspond.unlabel)(ref, labels, \*[, dry_run, registry, ...]) | Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                              |
-| [`unregister_channel`](_autosummary/correspond.html.md#correspond.unregister_channel)(name, \*[, registry])           | Remove a channel from the registry.                                                                                                                                     |
-| [`upload`](_autosummary/correspond.html.md#correspond.upload)(ref, name, data, \*[, media_type, ...])     | Send a file to a conversation.                                                                                                                                          |
-| [`verify`](_autosummary/correspond.html.md#correspond.verify)(channel, headers, body, \*[, registry])     | Grade an inbound delivery on `channel` from its headers and raw body.                                                                                                   |
+| [`audience`](_autosummary/correspond.html.md#correspond.audience)(ref[, draft, registry])                   | Who can read a conversation, asked of its channel now.                                                                                                                            |
+|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`capabilities`](_autosummary/correspond.html.md#correspond.capabilities)(channel, \*[, registry])              | What a channel can do, graded, with its limits.                                                                                                                                   |
+| [`channel_registry`](_autosummary/correspond.html.md#correspond.channel_registry)()                                 | The process registry: built on first use, then shared.                                                                                                                            |
+| [`check_binding`](_autosummary/correspond.html.md#correspond.check_binding)(pattern, \*[, registry])             | What would make a binding never match, found when bindings are loaded instead of by messages quietly going unrouted.                                                              |
+| [`check_requirements`](_autosummary/correspond.html.md#correspond.check_requirements)(channel, \*[, registry, ...])   | What a channel needs and what is missing: the install command, binaries, platform, and every setting's source.                                                                    |
+| [`close`](_autosummary/correspond.html.md#correspond.close)(ref, \*[, reason, dry_run, registry, ...])   | Close a conversation (an issue or a discussion), with an optional `reason` in the channel's vocabulary; the `before_send` check sees the reason (or `close`) as the draft's text. |
+| [`edit`](_autosummary/correspond.html.md#correspond.edit)(ref, message_id, text, \*[, dry_run, ...])    | Replace the text of a message correspond's account wrote; the `before_send` check runs first, as for [`send()`](_autosummary/correspond.html.md#correspond.send).                     |
+| [`get_channel`](_autosummary/correspond.html.md#correspond.get_channel)(name, \*[, registry])                  | The adapter registered under `name`; [`UnknownChannel`](_autosummary/correspond.errors.html.md#correspond.errors.UnknownChannel) says what to do if there is none.           |
+| [`label`](_autosummary/correspond.html.md#correspond.label)(ref, labels, \*[, dry_run, registry, ...])   | Add `labels` to a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                             |
+| [`listen`](_autosummary/correspond.html.md#correspond.listen)(ref, \*[, cursors, limit, commit, ...])     | Events since the cursor stored for `ref`; each cursor is stored once the consumer moves past its event.                                                                           |
+| [`metadata_rule`](_autosummary/correspond.html.md#correspond.metadata_rule)(target, \*[, name])                  | A rule sending messages to `target` when every `field=glob` condition holds.                                                                                                      |
+| [`parse_ref`](_autosummary/correspond.html.md#correspond.parse_ref)(ref, \*[, registry])                     | A reference normalised by its channel's adapter (kind and parent filled in, the id validated).                                                                                    |
+| [`react`](_autosummary/correspond.html.md#correspond.react)(ref, message_id, reaction, \*[, ...])        | Add a reaction to a message (the channel's capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft's text.                            |
+| [`read`](_autosummary/correspond.html.md#correspond.read)(ref, \*[, since, limit, registry])            | The messages of a conversation, oldest first (`limit` keeps the most recent ones).                                                                                                |
+| [`register_channel`](_autosummary/correspond.html.md#correspond.register_channel)(adapter, \*[, name, ...])         | Add an adapter (tests, or a channel defined outside correspond).                                                                                                                  |
+| [`reopen`](_autosummary/correspond.html.md#correspond.reopen)(ref, \*[, dry_run, registry, before_send])  | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                          |
+| [`route`](_autosummary/correspond.html.md#correspond.route)(message, \*[, bindings, threads, ...])       | Run the chain (bindings, thread continuity, metadata rules, classifier) and return the first decision, or `None`.                                                                 |
+| [`send`](_autosummary/correspond.html.md#correspond.send)(ref, text, \*[, title, reply_to, ...])        | Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.                   |
+| [`unlabel`](_autosummary/correspond.html.md#correspond.unlabel)(ref, labels, \*[, dry_run, registry, ...]) | Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                        |
+| [`unregister_channel`](_autosummary/correspond.html.md#correspond.unregister_channel)(name, \*[, registry])           | Remove a channel from the registry.                                                                                                                                               |
+| [`upload`](_autosummary/correspond.html.md#correspond.upload)(ref, name, data, \*[, media_type, ...])     | Send a file to a conversation.                                                                                                                                                    |
+| [`verify`](_autosummary/correspond.html.md#correspond.verify)(channel, headers, body, \*[, registry])     | Grade an inbound delivery on `channel` from its headers and raw body.                                                                                                             |
 
 ### Classes
 
@@ -1495,7 +1503,7 @@ the same verbs, through [`correspond.tools`](_autosummary/correspond.tools.html.
 | [`Event`](_autosummary/correspond.html.md#correspond.Event)(\*, kind, channel, delivery_id[, ...])       | Something that happened on a channel, as a listener reports it: dedupe on `delivery_id`, resume from `cursor`.                               |
 | [`Grade`](_autosummary/correspond.html.md#correspond.Grade)(\*values)                                    | How sure the channel is about who sent a message: a vocabulary, not a ranking.                                                               |
 | [`HistoryDepth`](_autosummary/correspond.html.md#correspond.HistoryDepth)(\*values)                             | How far back `read` sees: all history, a 24-hour buffer, only what correspond has seen since it was linked or started listening, or nothing. |
-| [`Closer`](_autosummary/correspond.html.md#correspond.Closer)(\*args, \*\*kwargs)                         | Settle a conversation (close an issue), optionally saying why.                                                                               |
+| [`Closer`](_autosummary/correspond.html.md#correspond.Closer)(\*args, \*\*kwargs)                         | Settle a conversation (close an issue or a discussion), optionally saying why.                                                               |
 | [`Labeler`](_autosummary/correspond.html.md#correspond.Labeler)(\*args, \*\*kwargs)                        | Add labels to a conversation, apart from its opening send.                                                                                   |
 | [`Listener`](_autosummary/correspond.html.md#correspond.Listener)(\*args, \*\*kwargs)                       | Events since `cursor`, oldest first, each carrying the cursor to resume after it.                                                            |
 | [`Message`](_autosummary/correspond.html.md#correspond.Message)(\*, id, conversation, author, ...[, ...])  | One message in a conversation, normalised, with the channel's own fields kept in `native`.                                                   |
@@ -1763,7 +1771,7 @@ JSON-ready.
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
 
-Settle a conversation (close an issue), optionally saying why.
+Settle a conversation (close an issue or a discussion), optionally saying why.
 
 ### *class* correspond.ConversationRef(, channel, id='', kind='', parent=None)
 
@@ -2142,7 +2150,7 @@ What a channel needs and what is missing: the install command, binaries, platfor
 
 ### correspond.close(ref, , reason=None, dry_run=False, registry=None, before_send=None)
 
-Close a conversation (an issue), with an optional `reason` in the channel’s vocabulary; the `before_send` check sees the reason (or `close`) as the draft’s text.
+Close a conversation (an issue or a discussion), with an optional `reason` in the channel’s vocabulary; the `before_send` check sees the reason (or `close`) as the draft’s text.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -3091,32 +3099,32 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 
 ### Functions
 
-| [`audience`](_autosummary/correspond.ops.html.md#correspond.ops.audience)(ref[, draft, registry])                   | Who can read a conversation, asked of its channel now.                                                                                                                  |
-|-----------------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`capabilities`](_autosummary/correspond.ops.html.md#correspond.ops.capabilities)(channel, \*[, registry])              | What a channel can do, graded, with its limits.                                                                                                                         |
-| [`close`](_autosummary/correspond.ops.html.md#correspond.ops.close)(ref, \*[, reason, dry_run, registry, ...])   | Close a conversation (an issue), with an optional `reason` in the channel's vocabulary; the `before_send` check sees the reason (or `close`) as the draft's text.       |
-| [`edit`](_autosummary/correspond.ops.html.md#correspond.ops.edit)(ref, message_id, text, \*[, dry_run, ...])    | Replace the text of a message correspond's account wrote; the `before_send` check runs first, as for [`send()`](_autosummary/correspond.ops.html.md#correspond.ops.send).           |
-| [`get_channel`](_autosummary/correspond.ops.html.md#correspond.ops.get_channel)(name, \*[, registry])                  | The adapter registered under `name`; [`UnknownChannel`](_autosummary/correspond.errors.html.md#correspond.errors.UnknownChannel) says what to do if there is none. |
-| [`implemented`](_autosummary/correspond.ops.html.md#correspond.ops.implemented)(adapter)                               | The operations an adapter implements, in [`OPERATIONS`](_autosummary/correspond.model.html.md#correspond.model.OPERATIONS) order.                                 |
-| [`label`](_autosummary/correspond.ops.html.md#correspond.ops.label)(ref, labels, \*[, dry_run, registry, ...])   | Add `labels` to a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                   |
-| [`listen`](_autosummary/correspond.ops.html.md#correspond.ops.listen)(ref, \*[, cursors, limit, commit, ...])     | Events since the cursor stored for `ref`; each cursor is stored once the consumer moves past its event.                                                                 |
-| [`parse_ref`](_autosummary/correspond.ops.html.md#correspond.ops.parse_ref)(ref, \*[, registry])                     | A reference normalised by its channel's adapter (kind and parent filled in, the id validated).                                                                          |
-| [`react`](_autosummary/correspond.ops.html.md#correspond.ops.react)(ref, message_id, reaction, \*[, ...])        | Add a reaction to a message (the channel's capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft's text.                  |
-| [`read`](_autosummary/correspond.ops.html.md#correspond.ops.read)(ref, \*[, since, limit, registry])            | The messages of a conversation, oldest first (`limit` keeps the most recent ones).                                                                                      |
-| [`reopen`](_autosummary/correspond.ops.html.md#correspond.ops.reopen)(ref, \*[, dry_run, registry, before_send])  | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                |
-| [`send`](_autosummary/correspond.ops.html.md#correspond.ops.send)(ref, text, \*[, title, reply_to, ...])        | Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.         |
-| [`unlabel`](_autosummary/correspond.ops.html.md#correspond.ops.unlabel)(ref, labels, \*[, dry_run, registry, ...]) | Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                              |
-| [`upload`](_autosummary/correspond.ops.html.md#correspond.ops.upload)(ref, name, data, \*[, media_type, ...])     | Send a file to a conversation.                                                                                                                                          |
-| [`verify`](_autosummary/correspond.ops.html.md#correspond.ops.verify)(channel, headers, body, \*[, registry])     | Grade an inbound delivery on `channel` from its headers and raw body.                                                                                                   |
-| [`window`](_autosummary/correspond.ops.html.md#correspond.ops.window)(messages, \*[, since, limit])               | Messages sent or edited at or after `since`, oldest first, keeping the last `limit`.                                                                                    |
-| [`with_final_cursor`](_autosummary/correspond.ops.html.md#correspond.ops.with_final_cursor)(events, final_cursor)            | Yield `events`, then hand `final_cursor` to [`listen()`](_autosummary/correspond.ops.html.md#correspond.ops.listen), so a quiet poll still moves the cursor forward.                  |
+| [`audience`](_autosummary/correspond.ops.html.md#correspond.ops.audience)(ref[, draft, registry])                   | Who can read a conversation, asked of its channel now.                                                                                                                            |
+|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`capabilities`](_autosummary/correspond.ops.html.md#correspond.ops.capabilities)(channel, \*[, registry])              | What a channel can do, graded, with its limits.                                                                                                                                   |
+| [`close`](_autosummary/correspond.ops.html.md#correspond.ops.close)(ref, \*[, reason, dry_run, registry, ...])   | Close a conversation (an issue or a discussion), with an optional `reason` in the channel's vocabulary; the `before_send` check sees the reason (or `close`) as the draft's text. |
+| [`edit`](_autosummary/correspond.ops.html.md#correspond.ops.edit)(ref, message_id, text, \*[, dry_run, ...])    | Replace the text of a message correspond's account wrote; the `before_send` check runs first, as for [`send()`](_autosummary/correspond.ops.html.md#correspond.ops.send).                     |
+| [`get_channel`](_autosummary/correspond.ops.html.md#correspond.ops.get_channel)(name, \*[, registry])                  | The adapter registered under `name`; [`UnknownChannel`](_autosummary/correspond.errors.html.md#correspond.errors.UnknownChannel) says what to do if there is none.           |
+| [`implemented`](_autosummary/correspond.ops.html.md#correspond.ops.implemented)(adapter)                               | The operations an adapter implements, in [`OPERATIONS`](_autosummary/correspond.model.html.md#correspond.model.OPERATIONS) order.                                           |
+| [`label`](_autosummary/correspond.ops.html.md#correspond.ops.label)(ref, labels, \*[, dry_run, registry, ...])   | Add `labels` to a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                             |
+| [`listen`](_autosummary/correspond.ops.html.md#correspond.ops.listen)(ref, \*[, cursors, limit, commit, ...])     | Events since the cursor stored for `ref`; each cursor is stored once the consumer moves past its event.                                                                           |
+| [`parse_ref`](_autosummary/correspond.ops.html.md#correspond.ops.parse_ref)(ref, \*[, registry])                     | A reference normalised by its channel's adapter (kind and parent filled in, the id validated).                                                                                    |
+| [`react`](_autosummary/correspond.ops.html.md#correspond.ops.react)(ref, message_id, reaction, \*[, ...])        | Add a reaction to a message (the channel's capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft's text.                            |
+| [`read`](_autosummary/correspond.ops.html.md#correspond.ops.read)(ref, \*[, since, limit, registry])            | The messages of a conversation, oldest first (`limit` keeps the most recent ones).                                                                                                |
+| [`reopen`](_autosummary/correspond.ops.html.md#correspond.ops.reopen)(ref, \*[, dry_run, registry, before_send])  | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                          |
+| [`send`](_autosummary/correspond.ops.html.md#correspond.ops.send)(ref, text, \*[, title, reply_to, ...])        | Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.                   |
+| [`unlabel`](_autosummary/correspond.ops.html.md#correspond.ops.unlabel)(ref, labels, \*[, dry_run, registry, ...]) | Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                        |
+| [`upload`](_autosummary/correspond.ops.html.md#correspond.ops.upload)(ref, name, data, \*[, media_type, ...])     | Send a file to a conversation.                                                                                                                                                    |
+| [`verify`](_autosummary/correspond.ops.html.md#correspond.ops.verify)(channel, headers, body, \*[, registry])     | Grade an inbound delivery on `channel` from its headers and raw body.                                                                                                             |
+| [`window`](_autosummary/correspond.ops.html.md#correspond.ops.window)(messages, \*[, since, limit])               | Messages sent or edited at or after `since`, oldest first, keeping the last `limit`.                                                                                              |
+| [`with_final_cursor`](_autosummary/correspond.ops.html.md#correspond.ops.with_final_cursor)(events, final_cursor)            | Yield `events`, then hand `final_cursor` to [`listen()`](_autosummary/correspond.ops.html.md#correspond.ops.listen), so a quiet poll still moves the cursor forward.                            |
 
 ### Classes
 
 | [`AudienceReader`](_autosummary/correspond.ops.html.md#correspond.ops.AudienceReader)(\*args, \*\*kwargs)   | Who can read a conversation, now and plausibly later, asked of the platform at the time of the call.   |
 |---------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------|
 | [`Channel`](_autosummary/correspond.ops.html.md#correspond.ops.Channel)(\*args, \*\*kwargs)          | What every adapter has: a name, its capabilities, and the grammar of its conversation ids.             |
-| [`Closer`](_autosummary/correspond.ops.html.md#correspond.ops.Closer)(\*args, \*\*kwargs)           | Settle a conversation (close an issue), optionally saying why.                                         |
+| [`Closer`](_autosummary/correspond.ops.html.md#correspond.ops.Closer)(\*args, \*\*kwargs)           | Settle a conversation (close an issue or a discussion), optionally saying why.                         |
 | [`Editor`](_autosummary/correspond.ops.html.md#correspond.ops.Editor)(\*args, \*\*kwargs)           | Replace the text of a message correspond's account wrote.                                              |
 | [`Labeler`](_autosummary/correspond.ops.html.md#correspond.ops.Labeler)(\*args, \*\*kwargs)          | Add labels to a conversation, apart from its opening send.                                             |
 | [`Listener`](_autosummary/correspond.ops.html.md#correspond.ops.Listener)(\*args, \*\*kwargs)         | Events since `cursor`, oldest first, each carrying the cursor to resume after it.                      |
@@ -3144,7 +3152,7 @@ What every adapter has: a name, its capabilities, and the grammar of its convers
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
 
-Settle a conversation (close an issue), optionally saying why.
+Settle a conversation (close an issue or a discussion), optionally saying why.
 
 ### *class* correspond.ops.Editor(\*args, \*\*kwargs)
 
@@ -3231,7 +3239,7 @@ What a channel can do, graded, with its limits.
 
 ### correspond.ops.close(ref, , reason=None, dry_run=False, registry=None, before_send=None)
 
-Close a conversation (an issue), with an optional `reason` in the channel’s vocabulary; the `before_send` check sees the reason (or `close`) as the draft’s text.
+Close a conversation (an issue or a discussion), with an optional `reason` in the channel’s vocabulary; the `before_send` check sees the reason (or `close`) as the draft’s text.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -4195,7 +4203,7 @@ List the channels correspond knows: available, missing a module, planned (with i
 
 ### correspond.tools.close(ref, , reason=None, dry_run=False)
 
-Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it). `reason` is in the channel’s vocabulary (GitHub issues: completed, not_planned or duplicate). Run it with `dry_run` first. It passes the before_send check, as for `send`.
+Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it). `reason` is in the channel’s vocabulary (GitHub issues: completed, not_planned or duplicate; GitHub discussions: resolved, outdated or duplicate). Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -4277,18 +4285,16 @@ Remove labels (comma-separated; a label name may not itself contain a comma) fro
 
 # About this build
 
-This documentation was built on **2026-10-14 03:27 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/6087e85fd935c1d994ecb0a3449c98ad7bd1db04"><code>6087e85</code></a> on branch <code>main</code>, for **correspond 0.0.12** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-14 04:23 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/d07598680f505db9f048decda7f394ae1eacf597"><code>d075986</code></a> on branch <code>main</code>, for **correspond 0.0.13** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.12) is behind the latest release on PyPI (0.0.13): `pip install correspond` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/6087e85fd935c1d994ecb0a3449c98ad7bd1db04"><code>6087e85fd935c1d994ecb0a3449c98ad7bd1db04</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/d07598680f505db9f048decda7f394ae1eacf597"><code>d07598680f505db9f048decda7f394ae1eacf597</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -4299,9 +4305,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/38506196954">38506196954</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/38511037962">38511037962</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>6087e85fd935c1d994ecb0a3449c98ad7bd1db04</code> (in the history of the built commit)  |
+| Event commit | <code>d07598680f505db9f048decda7f394ae1eacf597</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -4326,13 +4332,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.13/">0.0.13</a>, newer than the documented version (0.0.12).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.13/">0.0.13</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 6087e85fd935c1d994ecb0a3449c98ad7bd1db04
+git checkout d07598680f505db9f048decda7f394ae1eacf597
 pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

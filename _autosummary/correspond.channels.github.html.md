@@ -15,7 +15,11 @@ limit and never shows in the process table.
 - `github:owner/repo#N`: an issue, a pull request, or a discussion. GitHub numbers the
   three in one sequence; correspond asks which. `label` and `unlabel` work on an issue
   or pull request only: GitHub discussions have categories, not labels. `close` and
-  `reopen` likewise (a discussion closes through a different API, not covered yet).
+  `reopen` work on all three: an issue or pull request through `PATCH .../issues/N`,
+  a discussion through GraphQL `closeDiscussion` / `reopenDiscussion`. Each kind
+  takes its own close reasons (issue: `completed`, `not_planned`, `duplicate`;
+  discussion: `resolved`, `outdated`, `duplicate`, with `completed` accepted as
+  `resolved`).
 
 Opening an issue takes `Draft.native` keys `labels`, `assignees` and `milestone`,
 set in the creating request so watchers are notified once. GitHub silently drops an
@@ -97,10 +101,14 @@ Issues, pull request conversations and discussions.
 
 #### close(ref, , reason=None, dry_run=False)
 
-Close an issue or pull request (`PATCH .../issues/N`), with an issue’s `state_reason`.
+Close an issue or pull request (`PATCH .../issues/N`) or a discussion (GraphQL).
 
-The plan reads the state back: `was` (before) and `now` / `now_reason` (what
-the response says), so closing an already-closed issue is visible as such.
+`reason` is the kind’s own: an issue’s `state_reason` (`completed`,
+`not_planned`, `duplicate`) or a discussion’s (`resolved`, `outdated`,
+`duplicate`; `completed` is accepted as `resolved`); a pull request takes
+none. The plan reads the state back: `was` (before) and `now` /
+`now_reason` (what the response says), so closing an already-closed
+conversation is visible as such.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
@@ -162,7 +170,7 @@ An issue, pull request or discussion with its comments; for a repository, recent
 
 #### reopen(ref, , dry_run=False)
 
-Reopen a closed issue or pull request; the plan reads the state back as for [`close()`](#correspond.channels.github.GitHub.close).
+Reopen a closed issue, pull request or discussion; the plan reads the state back as for [`close()`](#correspond.channels.github.GitHub.close).
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)

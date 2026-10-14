@@ -40,7 +40,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=3bbcec59"></script>
+    <script src="../../../_static/documentation_options.js?v=9fc46840"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +410,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.12" />
+  <meta name="docsearch:version" content="0.0.13" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -726,7 +726,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">- ``github:owner/repo#N``: an issue, a pull request, or a discussion. GitHub numbers the</span>
 <span class="sd">  three in one sequence; correspond asks which. ``label`` and ``unlabel`` work on an issue</span>
 <span class="sd">  or pull request only: GitHub discussions have categories, not labels. ``close`` and</span>
-<span class="sd">  ``reopen`` likewise (a discussion closes through a different API, not covered yet).</span>
+<span class="sd">  ``reopen`` work on all three: an issue or pull request through ``PATCH .../issues/N``,</span>
+<span class="sd">  a discussion through GraphQL ``closeDiscussion`` / ``reopenDiscussion``. Each kind</span>
+<span class="sd">  takes its own close reasons (issue: ``completed``, ``not_planned``, ``duplicate``;</span>
+<span class="sd">  discussion: ``resolved``, ``outdated``, ``duplicate``, with ``completed`` accepted as</span>
+<span class="sd">  ``resolved``).</span>
 
 <span class="sd">Opening an issue takes ``Draft.native`` keys ``labels``, ``assignees`` and ``milestone``,</span>
 <span class="sd">set in the creating request so watchers are notified once. GitHub silently drops an</span>
@@ -836,6 +840,10 @@ window.runMermaid = runMermaid;</script>
 <span class="n">DRAFT_FIELDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"labels"</span><span class="p">,</span> <span class="s2">"assignees"</span><span class="p">,</span> <span class="s2">"milestone"</span><span class="p">)</span>
 <span class="c1">#: An issue's ``state_reason`` when closing it.</span>
 <span class="n">CLOSE_REASONS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"completed"</span><span class="p">,</span> <span class="s2">"not_planned"</span><span class="p">,</span> <span class="s2">"duplicate"</span><span class="p">)</span>
+<span class="c1">#: A discussion's close reasons (GraphQL ``DiscussionCloseReason``, lower-cased here).</span>
+<span class="n">DISCUSSION_CLOSE_REASONS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"resolved"</span><span class="p">,</span> <span class="s2">"outdated"</span><span class="p">,</span> <span class="s2">"duplicate"</span><span class="p">)</span>
+<span class="c1">#: Issue reasons a discussion close accepts under its own name.</span>
+<span class="n">DISCUSSION_REASON_ALIASES</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"completed"</span><span class="p">:</span> <span class="s2">"resolved"</span><span class="p">}</span>
 <span class="n">PAGE_SIZE</span> <span class="o">=</span> <span class="mi">100</span>
 <span class="n">MAX_PAGES</span> <span class="o">=</span> <span class="mi">20</span>
 <span class="n">READ_REPOSITORY_DEFAULT</span> <span class="o">=</span> <span class="mi">30</span>
@@ -863,6 +871,19 @@ window.runMermaid = runMermaid;</script>
 <span class="n">DISCUSSION_ID_QUERY</span> <span class="o">=</span> <span class="p">(</span>
     <span class="s2">"query($owner:String!,$name:String!,$number:Int!){"</span>
     <span class="s2">"repository(owner:$owner,name:$name){discussion(number:$number)</span><span class="si">{id}</span><span class="s2">}}"</span>
+<span class="p">)</span>
+<span class="n">DISCUSSION_STATE_QUERY</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"query($owner:String!,$name:String!,$number:Int!){"</span>
+    <span class="s2">"repository(owner:$owner,name:$name){discussion(number:$number){id closed stateReason url}}}"</span>
+<span class="p">)</span>
+<span class="n">CLOSE_DISCUSSION</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"mutation($discussionId:ID!,$reason:DiscussionCloseReason){"</span>
+    <span class="s2">"closeDiscussion(input:{discussionId:$discussionId,reason:$reason})"</span>
+    <span class="s2">"{discussion{closed stateReason url}}}"</span>
+<span class="p">)</span>
+<span class="n">REOPEN_DISCUSSION</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"mutation($discussionId:ID!){"</span>
+    <span class="s2">"reopenDiscussion(input:{discussionId:$discussionId}){discussion{closed stateReason url}}}"</span>
 <span class="p">)</span>
 <span class="n">ADD_DISCUSSION_COMMENT</span> <span class="o">=</span> <span class="p">(</span>
     <span class="s2">"mutation($discussionId:ID!,$body:String!){"</span>
@@ -1022,6 +1043,14 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">moment</span> <span class="k">if</span> <span class="n">moment</span><span class="o">.</span><span class="n">tzinfo</span> <span class="k">else</span> <span class="n">moment</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">tzinfo</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_discussion_state</span><span class="p">(</span><span class="n">discussion</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``"open"`` / ``"closed"`` from a GraphQL discussion's ``closed`` flag, as issues say it."""</span>
+    <span class="n">closed</span> <span class="o">=</span> <span class="n">discussion</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"closed"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">closed</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="s2">"closed"</span> <span class="k">if</span> <span class="n">closed</span> <span class="k">else</span> <span class="s2">"open"</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_not_found</span><span class="p">(</span><span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ChannelError</span><span class="p">:</span>
     <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span>
         <span class="sa">f</span><span class="s2">"no issue, pull request or discussion #</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2"> that the gh account can see"</span><span class="p">,</span>
@@ -1143,8 +1172,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">audience</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">label</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">unlabel</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
-            <span class="n">close</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
-            <span class="n">reopen</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
+            <span class="n">close</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">reopen</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">initiate</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">reply</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
             <span class="n">history_depth</span><span class="o">=</span><span class="n">HistoryDepth</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
@@ -1180,8 +1209,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"label and unlabel apply to issues and pull requests, not discussions (GitHub discussions have categories, not labels); listen does not yet surface who applied a label"</span><span class="p">,</span>
                 <span class="s2">"label and unlabel each cost one extra read (confirming the issue exists, to tell a label the issue never had apart from a missing issue) before their writes"</span><span class="p">,</span>
                 <span class="s2">"native draft fields (labels, assignees, milestone) apply when opening an issue; on a comment they are refused"</span><span class="p">,</span>
-                <span class="s2">"close and reopen apply to issues and pull requests, not discussions; close takes a reason of completed, not_planned or duplicate (issues only)"</span><span class="p">,</span>
-                <span class="s2">"a dry run of close or reopen reads nothing, so a pull request given a reason, or a discussion, is refused only by the real call"</span><span class="p">,</span>
+                <span class="s2">"close and reopen apply to issues, pull requests and discussions; close reasons are per kind: an issue takes completed, not_planned or duplicate, a discussion resolved, outdated or duplicate (completed is accepted as resolved), a pull request none"</span><span class="p">,</span>
+                <span class="s2">"a dry run of close or reopen reads nothing, so it plans for whichever kind the number turns out to be, and a reason the kind does not take is refused only by the real call"</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span>
 
@@ -2316,38 +2345,53 @@ window.runMermaid = runMermaid;</script>
         <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parts</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">number</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2"> applies to an issue or pull request: github:</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#N"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2"> applies to an issue, pull request or discussion: github:</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#N"</span><span class="p">,</span>
                 <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">reason</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CLOSE_REASONS</span><span class="p">:</span>
+        <span class="n">known</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">CLOSE_REASONS</span><span class="p">)</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="n">DISCUSSION_CLOSE_REASONS</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">reason</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">known</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"close reason </span><span class="si">{</span><span class="n">reason</span><span class="si">!r}</span><span class="s2"> is not one of </span><span class="si">{</span><span class="n">CLOSE_REASONS</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"close reason </span><span class="si">{</span><span class="n">reason</span><span class="si">!r}</span><span class="s2"> is not one of </span><span class="si">{</span><span class="n">CLOSE_REASONS</span><span class="si">}</span><span class="s2"> (issue) "</span>
+                <span class="sa">f</span><span class="s2">"or </span><span class="si">{</span><span class="n">DISCUSSION_CLOSE_REASONS</span><span class="si">}</span><span class="s2"> (discussion)"</span><span class="p">,</span>
                 <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span>
         <span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"state"</span><span class="p">:</span> <span class="n">state</span><span class="p">}</span>
         <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">payload</span><span class="p">[</span><span class="s2">"state_reason"</span><span class="p">]</span> <span class="o">=</span> <span class="n">reason</span>
-        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">"action"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2"> the issue or pull request"</span><span class="p">,</span>
-            <span class="s2">"target"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-            <span class="s2">"request"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"PATCH </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-            <span class="o">**</span><span class="n">payload</span><span class="p">,</span>
-        <span class="p">}</span>
+        <span class="n">target</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span>
         <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="c1"># A dry run reads nothing, so it cannot know which kind #N is: plan both.</span>
+            <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"action"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2"> the issue, pull request or discussion"</span><span class="p">,</span>
+                <span class="s2">"target"</span><span class="p">:</span> <span class="n">target</span><span class="p">,</span>
+                <span class="s2">"request"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"PATCH </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2"> (issue or pull request), or GraphQL "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2">Discussion (discussion)"</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">payload</span><span class="p">,</span>
+            <span class="p">}</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_planned</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">operation</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span>
-        <span class="n">before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_issue</span><span class="p">(</span>
-            <span class="n">owner</span><span class="p">,</span>
-            <span class="n">repo</span><span class="p">,</span>
-            <span class="n">number</span><span class="p">,</span>
-            <span class="n">operation</span><span class="p">,</span>
-            <span class="n">why</span><span class="o">=</span><span class="s2">"close and reopen apply to issues and pull requests here; a discussion closes through a different API"</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="n">probe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">allow</span><span class="o">=</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="mi">410</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">probe</span><span class="o">.</span><span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">400</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_discussion_state</span><span class="p">(</span>
+                <span class="n">ref</span><span class="p">,</span> <span class="n">operation</span><span class="p">,</span> <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="n">reason</span>
+            <span class="p">)</span>
+        <span class="n">before</span> <span class="o">=</span> <span class="n">probe</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">reason</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CLOSE_REASONS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"close reason </span><span class="si">{</span><span class="n">reason</span><span class="si">!r}</span><span class="s2"> is for discussions; an issue takes one of </span><span class="si">{</span><span class="n">CLOSE_REASONS</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="n">before</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pull_request"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">reason</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
                 <span class="s2">"a pull request closes without a reason; leave it out"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span>
             <span class="p">)</span>
-        <span class="n">plan</span><span class="p">[</span><span class="s2">"was"</span><span class="p">]</span> <span class="o">=</span> <span class="n">before</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"state"</span><span class="p">)</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2"> the issue or pull request"</span><span class="p">,</span>
+            <span class="s2">"target"</span><span class="p">:</span> <span class="n">target</span><span class="p">,</span>
+            <span class="s2">"request"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"PATCH </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">payload</span><span class="p">,</span>
+            <span class="s2">"was"</span><span class="p">:</span> <span class="n">before</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"state"</span><span class="p">),</span>
+        <span class="p">}</span>
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"PATCH"</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="n">payload</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="ow">or</span> <span class="p">{}</span>
         <span class="c1"># Read back what the issue now says, rather than assuming the request took.</span>
         <span class="n">plan</span><span class="p">[</span><span class="s2">"now"</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"state"</span><span class="p">)</span>
@@ -2357,15 +2401,75 @@ window.runMermaid = runMermaid;</script>
             <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">operation</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"issue-</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"html_url"</span><span class="p">),</span> <span class="n">plan</span>
         <span class="p">)</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_set_discussion_state</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+        <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Close or reopen discussion ``#number`` through GraphQL, reading the state back."""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graphql</span><span class="p">(</span>
+                <span class="n">DISCUSSION_STATE_QUERY</span><span class="p">,</span> <span class="p">{</span><span class="s2">"owner"</span><span class="p">:</span> <span class="n">owner</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="n">repo</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">:</span> <span class="n">number</span><span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s2">"not_found"</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">discussion</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"repository"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"discussion"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">discussion</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">_not_found</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span><span class="p">)</span>
+        <span class="n">variables</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"discussionId"</span><span class="p">:</span> <span class="n">discussion</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]}</span>
+        <span class="n">plan</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2"> the discussion"</span><span class="p">,</span>
+            <span class="s2">"target"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="s2">"request"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"GraphQL </span><span class="si">{</span><span class="n">operation</span><span class="si">}</span><span class="s2">Discussion"</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">operation</span> <span class="o">==</span> <span class="s2">"close"</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">reason</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">mapped</span> <span class="o">=</span> <span class="n">DISCUSSION_REASON_ALIASES</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">reason</span><span class="p">,</span> <span class="n">reason</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">mapped</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">DISCUSSION_CLOSE_REASONS</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"close reason </span><span class="si">{</span><span class="n">reason</span><span class="si">!r}</span><span class="s2"> is for issues; a discussion takes one of "</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">DISCUSSION_CLOSE_REASONS</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                        <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="n">variables</span><span class="p">[</span><span class="s2">"reason"</span><span class="p">]</span> <span class="o">=</span> <span class="n">mapped</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+                <span class="n">plan</span><span class="p">[</span><span class="s2">"reason"</span><span class="p">]</span> <span class="o">=</span> <span class="n">mapped</span>
+            <span class="n">query</span><span class="p">,</span> <span class="n">field</span> <span class="o">=</span> <span class="n">CLOSE_DISCUSSION</span><span class="p">,</span> <span class="s2">"closeDiscussion"</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">query</span><span class="p">,</span> <span class="n">field</span> <span class="o">=</span> <span class="n">REOPEN_DISCUSSION</span><span class="p">,</span> <span class="s2">"reopenDiscussion"</span>
+        <span class="n">plan</span><span class="p">[</span><span class="s2">"was"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_discussion_state</span><span class="p">(</span><span class="n">discussion</span><span class="p">)</span>
+        <span class="n">after</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_graphql</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">variables</span><span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"discussion"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="c1"># Read back what the discussion now says, rather than assuming the request took.</span>
+        <span class="n">plan</span><span class="p">[</span><span class="s2">"now"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_discussion_state</span><span class="p">(</span><span class="n">after</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">after</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"closed"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">after</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"stateReason"</span><span class="p">):</span>
+            <span class="n">plan</span><span class="p">[</span><span class="s2">"now_reason"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">after</span><span class="p">[</span><span class="s2">"stateReason"</span><span class="p">])</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span><span class="p">(</span>
+            <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">operation</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"discussion-</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">after</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"url"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">discussion</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"url"</span><span class="p">),</span>
+            <span class="n">plan</span><span class="p">,</span>
+        <span class="p">)</span>
+
 <div class="viewcode-block" id="GitHub.close">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.github.html#correspond.channels.github.GitHub.close">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">close</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Close an issue or pull request (``PATCH .../issues/N``), with an issue's ``state_reason``.</span>
+<span class="w">        </span><span class="sd">"""Close an issue or pull request (``PATCH .../issues/N``) or a discussion (GraphQL).</span>
 
-<span class="sd">        The plan reads the state back: ``was`` (before) and ``now`` / ``now_reason`` (what</span>
-<span class="sd">        the response says), so closing an already-closed issue is visible as such.</span>
+<span class="sd">        ``reason`` is the kind's own: an issue's ``state_reason`` (``completed``,</span>
+<span class="sd">        ``not_planned``, ``duplicate``) or a discussion's (``resolved``, ``outdated``,</span>
+<span class="sd">        ``duplicate``; ``completed`` is accepted as ``resolved``); a pull request takes</span>
+<span class="sd">        none. The plan reads the state back: ``was`` (before) and ``now`` /</span>
+<span class="sd">        ``now_reason`` (what the response says), so closing an already-closed</span>
+<span class="sd">        conversation is visible as such.</span>
 <span class="sd">        """</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_state</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"close"</span><span class="p">,</span> <span class="s2">"closed"</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span></div>
 
@@ -2373,7 +2477,7 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="GitHub.reopen">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.github.html#correspond.channels.github.GitHub.reopen">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">reopen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Reopen a closed issue or pull request; the plan reads the state back as for :meth:`close`."""</span>
+<span class="w">        </span><span class="sd">"""Reopen a closed issue, pull request or discussion; the plan reads the state back as for :meth:`close`."""</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_state</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"reopen"</span><span class="p">,</span> <span class="s2">"open"</span><span class="p">,</span> <span class="n">reason</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span></div>
 
 

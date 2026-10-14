@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=3bbcec59"></script>
+    <script src="../_static/documentation_options.js?v=9fc46840"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.12" />
+  <meta name="docsearch:version" content="0.0.13" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -426,7 +426,11 @@ title is required).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo#N</span></code>: an issue, a pull request, or a discussion. GitHub numbers the
 three in one sequence; correspond asks which. <code class="docutils literal notranslate"><span class="pre">label</span></code> and <code class="docutils literal notranslate"><span class="pre">unlabel</span></code> work on an issue
 or pull request only: GitHub discussions have categories, not labels. <code class="docutils literal notranslate"><span class="pre">close</span></code> and
-<code class="docutils literal notranslate"><span class="pre">reopen</span></code> likewise (a discussion closes through a different API, not covered yet).</p></li>
+<code class="docutils literal notranslate"><span class="pre">reopen</span></code> work on all three: an issue or pull request through <code class="docutils literal notranslate"><span class="pre">PATCH</span> <span class="pre">.../issues/N</span></code>,
+a discussion through GraphQL <code class="docutils literal notranslate"><span class="pre">closeDiscussion</span></code> / <code class="docutils literal notranslate"><span class="pre">reopenDiscussion</span></code>. Each kind
+takes its own close reasons (issue: <code class="docutils literal notranslate"><span class="pre">completed</span></code>, <code class="docutils literal notranslate"><span class="pre">not_planned</span></code>, <code class="docutils literal notranslate"><span class="pre">duplicate</span></code>;
+discussion: <code class="docutils literal notranslate"><span class="pre">resolved</span></code>, <code class="docutils literal notranslate"><span class="pre">outdated</span></code>, <code class="docutils literal notranslate"><span class="pre">duplicate</span></code>, with <code class="docutils literal notranslate"><span class="pre">completed</span></code> accepted as
+<code class="docutils literal notranslate"><span class="pre">resolved</span></code>).</p></li>
 </ul>
 <p>Opening an issue takes <code class="docutils literal notranslate"><span class="pre">Draft.native</span></code> keys <code class="docutils literal notranslate"><span class="pre">labels</span></code>, <code class="docutils literal notranslate"><span class="pre">assignees</span></code> and <code class="docutils literal notranslate"><span class="pre">milestone</span></code>,
 set in the creating request so watchers are notified once. GitHub silently drops an
@@ -522,9 +526,13 @@ a transport failure raises; <a class="reference internal" href="correspond.ops.h
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.github.GitHub.close">
 <span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.close" title="Link to this definition">#</a></dt>
-<dd><p>Close an issue or pull request (<code class="docutils literal notranslate"><span class="pre">PATCH</span> <span class="pre">.../issues/N</span></code>), with an issue’s <code class="docutils literal notranslate"><span class="pre">state_reason</span></code>.</p>
-<p>The plan reads the state back: <code class="docutils literal notranslate"><span class="pre">was</span></code> (before) and <code class="docutils literal notranslate"><span class="pre">now</span></code> / <code class="docutils literal notranslate"><span class="pre">now_reason</span></code> (what
-the response says), so closing an already-closed issue is visible as such.</p>
+<dd><p>Close an issue or pull request (<code class="docutils literal notranslate"><span class="pre">PATCH</span> <span class="pre">.../issues/N</span></code>) or a discussion (GraphQL).</p>
+<p><code class="docutils literal notranslate"><span class="pre">reason</span></code> is the kind’s own: an issue’s <code class="docutils literal notranslate"><span class="pre">state_reason</span></code> (<code class="docutils literal notranslate"><span class="pre">completed</span></code>,
+<code class="docutils literal notranslate"><span class="pre">not_planned</span></code>, <code class="docutils literal notranslate"><span class="pre">duplicate</span></code>) or a discussion’s (<code class="docutils literal notranslate"><span class="pre">resolved</span></code>, <code class="docutils literal notranslate"><span class="pre">outdated</span></code>,
+<code class="docutils literal notranslate"><span class="pre">duplicate</span></code>; <code class="docutils literal notranslate"><span class="pre">completed</span></code> is accepted as <code class="docutils literal notranslate"><span class="pre">resolved</span></code>); a pull request takes
+none. The plan reads the state back: <code class="docutils literal notranslate"><span class="pre">was</span></code> (before) and <code class="docutils literal notranslate"><span class="pre">now</span></code> /
+<code class="docutils literal notranslate"><span class="pre">now_reason</span></code> (what the response says), so closing an already-closed
+conversation is visible as such.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
@@ -612,7 +620,7 @@ accepted as a cursor.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.github.GitHub.reopen">
 <span class="sig-name descname"><span class="pre">reopen</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.reopen"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.reopen" title="Link to this definition">#</a></dt>
-<dd><p>Reopen a closed issue or pull request; the plan reads the state back as for <a class="reference internal" href="#correspond.channels.github.GitHub.close" title="correspond.channels.github.GitHub.close"><code class="xref py py-meth docutils literal notranslate"><span class="pre">close()</span></code></a>.</p>
+<dd><p>Reopen a closed issue, pull request or discussion; the plan reads the state back as for <a class="reference internal" href="#correspond.channels.github.GitHub.close" title="correspond.channels.github.GitHub.close"><code class="xref py py-meth docutils literal notranslate"><span class="pre">close()</span></code></a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>

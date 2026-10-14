@@ -43,7 +43,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=3bbcec59"></script>
+    <script src="../_static/documentation_options.js?v=9fc46840"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.12" />
+  <meta name="docsearch:version" content="0.0.13" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -489,7 +489,7 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 <td><p>What a channel can do, graded, with its limits.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.close" title="correspond.ops.close"><code class="xref py py-obj docutils literal notranslate"><span class="pre">close</span></code></a>(ref, *[, reason, dry_run, registry, ...])</p></td>
-<td><p>Close a conversation (an issue), with an optional <code class="docutils literal notranslate"><span class="pre">reason</span></code> in the channel's vocabulary; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees the reason (or <code class="docutils literal notranslate"><span class="pre">close</span></code>) as the draft's text.</p></td>
+<td><p>Close a conversation (an issue or a discussion), with an optional <code class="docutils literal notranslate"><span class="pre">reason</span></code> in the channel's vocabulary; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees the reason (or <code class="docutils literal notranslate"><span class="pre">close</span></code>) as the draft's text.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.edit" title="correspond.ops.edit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">edit</span></code></a>(ref, message_id, text, *[, dry_run, ...])</p></td>
 <td><p>Replace the text of a message correspond's account wrote; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check runs first, as for <a class="reference internal" href="#correspond.ops.send" title="correspond.ops.send"><code class="xref py py-func docutils literal notranslate"><span class="pre">send()</span></code></a>.</p></td>
@@ -549,7 +549,7 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 <td><p>What every adapter has: a name, its capabilities, and the grammar of its conversation ids.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.Closer" title="correspond.ops.Closer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Closer</span></code></a>(*args, **kwargs)</p></td>
-<td><p>Settle a conversation (close an issue), optionally saying why.</p></td>
+<td><p>Settle a conversation (close an issue or a discussion), optionally saying why.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.Editor" title="correspond.ops.Editor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Editor</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Replace the text of a message correspond's account wrote.</p></td>
@@ -602,7 +602,7 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 <dt class="sig sig-object py" id="correspond.ops.Closer">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Closer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#Closer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Closer" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
-<p>Settle a conversation (close an issue), optionally saying why.</p>
+<p>Settle a conversation (close an issue or a discussion), optionally saying why.</p>
 </dd></dl>
 
 <dl class="py class">
@@ -710,7 +710,7 @@ right before sending.</p>
 <dl class="py function">
 <dt class="sig sig-object py" id="correspond.ops.close">
 <span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.close" title="Link to this definition">#</a></dt>
-<dd><p>Close a conversation (an issue), with an optional <code class="docutils literal notranslate"><span class="pre">reason</span></code> in the channel’s vocabulary; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees the reason (or <code class="docutils literal notranslate"><span class="pre">close</span></code>) as the draft’s text.</p>
+<dd><p>Close a conversation (an issue or a discussion), with an optional <code class="docutils literal notranslate"><span class="pre">reason</span></code> in the channel’s vocabulary; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees the reason (or <code class="docutils literal notranslate"><span class="pre">close</span></code>) as the draft’s text.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
