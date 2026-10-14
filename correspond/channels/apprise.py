@@ -85,7 +85,11 @@ def _service(url: str) -> str:
     '(unrecognised)'
     """
     scheme, sep, _ = url.partition("://")
-    return scheme.lower() if sep and re.fullmatch(r"[A-Za-z][A-Za-z0-9+.-]*", scheme) else "(unrecognised)"
+    return (
+        scheme.lower()
+        if sep and re.fullmatch(r"[A-Za-z][A-Za-z0-9+.-]*", scheme)
+        else "(unrecognised)"
+    )
 
 
 @contextmanager
@@ -256,7 +260,9 @@ class Apprise:
             if url:
                 return _one_url(alias, url, "keychain"), None, "keychain"
         config = _config_path(value(NAME, "config"))
-        later = f"looked up when sending, in the Keychain ({alias_keychain_service(alias)})"
+        later = (
+            f"looked up when sending, in the Keychain ({alias_keychain_service(alias)})"
+        )
         if config:
             if keychain and dry_run:
                 return None, config, f"{later}; else the tag in the config file"
