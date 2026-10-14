@@ -13,7 +13,11 @@ References:
 - ``github:owner/repo#N``: an issue, a pull request, or a discussion. GitHub numbers the
   three in one sequence; correspond asks which. ``label`` and ``unlabel`` work on an issue
   or pull request only: GitHub discussions have categories, not labels. ``close`` and
-  ``reopen`` likewise (a discussion closes through a different API, not covered yet).
+  ``reopen`` work on all three: an issue or pull request through ``PATCH .../issues/N``,
+  a discussion through GraphQL ``closeDiscussion`` / ``reopenDiscussion``. Each kind
+  takes its own close reasons (issue: ``completed``, ``not_planned``, ``duplicate``;
+  discussion: ``resolved``, ``outdated``, ``duplicate``, with ``completed`` accepted as
+  ``resolved``).
 
 Opening an issue takes ``Draft.native`` keys ``labels``, ``assignees`` and ``milestone``,
 set in the creating request so watchers are notified once. GitHub silently drops an
@@ -123,6 +127,10 @@ MAX_TITLE_CHARS = 256
 DRAFT_FIELDS = ("labels", "assignees", "milestone")
 #: An issue's ``state_reason`` when closing it.
 CLOSE_REASONS = ("completed", "not_planned", "duplicate")
+#: A discussion's close reasons (GraphQL ``DiscussionCloseReason``, lower-cased here).
+DISCUSSION_CLOSE_REASONS = ("resolved", "outdated", "duplicate")
+#: Issue reasons a discussion close accepts under its own name.
+DISCUSSION_REASON_ALIASES = {"completed": "resolved"}
 PAGE_SIZE = 100
 MAX_PAGES = 20
 READ_REPOSITORY_DEFAULT = 30
@@ -150,6 +158,19 @@ DISCUSSION_QUERY = (
 DISCUSSION_ID_QUERY = (
     "query($owner:String!,$name:String!,$number:Int!){"
     "repository(owner:$owner,name:$name){discussion(number:$number){id}}}"
+)
+DISCUSSION_STATE_QUERY = (
+    "query($owner:String!,$name:String!,$number:Int!){"
+    "repository(owner:$owner,name:$name){discussion(number:$number){id closed stateReason url}}}"
+)
+CLOSE_DISCUSSION = (
+    "mutation($discussionId:ID!,$reason:DiscussionCloseReason){"
+    "closeDiscussion(input:{discussionId:$discussionId,reason:$reason})"
+    "{discussion{closed stateReason url}}}"
+)
+REOPEN_DISCUSSION = (
+    "mutation($discussionId:ID!){"
+    "reopenDiscussion(input:{discussionId:$discussionId}){discussion{closed stateReason url}}}"
 )
 ADD_DISCUSSION_COMMENT = (
     "mutation($discussionId:ID!,$body:String!){"
@@ -306,6 +327,14 @@ def _http_date(value: str | None) -> datetime | None:
     return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
 
 
+def _discussion_state(discussion: Mapping[str, Any]) -> str | None:
+    """``"open"`` / ``"closed"`` from a GraphQL discussion's ``closed`` flag, as issues say it."""
+    closed = discussion.get("closed")
+    if closed is None:
+        return None
+    return "closed" if closed else "open"
+
+
 def _not_found(owner: str, repo: str, number: int) -> ChannelError:
     return ChannelError(
         f"no issue, pull request or discussion #{number} in {owner}/{repo} that the gh account can see",
@@ -425,8 +454,8 @@ class GitHub:
             audience=Support.FULL,
             label=Support.FULL,
             unlabel=Support.FULL,
-            close=Support.PARTIAL,
-            reopen=Support.PARTIAL,
+            close=Support.FULL,
+            reopen=Support.FULL,
             initiate=Support.FULL,
             reply=Support.PARTIAL,
             history_depth=HistoryDepth.FULL,
@@ -462,8 +491,8 @@ class GitHub:
                 "label and unlabel apply to issues and pull requests, not discussions (GitHub discussions have categories, not labels); listen does not yet surface who applied a label",
                 "label and unlabel each cost one extra read (confirming the issue exists, to tell a label the issue never had apart from a missing issue) before their writes",
                 "native draft fields (labels, assignees, milestone) apply when opening an issue; on a comment they are refused",
-                "close and reopen apply to issues and pull requests, not discussions; close takes a reason of completed, not_planned or duplicate (issues only)",
-                "a dry run of close or reopen reads nothing, so a pull request given a reason, or a discussion, is refused only by the real call",
+                "close and reopen apply to issues, pull requests and discussions; close reasons are per kind: an issue takes completed, not_planned or duplicate, a discussion resolved, outdated or duplicate (completed is accepted as resolved), a pull request none",
+                "a dry run of close or reopen reads nothing, so it plans for whichever kind the number turns out to be, and a reason the kind does not take is refused only by the real call",
             ),
         )
 
@@ -1571,38 +1600,53 @@ class GitHub:
         owner, repo, number = self._parts(ref)
         if number is None:
             raise ChannelError(
-                f"{operation} applies to an issue or pull request: github:{owner}/{repo}#N",
+                f"{operation} applies to an issue, pull request or discussion: github:{owner}/{repo}#N",
                 kind="validation",
             )
-        if reason is not None and reason not in CLOSE_REASONS:
+        known = set(CLOSE_REASONS) | set(DISCUSSION_CLOSE_REASONS)
+        if reason is not None and reason not in known:
             raise ChannelError(
-                f"close reason {reason!r} is not one of {CLOSE_REASONS}",
+                f"close reason {reason!r} is not one of {CLOSE_REASONS} (issue) "
+                f"or {DISCUSSION_CLOSE_REASONS} (discussion)",
                 kind="validation",
             )
         path = f"repos/{owner}/{repo}/issues/{number}"
         payload: dict[str, Any] = {"state": state}
         if reason is not None:
             payload["state_reason"] = reason
-        plan = {
-            "action": f"{operation} the issue or pull request",
-            "target": f"{owner}/{repo}#{number}",
-            "request": f"PATCH {path}",
-            **payload,
-        }
+        target = f"{owner}/{repo}#{number}"
         if dry_run:
+            # A dry run reads nothing, so it cannot know which kind #N is: plan both.
+            plan = {
+                "action": f"{operation} the issue, pull request or discussion",
+                "target": target,
+                "request": f"PATCH {path} (issue or pull request), or GraphQL "
+                f"{operation}Discussion (discussion)",
+                **payload,
+            }
             return self._planned(ref, operation, plan)
-        before = self._require_issue(
-            owner,
-            repo,
-            number,
-            operation,
-            why="close and reopen apply to issues and pull requests here; a discussion closes through a different API",
-        )
+        probe = self._api(path, allow=(404, 410))
+        if probe.status >= 400:
+            return self._set_discussion_state(
+                ref, operation, owner, repo, number, reason=reason
+            )
+        before = probe.json() or {}
+        if reason is not None and reason not in CLOSE_REASONS:
+            raise ChannelError(
+                f"close reason {reason!r} is for discussions; an issue takes one of {CLOSE_REASONS}",
+                kind="validation",
+            )
         if before.get("pull_request") and reason is not None:
             raise ChannelError(
                 "a pull request closes without a reason; leave it out", kind="validation"
             )
-        plan["was"] = before.get("state")
+        plan = {
+            "action": f"{operation} the issue or pull request",
+            "target": target,
+            "request": f"PATCH {path}",
+            **payload,
+            "was": before.get("state"),
+        }
         data = self._api(path, method="PATCH", payload=payload).json() or {}
         # Read back what the issue now says, rather than assuming the request took.
         plan["now"] = data.get("state")
@@ -1612,18 +1656,78 @@ class GitHub:
             ref.encoded, operation, f"issue-{number}", data.get("html_url"), plan
         )
 
+    def _set_discussion_state(
+        self,
+        ref: ConversationRef,
+        operation: str,
+        owner: str,
+        repo: str,
+        number: int,
+        *,
+        reason: str | None,
+    ) -> SendResult:
+        """Close or reopen discussion ``#number`` through GraphQL, reading the state back."""
+        try:
+            data = self._graphql(
+                DISCUSSION_STATE_QUERY, {"owner": owner, "name": repo, "number": number}
+            )
+        except ChannelError as error:
+            if error.kind != "not_found":
+                raise
+            data = {}
+        discussion = (data.get("repository") or {}).get("discussion") or {}
+        if not discussion.get("id"):
+            raise _not_found(owner, repo, number)
+        variables: dict[str, Any] = {"discussionId": discussion["id"]}
+        plan: dict[str, Any] = {
+            "action": f"{operation} the discussion",
+            "target": f"{owner}/{repo}#{number}",
+            "request": f"GraphQL {operation}Discussion",
+        }
+        if operation == "close":
+            if reason is not None:
+                mapped = DISCUSSION_REASON_ALIASES.get(reason, reason)
+                if mapped not in DISCUSSION_CLOSE_REASONS:
+                    raise ChannelError(
+                        f"close reason {reason!r} is for issues; a discussion takes one of "
+                        f"{DISCUSSION_CLOSE_REASONS}",
+                        kind="validation",
+                    )
+                variables["reason"] = mapped.upper()
+                plan["reason"] = mapped
+            query, field = CLOSE_DISCUSSION, "closeDiscussion"
+        else:
+            query, field = REOPEN_DISCUSSION, "reopenDiscussion"
+        plan["was"] = _discussion_state(discussion)
+        after = (self._graphql(query, variables).get(field) or {}).get("discussion") or {}
+        # Read back what the discussion now says, rather than assuming the request took.
+        plan["now"] = _discussion_state(after)
+        if after.get("closed") and after.get("stateReason"):
+            plan["now_reason"] = str(after["stateReason"]).lower()
+        return self._done(
+            ref.encoded,
+            operation,
+            f"discussion-{number}",
+            after.get("url") or discussion.get("url"),
+            plan,
+        )
+
     def close(
         self, ref: ConversationRef, *, reason: str | None = None, dry_run: bool = False
     ) -> SendResult:
-        """Close an issue or pull request (``PATCH .../issues/N``), with an issue's ``state_reason``.
+        """Close an issue or pull request (``PATCH .../issues/N``) or a discussion (GraphQL).
 
-        The plan reads the state back: ``was`` (before) and ``now`` / ``now_reason`` (what
-        the response says), so closing an already-closed issue is visible as such.
+        ``reason`` is the kind's own: an issue's ``state_reason`` (``completed``,
+        ``not_planned``, ``duplicate``) or a discussion's (``resolved``, ``outdated``,
+        ``duplicate``; ``completed`` is accepted as ``resolved``); a pull request takes
+        none. The plan reads the state back: ``was`` (before) and ``now`` /
+        ``now_reason`` (what the response says), so closing an already-closed
+        conversation is visible as such.
         """
         return self._set_state(ref, "close", "closed", reason=reason, dry_run=dry_run)
 
     def reopen(self, ref: ConversationRef, *, dry_run: bool = False) -> SendResult:
-        """Reopen a closed issue or pull request; the plan reads the state back as for :meth:`close`."""
+        """Reopen a closed issue, pull request or discussion; the plan reads the state back as for :meth:`close`."""
         return self._set_state(ref, "reopen", "open", reason=None, dry_run=dry_run)
 
     # ----------------------------------------------------------------- verifying

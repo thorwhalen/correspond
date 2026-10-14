@@ -236,7 +236,7 @@ class Unlabeler(Protocol):
 
 @runtime_checkable
 class Closer(Protocol):
-    """Settle a conversation (close an issue), optionally saying why."""
+    """Settle a conversation (close an issue or a discussion), optionally saying why."""
 
     def close(
         self, ref: ConversationRef, *, reason: str | None = None, dry_run: bool = False
@@ -1030,7 +1030,7 @@ def close(
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
 ) -> SendResult:
-    """Close a conversation (an issue), with an optional ``reason`` in the channel's vocabulary; the ``before_send`` check sees the reason (or ``close``) as the draft's text."""
+    """Close a conversation (an issue or a discussion), with an optional ``reason`` in the channel's vocabulary; the ``before_send`` check sees the reason (or ``close``) as the draft's text."""
     adapter, ref = _adapter_for(ref, "close", registry)
     reason = (reason or "").strip() or None
     return _checked_write(
