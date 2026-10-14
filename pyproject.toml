@@ -126,6 +126,11 @@ post_test = []
 lint = []
 format = []
 
+# The MCP surfaces' tests (the channel server on the wire, through FastMCP internals)
+# are skipped without the mcp extra, so CI installs it.
+[tool.wads.ci.install]
+extras = "mcp"
+
 [tool.wads.ci.env]
 required_envvars = []
 test_envvars = []
