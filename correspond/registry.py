@@ -351,9 +351,22 @@ CHANNELS: tuple[ChannelInfo, ...] = (
     ),
     ChannelInfo(
         name="apprise",
-        summary="Apprise as a send-only writer for about 155 notification services",
+        summary="Apprise: send-only notifications to about 155 services, each named by an alias (send only)",
+        factory="correspond.channels.apprise:Apprise",
+        modules=("apprise",),
         extra="apprise",
-        planned=f"{ISSUES}/5",
+        settings=(
+            Setting(
+                key="config",
+                env="CORRESPOND_APPRISE_CONFIG",
+                what="an Apprise config file (YAML or TEXT); an alias with no URL of its own is used as a tag in it",
+                where="https://pypi.org/project/apprise/ (its configuration-file documentation)",
+            ),
+        ),
+        notes=(
+            "apprise:<alias> sends to the URL in CORRESPOND_APPRISE_URL_<ALIAS> (or the Keychain item correspond-apprise-url-<alias>), else to the URLs tagged <alias> in the config file",
+            "a reference never holds an Apprise URL: the URL carries the service's credentials",
+        ),
     ),
 )
 

@@ -21,6 +21,7 @@ When you cannot tell who can read a conversation, treat it as world-readable. Th
 | `ntfy:<topic>` | anyone who knows or guesses the topic name, unless the server denies anonymous access | the server's cache (12 hours by default) |
 | `macos:` | the operator | nothing |
 | `webinbox:<site>` | the operator | nothing |
+| `apprise:<alias>` | whoever the service behind the alias delivers to, from one device to a public channel; correspond cannot tell, so treat it as public | whatever that service keeps |
 
 Discord and Slack follow the same logic when their adapters land. A Discord channel whose permissions let everyone view it is readable by every member of the server. A Slack channel shared with another organisation has external readers, and workspace admins can export history.
 
@@ -48,7 +49,8 @@ Discord and Slack follow the same logic when their adapters land. A Discord chan
   - Telegram: from `getChat`; a public username (its own or a linked chat's) is public, a group is a group, a private chat is named.
   - ntfy: public unless the config says the server denies anonymous reads.
   - macOS and the web inbox: the operator.
-- Planned channels (Discord, Slack, Signal, Apprise) answer public, defaulted.
+  - Apprise: public, never complete; the service behind the alias is not asked.
+- Planned channels (Discord, Slack, Signal) answer public, defaulted.
 - Unknown values resolve to public, and nothing is cached: ask again right before sending.
 
 ## Built: the `before_send` check
