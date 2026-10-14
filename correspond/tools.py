@@ -487,7 +487,7 @@ def unlabel(ref: str, labels: str, *, dry_run: bool = False) -> dict:
 
 @_as_result
 def close(ref: str, *, reason: str | None = None, dry_run: bool = False) -> dict:
-    """Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it). `reason` is in the channel's vocabulary (GitHub issues: completed, not_planned or duplicate). Run it with `dry_run` first. It passes the before_send check, as for `send`."""
+    """Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it). `reason` is in the channel's vocabulary (GitHub issues: completed, not_planned or duplicate; GitHub discussions: resolved, outdated or duplicate). Run it with `dry_run` first. It passes the before_send check, as for `send`."""
     return _write_result(ops.close(ref, reason=reason or None, dry_run=dry_run))
 
 
