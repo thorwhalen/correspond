@@ -65,7 +65,7 @@ def test_draft_notify_is_normalised_and_absent_from_the_dict_unless_set():
 
 
 def test_capabilities_grade_notify():
-    assert GitHub().capabilities.notify is Support.FULL
+    assert GitHub().capabilities.notify is Support.PARTIAL  # not past repository visibility
     assert Email().capabilities.notify is Support.FULL
     assert Telegram().capabilities.notify is Support.PARTIAL
     assert Ntfy().capabilities.notify is Support.NONE
@@ -194,3 +194,52 @@ def test_email_audience_counts_the_notify_addresses_a_send_copies():
     notified = mail.audience(ref, draft=Draft(text="hi", notify=["dee@example.org"]))
     assert notified.hash != plain.hash
     assert notified == mail.audience(ref, draft=Draft(text="hi", cc=["dee@example.org"]))
+
+
+# --- review fixes: the effective draft is what gets checked ------------------------
+
+
+def test_the_length_limit_counts_the_mention_line():
+    gh = GitHub(run=lambda *a, **k: pytest.fail("refused before any gh call"))
+    limit = gh.capabilities.max_text_length
+    result = correspond.send(
+        f"github:{REPO}#1", "x" * limit, notify=["octocat"], dry_run=True, registry={"github": gh}
+    )
+    assert not result.ok and result.error_kind == "validation"
+
+
+def test_before_send_sees_the_draft_as_it_will_go_out():
+    seen = []
+
+    def check(ref, draft, audience, **kw):
+        seen.append(draft)
+
+    mail = Email(smtp=lambda: pytest.fail("dry run"))
+    correspond.send(
+        "email:ada@example.org", "hi", notify=["dee@example.org"], dry_run=True,
+        registry={"email": mail}, before_send=check,
+    )
+    correspond.send(
+        "fake:example/demo", "hi", notify=["octocat"], dry_run=True,
+        registry={"fake": FakeChannel()}, before_send=check,
+    )
+    assert seen[0].cc == ("dee@example.org",)
+    assert seen[1].text == "hi\n\ncc @octocat"
+
+
+def test_a_bad_handle_is_a_validation_result_from_send():
+    result = correspond.send(
+        "fake:example/demo", "hi", notify=["octocat"], dry_run=True, registry={"fake": FakeChannel()}
+    )
+    assert result.ok
+    gh = GitHub(run=lambda *a, **k: pytest.fail("no gh"))
+    bad = correspond.send(
+        f"github:{REPO}#1", "hi", notify=["not a handle"], dry_run=True, registry={"github": gh}
+    )
+    assert not bad.ok and bad.error_kind == "validation"
+
+
+def test_mentions_in_code_or_comments_do_not_count():
+    text = "log:\n```\nby @octocat\n```\nand `@octocat` <!-- @octocat -->"
+    assert missing_mentions(text, ["octocat"]) == ("octocat",)
+    assert with_mentions(text, ["octocat"]).endswith("cc @octocat")

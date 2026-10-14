@@ -33,8 +33,18 @@ def handle(name: str) -> str:
     return name.strip().removeprefix("@")
 
 
+#: Markdown a mention inside notifies nobody: fenced blocks, inline code, HTML comments.
+_UNMENTIONABLE = re.compile(
+    r"^[ \t]*(```|~~~).*?^[ \t]*\1[^\n]*$|`[^`\n]+`|<!--.*?-->",
+    flags=re.DOTALL | re.MULTILINE,
+)
+
+
 def is_mentioned(text: str, name: str) -> bool:
-    """Is ``@name`` in ``text`` as a whole mention (not inside an address or a longer handle)? Case-insensitive.
+    """Is ``@name`` in ``text`` as a whole mention that notifies? Case-insensitive.
+
+    Not inside an address or a longer handle, and not inside code or an HTML comment,
+    where platforms render it without notifying anyone.
 
     >>> is_mentioned("ping @octocat.", "octocat")
     True
@@ -42,9 +52,12 @@ def is_mentioned(text: str, name: str) -> bool:
     False
     >>> is_mentioned("ping @octocat-two", "octocat")
     False
+    >>> is_mentioned("see `@octocat` and <!-- @octocat -->", "octocat")
+    False
     """
+    visible = _UNMENTIONABLE.sub(" ", text)
     pattern = rf"(?<![\w@/.-])@{re.escape(handle(name))}(?![\w-]|/\w)"
-    return re.search(pattern, text, flags=re.IGNORECASE) is not None
+    return re.search(pattern, visible, flags=re.IGNORECASE) is not None
 
 
 def missing_mentions(text: str, names: Iterable[str]) -> tuple[str, ...]:

@@ -664,7 +664,19 @@ def send(
         )
     )
     key = None if idempotency_key is None else check_key(idempotency_key)
-    problem = _feature_check(adapter, draft)
+    # The draft as the channel will send it (``notify`` materialised: a mention added,
+    # an address copied): what the length checks and the before_send check must see.
+    # The adapter is still handed ``draft`` and materialises it the same way.
+    prepare = getattr(adapter, "prepare", None)
+    effective = draft
+    if draft.notify and callable(prepare):
+        try:
+            effective = prepare(ref, draft)
+        except ChannelError as error:
+            return SendResult.failure(
+                error, channel=adapter.name, conversation=ref.encoded, dry_run=dry_run
+            )
+    problem = _feature_check(adapter, effective)
     if problem:
         return _invalid(adapter, ref, "send", dry_run, problem)
 
@@ -691,7 +703,7 @@ def send(
         adapter,
         ref,
         "send",
-        draft,
+        effective,
         dry_run=dry_run,
         before_send=before_send,
         registry=registry,

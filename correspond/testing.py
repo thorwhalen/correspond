@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable, Mapping
+import dataclasses
 from datetime import datetime, timedelta, timezone
 
 from correspond.errors import ChannelError, InvalidRef
@@ -90,6 +91,12 @@ class FakeChannel:
         ]
         return messages[-limit:] if limit else messages
 
+    def prepare(self, ref: ConversationRef, draft: Draft) -> Draft:
+        """The draft as it will post: the ``notify`` mentions the text lacks added. Pure."""
+        if not draft.notify:
+            return draft
+        return dataclasses.replace(draft, text=with_mentions(draft.text, draft.notify))
+
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
     ) -> SendResult:
@@ -99,7 +106,7 @@ class FakeChannel:
         ``cc`` line, as a mention platform's writer does (``sent`` keeps the draft as
         given; the conversation holds the text as posted).
         """
-        text = with_mentions(draft.text, draft.notify)
+        text = self.prepare(ref, draft).text
         plan = {
             "action": "append a message to the in-memory conversation",
             "conversation": ref.encoded,

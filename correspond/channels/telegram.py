@@ -445,19 +445,21 @@ class Telegram:
             **common,
         )
 
+    def prepare(self, ref: ConversationRef, draft: Draft) -> Draft:
+        """The draft as it will post: ``notify`` usernames checked, the missing mentions added. Pure."""
+        if not draft.notify:
+            return draft
+        bad = [n for n in draft.notify if not USERNAME_RE.match(handle(n))]
+        if bad:
+            raise ChannelError(f"not a Telegram username: {', '.join(bad)}", kind="validation")
+        return replace(draft, text=with_mentions(draft.text, draft.notify))
+
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
     ) -> SendResult:
         """``sendMessage``, the title (if any) prepended; ``draft.notify`` usernames the text does not @mention yet are mentioned on a closing ``cc`` line."""
-        added: tuple[str, ...] = ()
-        if draft.notify:
-            bad = [n for n in draft.notify if not USERNAME_RE.match(handle(n))]
-            if bad:
-                raise ChannelError(
-                    f"not a Telegram username: {', '.join(bad)}", kind="validation"
-                )
-            added = missing_mentions(draft.text, draft.notify)
-            draft = replace(draft, text=with_mentions(draft.text, draft.notify))
+        added = missing_mentions(draft.text, draft.notify) if draft.notify else ()
+        draft = self.prepare(ref, draft)
         params = self._target(ref)
         text = f"{draft.title}\n\n{draft.text}" if draft.title else draft.text
         if len(text) > MAX_TEXT_CHARS:

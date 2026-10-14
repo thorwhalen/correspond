@@ -463,7 +463,7 @@ class GitHub:
             reopen=Support.FULL,
             initiate=Support.FULL,
             reply=Support.PARTIAL,
-            notify=Support.FULL,
+            notify=Support.PARTIAL,
             history_depth=HistoryDepth.FULL,
             listen_modes=("poll",),
             grades=(Grade.PLATFORM, Grade.CRYPTO, Grade.FORGED),
@@ -491,6 +491,7 @@ class GitHub:
             notes=(
                 "listen polls issue and comment activity of a repository or of one issue; discussions are read but not listened to",
                 "reply_to works in discussions only; issue and pull request comments are flat",
+                "notify mentions each handle the text lacks; GitHub notifies a mentioned user or team who can see the repository, so on a private one a non-member is not reached",
                 "pull request review comments on diffs are not read",
                 "listen can miss a change only when more than 2,000 issues or comments change within the same second",
                 "audience is the repository's readership and never complete (installed apps, webhooks and security managers cannot be listed); a 404 or 403 resolves to public",
@@ -1209,16 +1210,21 @@ class GitHub:
         """
         if not draft.notify:
             return self._send(ref, draft, dry_run=dry_run)
+        added = missing_mentions(draft.text, draft.notify)
+        result = self._send(ref, self.prepare(ref, draft), dry_run=dry_run)
+        notified = {"notify": [handle(n) for n in draft.notify], "mentions_added": list(added)}
+        return replace(result, plan={**result.plan, **notified})
+
+    def prepare(self, ref: ConversationRef, draft: Draft) -> Draft:
+        """The draft as it will post: ``notify`` handles checked, the missing mentions added. Pure."""
+        if not draft.notify:
+            return draft
         bad = [n for n in draft.notify if not GITHUB_HANDLE_RE.match(handle(n))]
         if bad:
             raise ChannelError(
                 f"not a GitHub user or team handle: {', '.join(bad)}", kind="validation"
             )
-        added = missing_mentions(draft.text, draft.notify)
-        posted = replace(draft, text=with_mentions(draft.text, draft.notify))
-        result = self._send(ref, posted, dry_run=dry_run)
-        notified = {"notify": [handle(n) for n in draft.notify], "mentions_added": list(added)}
-        return replace(result, plan={**result.plan, **notified})
+        return replace(draft, text=with_mentions(draft.text, draft.notify))
 
     def _send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False

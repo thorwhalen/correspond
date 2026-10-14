@@ -919,8 +919,8 @@ class Draft:
     when the text lacks one, an address put in Cc when it is not in To or Cc -- and a
     channel that cannot raises ``NotSupported("notify")`` (see :mod:`correspond.notify`).
 
-    >>> Draft(text="hi", notify=["octocat", " ", "octocat"]).notify
-    ('octocat',)
+    >>> Draft(text="hi", notify=["octocat", " ", "Octocat", "hubot"]).notify
+    ('octocat', 'hubot')
     """
 
     text: str
@@ -945,7 +945,10 @@ class Draft:
             values = _texts(name, getattr(self, name))
             object.__setattr__(self, name, tuple(v.strip() for v in values if v.strip()))
         notify = (v.strip() for v in _texts("notify", self.notify) if v.strip())
-        object.__setattr__(self, "notify", tuple(dict.fromkeys(notify)))
+        unique: dict[str, str] = {}
+        for v in notify:
+            unique.setdefault(v.lower(), v)  # first spelling wins, in order
+        object.__setattr__(self, "notify", tuple(unique.values()))
         if not isinstance(self.native, Mapping):
             raise TypeError(
                 f"draft native must be a mapping, not {type(self.native).__name__}"

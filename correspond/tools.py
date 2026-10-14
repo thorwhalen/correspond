@@ -336,8 +336,10 @@ def _native(text: str | None) -> dict:
 
 
 @_as_result
-def audience(ref: str, *, cc: str | None = None, bcc: str | None = None) -> dict:
-    """Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add. Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does."""
+def audience(
+    ref: str, *, cc: str | None = None, bcc: str | None = None, notify: str | None = None
+) -> dict:
+    """Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow. Unknown resolves to public. `cc` and `bcc` (comma-separated) are the copies a send would add, and `notify` the same send's notify list (on email those addresses go in Cc). Check it before writing and show it with the dry-run plan; the record is under `audience`, and `hash` changes when the audience does."""
     copies = {"cc": _addresses(cc), "bcc": _addresses(bcc)}
     draft = None
     if any(copies.values()):
@@ -355,6 +357,8 @@ def audience(ref: str, *, cc: str | None = None, bcc: str | None = None) -> dict
                 alternatives=("ask about each recipient's channel separately",),
             )
         draft = Draft(text="", **copies)
+    if _addresses(notify):
+        draft = Draft(text="", **copies, notify=_addresses(notify))
     found = ops.audience(ref, draft)
     words = found.in_words()
     return {

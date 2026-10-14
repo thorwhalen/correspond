@@ -727,6 +727,18 @@ class Email:
             evidence=tuple(evidence),
         )
 
+    def prepare(self, ref: ConversationRef, draft: Draft) -> Draft:
+        """The draft as it will go out: ``notify`` addresses checked and put in Cc (out of Bcc). Pure."""
+        if not draft.notify:
+            return draft
+        malformed = [a for a in draft.notify if not ADDRESS_RE.match(a)]
+        if malformed:
+            raise ChannelError(
+                f"notify on email takes addresses, not: {', '.join(malformed)}",
+                kind="validation",
+            )
+        return _with_notify(ref.id or "", draft)[0]
+
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
     ) -> SendResult:
@@ -738,15 +750,9 @@ class Email:
         """
         if not ref.id:
             raise ChannelError("send to an address: email:<address>", kind="validation")
-        cc_added: tuple[str, ...] = ()
-        if draft.notify:
-            malformed = [a for a in draft.notify if not ADDRESS_RE.match(a)]
-            if malformed:
-                raise ChannelError(
-                    f"notify on email takes addresses, not: {', '.join(malformed)}",
-                    kind="validation",
-                )
-            draft, cc_added = _with_notify(ref.id, draft)
+        cc_before = draft.cc
+        draft = self.prepare(ref, draft)
+        cc_added = draft.cc[len(cc_before) :]
         if draft.reply_to and not MESSAGE_ID_RE.match(draft.reply_to):
             raise ChannelError(
                 f"reply_to is a Message-ID such as <abc@example.org>, not {draft.reply_to!r}",

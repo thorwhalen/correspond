@@ -40,7 +40,12 @@ HELP = {
         "peek": {"help": "show new events without moving the cursor"},
         "data_dir": {"help": "where cursors are kept (default: the data root)"},
     },
-    "audience": {"ref": _REF, "cc": _CC, "bcc": _BCC},
+    "audience": {
+        "ref": _REF,
+        "cc": _CC,
+        "bcc": _BCC,
+        "notify": {"help": "the send's notify list (on email those addresses go in Cc)"},
+    },
     "send": {
         "ref": _REF,
         "text": {"help": "the message, or - to read it from stdin"},
