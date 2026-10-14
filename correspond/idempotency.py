@@ -132,13 +132,19 @@ def settled(
 def matching_message(
     messages: Iterable[Message], draft: Draft, *, since: datetime
 ) -> Message | None:
-    """The latest of ``messages`` written by correspond's own account with ``draft``'s text, at or after ``since`` less :data:`READ_BACK_SKEW`."""
+    """The latest of ``messages`` written by correspond's own account with ``draft``'s text, at or after ``since`` less :data:`READ_BACK_SKEW`.
+
+    With ``draft.notify``, the text as a mention writer posts it (the mentions it lacked
+    added, :func:`correspond.notify.with_mentions`) matches too.
+    """
+    from correspond.notify import with_mentions
+
     earliest = since - READ_BACK_SKEW
-    text = draft.text.strip()
+    texts = {draft.text.strip(), with_mentions(draft.text, draft.notify).strip()}
     found = [
         m
         for m in messages
-        if m.author.is_self and m.sent_at >= earliest and (m.text or "").strip() == text
+        if m.author.is_self and m.sent_at >= earliest and (m.text or "").strip() in texts
     ]
     return max(found, key=lambda m: m.sent_at) if found else None
 

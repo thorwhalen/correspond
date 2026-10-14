@@ -52,6 +52,9 @@ HELP = {
         "native": {
             "help": 'channel-specific fields as a JSON object, e.g. \'{"labels": ["question"], "assignees": ["octocat"]}\' when opening a GitHub issue (see capabilities: draft_fields)'
         },
+        "notify": {
+            "help": "comma-separated handles (GitHub, Telegram) or addresses (email) the channel must notify: a missing mention is added, an address goes in Cc"
+        },
         "dry_run": _DRY_RUN,
     },
     "edit": {

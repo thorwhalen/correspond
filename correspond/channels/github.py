@@ -51,7 +51,7 @@ import re
 import subprocess
 import time
 from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from typing import Any
@@ -83,6 +83,7 @@ from correspond.model import (
     format_time,
     parse_time,
 )
+from correspond.notify import handle, missing_mentions, with_mentions
 from correspond.ops import window, with_final_cursor
 from correspond.registry import require
 
@@ -122,6 +123,10 @@ _GRAPHQL_REACTIONS = dict(
     )
 )
 MAX_BODY_CHARS = 65_536
+#: A handle GitHub notifies on mention: a user (``octocat``) or a team (``org/team``).
+GITHUB_HANDLE_RE = re.compile(
+    r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})(?:/[A-Za-z0-9](?:[A-Za-z0-9_.-]*[A-Za-z0-9_])?)?$"
+)
 MAX_TITLE_CHARS = 256
 #: The ``Draft.native`` keys opening an issue takes (``POST /repos/{owner}/{repo}/issues``).
 DRAFT_FIELDS = ("labels", "assignees", "milestone")
@@ -458,6 +463,7 @@ class GitHub:
             reopen=Support.FULL,
             initiate=Support.FULL,
             reply=Support.PARTIAL,
+            notify=Support.FULL,
             history_depth=HistoryDepth.FULL,
             listen_modes=("poll",),
             grades=(Grade.PLATFORM, Grade.CRYPTO, Grade.FORGED),
@@ -1195,7 +1201,28 @@ class GitHub:
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
     ) -> SendResult:
-        """Comment on an issue, pull request or discussion; on a repository, open an issue (``title`` required)."""
+        """Comment on an issue, pull request or discussion; on a repository, open an issue (``title`` required).
+
+        ``draft.notify`` handles (``octocat``, ``org/team``) the text does not @mention yet
+        are mentioned on a closing ``cc`` line, which GitHub notifies; the plan lists them
+        under ``mentions_added``.
+        """
+        if not draft.notify:
+            return self._send(ref, draft, dry_run=dry_run)
+        bad = [n for n in draft.notify if not GITHUB_HANDLE_RE.match(handle(n))]
+        if bad:
+            raise ChannelError(
+                f"not a GitHub user or team handle: {', '.join(bad)}", kind="validation"
+            )
+        added = missing_mentions(draft.text, draft.notify)
+        posted = replace(draft, text=with_mentions(draft.text, draft.notify))
+        result = self._send(ref, posted, dry_run=dry_run)
+        notified = {"notify": [handle(n) for n in draft.notify], "mentions_added": list(added)}
+        return replace(result, plan={**result.plan, **notified})
+
+    def _send(
+        self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
+    ) -> SendResult:
         owner, repo, number = self._parts(ref)
         if number is None:
             if not (draft.title or "").strip():

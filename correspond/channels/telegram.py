@@ -23,6 +23,7 @@ import json
 import re
 import subprocess
 from collections.abc import Callable, Mapping, MutableMapping
+from dataclasses import replace
 from datetime import datetime, timezone
 from typing import Any
 
@@ -44,6 +45,7 @@ from correspond.model import (
     SendResult,
     Support,
 )
+from correspond.notify import handle, missing_mentions, with_mentions
 from correspond.ops import window, with_final_cursor
 from correspond.registry import require, value
 
@@ -52,6 +54,8 @@ __all__ = ["Telegram"]
 NAME = "telegram"
 CHAT_RE = re.compile(r"^(?:-?[1-9][0-9]{0,19}|@[A-Za-z][A-Za-z0-9_]{3,31})$")
 MAX_TEXT_CHARS = 4096
+#: A public Telegram username, the only handle a bot's mention reaches.
+USERNAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]{3,31}$")
 MAX_UPDATES = 100
 UPDATE_TYPES = ("message", "edited_message", "channel_post", "edited_channel_post")
 _MEDIA = ("photo", "document", "voice", "video", "audio", "sticker", "animation")
@@ -133,6 +137,7 @@ class Telegram:
             audience=Support.PARTIAL,
             initiate=Support.NONE,
             reply=Support.FULL,
+            notify=Support.PARTIAL,
             history_depth=HistoryDepth.BUFFER_24H,
             listen_modes=("poll",),
             native_fields=("chat_type", "chat_title", "message_thread_id", "media"),
@@ -148,6 +153,7 @@ class Telegram:
                 "listen is account-wide (telegram:); narrow to a chat when routing",
                 "reading telegram:@name first resolves the name with getChat, over the network",
                 "a bot cannot start a conversation: someone must write to it first",
+                "notify mentions @username in the text: it reaches a member of the chat with a public username, not anyone outside it",
                 "a title is prepended to the text: Telegram messages have none",
                 "audience comes from getChat: a public username, the chat type, history visibility; members are never listed",
             ),
@@ -442,7 +448,16 @@ class Telegram:
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
     ) -> SendResult:
-        """``sendMessage``, the title (if any) prepended."""
+        """``sendMessage``, the title (if any) prepended; ``draft.notify`` usernames the text does not @mention yet are mentioned on a closing ``cc`` line."""
+        added: tuple[str, ...] = ()
+        if draft.notify:
+            bad = [n for n in draft.notify if not USERNAME_RE.match(handle(n))]
+            if bad:
+                raise ChannelError(
+                    f"not a Telegram username: {', '.join(bad)}", kind="validation"
+                )
+            added = missing_mentions(draft.text, draft.notify)
+            draft = replace(draft, text=with_mentions(draft.text, draft.notify))
         params = self._target(ref)
         text = f"{draft.title}\n\n{draft.text}" if draft.title else draft.text
         if len(text) > MAX_TEXT_CHARS:
@@ -456,6 +471,8 @@ class Telegram:
                 "message_id": self._message_number(draft.reply_to)
             }
         plan = {"action": "sendMessage", **params, "title_prepended": bool(draft.title)}
+        if draft.notify:
+            plan.update(notify=[handle(n) for n in draft.notify], mentions_added=list(added))
         if dry_run:
             return SendResult(
                 ok=True, channel=NAME, conversation=ref.encoded, dry_run=True, plan=plan

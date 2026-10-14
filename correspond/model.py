@@ -562,7 +562,7 @@ class Event:
 # ---------------------------------------------------------------------- capabilities
 
 
-_SUPPORT_FIELDS = (*OPERATIONS, "initiate", "reply", "priority", "cc")
+_SUPPORT_FIELDS = (*OPERATIONS, "initiate", "reply", "priority", "cc", "notify")
 _TUPLE_FIELDS = (
     "listen_modes",
     "reactions",
@@ -580,10 +580,12 @@ class Capabilities:
     One ``Support`` per operation in :data:`OPERATIONS` (``audience``: can the channel say
     who reads a conversation; ``label`` / ``unlabel``: can labels be added to or removed
     from a conversation, apart from its opening send; ``close`` / ``reopen``: can a
-    conversation be settled, and unsettled), plus four features of writing:
+    conversation be settled, and unsettled), plus five features of writing:
     ``initiate`` (can a write start a conversation; Telegram bots cannot), ``reply``
-    (can a draft answer a specific message), ``priority``, and ``cc`` (can a draft copy
-    further recipients, ``Draft.cc`` and ``Draft.bcc``). ``history_depth`` says how
+    (can a draft answer a specific message), ``priority``, ``cc`` (can a draft copy
+    further recipients, ``Draft.cc`` and ``Draft.bcc``), and ``notify`` (can the writer
+    guarantee that the people in ``Draft.notify`` are notified: a mention it adds, an
+    address it copies). ``history_depth`` says how
     far back ``read`` sees; ``grades`` are the authenticity grades the channel can attest;
     ``native_fields`` are the keys its messages may carry in ``native`` (what a routing
     condition can test), or ``None`` when the channel does not declare them;
@@ -609,6 +611,7 @@ class Capabilities:
     reply: Support = Support.NONE
     priority: Support = Support.NONE
     cc: Support = Support.NONE
+    notify: Support = Support.NONE
     history_depth: HistoryDepth = HistoryDepth.NONE
     listen_modes: tuple[str, ...] = ()
     grades: tuple[Grade, ...] = ()
@@ -910,6 +913,14 @@ class Draft:
 
     >>> Draft(text="hi", native={"labels": ["question"]}).native
     {'labels': ['question']}
+
+    ``notify`` names who must be notified: handles on a mention platform (``octocat``
+    or ``@octocat``), addresses on email. The writer guarantees it -- a mention added
+    when the text lacks one, an address put in Cc when it is not in To or Cc -- and a
+    channel that cannot raises ``NotSupported("notify")`` (see :mod:`correspond.notify`).
+
+    >>> Draft(text="hi", notify=["octocat", " ", "octocat"]).notify
+    ('octocat',)
     """
 
     text: str
@@ -919,6 +930,7 @@ class Draft:
     cc: tuple[str, ...] = ()
     bcc: tuple[str, ...] = ()
     native: Mapping[str, Any] = field(default_factory=dict)
+    notify: tuple[str, ...] = ()
 
     def __post_init__(self):
         if not isinstance(self.text, str):
@@ -932,6 +944,8 @@ class Draft:
         for name in ("cc", "bcc"):
             values = _texts(name, getattr(self, name))
             object.__setattr__(self, name, tuple(v.strip() for v in values if v.strip()))
+        notify = (v.strip() for v in _texts("notify", self.notify) if v.strip())
+        object.__setattr__(self, "notify", tuple(dict.fromkeys(notify)))
         if not isinstance(self.native, Mapping):
             raise TypeError(
                 f"draft native must be a mapping, not {type(self.native).__name__}"
@@ -939,7 +953,7 @@ class Draft:
         object.__setattr__(self, "native", {str(k): v for k, v in self.native.items()})
 
     def to_dict(self) -> dict:
-        """JSON-ready. ``native`` appears only when set, so a draft without one keeps the
+        """JSON-ready. ``native`` and ``notify`` appear only when set, so a draft without them keeps the
         dict -- and the idempotency fingerprint of a key claimed before ``native``
         existed -- it always had."""
         data = {
@@ -952,6 +966,8 @@ class Draft:
         }
         if self.native:
             data["native"] = dict(self.native)
+        if self.notify:  # same reason: absent unless set
+            data["notify"] = list(self.notify)
         return data
 
 
