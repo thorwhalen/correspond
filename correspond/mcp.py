@@ -82,14 +82,18 @@ def _without(func: Callable, hidden: Iterable[str] = HIDDEN_PARAMETERS) -> Calla
     return tool
 
 
-def mk_server(*, allow_send: bool = False):
-    """A FastMCP server over the exposed tools, with ``data_dir`` hidden (not started)."""
+def mk_server(*, allow_send: bool = False, instructions: str = INSTRUCTIONS):
+    """A FastMCP server over the exposed tools, with ``data_dir`` hidden (not started).
+
+    ``instructions`` lets another surface over the same tools (the Claude Code channel in
+    :mod:`correspond.channel`) say more; the tool list is always :func:`refs`.
+    """
     from py2mcp import mk_mcp_server
 
     return mk_mcp_server(
         [_without(_resolve(ref)) for ref in refs(allow_send=allow_send)],
         name="correspond",
-        instructions=INSTRUCTIONS,
+        instructions=instructions,
     )
 
 

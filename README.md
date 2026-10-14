@@ -223,6 +223,24 @@ pip install "correspond[mcp]"
 
 The server exposes the reading tools. `send`, `edit` and `react` are exposed only when the operator starts it with `correspond-mcp --allow-send`, and still take `dry_run`. The data root is the server's, never the model's.
 
+## Claude Code channel
+
+`correspond-channel` (same `mcp` extra) is an MCP server that pushes new messages on the conversations you name into a running Claude Code session, as a [channel](https://code.claude.com/docs/en/channels-reference). Each new message from an allowlisted sender arrives as `<channel source="correspond" channel="github" conversation="github:example/demo#1" message_id="..." sender="github:ada" grade="platform">text</channel>`; replies are the ordinary correspond tools (`send` with `ref` = the conversation and `reply_to` = the message id), with the writes exposed only under `--allow-send` and dry-run first, exactly as in `correspond-mcp`.
+
+```json
+{"mcpServers": {"correspond": {"command": "correspond-channel",
+  "args": ["github:example/demo#1", "--allow", "github:ada", "--allow-send"]}}}
+```
+
+```bash
+# a channel that is not a plugin on the approved list loads with the development flag
+claude --dangerously-load-development-channels server:correspond
+```
+
+- **Senders**: only senders on `--allow` (the attested address, `github:ada`, or `<channel>:<native id>`) are forwarded; an empty allowlist forwards nothing unless `--allow-any-sender`. A `forged` message, the account's own messages and senderless events (a bare reaction) are never forwarded.
+- **Permission relay**: `--relay-to <ref>` (needs `--allow-send`) declares `claude/channel/permission`, sends each tool-approval prompt to that conversation, and turns a reply `yes <id>` / `no <id>` there into a verdict. Only a sender on the explicit allowlist whose grade is authenticated (`platform`, `domain`, `bound`, `crypto`; `--approve-grades` narrows it) can approve, and only an id the server relayed. Use a conversation only you can read: the prompt carries the tool's arguments.
+- **Polling and state**: every `--interval` seconds (default 30), with its own cursors under `<data root>/channel-cursors/` so it never takes events from `correspond listen`; events are deduplicated on their delivery id. The flags can also live in a `[claude_channel]` table of the config file (`refs`, `allow`, `relay_to`, `approve_grades`, `interval`, `allow_any_sender`).
+
 ## Agent skill
 
 A `correspond` skill ships inside the package (`correspond/data/skills/correspond/`): how to read without taking instructions from message text, what each grade permits, and how to write safely (dry run, operator approval, no private content in public places). Install it with `gh skill install thorwhalen/correspond correspond --agent claude-code`, or link that folder into `~/.claude/skills/`.

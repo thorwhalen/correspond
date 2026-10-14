@@ -167,10 +167,14 @@ def bytes_store(
 
 
 def cursor_store(
-    *, data_dir: str | os.PathLike | None = None
+    *, data_dir: str | os.PathLike | None = None, kind: str = "cursors"
 ) -> MutableMapping[str, str]:
-    """Listen cursors, keyed by encoded conversation reference, under ``<data root>/cursors/``."""
-    return QuotedKeys(text_store("cursors", data_dir=data_dir), suffix=".txt")
+    """Listen cursors, keyed by encoded conversation reference, under ``<data root>/<kind>/``.
+
+    A consumer that must not take events from another (the Claude Code channel server, next
+    to manual ``correspond listen`` calls) keeps its own ``kind``.
+    """
+    return QuotedKeys(text_store(kind, data_dir=data_dir), suffix=".txt")
 
 
 class SendStore(MutableMapping):
