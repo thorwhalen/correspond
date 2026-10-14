@@ -177,6 +177,7 @@ AUDIENCE_GRADES = {
     "ntfy": "partial",
     "macos": "full",
     "webinbox": "full",
+    "apprise": "partial",
 }
 
 

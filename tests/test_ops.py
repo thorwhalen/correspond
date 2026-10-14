@@ -208,7 +208,7 @@ def test_cursors_persist_in_files_under_the_data_root(isolated):
 def test_every_built_in_adapter_implements_exactly_the_operations_its_capabilities_grade():
     registry = build_registry()
     for info in CHANNELS:
-        if info.planned:
+        if info.planned or info.name not in registry:  # an extra that is not installed
             continue
         adapter = registry[info.name]
         assert adapter.name == info.name

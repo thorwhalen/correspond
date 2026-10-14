@@ -1,5 +1,6 @@
 """The registry: lazy, gated on optional modules; settings resolved in order; requirements explained without secrets."""
 
+import importlib.util
 import json
 import shutil
 import sys
@@ -23,8 +24,15 @@ SECRET = "123456:example-token-value-for-tests-only"
 
 def test_every_built_channel_registers_lazily_and_planned_ones_do_not():
     built = build_registry()
-    assert set(built) == {c.name for c in registry.CHANNELS if not c.planned}
-    assert {"discord", "slack", "signal", "apprise"}.isdisjoint(built)
+    importable = {
+        c.name
+        for c in registry.CHANNELS
+        if all(importlib.util.find_spec(m) is not None for m in c.modules)
+    }
+    assert set(built) == {c.name for c in registry.CHANNELS if not c.planned} & importable
+    assert {"discord", "slack", "signal"}.isdisjoint(built)
+    # apprise is built, but registers only when its extra is installed
+    assert ("apprise" in built) == (importlib.util.find_spec("apprise") is not None)
 
 
 def test_a_channel_registers_only_when_its_optional_modules_import():

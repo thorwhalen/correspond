@@ -42,6 +42,10 @@ correspond-mcp = "correspond.mcp:main"
 mcp = [
     "py2mcp",
 ]
+# The Apprise channel (about 155 notification services, send only) is optional.
+apprise = [
+    "apprise>=1.6",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",

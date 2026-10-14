@@ -25,8 +25,11 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 | `macos` | `macos:` | send, audience | `terminal-notifier` or `osascript` |
 | `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience | the Bot API over `urllib` |
 | `webinbox` | `webinbox:<site>` | read, listen, audience | the ASGI collector below, and `dol` stores |
+| `apprise` | `apprise:<alias>` | send, audience | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`) |
 
-Every v0.1 adapter uses the Python standard library. Discord ([#2](https://github.com/thorwhalen/correspond/issues/2)), Slack ([#3](https://github.com/thorwhalen/correspond/issues/3)), Signal ([#4](https://github.com/thorwhalen/correspond/issues/4)) and Apprise ([#5](https://github.com/thorwhalen/correspond/issues/5)) are planned as extras; `correspond channels` lists them with their issues.
+Every v0.1 adapter uses the Python standard library; Apprise is the first extra, and registers only when it is installed. Discord ([#2](https://github.com/thorwhalen/correspond/issues/2)), Slack ([#3](https://github.com/thorwhalen/correspond/issues/3)) and Signal ([#4](https://github.com/thorwhalen/correspond/issues/4)) are planned as extras; `correspond channels` lists them with their issues.
+
+**Apprise** reaches the long tail (Discord and Slack webhooks, Matrix, Pushover, Gotify, SMS gateways...) for sending only. A reference names an *alias*, never an Apprise URL, because the URL carries the service's credentials. `apprise:<alias>` sends to the URL in `CORRESPOND_APPRISE_URL_<ALIAS>` (upper case, `-` as `_`), else the Keychain item `correspond-apprise-url-<alias>`, else every URL tagged `<alias>` in the Apprise config file named by `config` under `[apprise]` (or `$CORRESPOND_APPRISE_CONFIG`). A plan names the service (the URL's scheme), never the URL. A partial delivery is `unconfirmed`, never retried blindly. A draft's priority is not sent (Apprise services take one in their URL, if at all).
 
 `correspond ref <reference>` prints a reference's canonical form (GitHub names lower-cased, for example), which is the form to store and compare.
 
@@ -63,7 +66,7 @@ scope: public
 
 `correspond audience <reference>` says who can read a conversation, now and plausibly later, before anything is written to it. The first line is the answer in words; the rest is the record (`--json` prints it under `audience`, beside `hash` and `words`): a `scope` (`operator`, `named`, `group`, `org`, `public`), the `readers` known to read it with whether that list is `complete`, the reader `classes` that cannot be listed, whether `external` readers exist, what a send leaves behind (`durability`), how the readership can grow (`widening`), the `evidence` behind each value, and a `hash` that changes when the audience does (and only then, not with the time or the evidence).
 
-**Unknown resolves to public.** A failed or forbidden lookup, a channel without an audience reader and a planned channel (Discord, Slack, Signal, Apprise) all answer `public` with `defaulted: true` and the reason in `evidence`. Nothing is cached: ask again right before sending. `correspond capabilities <channel>` grades how much each reader can tell.
+**Unknown resolves to public.** A failed or forbidden lookup, a channel without an audience reader and a planned channel (Discord, Slack, Signal) all answer `public` with `defaulted: true` and the reason in `evidence`. Nothing is cached: ask again right before sending. `correspond capabilities <channel>` grades how much each reader can tell.
 
 | Channel | How the audience is computed |
 |---|---|
@@ -72,6 +75,7 @@ scope: public
 | `telegram` (partial) | `getChat`. A private chat is `named`, its reader identified by account id. A chat with a public username is `public`. A group, or a channel without a username, is `group`, and members are never listed. A linked discussion group or channel is read too, and makes the audience public when it is. New members read the history unless the chat hides it; forwards widen it unless its content is protected. A chat `getChat` cannot read is public, defaulted. |
 | `ntfy` (partial) | `public`, with the classes "anyone who knows the topic name" and whoever runs the server, unless the config says `denies_anonymous_read`. The cache window is a class; its length is evidence. Nothing is asked of the server. |
 | `macos`, `webinbox` (full) | `operator`, retractable. |
+| `apprise` (partial) | `public`, never `complete`: the service behind an alias can be one phone or a public channel, and nothing is asked of it. |
 
 ## Writing: dry run first
 
