@@ -121,6 +121,21 @@ CHANNEL_INSTRUCTIONS = (
 # ------------------------------------------------------------------- pure parts
 
 
+_META_UNSAFE = re.compile(r'[\x00-\x1f"<>]')
+
+
+def _meta_value(value: Any) -> str:
+    """A meta value with quotes, angle brackets and control characters removed.
+
+    Claude Code renders meta as attributes of a ``<channel>`` tag; a sender handle is
+    platform data, so it must not be able to close the attribute or the tag.
+
+    >>> _meta_value('ada" injected="1')
+    'ada injected=1'
+    """
+    return _META_UNSAFE.sub("", str(value))
+
+
 def channel_notification(event: Event) -> dict:
     """The ``notifications/claude/channel`` message for one event that carries a message.
 
@@ -148,6 +163,7 @@ def channel_notification(event: Event) -> dict:
         "sender": message.author.address,
         "grade": message.authenticity.grade.value,
     }
+    meta = {key: _meta_value(value) for key, value in meta.items()}
     return {"method": CHANNEL_METHOD, "params": {"content": content, "meta": meta}}
 
 
@@ -252,7 +268,15 @@ class Gate:
             verdict = parse_verdict(message.text)
             if verdict is not None:
                 behavior, request_id = verdict
-                if pending and request_id in pending and self.may_approve(event):
+                # Only a freshly created message approves: an edit keeps the original
+                # author on some platforms (GitHub), so anyone allowed to edit could
+                # turn an allowlisted person's old comment into a verdict.
+                if (
+                    event.kind == "message.created"
+                    and pending
+                    and request_id in pending
+                    and self.may_approve(event)
+                ):
                     pending.discard(request_id)
                     return verdict_notification(request_id, behavior)
                 return None  # a verdict that may not approve reaches neither Claude Code nor Claude
@@ -304,11 +328,21 @@ def notifications(
                     seen, f"{event.channel}:{event.delivery_id}", seen_limit
                 ):
                     continue
+                own = event.message is not None and event.message.author.is_self
+                if own and _sender_ids(event) & gate.allow:
+                    log(
+                        f"dropped a message from {event.message.author.address}: it is the "
+                        "account correspond itself sends as, and its own messages are never "
+                        "forwarded (Claude could otherwise approve itself). The approver must "
+                        "be a different account."
+                    )
                 note = gate.route(event, pending=pending)
                 if note is not None:
                     yield note
         except CorrespondError as error:
             log(f"listening on {ref} failed: {error}")
+        except Exception as error:  # noqa: BLE001 -- one broken adapter must not stop every channel
+            log(f"listening on {ref} failed unexpectedly: {type(error).__name__}: {error}")
 
 
 # ------------------------------------------------------------------- the server

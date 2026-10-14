@@ -395,3 +395,49 @@ def test_the_permission_relay_round_trip_over_the_wire():
         "method": PERMISSION_METHOD,
         "params": {"request_id": "abcde", "behavior": "allow"},
     }
+
+
+# ------------------------------------------------------------- review fixes (#47)
+
+
+def test_an_edited_message_never_approves():
+    """GitHub keeps the original author on an edit, so anyone who may edit could forge a verdict."""
+    gate = Gate(allow=frozenset({"fake:ada"}), relay_to=RELAY)
+    edited = _event(1, text="yes abcde", conversation=RELAY, kind="message.updated")
+    pending = {"abcde"}
+    assert gate.route(edited, pending=pending) is None
+    assert pending == {"abcde"}
+
+
+def test_an_unexpected_adapter_error_is_logged_and_the_others_still_polled():
+    class Broken(ListeningFake):
+        def poll(self, *args, **kwargs):
+            raise OSError("socket gone")
+
+    fake = ListeningFake(_events_with_cursors([_event(1)]))
+    logged = []
+    notes = list(
+        notifications(
+            ["broken:example/x", REF],
+            gate=ADA,
+            cursors={},
+            registry={"fake": fake, "broken": Broken([])},
+            log=logged.append,
+        )
+    )
+    assert len(notes) == 1
+    assert any("broken:example/x" in line and "OSError" in line for line in logged), logged
+
+
+def test_meta_values_cannot_break_out_of_their_attribute():
+    note = channel_notification(_event(1, handle='ada" injected="1'))
+    assert all('"' not in v and "<" not in v for v in note["params"]["meta"].values())
+
+
+def test_an_allowlisted_own_account_message_is_dropped_loudly():
+    fake = ListeningFake(_events_with_cursors([_event(1, is_self=True)]))
+    logged = []
+    notes = list(
+        notifications([REF], gate=ADA, cursors={}, registry={"fake": fake}, log=logged.append)
+    )
+    assert notes == [] and "different account" in logged[0]
