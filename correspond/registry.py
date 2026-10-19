@@ -370,6 +370,26 @@ CHANNELS: tuple[ChannelInfo, ...] = (
         planned=f"{ISSUES}/4",
     ),
     ChannelInfo(
+        name="gdrive",
+        summary="A Google Drive folder, read only: the files a conversation announces, each as a message with the file attached",
+        factory="correspond.channels.gdrive:GoogleDrive",
+        modules=("pydrivedol",),
+        extra="gdrive",
+        settings=(
+            Setting(
+                key="service_account_file",
+                env="CORRESPOND_GDRIVE_SERVICE_ACCOUNT_FILE",
+                what="the path of a Google service-account key (JSON), used with the read-only Drive scope",
+                where="Google Cloud console: create a service account with the Drive API enabled, add a JSON key, then share each folder with its client_email as Viewer",
+                required=True,
+            ),
+        ),
+        notes=(
+            "gdrive:<folder id> lists the folder and its subfolders; it never listens or writes",
+            "the folder must be shared with the service account's client_email",
+        ),
+    ),
+    ChannelInfo(
         name="apprise",
         summary="Apprise: send-only notifications to about 155 services, each named by an alias (send only)",
         factory="correspond.channels.apprise:Apprise",

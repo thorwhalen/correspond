@@ -30,6 +30,7 @@ Add `--json` to any command for the full result. A result with `ok: false` exits
 | `macos:` | a banner on this Mac |
 | `telegram:` | the bot's update stream (listen); `telegram:<chat id>`, `telegram:@name` or `telegram:<chat id>/<topic id>` a chat |
 | `webinbox:<site>` | reports posted from a web page to the collector |
+| `gdrive:<folder id>` | a shared Google Drive folder, read only: one message per file (path, modification time, who modified it), the file as its attachment, downloaded only when asked; for files a conversation announces but does not attach; needs `correspond[gdrive]` |
 | `apprise:<alias>` | send only, to the Apprise service(s) behind an alias (never write an Apprise URL in a reference: it holds credentials); needs `correspond[apprise]` |
 
 `correspond ref <reference>` prints the canonical form, which is what to store or compare.

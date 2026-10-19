@@ -26,6 +26,7 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 | `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen (`getUpdates`, or a webhook on a server), read (what listening logged), send, edit, react, upload (a photo or a document), audience, verify (webhook deliveries) | the Bot API over `urllib` |
 | `webinbox` | `webinbox:<site>` | read, listen, audience | the ASGI collector below, and `dol` stores |
 | `apprise` | `apprise:<alias>` | send, audience | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`) |
+| `gdrive` | `gdrive:<folder id>` (or the folder's URL) | read (one message per file, the file attached, fetched on demand), audience (the folder's sharing); read only | pydrivedol and a service-account key, read-only scope (`pip install "correspond[gdrive]"`) |
 
 Every v0.1 adapter uses the Python standard library; Apprise is the first extra, and registers only when it is installed. Discord ([#2](https://github.com/thorwhalen/correspond/issues/2)), Slack ([#3](https://github.com/thorwhalen/correspond/issues/3)) and Signal ([#4](https://github.com/thorwhalen/correspond/issues/4)) are planned as extras; `correspond channels` lists them with their issues.
 

@@ -178,6 +178,7 @@ AUDIENCE_GRADES = {
     "macos": "full",
     "webinbox": "full",
     "apprise": "partial",
+    "gdrive": "partial",
 }
 
 

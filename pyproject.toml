@@ -48,6 +48,10 @@ mcp = [
 server = [
     "uvicorn>=0.20",
 ]
+# The Google Drive folder reader (read only) is optional.
+gdrive = [
+    "pydrivedol>=0.0.7",
+]
 # The Apprise channel (about 155 notification services, send only) is optional.
 apprise = [
     "apprise>=1.6",
