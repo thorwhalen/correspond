@@ -18,6 +18,7 @@
 - [correspond.channels.macos](_autosummary/correspond.channels.macos.html.md): macOS Notification Centre: a banner on this Mac (send only).
 - [correspond.channels.mail](_autosummary/correspond.channels.mail.html.md): Email: IMAP to read and listen, SMTP to send, with the standard library.
 - [correspond.channels.ntfy](_autosummary/correspond.channels.ntfy.html.md): ntfy: push notifications to a phone or a desktop through an ntfy server (send only).
+- [correspond.channels.slack](_autosummary/correspond.channels.slack.html.md): Slack: messages formatted as Slack writes them, posted through an incoming webhook.
 - [correspond.channels.telegram](_autosummary/correspond.channels.telegram.html.md): Telegram: a bot over the Bot API, with the standard library.
 - [correspond.channels.webinbox](_autosummary/correspond.channels.webinbox.html.md): The web inbox: a small ASGI collector web pages post reports to, and the channel that reads them.
 - [correspond.errors](_autosummary/correspond.errors.html.md): What correspond raises, and the vocabulary a failed write reports.
@@ -35,7 +36,7 @@
 - [correspond.testing](_autosummary/correspond.testing.html.md): An in-memory channel for tests and rehearsals, and &#96;python -m correspond.testing&#96;: the CLI with it r...
 - [correspond.tools](_autosummary/correspond.tools.html.md): The single source of truth for every surface: plain functions, flat arguments in, JSON-ready dicts o...
 - [For AI agents](ai-agents.html.md): &#96;correspond&#96; ships artifacts for coding agents alongside its code. This page lists
-- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-19 12:13 UTC&#42;&#42; from commit &lt;a href="https://github.com/tho...
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-10-19 12:38 UTC&#42;&#42; from commit &lt;a href="https://github.com/tho...
 
 ## Optional
 

@@ -16,6 +16,7 @@
 - [correspond.channels.macos](correspond.channels.macos.html.md): macOS Notification Centre: a banner on this Mac (send only).
 - [correspond.channels.mail](correspond.channels.mail.html.md): Email: IMAP to read and listen, SMTP to send, with the standard library.
 - [correspond.channels.ntfy](correspond.channels.ntfy.html.md): ntfy: push notifications to a phone or a desktop through an ntfy server (send only).
+- [correspond.channels.slack](correspond.channels.slack.html.md): Slack: messages formatted as Slack writes them, posted through an incoming webhook.
 - [correspond.channels.telegram](correspond.channels.telegram.html.md): Telegram: a bot over the Bot API, with the standard library.
 - [correspond.channels.webinbox](correspond.channels.webinbox.html.md): The web inbox: a small ASGI collector web pages post reports to, and the channel that reads them.
 - [correspond.errors](correspond.errors.html.md): What correspond raises, and the vocabulary a failed write reports.

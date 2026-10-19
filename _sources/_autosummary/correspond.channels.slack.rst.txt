@@ -1,0 +1,25 @@
+correspond.channels.slack
+=========================
+
+.. automodule:: correspond.channels.slack
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      MAX_TEXT_CHARS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      to_mrkdwn
+      webhook_env
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Slack
+   

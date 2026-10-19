@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=96ec9c95"></script>
+    <script src="../../_static/documentation_options.js?v=3294188c"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.22" />
+  <meta name="docsearch:version" content="0.0.23" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1096,9 +1096,13 @@ window.runMermaid = runMermaid;</script>
     <span class="p">),</span>
     <span class="n">ChannelInfo</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">"slack"</span><span class="p">,</span>
-        <span class="n">summary</span><span class="o">=</span><span class="s2">"Slack: Socket Mode or the Events API"</span><span class="p">,</span>
-        <span class="n">extra</span><span class="o">=</span><span class="s2">"slack"</span><span class="p">,</span>
-        <span class="n">planned</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ISSUES</span><span class="si">}</span><span class="s2">/3"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Slack: drafts in Slack's own formatting (mrkdwn), posted through an incoming webhook when one is configured"</span><span class="p">,</span>
+        <span class="n">factory</span><span class="o">=</span><span class="s2">"correspond.channels.slack:Slack"</span><span class="p">,</span>
+        <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"slack:&lt;name&gt; needs nothing for a dry run, which renders the draft as mrkdwn to paste; a real send needs the name's incoming webhook in CORRESPOND_SLACK_WEBHOOK_&lt;NAME&gt; (upper case, - and . as _) or the Keychain item correspond-slack-webhook-&lt;name&gt;"</span><span class="p">,</span>
+            <span class="s2">"create the webhook in your Slack app's settings (Incoming Webhooks), one per channel: https://api.slack.com/messaging/webhooks"</span><span class="p">,</span>
+            <span class="s2">"reading and listening (a Slack app token, slack-sdk) are not built yet"</span><span class="p">,</span>
+        <span class="p">),</span>
     <span class="p">),</span>
     <span class="n">ChannelInfo</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">"signal"</span><span class="p">,</span>

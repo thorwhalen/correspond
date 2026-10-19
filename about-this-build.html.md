@@ -2,16 +2,18 @@
 
 # About this build
 
-This documentation was built on **2026-10-19 12:13 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/4193f998fee36deeb44582a956e05dff14f7c98b"><code>4193f99</code></a> on branch <code>main</code>, for **correspond 0.0.22** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-19 12:38 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/85f2d58e10e4d1a967f3e095b2d6c89f8ca48d26"><code>85f2d58</code></a> on branch <code>main</code>, for **correspond 0.0.23** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.23) is behind the latest release on PyPI (0.0.24): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/4193f998fee36deeb44582a956e05dff14f7c98b"><code>4193f998fee36deeb44582a956e05dff14f7c98b</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/85f2d58e10e4d1a967f3e095b2d6c89f8ca48d26"><code>85f2d58e10e4d1a967f3e095b2d6c89f8ca48d26</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -22,9 +24,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39250179715">39250179715</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39253408518">39253408518</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>4193f998fee36deeb44582a956e05dff14f7c98b</code> (in the history of the built commit)  |
+| Event commit | <code>85f2d58e10e4d1a967f3e095b2d6c89f8ca48d26</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -49,13 +51,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.22/">0.0.22</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.24/">0.0.24</a>, newer than the documented version (0.0.23).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 4193f998fee36deeb44582a956e05dff14f7c98b
+git checkout 85f2d58e10e4d1a967f3e095b2d6c89f8ca48d26
 pip install "epythet==0.2.18"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
