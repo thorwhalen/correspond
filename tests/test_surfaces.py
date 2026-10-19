@@ -244,10 +244,11 @@ def test_the_upload_tool_refuses_what_is_not_a_plain_visible_file(tmp_path, monk
     assert allowed["ok"] and allowed["plan"]["source"] == os.path.realpath(secret)
     folder = tools.upload("email:ada@example.org", str(tmp_path), dry_run=True)
     assert (folder["ok"], folder["error_kind"]) == (False, "validation")
-    fifo = tmp_path / "pipe"
-    os.mkfifo(fifo)
-    piped = tools.upload("email:ada@example.org", str(fifo), dry_run=True)
-    assert (piped["ok"], piped["error_kind"]) == (False, "validation"), "never opened"
+    if hasattr(os, "mkfifo"):  # not on Windows
+        fifo = tmp_path / "pipe"
+        os.mkfifo(fifo)
+        piped = tools.upload("email:ada@example.org", str(fifo), dry_run=True)
+        assert (piped["ok"], piped["error_kind"]) == (False, "validation"), "never opened"
 
 
 def test_the_upload_plan_names_the_real_source_and_its_real_type(tmp_path, monkeypatch):
