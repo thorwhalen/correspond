@@ -65,6 +65,7 @@ from typing import Any
 from urllib.parse import quote, unquote
 
 from correspond.channels._http import file_name
+from correspond.channels._http import media_type as _media_type
 from correspond.errors import ChannelError, InvalidRef, NotSupported
 from correspond.model import (
     Account,
@@ -1027,11 +1028,7 @@ class Email:
     ) -> SendResult:
         """Email a file to ``ref``'s address: a message with the file attached and its name as the subject."""
         name = file_name(name)
-        maintype, slash, subtype = media_type.partition("/")
-        if not (maintype and slash and subtype):
-            raise ChannelError(
-                f"a media type is type/subtype, not {media_type!r}", kind="validation"
-            )
+        maintype, _, subtype = _media_type(media_type).partition("/")
         return self._send(
             ref,
             Draft(text="", title=name),

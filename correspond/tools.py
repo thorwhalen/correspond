@@ -17,6 +17,7 @@ import functools
 import json
 import mimetypes
 import os
+import stat
 from collections.abc import Callable
 from datetime import timezone
 from typing import Any
@@ -33,6 +34,7 @@ from correspond.errors import (
 from correspond.model import (
     OPERATIONS,
     Audience,
+    ConversationRef,
     Draft,
     HistoryDepth,
     Message,
@@ -497,29 +499,59 @@ def upload(
     *,
     name: str | None = None,
     media_type: str | None = None,
+    include_hidden: bool = False,
     dry_run: bool = False,
 ) -> dict:
-    """Send the file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`). `name` is what recipients see (the file's own name by default); `media_type` is guessed from the name when not given. Run it with `dry_run` first: the plan shows the name, size and SHA-256. Only the name passes the before_send check, not the contents, so never upload a file the user did not ask to send."""
-    from correspond.model import ConversationRef
-
+    """Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`). `name` is what recipients see (the file's own name by default); `media_type` is guessed from the file's real name when not given. A path through a hidden file or folder (a dot name, such as ~/.ssh) is refused unless `include_hidden`. Run it with `dry_run` first: the plan shows `source` (the real path read), the name, size and SHA-256; show the operator the source. The before_send check sees that metadata, never the contents, so never upload a file the user did not ask to send."""
     channel = ConversationRef.parse(ref).channel
-    limit = ops.capabilities(channel).max_upload_bytes
+    caps = ops.capabilities(channel)
+    if caps.upload is Support.NONE:
+        raise NotSupported("upload", channel)
+    real = os.path.realpath(os.path.expanduser(path))
+    if not include_hidden and any(
+        part.startswith(".") for part in real.split(os.sep) if part
+    ):
+        raise ChannelError(
+            f"{real} goes through a hidden file or folder; pass include_hidden only when the user asked to send it",
+            kind="permission",
+        )
     try:
-        size = os.path.getsize(path)
-        if limit and size > limit:
-            raise ChannelError(
-                f"{path} is {size} bytes; {channel} accepts at most {limit}",
-                kind="validation",
-            )
-        with open(path, "rb") as handle:
-            data = handle.read()
+        info = os.stat(real)
+    except FileNotFoundError:
+        raise ChannelError(f"no file at {real}", kind="not_found") from None
     except OSError as error:
         raise ChannelError(
-            f"could not read {path}: {error.strerror or error}", kind="not_found"
+            f"could not read {real}: {error.strerror or error}", kind="permission"
         ) from None
-    shown = name or os.path.basename(path)
-    kind = media_type or mimetypes.guess_type(shown)[0] or "application/octet-stream"
-    return _write_result(ops.upload(ref, shown, data, media_type=kind, dry_run=dry_run))
+    if not stat.S_ISREG(info.st_mode):
+        raise ChannelError(
+            f"{real} is not a regular file (a folder, a device or a pipe)",
+            kind="validation",
+        )
+    limit = caps.max_upload_bytes
+    try:
+        with open(real, "rb") as handle:
+            data = handle.read(limit + 1) if limit else handle.read()
+    except OSError as error:
+        raise ChannelError(
+            f"could not read {real}: {error.strerror or error}", kind="permission"
+        ) from None
+    if limit and len(data) > limit:
+        raise ChannelError(
+            f"{real} is over {limit} bytes, the most {channel} accepts",
+            kind="validation",
+        )
+    kind = media_type or mimetypes.guess_type(real)[0] or "application/octet-stream"
+    return _write_result(
+        ops.upload(
+            ref,
+            name or os.path.basename(real),
+            data,
+            media_type=kind,
+            source=real,
+            dry_run=dry_run,
+        )
+    )
 
 
 @_as_result

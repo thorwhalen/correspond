@@ -670,3 +670,72 @@ def test_an_upload_dry_run_calls_nothing_and_a_bad_name_is_refused(token):
     )
     assert (too_big.ok, too_big.error_kind) == (False, "validation")
     assert api.calls == []
+
+
+def test_a_media_type_that_could_inject_a_header_or_a_name_with_a_bidi_override_is_refused(
+    token,
+):
+    api = FakeUploadApi(_sent())
+    registry = {"telegram": Telegram(http=api, log={})}
+    for name, kind in (
+        ("a.txt", "text/plain\r\nX-Evil: 1"),
+        ("a.txt", "text/plain; charset=utf-8"),
+        ("invoice‮fdp.exe", "application/octet-stream"),
+    ):
+        result = correspond.upload(
+            "telegram:-4001", name, b"x", media_type=kind, registry=registry
+        )
+        assert (result.ok, result.error_kind) == (False, "validation"), (name, kind)
+    assert api.calls == []
+
+
+def test_a_photo_telegram_refuses_is_sent_again_as_a_document(token):
+    class Refusing(FakeUploadApi):
+        def __call__(self, method, url, **kwargs):
+            if url.endswith("/sendPhoto"):
+                self.calls.append(("sendPhoto", {}, b""))
+                refusal = {
+                    "ok": False,
+                    "error_code": 400,
+                    "description": "Bad Request: PHOTO_INVALID_DIMENSIONS",
+                }
+                return Response(400, {}, json.dumps(refusal).encode())
+            return super().__call__(method, url, **kwargs)
+
+    api = Refusing(_sent())
+    result = correspond.upload(
+        "telegram:-4001",
+        "wide.png",
+        PNG,
+        media_type="image/png",
+        registry={"telegram": Telegram(http=api, log={})},
+    )
+    assert result.ok and [c[0] for c in api.calls] == ["sendPhoto", "sendDocument"]
+    assert (
+        result.plan["action"] == "sendDocument"
+        and "DIMENSIONS" in result.plan["photo_refused"]
+    )
+
+
+def test_before_send_sees_an_uploads_metadata_and_a_dry_run_calls_nothing(token):
+    seen = []
+
+    def check(ref, draft, audience, **context):
+        seen.append((context["operation"], draft.text, dict(draft.native)))
+
+    api = FakeUploadApi(_sent())
+    result = correspond.upload(
+        "telegram:-4001",
+        "a.txt",
+        b"hello",
+        media_type="text/plain",
+        dry_run=True,
+        before_send=check,
+        registry={"telegram": Telegram(http=api, log={})},
+    )
+    assert result.ok and result.dry_run and api.calls == []
+    ((operation, text, native),) = seen
+    assert (operation, text) == ("upload", "a.txt")
+    assert (
+        native["upload"]["bytes"] == 5 and native["upload"]["media_type"] == "text/plain"
+    )

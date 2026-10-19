@@ -227,3 +227,50 @@ def test_the_upload_tool_reads_a_local_file_and_dry_runs(tmp_path, monkeypatch):
     assert renamed["plan"]["attachment"]["name"] == "n.md"
     missing = tools.upload("email:ada@example.org", str(tmp_path / "nope"), dry_run=True)
     assert (missing["ok"], missing["error_kind"]) == (False, "not_found")
+
+
+def test_the_upload_tool_refuses_what_is_not_a_plain_visible_file(tmp_path, monkeypatch):
+    import os
+
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    secret = tmp_path / ".hidden" / "key"
+    secret.parent.mkdir()
+    secret.write_bytes(b"k")
+    hidden = tools.upload("email:ada@example.org", str(secret), dry_run=True)
+    assert (hidden["ok"], hidden["error_kind"]) == (False, "permission")
+    allowed = tools.upload(
+        "email:ada@example.org", str(secret), include_hidden=True, dry_run=True
+    )
+    assert allowed["ok"] and allowed["plan"]["source"] == os.path.realpath(secret)
+    folder = tools.upload("email:ada@example.org", str(tmp_path), dry_run=True)
+    assert (folder["ok"], folder["error_kind"]) == (False, "validation")
+    fifo = tmp_path / "pipe"
+    os.mkfifo(fifo)
+    piped = tools.upload("email:ada@example.org", str(fifo), dry_run=True)
+    assert (piped["ok"], piped["error_kind"]) == (False, "validation"), "never opened"
+
+
+def test_the_upload_plan_names_the_real_source_and_its_real_type(tmp_path, monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    path = tmp_path / "notes.txt"
+    path.write_bytes(b"hello")
+    disguised = tools.upload(
+        "email:ada@example.org", str(path), name="holiday.jpg", dry_run=True
+    )
+    assert disguised["plan"]["source"].endswith("notes.txt")
+    assert disguised["plan"]["attachment"]["media_type"] == "text/plain"
+
+
+def test_the_upload_tool_checks_support_before_reading_and_reads_no_more_than_the_limit(
+    tmp_path, monkeypatch
+):
+    from correspond.channels import mail
+
+    path = tmp_path / "big.bin"
+    path.write_bytes(b"x" * 64)
+    unsupported = tools.upload("ntfy:example-topic", str(path), dry_run=True)
+    assert (unsupported["ok"], unsupported["error_kind"]) == (False, "not_supported")
+    monkeypatch.setattr(mail, "MAX_ATTACHMENT_BYTES", 10)
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    too_big = tools.upload("email:ada@example.org", str(path), dry_run=True)
+    assert (too_big["ok"], too_big["error_kind"]) == (False, "validation")

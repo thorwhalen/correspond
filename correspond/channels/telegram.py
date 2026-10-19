@@ -45,7 +45,12 @@ from datetime import datetime, timezone
 from typing import Any
 
 from correspond.channels._asgi import TOO_LARGE, lifespan, read_body, respond
-from correspond.channels._http import file_name, multipart, urllib_http
+from correspond.channels._http import (
+    file_name,
+    media_type as _media_type,
+    multipart,
+    urllib_http,
+)
 from correspond.errors import ChannelError, InvalidRef, MissingRequirement, NotSupported
 from correspond.model import (
     Account,
@@ -908,8 +913,13 @@ class Telegram:
         media_type: str = "application/octet-stream",
         dry_run: bool = False,
     ) -> SendResult:
-        """Send a file: ``sendPhoto`` for an inline image (:data:`PHOTO_TYPES`, 10 MB), else ``sendDocument`` (50 MB)."""
+        """Send a file: ``sendPhoto`` for an inline image (:data:`PHOTO_TYPES`, 10 MB), else ``sendDocument`` (50 MB).
+
+        A photo Telegram refuses (too large in pixels, too narrow, not really an image) is
+        sent again as a document, which takes any file; the plan says so (``photo_refused``).
+        """
         name = file_name(name)
+        media_type = _media_type(media_type)
         params = self._target(ref)
         photo = media_type in PHOTO_TYPES and len(data) <= MAX_PHOTO_BYTES
         method, field = ("sendPhoto", "photo") if photo else ("sendDocument", "document")
@@ -930,7 +940,15 @@ class Telegram:
                 dry_run=True,
                 plan=plan,
             )
-        result = self._call(method, params, files={field: (name, data, media_type)})
+        try:
+            result = self._call(method, params, files={field: (name, data, media_type)})
+        except ChannelError as error:
+            if not photo or error.kind != "validation":
+                raise
+            plan.update(action="sendDocument", photo_refused=str(error))
+            result = self._call(
+                "sendDocument", params, files={"document": (name, data, media_type)}
+            )
         message = self._remember(result)
         return SendResult(
             ok=True,

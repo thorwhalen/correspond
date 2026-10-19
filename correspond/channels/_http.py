@@ -15,8 +15,10 @@ the URL (a URL path can carry a token). Tests pass a scripted function of the sa
 from __future__ import annotations
 
 import json
+import re
 import secrets
 import time
+import unicodedata
 import urllib.error
 import urllib.request
 from collections.abc import Mapping
@@ -92,21 +94,48 @@ def urllib_http(
         ) from None
 
 
+#: A media type with no parameters: ``type/subtype`` in RFC 6838's restricted names.
+MEDIA_TYPE_RE = re.compile(
+    r"^[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]{0,126}$"
+)
+
+
 def file_name(name: str) -> str:
-    """``name`` checked as a file's display name: not empty, no path, no control characters."""
+    """``name`` checked as a file's display name: not empty, no path, no control or format characters.
+
+    Format characters include the bidirectional overrides that make ``invoice\u202efdp.exe``
+    display as ``invoiceexe.pdf``.
+
+    >>> file_name(" report.pdf ")
+    'report.pdf'
+    """
     text = str(name or "").strip()
     if (
         not text
         or "/" in text
         or "\\" in text
         or text in (".", "..")
-        or any(ord(c) < 0x20 or c == "\x7f" for c in text)
+        or any(unicodedata.category(c) in ("Cc", "Cf", "Zl", "Zp") for c in text)
     ):
         raise ChannelError(
-            f"a file name is a name without a path or control characters, not {name!r}",
+            f"a file name is a name without a path, control or format characters, not {name!r}",
             kind="validation",
         )
     return text
+
+
+def media_type(text: str) -> str:
+    """``text`` checked as a bare ``type/subtype`` (no parameters), lower-cased.
+
+    >>> media_type("Image/PNG")
+    'image/png'
+    """
+    if not isinstance(text, str) or not MEDIA_TYPE_RE.match(text):
+        raise ChannelError(
+            f"a media type is type/subtype, such as application/pdf, not {text!r}",
+            kind="validation",
+        )
+    return text.lower()
 
 
 def multipart(

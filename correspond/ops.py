@@ -41,6 +41,7 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 from __future__ import annotations
 
 import dataclasses
+import hashlib
 from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping
 from datetime import datetime
 from typing import Any, Protocol, runtime_checkable
@@ -1019,10 +1020,18 @@ def upload(
     *,
     media_type: str = "application/octet-stream",
     dry_run: bool = False,
+    source: str | None = None,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
 ) -> SendResult:
-    """Send a file to a conversation. The ``before_send`` check sees only the file name as the draft's text (``operation="upload"``): a check that cannot vet the bytes should hold or refuse."""
+    """Send a file to a conversation.
+
+    The ``before_send`` check sees the file name as the draft's text (``operation="upload"``)
+    and the file's metadata in ``draft.native["upload"]``: ``name``, ``media_type``,
+    ``bytes``, ``sha256`` and, when the caller read it from disk, ``source`` (its path), so a
+    check can hold a large, unknown or out-of-place file. It never sees the contents: a
+    check that must vet them should hold or refuse.
+    """
     adapter, ref = _adapter_for(ref, "upload", registry)
     limit = adapter.capabilities.max_upload_bytes
     if limit and len(data) > limit:
@@ -1033,11 +1042,18 @@ def upload(
             dry_run,
             f"{len(data)} bytes; {adapter.name} accepts at most {limit}",
         )
-    return _checked_write(
+    upload = {
+        "name": name,
+        "media_type": media_type,
+        "bytes": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
+        **({"source": source} if source else {}),
+    }
+    result = _checked_write(
         adapter,
         ref,
         "upload",
-        Draft(text=name),
+        Draft(text=name, native={"upload": upload}),
         dry_run=dry_run,
         before_send=before_send,
         registry=registry,
@@ -1045,6 +1061,9 @@ def upload(
             ref, name, data, media_type=media_type, dry_run=rehearse
         ),
     )
+    if source:  # what is really sent, whatever the name says
+        result = dataclasses.replace(result, plan={"source": source, **result.plan})
+    return result
 
 
 def close(
