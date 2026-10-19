@@ -19,7 +19,7 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 
 | Channel | References | Operations | Built on |
 |---|---|---|---|
-| `github` | `github:owner/repo`, `github:owner/repo#12` | read, listen (issues and comments), send (opening an issue takes `native` labels, assignees, milestone), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
+| `github` | `github:owner/repo`, `github:owner/repo#12` | read, listen (issues, comments, pull request review threads, discussions), send (opening an issue takes `native` labels, assignees, milestone; `native` category opens a discussion instead), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
 | `email` | `email:` (the folder), `email:someone@example.org` | read, listen, send (with cc and bcc), audience | `imaplib`, `smtplib` |
 | `ntfy` | `ntfy:` (the default topic), `ntfy:<topic>` | send, audience | `urllib` |
 | `macos` | `macos:` | send, audience | `terminal-notifier` or `osascript` |
@@ -91,7 +91,7 @@ scope: public
 ## Listening
 
 ```bash
-correspond listen github:owner/repo    # issue and comment activity since the last listen
+correspond listen github:owner/repo    # issue, comment, review comment and discussion activity since the last listen
 correspond listen email: --peek        # look without moving the cursor
 ```
 

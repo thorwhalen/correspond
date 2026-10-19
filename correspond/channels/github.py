@@ -8,10 +8,14 @@ limit and never shows in the process table.
 References:
 
 - ``github:owner/repo``: the repository. ``read`` lists recent open issues and pull
-  requests, ``listen`` polls its issue and comment activity, ``send`` opens an issue (a
-  title is required).
+  requests, ``listen`` polls its issue, comment, review comment and discussion activity,
+  ``send`` opens an issue (a title is required), or a discussion when ``Draft.native``
+  names a ``category``.
 - ``github:owner/repo#N``: an issue, a pull request, or a discussion. GitHub numbers the
-  three in one sequence; correspond asks which. ``label`` and ``unlabel`` work on an issue
+  three in one sequence; correspond asks which. Reading or listening to a pull request
+  includes its review comments on the diff, each threaded under the comment that opened
+  its thread (``reply_to``), and a reply to one of them joins that thread.
+  ``label`` and ``unlabel`` work on an issue
   or pull request only: GitHub discussions have categories, not labels. ``close`` and
   ``reopen`` work on all three: an issue or pull request through ``PATCH .../issues/N``,
   a discussion through GraphQL ``closeDiscussion`` / ``reopenDiscussion``. Each kind
@@ -22,10 +26,13 @@ References:
 Opening an issue takes ``Draft.native`` keys ``labels``, ``assignees`` and ``milestone``,
 set in the creating request so watchers are notified once. GitHub silently drops an
 assignee who cannot be assigned, so the plan reports what the created issue actually
-carries (``landed``) and what did not stick (``not_applied``).
+carries (``landed``) and what did not stick (``not_applied``). ``Draft.native``
+``category`` (a discussion category's name or slug) opens a discussion instead, through
+GraphQL ``createDiscussion``; it takes none of the issue fields.
 
 Message ids match the anchors in GitHub's own URLs: ``issue-N`` (the opening post of issue
-or pull request N), ``issuecomment-ID``, ``discussion-N``, ``discussioncomment-ID``.
+or pull request N), ``issuecomment-ID``, ``discussion_rID`` (a review comment on a pull
+request's diff), ``discussion-N``, ``discussioncomment-ID``.
 
 Messages read through the API are ``platform`` (GitHub authenticated the account), with the
 author's ``author_association`` (``OWNER``, ``MEMBER``, ``CONTRIBUTOR``, ``NONE``, …) as
@@ -103,7 +110,8 @@ REF_RE = re.compile(
     r"^(?P<owner>[A-Za-z0-9][A-Za-z0-9-]{0,38})/(?P<repo>[A-Za-z0-9._-]{1,100})(?:#(?P<number>[1-9][0-9]{0,9}))?$"
 )
 MESSAGE_ID_RE = re.compile(
-    r"^(?P<kind>issue|issuecomment|discussion|discussioncomment)-(?P<id>[1-9][0-9]{0,19})$"
+    r"^(?:(?P<kind>issue|issuecomment|discussion|discussioncomment)-|(?P<review>discussion_r))"
+    r"(?P<id>[1-9][0-9]{0,19})$"
 )
 NODE_ID_RE = re.compile(r"^(?P<kind>D|DC)_[A-Za-z0-9_-]{4,}$")
 REACTIONS = ("+1", "-1", "laugh", "confused", "heart", "hooray", "rocket", "eyes")
@@ -129,7 +137,10 @@ GITHUB_HANDLE_RE = re.compile(
 )
 MAX_TITLE_CHARS = 256
 #: The ``Draft.native`` keys opening an issue takes (``POST /repos/{owner}/{repo}/issues``).
-DRAFT_FIELDS = ("labels", "assignees", "milestone")
+ISSUE_FIELDS = ("labels", "assignees", "milestone")
+#: The ``Draft.native`` key that opens a discussion instead: its category's name or slug.
+DISCUSSION_FIELD = "category"
+DRAFT_FIELDS = (*ISSUE_FIELDS, DISCUSSION_FIELD)
 #: An issue's ``state_reason`` when closing it.
 CLOSE_REASONS = ("completed", "not_planned", "duplicate")
 #: A discussion's close reasons (GraphQL ``DiscussionCloseReason``, lower-cased here).
@@ -159,6 +170,21 @@ DISCUSSION_QUERY = (
     + " replies(first:100){totalCount nodes{"
     + _POST
     + "}}}}}}}"
+)
+#: Discussions by latest activity, newest first: GitHub has no ``since`` for discussions.
+DISCUSSION_ACTIVITY_QUERY = (
+    "query($owner:String!,$name:String!,$after:String){"
+    "repository(owner:$owner,name:$name){discussions(first:100,after:$after,"
+    "orderBy:{field:UPDATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor} nodes{number updatedAt}}}}"
+)
+DISCUSSION_CATEGORIES_QUERY = (
+    "query($owner:String!,$name:String!){repository(owner:$owner,name:$name){"
+    "id hasDiscussionsEnabled discussionCategories(first:100){nodes{id name slug}}}}"
+)
+CREATE_DISCUSSION = (
+    "mutation($repositoryId:ID!,$categoryId:ID!,$title:String!,$body:String!){"
+    "createDiscussion(input:{repositoryId:$repositoryId,categoryId:$categoryId,title:$title,body:$body})"
+    "{discussion{number url category{name}}}}"
 )
 DISCUSSION_ID_QUERY = (
     "query($owner:String!,$name:String!,$number:Int!){"
@@ -451,7 +477,7 @@ class GitHub:
         return Capabilities(
             channel=NAME,
             read=Support.FULL,
-            listen=Support.PARTIAL,
+            listen=Support.FULL,
             send=Support.FULL,
             edit=Support.FULL,
             react=Support.FULL,
@@ -483,21 +509,27 @@ class GitHub:
                 "node_id",
                 "minimized",
                 "replies_truncated",
+                "path",
+                "line",
+                "review_id",
+                "diff_hunk",
             ),
             rate_limits=(
                 "80 content-creating requests per minute and 500 per hour (secondary limits)",
                 "5,000 API requests per hour for a user token",
             ),
             notes=(
-                "listen polls issue and comment activity of a repository or of one issue; discussions are read but not listened to",
-                "reply_to works in discussions only; issue and pull request comments are flat",
+                "listen polls the issue, comment, pull request review comment and discussion activity of a repository, or of one issue, pull request or discussion",
+                "discussions have no since filter: listen walks a repository's discussions by GitHub's latest-activity order and reads each one active since the cursor (one extra call each); a reply GitHub does not count as activity on its discussion surfaces only once something else in that discussion changes, and listening to one discussion reads it whole on every poll",
+                "reply_to works in discussions and in pull request review threads (a reply to a reply joins its thread); issue and pull request conversation comments are flat",
+                "reading or listening to a pull request includes its review comments on the diff (message ids discussion_rID, with path, line, review_id and diff_hunk in native); reviews' own summary bodies are not read",
                 "notify mentions each handle the text lacks; GitHub notifies a mentioned user or team who can see the repository, so on a private one a non-member is not reached",
-                "pull request review comments on diffs are not read",
                 "listen can miss a change only when more than 2,000 issues or comments change within the same second",
                 "audience is the repository's readership and never complete (installed apps, webhooks and security managers cannot be listed); a 404 or 403 resolves to public",
                 "label and unlabel apply to issues and pull requests, not discussions (GitHub discussions have categories, not labels); listen does not yet surface who applied a label",
                 "label and unlabel each cost one extra read (confirming the issue exists, to tell a label the issue never had apart from a missing issue) before their writes",
                 "native draft fields (labels, assignees, milestone) apply when opening an issue; on a comment they are refused",
+                "native category (a discussion category's name or slug) on github:owner/repo opens a discussion instead of an issue; it takes no other native field, and a dry run does not check that the category exists",
                 "close and reopen apply to issues, pull requests and discussions; close reasons are per kind: an issue takes completed, not_planned or duplicate, a discussion resolved, outdated or duplicate (completed is accepted as resolved), a pull request none",
                 "a dry run of close or reopen reads nothing, so it plans for whichever kind the number turns out to be, and a reason the kind does not take is refused only by the real call",
             ),
@@ -737,10 +769,53 @@ class GitHub:
         if since is not None:
             path += f"?since={format_time(since)}"
         comments, _, _ = self._collect(path, bounded=False)
-        return [
+        messages = [
             self._opening(conversation, issue),
             *(self._comment(conversation, c) for c in comments),
         ]
+        if issue.get("pull_request"):
+            path = f"repos/{owner}/{repo}/pulls/{number}/comments"
+            if since is not None:
+                path += f"?since={format_time(since)}"
+            reviews, _, _ = self._collect(path, bounded=False)
+            messages += [self._review_comment(conversation, c) for c in reviews]
+        return messages
+
+    def _review_comment(
+        self, conversation: ConversationRef, comment: Mapping[str, Any]
+    ) -> Message:
+        """A comment on a pull request's diff; a reply names its thread's first comment.
+
+        GitHub threads review comments one level deep: every reply's ``in_reply_to_id``
+        is the comment that opened the thread, so it is both ``reply_to`` and
+        ``thread_root``.
+        """
+        created = parse_time(comment["created_at"])
+        updated = parse_time(comment.get("updated_at"))
+        parent = comment.get("in_reply_to_id")
+        root = f"discussion_r{parent}" if parent else None
+        return Message(
+            id=f"discussion_r{comment['id']}",
+            conversation=conversation,
+            author=self._identity(comment.get("user"), comment.get("author_association")),
+            authenticity=_PLATFORM,
+            sent_at=created,
+            text=comment.get("body") or "",
+            body=comment.get("body") or "",
+            body_format="markdown",
+            edited_at=updated if updated and updated != created else None,
+            url=comment.get("html_url"),
+            reply_to=root,
+            thread_root=root,
+            native={
+                "kind": "review_comment",
+                "path": comment.get("path"),
+                "line": comment.get("line") or comment.get("original_line"),
+                "review_id": comment.get("pull_request_review_id"),
+                "diff_hunk": comment.get("diff_hunk"),
+            },
+            raw=comment,
+        )
 
     def _read_repository(
         self, owner: str, repo: str, since: datetime | None, limit: int | None
@@ -1047,7 +1122,7 @@ class GitHub:
     def poll(
         self, ref: ConversationRef, *, cursor: str | None = None, limit: int | None = None
     ):
-        """Issue and comment activity since ``cursor``; a first poll looks back a day.
+        """Issue, comment, review comment and discussion activity since ``cursor``; a first poll looks back a day.
 
         The cursor is opaque JSON: the update time the next poll starts from (``t``; GitHub's
         ``since`` includes it), the creation time from which an issue still counts as new
@@ -1056,6 +1131,12 @@ class GitHub:
         within one second can make a poll repeat itself, and a list cut short (more than
         ``MAX_PAGES`` pages changed) is resumed from where it was cut. A bare ISO time is also
         accepted as a cursor.
+
+        Discussions have no ``since`` filter, so a repository's are walked newest activity
+        first until a page reaches one older than the cursor (:meth:`_active_discussions`),
+        and each active one is read whole; one discussion is read whole on every poll. A
+        discussion counts as new when it was created at or after the cursor, and a
+        discussion comment is ``message.updated`` when it was created before it.
         """
         owner, repo, number = self._parts(ref)
         position, openings_from, seen = _decode_cursor(
@@ -1066,6 +1147,9 @@ class GitHub:
         repository = ConversationRef(
             channel=NAME, id=f"{owner}/{repo}", kind="repository"
         )
+        reviews: list[Any] = []
+        reviews_cut = False
+        discussions: list[int] = []
         if number is None:
             comments, comments_cut, date = self._collect(
                 f"repos/{owner}/{repo}/issues/comments?sort=updated&direction=asc&since={stamp}"
@@ -1073,24 +1157,30 @@ class GitHub:
             issues, issues_cut, _ = self._collect(
                 f"repos/{owner}/{repo}/issues?state=all&sort=updated&direction=asc&since={stamp}"
             )
+            reviews, reviews_cut, _ = self._collect(
+                f"repos/{owner}/{repo}/pulls/comments?sort=updated&direction=asc&since={stamp}"
+            )
+            discussions = self._active_discussions(owner, repo, position)
         else:
             probe = self._api(f"repos/{owner}/{repo}/issues/{number}", allow=(404, 410))
-            if probe.status >= 400:
-                self._discussion_id(
-                    owner, repo, number
-                )  # raises not_found when it is not one
-                raise NotSupported(
-                    "listen to a discussion",
-                    NAME,
-                    alternatives=(f"read github:{owner}/{repo}#{number} again later",),
-                )
-            # One issue's comments come ordered by id, not by update, so a cut list would not be
-            # complete up to any time: read every page (an issue holds a bounded number).
-            comments, comments_cut, date = self._collect(
-                f"repos/{owner}/{repo}/issues/{number}/comments?since={stamp}",
-                bounded=False,
-            )
             issues, issues_cut = [], False
+            if probe.status >= 400:
+                # Not an issue: read as a discussion, which raises not_found when it is not one.
+                comments, comments_cut, date = [], False, None
+                discussions = [number]
+            else:
+                # One issue's comments come ordered by id, not by update, so a cut list would
+                # not be complete up to any time: read every page (an issue holds a bounded
+                # number), and the same for a pull request's review comments.
+                comments, comments_cut, date = self._collect(
+                    f"repos/{owner}/{repo}/issues/{number}/comments?since={stamp}",
+                    bounded=False,
+                )
+                if (probe.json() or {}).get("pull_request"):
+                    reviews, reviews_cut, _ = self._collect(
+                        f"repos/{owner}/{repo}/pulls/{number}/comments?since={stamp}",
+                        bounded=False,
+                    )
 
         candidates: list[tuple[datetime, str, str, Message]] = []
         for comment in comments:
@@ -1110,6 +1200,26 @@ class GitHub:
                     self._comment(conversation, comment),
                 )
             )
+        for comment in reviews:
+            pull_number = (
+                str(comment.get("pull_request_url", "")).rstrip("/").rsplit("/", 1)[-1]
+            )
+            conversation = ConversationRef(
+                channel=NAME,
+                id=f"{owner}/{repo}#{pull_number}",
+                kind="pull_request",
+                parent=repository,
+            )
+            changed = comment.get("updated_at") or comment["created_at"]
+            is_new = parse_time(comment["created_at"]) >= openings_from
+            candidates.append(
+                (
+                    parse_time(changed),
+                    f"discussion_r{comment['id']}@{changed}",
+                    "message.created" if is_new else "message.updated",
+                    self._review_comment(conversation, comment),
+                )
+            )
         for issue in issues:
             if parse_time(issue["created_at"]) < openings_from:
                 continue  # an older issue that changed: its comments arrive as their own events
@@ -1121,12 +1231,20 @@ class GitHub:
                     self._opening(self._issue_conversation(owner, repo, issue), issue),
                 )
             )
+        for discussion_number in discussions:
+            candidates += self._discussion_activity(
+                owner, repo, discussion_number, position
+            )
         candidates = [c for c in candidates if not (c[0] <= position and c[1] in seen)]
         # A list cut short is complete only up to its last item: later events wait for the
         # next poll, which starts from there.
         horizons = [
             parse_time(items[-1].get("updated_at") or items[-1]["created_at"])
-            for items, cut in ((comments, comments_cut), (issues, issues_cut))
+            for items, cut in (
+                (comments, comments_cut),
+                (issues, issues_cut),
+                (reviews, reviews_cut),
+            )
             if cut and items
         ]
         horizon = min(horizons) if horizons else None
@@ -1168,6 +1286,52 @@ class GitHub:
             final = _encode_cursor(position, position, delivered)
         return with_final_cursor(events, final)
 
+    def _active_discussions(self, owner: str, repo: str, since: datetime) -> list[int]:
+        """The numbers of the repository's discussions active at or after ``since``.
+
+        GitHub orders discussions by latest activity (a new comment or reply moves one to
+        the front) but has no ``since`` filter, so pages are read newest first until one
+        holds a discussion last updated before ``since``. The order is by activity while
+        ``updatedAt`` also moves on other changes (a label or category set in bulk), so a
+        page is read whole rather than cut at its first older entry.
+        """
+        numbers: list[int] = []
+        after = None
+        while True:
+            data = self._graphql(
+                DISCUSSION_ACTIVITY_QUERY, {"owner": owner, "name": repo, "after": after}
+            )
+            page = (data.get("repository") or {}).get("discussions") or {}
+            nodes = page.get("nodes") or []
+            active = [n for n in nodes if parse_time(n["updatedAt"]) >= since]
+            numbers += [int(n["number"]) for n in active]
+            page_info = page.get("pageInfo") or {}
+            if len(active) < len(nodes) or not page_info.get("hasNextPage"):
+                return list(dict.fromkeys(numbers))
+            after = page_info.get("endCursor")
+
+    def _discussion_activity(
+        self, owner: str, repo: str, number: int, since: datetime
+    ) -> list[tuple[datetime, str, str, Message]]:
+        """Poll candidates from discussion ``number``: its opening if it is new, posts written or edited since."""
+        candidates = []
+        for message in self._discussion_messages(owner, repo, number):
+            changed = max(message.sent_at, message.edited_at or message.sent_at)
+            if changed < since:
+                continue
+            is_new = message.sent_at >= since
+            if message.id.startswith("discussion-") and not is_new:
+                continue  # an older discussion edited: like an issue, its posts are the events
+            candidates.append(
+                (
+                    changed,
+                    f"{message.id}@{format_time(changed)}",
+                    "message.created" if is_new else "message.updated",
+                    message,
+                )
+            )
+        return candidates
+
     # ------------------------------------------------------------------- writing
 
     def _planned(self, ref: ConversationRef, operation: str, plan: dict) -> SendResult:
@@ -1202,7 +1366,10 @@ class GitHub:
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
     ) -> SendResult:
-        """Comment on an issue, pull request or discussion; on a repository, open an issue (``title`` required).
+        """Comment on an issue, pull request or discussion; on a repository, open an issue (``title`` required), or a discussion with native ``category``.
+
+        ``draft.reply_to`` answers a discussion comment, or a review comment on a pull
+        request's diff (``discussion_rID``), joining its thread.
 
         ``draft.notify`` handles (``octocat``, ``org/team``) the text does not @mention yet
         are mentioned on a closing ``cc`` line, which GitHub notifies; the plan lists them
@@ -1244,6 +1411,8 @@ class GitHub:
                     NAME,
                     alternatives=("comment on the issue: github:owner/repo#N",),
                 )
+            if DISCUSSION_FIELD in draft.native:
+                return self._open_discussion(ref, draft, dry_run=dry_run)
             fields = self._creation_fields(draft.native)
             plan = {
                 "action": "open an issue",
@@ -1279,14 +1448,21 @@ class GitHub:
                 kind="validation",
             )
         target = f"{owner}/{repo}#{number}"
+        reply_kind = self._message_kind(draft.reply_to)[0] if draft.reply_to else None
         if dry_run:
+            request = (
+                f"POST repos/{owner}/{repo}/pulls/{number}/comments/{{thread}}/replies, "
+                f"in the review thread {draft.reply_to} belongs to (checked when sending)"
+                if reply_kind == "reviewcomment"
+                else f"POST repos/{owner}/{repo}/issues/{number}/comments, or GraphQL addDiscussionComment if #{number} is a discussion (checked when sending)"
+            )
             return self._planned(
                 ref,
                 "send",
                 {
                     "action": "comment",
                     "target": target,
-                    "request": f"POST repos/{owner}/{repo}/issues/{number}/comments, or GraphQL addDiscussionComment if #{number} is a discussion (checked when sending)",
+                    "request": request,
                     "reply_to": draft.reply_to,
                     "body": draft.text,
                 },
@@ -1294,11 +1470,16 @@ class GitHub:
         probe = self._api(f"repos/{owner}/{repo}/issues/{number}", allow=(404, 410))
         if probe.status < 400:
             if draft.reply_to:
+                if reply_kind == "reviewcomment" and (probe.json() or {}).get(
+                    "pull_request"
+                ):
+                    return self._reply_in_review_thread(ref, draft)
                 raise NotSupported(
                     "reply",
                     NAME,
                     alternatives=(
-                        "issue and pull request comments are flat: quote the message you answer",
+                        "issue and pull request conversation comments are flat: quote the message you answer",
+                        "on a pull request, reply to a review comment on its diff (discussion_rID) to join that thread",
                     ),
                 )
             plan = {
@@ -1348,6 +1529,123 @@ class GitHub:
             plan,
         )
 
+    def _reply_in_review_thread(self, ref: ConversationRef, draft: Draft) -> SendResult:
+        """Reply in the review thread of ``draft.reply_to``, a review comment on pull request ``ref``.
+
+        GitHub threads review comments one level deep, so a reply to a reply goes to the
+        comment that opened its thread, which the plan names as ``thread_root``.
+        """
+        owner, repo, number = self._parts(ref)
+        _, ident = self._message_kind(draft.reply_to)
+        parent = self._api(f"repos/{owner}/{repo}/pulls/comments/{ident}").json() or {}
+        on = str(parent.get("pull_request_url", "")).rstrip("/").rsplit("/", 1)[-1]
+        if on != str(number):
+            raise ChannelError(
+                f"{draft.reply_to} is not a review comment on pull request #{number}",
+                kind="validation",
+            )
+        root = parent.get("in_reply_to_id") or ident
+        path = f"repos/{owner}/{repo}/pulls/{number}/comments/{root}/replies"
+        plan = {
+            "action": "reply in a review thread",
+            "target": f"{owner}/{repo}#{number}",
+            "request": f"POST {path}",
+            "reply_to": draft.reply_to,
+            "thread_root": f"discussion_r{root}",
+            "body": draft.text,
+        }
+        data = self._api(path, method="POST", payload={"body": draft.text}).json() or {}
+        return self._done(
+            ref.encoded,
+            "send",
+            f"discussion_r{data.get('id')}",
+            data.get("html_url"),
+            plan,
+        )
+
+    def _open_discussion(
+        self, ref: ConversationRef, draft: Draft, *, dry_run: bool
+    ) -> SendResult:
+        """Open a discussion in the category ``draft.native["category"]`` names (GraphQL ``createDiscussion``)."""
+        owner, repo, _ = self._parts(ref)
+        category = draft.native[DISCUSSION_FIELD]
+        others = sorted(set(draft.native) - {DISCUSSION_FIELD})
+        if others:
+            raise ChannelError(
+                f"native {others} apply when opening an issue; a discussion takes only "
+                f"{DISCUSSION_FIELD}",
+                kind="validation",
+            )
+        if not isinstance(category, str) or not category.strip():
+            raise ChannelError(
+                f"native {DISCUSSION_FIELD} is a discussion category's name or slug, not {category!r}",
+                kind="validation",
+            )
+        category = category.strip()
+        plan: dict[str, Any] = {
+            "action": "open a discussion",
+            "request": "GraphQL createDiscussion",
+            "title": draft.title,
+            "body": draft.text,
+            DISCUSSION_FIELD: category,
+        }
+        if dry_run:
+            return self._planned(ref, "send", plan)
+        repository = (
+            self._graphql(
+                DISCUSSION_CATEGORIES_QUERY, {"owner": owner, "name": repo}
+            ).get("repository")
+            or {}
+        )
+        if not repository.get("hasDiscussionsEnabled"):
+            raise NotSupported(
+                "open a discussion",
+                NAME,
+                alternatives=(
+                    f"enable discussions in {owner}/{repo}'s settings",
+                    f"open an issue: leave out native {DISCUSSION_FIELD}",
+                ),
+            )
+        categories = (repository.get("discussionCategories") or {}).get("nodes") or []
+        wanted = category.lower()
+        found = next(
+            (
+                c
+                for c in categories
+                if wanted in (str(c.get("name")).lower(), str(c.get("slug")).lower())
+            ),
+            None,
+        )
+        if found is None:
+            names = ", ".join(str(c.get("name")) for c in categories) or "none"
+            raise ChannelError(
+                f"{owner}/{repo} has no discussion category {category!r}; it has: {names}",
+                kind="validation",
+            )
+        created = (
+            self._graphql(
+                CREATE_DISCUSSION,
+                {
+                    "repositoryId": repository["id"],
+                    "categoryId": found["id"],
+                    "title": draft.title,
+                    "body": draft.text,
+                },
+            ).get("createDiscussion")
+            or {}
+        ).get("discussion") or {}
+        plan["landed"] = {
+            DISCUSSION_FIELD: (created.get("category") or {}).get("name")
+            or found.get("name")
+        }
+        return self._done(
+            f"github:{owner}/{repo}#{created.get('number')}",
+            "send",
+            f"discussion-{created.get('number')}",
+            created.get("url"),
+            plan,
+        )
+
     def _discussion_id(self, owner: str, repo: str, number: int) -> str:
         try:
             data = self._graphql(
@@ -1372,10 +1670,10 @@ class GitHub:
         match = MESSAGE_ID_RE.match(message_id)
         if not match:
             raise ChannelError(
-                f"GitHub message ids look like issue-12, issuecomment-345, discussion-6 or discussioncomment-789, not {message_id!r}",
+                f"GitHub message ids look like issue-12, issuecomment-345, discussion_r678 (a review comment), discussion-6 or discussioncomment-789, not {message_id!r}",
                 kind="validation",
             )
-        return match["kind"], match["id"]
+        return match["kind"] or "reviewcomment", match["id"]
 
     def _node_id(self, owner: str, repo: str, number: int | None, message_id: str) -> str:
         kind, ident = self._message_kind(message_id)
@@ -1413,12 +1711,13 @@ class GitHub:
         *,
         dry_run: bool = False,
     ) -> SendResult:
-        """Replace the body of an issue, a comment, a discussion or a discussion comment."""
+        """Replace the body of an issue, a comment, a review comment, a discussion or a discussion comment."""
         owner, repo, number = self._parts(ref)
         kind, ident = self._message_kind(message_id)
         rest = {
             "issue": f"repos/{owner}/{repo}/issues/{ident}",
             "issuecomment": f"repos/{owner}/{repo}/issues/comments/{ident}",
+            "reviewcomment": f"repos/{owner}/{repo}/pulls/comments/{ident}",
         }.get(kind)
         mutation = (
             UPDATE_DISCUSSION
@@ -1461,12 +1760,13 @@ class GitHub:
         *,
         dry_run: bool = False,
     ) -> SendResult:
-        """Add one of :data:`REACTIONS` to an issue, a comment, a discussion or a discussion comment."""
+        """Add one of :data:`REACTIONS` to an issue, a comment, a review comment, a discussion or a discussion comment."""
         owner, repo, number = self._parts(ref)
         kind, ident = self._message_kind(message_id)
         rest = {
             "issue": f"repos/{owner}/{repo}/issues/{ident}/reactions",
             "issuecomment": f"repos/{owner}/{repo}/issues/comments/{ident}/reactions",
+            "reviewcomment": f"repos/{owner}/{repo}/pulls/comments/{ident}/reactions",
         }.get(kind)
         plan = {
             "action": "react",
