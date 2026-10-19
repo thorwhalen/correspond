@@ -30,7 +30,7 @@ def test_every_built_channel_registers_lazily_and_planned_ones_do_not():
         if all(importlib.util.find_spec(m) is not None for m in c.modules)
     }
     assert set(built) == {c.name for c in registry.CHANNELS if not c.planned} & importable
-    assert {"discord", "slack", "signal"}.isdisjoint(built)
+    assert {"signal"}.isdisjoint(built)
     # apprise is built, but registers only when its extra is installed
     assert ("apprise" in built) == (importlib.util.find_spec("apprise") is not None)
 
@@ -59,8 +59,8 @@ def test_a_channel_registers_only_when_its_optional_modules_import():
 
 
 def test_planned_and_unknown_channels_explain_themselves():
-    discord = check_requirements("discord")
-    assert not discord["ok"] and discord["planned"].endswith("/issues/2")
+    signal = check_requirements("signal")
+    assert not signal["ok"] and signal["planned"].endswith("/issues/4")
     unknown = check_requirements("carrier-pigeon")
     assert not unknown["ok"] and "built in:" in unknown["summary"]
     with pytest.raises(UnknownChannel):

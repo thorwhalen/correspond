@@ -12,8 +12,8 @@ is missing, without printing a secret.
 
 >>> info("telegram").setting("token").env
 'TELEGRAM_BOT_TOKEN'
->>> info("discord").planned
-'https://github.com/thorwhalen/correspond/issues/2'
+>>> info("signal").planned
+'https://github.com/thorwhalen/correspond/issues/4'
 """
 
 from __future__ import annotations
@@ -353,9 +353,23 @@ CHANNELS: tuple[ChannelInfo, ...] = (
     ),
     ChannelInfo(
         name="discord",
-        summary="Discord: read and post over REST, listen on the gateway",
+        summary="Discord: a bot reading, polling and posting in channels over REST, through discorddol",
+        factory="correspond.channels.discord:Discord",
+        modules=("discorddol",),
         extra="discord",
-        planned=f"{ISSUES}/2",
+        settings=(
+            Setting(
+                key="token",
+                env="DISCORD_BOT_TOKEN",
+                what="the bot token",
+                where="Discord Developer Portal (https://discord.com/developers/applications): your application, Bot, Reset Token; invite the bot to the server with the View Channels, Read Message History and Send Messages permissions",
+                secret=True,
+                required=True,
+            ),
+        ),
+        notes=(
+            "enable the Message Content intent (Developer Portal, Bot, Privileged Gateway Intents) or the bot reads empty text for messages that do not mention it",
+        ),
     ),
     ChannelInfo(
         name="slack",

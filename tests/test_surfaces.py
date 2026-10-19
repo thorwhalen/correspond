@@ -139,7 +139,7 @@ def test_results_are_json_ready_and_failures_are_results_with_a_kind(fake):
     )
     assert fake.sent == [], "a dry run sends nothing"
     listed = {row["name"]: row["status"] for row in successes[0]["channels"]}
-    assert listed["fake"] == "available" and listed["discord"] == "planned"
+    assert listed["fake"] == "available" and listed["signal"] == "planned"
     for report in (tools.requirements("telegram"), tools.requirements("discord")):
         assert report["ok"] is False and report["problems"]
         json.dumps(report)
