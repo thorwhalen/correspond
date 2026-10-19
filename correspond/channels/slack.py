@@ -266,6 +266,13 @@ READ_DEFAULT = 50
 LISTEN_LOOKBACK_S = 24 * 3600
 #: How far behind the clock a quiet first poll sets its cursor (this clock may run ahead of Slack's).
 CLOCK_SKEW_S = 60
+#: The polling walk: the first window's width, the narrowest, the widest, and how many
+#: history requests one poll makes at most. A window comes back whole (narrowing when one
+#: is full), so each poll moves the cursor forward whatever the rate limit.
+WINDOW_START_S = 3600.0
+WINDOW_MIN_S = 1.0
+WINDOW_MAX_S = float(LISTEN_LOOKBACK_S)
+MAX_REQUESTS_PER_POLL = 24
 #: How long a poll waits out a rate limit met partway through its pages, and how many times.
 RATE_WAIT_MAX_S = 60
 RATE_WAIT_TRIES = 3
@@ -352,7 +359,7 @@ class Slack:
                 "the text cannot mention anyone: every < is escaped and only http, https and mailto targets become links, so <!channel>, <@U...> or [x](!here) arrive as text",
                 "read and listen see a channel's top-level messages, thread parents and replies also sent to the channel, not the other replies inside threads; Slack's own notices (someone joined, the topic changed) are left out; listen polls over the Web API and sees new messages, not edits",
                 "push delivery (the Events API, Socket Mode) is not built: listen polls; verify is ready for a receiver of Slack's signed requests",
-                "install the app in your own workspace: a commercially distributed app outside Slack's Marketplace gets one history request a minute, which polling cannot keep up with; a rate limit met partway through a poll is waited out (up to a minute, three times)",
+                "install the app in your own workspace (a commercially distributed app outside Slack's Marketplace gets one history request a minute); listen walks forward through time windows, delivering each whole before the next, so a poll a rate limit cuts short keeps what it delivered and the next one resumes there, and a backlog drains a little each poll; the newest minute waits for the next poll (this clock may run ahead of Slack's)",
                 "a file is fetched with the token only from Slack's own hosts (the token needs files:read); a file hosted elsewhere is not fetched",
                 "a channel named rather than given by id is looked up with conversations.list (the token needs channels:read, and groups:read for a private one)",
                 "verify checks a request's X-Slack-Signature with the signing secret, and refuses one older than 5 minutes",
@@ -471,7 +478,13 @@ class Slack:
         return self._channel_ids[ref.id]
 
     def _history(
-        self, channel: str, token: str, *, oldest: str | None, limit: int | None
+        self,
+        channel: str,
+        token: str,
+        *,
+        oldest: str | None,
+        limit: int | None,
+        latest: str | None = None,
     ) -> list[dict]:
         """``conversations.history``, newest first, every page up to ``limit`` messages."""
         found: list[dict] = []
@@ -480,6 +493,7 @@ class Slack:
             params = {
                 "channel": channel,
                 "oldest": oldest,
+                "latest": latest,
                 "limit": min(PAGE_SIZE, limit) if limit else PAGE_SIZE,
                 "cursor": cursor,
             }
@@ -602,7 +616,16 @@ class Slack:
     def poll(
         self, ref: ConversationRef, *, cursor: str | None = None, limit: int | None = None
     ):
-        """Top-level messages newer than ``cursor`` (a ``ts``), oldest first; a first poll looks back a day."""
+        """Top-level messages newer than ``cursor`` (a ``ts``), oldest first; a first poll looks back a day.
+
+        Slack returns history newest first, so a poll walks forward through time windows
+        (``oldest`` = the cursor, ``latest`` = the cursor plus a width): each window comes
+        back whole and is delivered before the next, and the cursor moves to its end. A
+        window holding a full page is narrowed and asked again; an empty one widens the next.
+        A poll stops after :data:`MAX_REQUESTS_PER_POLL` requests, at ``limit`` events, at a
+        rate limit (keeping what it has delivered: the next poll resumes there), or a minute
+        short of now (this clock may run ahead of Slack's).
+        """
         token = self._require_token("listen to a channel")
         if cursor and not TS_RE.match(str(cursor)):
             raise ChannelError(
@@ -610,33 +633,70 @@ class Slack:
             )
         channel = self._channel_id(ref, token)
         now = self.clock()
-        oldest = str(cursor) if cursor else f"{now - LISTEN_LOOKBACK_S:.6f}"
-        found = sorted(
-            self._history(channel, token, oldest=oldest, limit=None),
-            key=lambda m: float(m["ts"]),
-        )
-        found = [m for m in found if float(m["ts"]) > float(oldest)]
-        if limit:
-            found = found[: max(1, int(limit))]
-        events = [
-            Event(
-                kind="message.created",
-                channel=NAME,
-                delivery_id=f"slack:{channel}:{data['ts']}",
-                cursor=str(data["ts"]),
-                message=self._message(ref, data, token),
+        position = str(cursor) if cursor else f"{now - LISTEN_LOOKBACK_S:.6f}"
+        end = now - CLOCK_SKEW_S
+        wanted = max(1, int(limit)) if limit else None
+        width, requests, events = WINDOW_START_S, 0, []
+        while float(position) < end and requests < MAX_REQUESTS_PER_POLL:
+            latest = f"{min(float(position) + width, end):.6f}"
+            try:
+                data = self._api(
+                    "conversations.history",
+                    {
+                        "channel": channel,
+                        "oldest": position,
+                        "latest": latest,
+                        "limit": PAGE_SIZE,
+                    },
+                    token=token,
+                )
+            except ChannelError as error:
+                if error.kind != "rate_limited" or not requests:
+                    raise
+                break  # the windows read so far stand; the next poll resumes after them
+            requests += 1
+            found = list(data.get("messages") or ())
+            if data.get("has_more"):
+                if width > WINDOW_MIN_S:
+                    # Too full: narrow to what this page suggests holds less than a page
+                    # (its own messages span ``span`` seconds), so one request finds it.
+                    stamps = sorted(float(m["ts"]) for m in found)
+                    span = stamps[-1] - stamps[0] if len(stamps) > 1 else 0.0
+                    width = max(
+                        WINDOW_MIN_S, min(width / 2, span * 0.8 if span else width / 2)
+                    )
+                    continue
+                found = self._history(
+                    channel, token, oldest=position, latest=latest, limit=None
+                )
+            found = sorted(
+                (m for m in found if float(m["ts"]) > float(position)),
+                key=lambda m: float(m["ts"]),
             )
-            for data in found
-            if data.get("subtype") in MESSAGE_SUBTYPES
-        ]
-        if found:
-            final = str(found[-1]["ts"])  # past Slack's own notices too
-        elif not cursor:
-            # A quiet first poll starts the next from now, less this clock's lead on Slack's.
-            final = f"{now - CLOCK_SKEW_S:.6f}"
-        else:
-            final = None
-        return with_final_cursor(events, final)
+            for data_item in found:
+                if wanted and len(events) >= wanted:
+                    break
+                position = str(data_item["ts"])
+                if (
+                    data_item.get("subtype") in MESSAGE_SUBTYPES
+                ):  # Slack's own notices are passed
+                    events.append(
+                        Event(
+                            kind="message.created",
+                            channel=NAME,
+                            delivery_id=f"slack:{channel}:{position}",
+                            cursor=position,
+                            message=self._message(ref, data_item, token),
+                        )
+                    )
+            else:
+                position = latest  # the whole window was read
+                if not found:
+                    width = min(WINDOW_MAX_S, width * 2)
+                continue
+            break  # the limit stopped it inside a window
+        moved = cursor is None or float(position) > float(cursor)
+        return with_final_cursor(events, position if moved else None)
 
     # ----------------------------------------------------------------- audience
 
