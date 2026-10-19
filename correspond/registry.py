@@ -373,12 +373,28 @@ CHANNELS: tuple[ChannelInfo, ...] = (
     ),
     ChannelInfo(
         name="slack",
-        summary="Slack: drafts in Slack's own formatting (mrkdwn), posted through an incoming webhook when one is configured",
+        summary="Slack: drafts in Slack's own formatting (mrkdwn); reading, polling and posting with a token over the Web API, or posting through an incoming webhook",
         factory="correspond.channels.slack:Slack",
+        settings=(
+            Setting(
+                key="token",
+                env="CORRESPOND_SLACK_TOKEN",
+                what="a Slack token: a bot token (xoxb-) acts as the app, a user token (xoxp-) as the person",
+                where="api.slack.com/apps: create an app for your workspace (internal, not distributed), add the bot scopes channels:history, channels:read and chat:write (groups:history and groups:read for private channels), install it, copy the Bot User OAuth Token, and invite the app to each channel",
+                secret=True,
+            ),
+            Setting(
+                key="signing_secret",
+                env="CORRESPOND_SLACK_SIGNING_SECRET",
+                what="the app's signing secret, used only to verify requests Slack sends (Events API, interactivity)",
+                where="api.slack.com/apps: your app, Basic Information, App Credentials",
+                secret=True,
+            ),
+        ),
         notes=(
             "slack:<name> needs nothing for a dry run, which renders the draft as mrkdwn to paste; a real send needs the name's incoming webhook in CORRESPOND_SLACK_WEBHOOK_<NAME> (upper case, - and . as _) or the Keychain item correspond-slack-webhook-<name>",
             "create the webhook in your Slack app's settings (Incoming Webhooks), one per channel: https://api.slack.com/messaging/webhooks",
-            "reading and listening (a Slack app token, slack-sdk) are not built yet",
+            "with CORRESPOND_SLACK_TOKEN, read, listen and send use the Web API (and send replies in threads); without one, send uses the webhook",
         ),
     ),
     ChannelInfo(
