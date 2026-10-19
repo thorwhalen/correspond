@@ -347,7 +347,16 @@ class FakeSlackApi:
             found = [
                 m
                 for m in self.history
-                if float(m["ts"]) > float(params.get("oldest") or 0)
+                if (
+                    float(m["ts"]) >= float(params.get("oldest") or 0)
+                    if params.get("inclusive") == "true"
+                    else float(m["ts"]) > float(params.get("oldest") or 0)
+                )
+                and (
+                    float(m["ts"]) <= float(params.get("latest") or "inf")
+                    if params.get("inclusive") == "true"
+                    else float(m["ts"]) < float(params.get("latest") or "inf")
+                )
             ]
             size = int(params.get("limit") or 200)
             start = int(params.get("cursor") or 0)
@@ -422,10 +431,12 @@ def token(monkeypatch):
     monkeypatch.setenv("CORRESPOND_SLACK_TOKEN", TOKEN)
 
 
+#: This clock: an hour after the fixtures, so the walk reaches them (it stops a minute short of now).
+NOW = 1760003640.0
+
+
 def _api_registry(api):
-    return {
-        "slack": Slack(http=api, keychain=lambda service: "", clock=lambda: 1760000040.0)
-    }
+    return {"slack": Slack(http=api, keychain=lambda service: "", clock=lambda: NOW)}
 
 
 def test_read_returns_the_latest_messages_oldest_first(token):
@@ -475,7 +486,9 @@ def test_listen_polls_by_ts_and_sets_a_cursor_on_a_quiet_first_poll(token):
         )
     )
     assert [e.message.id for e in events] == ["1760000020.000100", "1760000030.000100"]
-    assert cursors[f"slack:{CHANNEL}"] == "1760000030.000100"
+    assert cursors[f"slack:{CHANNEL}"].split("/")[0] == f"{NOW - 60:.6f}", (
+        "the end of the windows read"
+    )
     quiet = {}
     assert (
         list(
@@ -485,7 +498,7 @@ def test_listen_polls_by_ts_and_sets_a_cursor_on_a_quiet_first_poll(token):
         )
         == []
     )
-    assert quiet == {f"slack:{CHANNEL}": "1759999980.000000"}, (
+    assert quiet[f"slack:{CHANNEL}"].split("/")[0] == f"{NOW - 60:.6f}", (
         "a minute behind this clock"
     )
 
@@ -611,7 +624,7 @@ def test_verify_checks_the_signature_and_refuses_a_replay(monkeypatch):
     monkeypatch.setenv("CORRESPOND_SLACK_SIGNING_SECRET", "example-signing-secret")
     registry = _api_registry(FakeSlackApi())
     body = b'{"type":"event_callback"}'
-    now = 1760000040
+    now = int(NOW)
     good = correspond.verify(
         "slack", _signed("example-signing-secret", body, now), body, registry=registry
     )
@@ -675,43 +688,76 @@ def test_a_sign_in_page_is_not_handed_back_as_the_file(token):
         bot.attachments[0].content()
 
 
-def test_a_rate_limit_partway_through_a_poll_is_waited_out(token):
-    many = [_msg(f"17600001{i:02d}.000000", f"m{i}") for i in range(10)]
+def test_a_rate_limit_stops_a_poll_where_it_got_to_and_the_next_resumes(token):
+    many = [_msg(f"{1760000000 + 600 * i}.000000", f"m{i}") for i in range(10)]
     inner = FakeSlackApi(many)
-    state = {"limited": 0}
-    slept = []
+    state = {"history": 0}
 
     def http(method, url, *, headers=None, body=None, timeout=None):
-        if (
-            "conversations.history" in url
-            and "cursor=" in (body or b"").decode()
-            and state["limited"] < 1
-        ):
-            state["limited"] += 1
-            return Response(429, {"retry-after": "2"}, b"")
+        if "conversations.history" in url:
+            state["history"] += 1
+            if state["history"] == 3:
+                return Response(429, {"retry-after": "60"}, b"")
+        return inner(method, url, headers=headers, body=body)
+
+    registry = {
+        "slack": Slack(http=http, keychain=lambda s: "", clock=lambda: 1760010000.0)
+    }
+    cursors = {f"slack:{CHANNEL}": "1759999000.000000"}
+    first = [
+        e.message.text
+        for e in correspond.listen(f"slack:{CHANNEL}", cursors=cursors, registry=registry)
+    ]
+    assert first and first == [f"m{i}" for i in range(len(first))], (
+        "what was read is delivered"
+    )
+    rest = [
+        e.message.text
+        for e in correspond.listen(f"slack:{CHANNEL}", cursors=cursors, registry=registry)
+    ]
+    assert first + rest == [f"m{i}" for i in range(10)]
+
+
+def test_a_backlog_on_the_restricted_tier_drains_a_little_each_poll(token):
+    """One history request a minute, 15 messages: every poll still moves forward."""
+    many = [_msg(f"{1760000000 + 60 * i}.000000", f"m{i}") for i in range(40)]
+    inner = FakeSlackApi(many)
+    state = {"allowed": 0}
+
+    def restricted(method, url, *, headers=None, body=None, timeout=None):
+        if "conversations.history" in url:
+            if state["allowed"] == 0:
+                return Response(429, {"retry-after": "60"}, b"")
+            state["allowed"] -= 1
         return inner(method, url, headers=headers, body=body)
 
     from correspond.channels import slack as module
 
-    original, module.PAGE_SIZE = module.PAGE_SIZE, 4
+    original, module.PAGE_SIZE = module.PAGE_SIZE, 15
     try:
         registry = {
             "slack": Slack(
-                http=http,
-                keychain=lambda s: "",
-                clock=lambda: 1760000040.0,
-                sleep=slept.append,
+                http=restricted, keychain=lambda s: "", clock=lambda: 1760010000.0
             )
         }
-        cursors = {f"slack:{CHANNEL}": "1760000000.000000"}
-        events = list(
-            correspond.listen(f"slack:{CHANNEL}", cursors=cursors, registry=registry)
-        )
+        cursors = {f"slack:{CHANNEL}": "1759999999.000000"}
+        seen = []
+        for _ in range(60):
+            state["allowed"] = 2  # a request or two between polls
+            try:
+                seen += [
+                    e.message.text
+                    for e in correspond.listen(
+                        f"slack:{CHANNEL}", cursors=cursors, registry=registry
+                    )
+                ]
+            except correspond.ChannelError:
+                pass
+            if len(seen) == 40:
+                break
     finally:
         module.PAGE_SIZE = original
-    assert [e.message.text for e in events] == [f"m{i}" for i in range(10)] and slept == [
-        2.0
-    ]
+    assert seen == [f"m{i}" for i in range(40)]
 
 
 def test_slacks_own_notices_are_not_messages_but_the_cursor_moves_past_them(token):
@@ -740,7 +786,9 @@ def test_slacks_own_notices_are_not_messages_but_the_cursor_moves_past_them(toke
         )
         == []
     )
-    assert cursors[f"slack:{CHANNEL}"] == "1760000013.000000"
+    assert float(cursors[f"slack:{CHANNEL}"].split("/")[0]) >= 1760000013.0, (
+        "past the notice"
+    )
     assert [
         m.text for m in correspond.read(f"slack:{CHANNEL}", registry=_api_registry(api))
     ] == ["hi"]
@@ -796,3 +844,113 @@ def test_a_channels_own_webhook_wins_for_a_plain_post_and_the_token_threads(
         and threaded.message_id == "1760000100.000200"
         and hooked == [{"text": "plain"}]
     )
+
+
+# ------------------------------------------------------------ the walk's review (#69)
+
+
+def _walker(api, *, clock=1760010000.0):
+    return {"slack": Slack(http=api, keychain=lambda s: "", clock=lambda: clock)}
+
+
+def test_a_message_on_a_window_boundary_is_delivered_once(token):
+    start = 1760000000.0
+    on_edge = _msg(f"{start + 3600:.6f}", "on the edge")
+    api = FakeSlackApi([on_edge, _msg(f"{start + 4000:.6f}", "after")])
+    cursors = {f"slack:{CHANNEL}": f"{start:.6f}"}
+    seen = []
+    for _ in range(3):
+        seen += [
+            e.message.text
+            for e in correspond.listen(
+                f"slack:{CHANNEL}", cursors=cursors, registry=_walker(api)
+            )
+        ]
+    assert seen == ["on the edge", "after"]
+
+
+def test_one_request_a_poll_still_drains_a_dense_backlog(token):
+    """The tier the walk is for: a narrowing is progress, kept in the cursor."""
+    many = [_msg(f"{1760000000 + 60 * i}.000000", f"m{i}") for i in range(40)]
+    inner = FakeSlackApi(many)
+    state = {"allowed": 0}
+
+    def one_a_poll(method, url, *, headers=None, body=None, timeout=None):
+        if "conversations.history" in url:
+            if not state["allowed"]:
+                return Response(429, {"retry-after": "60"}, b"")
+            state["allowed"] -= 1
+        return inner(method, url, headers=headers, body=body)
+
+    from correspond.channels import slack as module
+
+    original, module.PAGE_SIZE = module.PAGE_SIZE, 15
+    try:
+        cursors = {f"slack:{CHANNEL}": "1759999999.000000"}
+        seen = []
+        for _ in range(80):
+            state["allowed"] = 1
+            seen += [
+                e.message.text
+                for e in correspond.listen(
+                    f"slack:{CHANNEL}", cursors=cursors, registry=_walker(one_a_poll)
+                )
+            ]
+            if len(seen) == 40:
+                break
+    finally:
+        module.PAGE_SIZE = original
+    assert seen == [f"m{i}" for i in range(40)]
+
+
+def test_slacks_clock_bounds_the_walk_when_this_one_runs_ahead(token):
+    from email.utils import formatdate
+
+    slack_now = 1760010000.0
+    later = _msg(f"{slack_now + 30:.6f}", "posted after the poll, by Slack's clock")
+
+    class Behind(FakeSlackApi):
+        def __call__(self, method, url, **kwargs):
+            reply = super().__call__(method, url, **kwargs)
+            return Response(
+                reply.status, {"date": formatdate(slack_now, usegmt=True)}, reply.body
+            )
+
+    api = Behind([])
+    cursors = {f"slack:{CHANNEL}": f"{slack_now - 7200:.6f}"}
+    list(
+        correspond.listen(
+            f"slack:{CHANNEL}",
+            cursors=cursors,
+            registry=_walker(api, clock=slack_now + 120),
+        )
+    )
+    assert float(cursors[f"slack:{CHANNEL}"].split("/")[0]) <= slack_now - 60
+    api.history = [later]
+    events = list(
+        correspond.listen(
+            f"slack:{CHANNEL}",
+            cursors=cursors,
+            registry=_walker(api, clock=slack_now + 240),
+        )
+    )
+    assert [e.message.text for e in events] == ["posted after the poll, by Slack's clock"]
+
+
+def test_a_plain_ts_cursor_from_before_still_works(token):
+    api = FakeSlackApi([_msg("1760000100.000000", "hi")])
+    cursors = {f"slack:{CHANNEL}": "1760000000.000000"}
+    events = list(
+        correspond.listen(f"slack:{CHANNEL}", cursors=cursors, registry=_walker(api))
+    )
+    assert [e.message.text for e in events] == ["hi"] and "/" in cursors[
+        f"slack:{CHANNEL}"
+    ]
+    with pytest.raises(correspond.ChannelError):
+        list(
+            correspond.listen(
+                f"slack:{CHANNEL}",
+                cursors={f"slack:{CHANNEL}": "x/1"},
+                registry=_walker(api),
+            )
+        )
