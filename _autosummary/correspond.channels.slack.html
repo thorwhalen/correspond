@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=6a9d8632"></script>
+    <script src="../_static/documentation_options.js?v=cee5022b"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.26" />
+  <meta name="docsearch:version" content="0.0.27" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -542,7 +542,16 @@ them itself. Neither the token nor a webhook URL appears in a plan or an error.<
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.slack.Slack.poll">
 <span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/slack.html#Slack.poll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.slack.Slack.poll" title="Link to this definition">#</a></dt>
-<dd><p>Top-level messages newer than <code class="docutils literal notranslate"><span class="pre">cursor</span></code> (a <code class="docutils literal notranslate"><span class="pre">ts</span></code>), oldest first; a first poll looks back a day.</p>
+<dd><p>Top-level messages newer than <code class="docutils literal notranslate"><span class="pre">cursor</span></code>, oldest first; a first poll looks back a day.</p>
+<p>Slack returns history newest first, so a poll walks forward through time windows
+(<code class="docutils literal notranslate"><span class="pre">oldest</span></code> = the cursor’s <code class="docutils literal notranslate"><span class="pre">ts</span></code>, <code class="docutils literal notranslate"><span class="pre">latest</span></code> = it plus a width, both included):
+each window comes back whole and is delivered before the next, and the cursor moves
+to its end, never past Slack’s own clock (its <code class="docutils literal notranslate"><span class="pre">Date</span></code>) less a minute. A window
+holding a full page is narrowed, from that page’s own spread, and asked again; an
+empty one widens the next. The cursor is <code class="docutils literal notranslate"><span class="pre">&lt;ts&gt;/&lt;width&gt;</span></code>, so a poll that only
+narrowed or widened still moves forward, and a plain <code class="docutils literal notranslate"><span class="pre">ts</span></code> (an older cursor) is
+read too. A poll stops after <code class="xref py py-data docutils literal notranslate"><span class="pre">MAX_REQUESTS_PER_POLL</span></code> requests, at <code class="docutils literal notranslate"><span class="pre">limit</span></code>
+events, or at a rate limit, keeping what it delivered: the next resumes there.</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>

@@ -94,7 +94,17 @@ A channel’s id as Slack writes it, or its name, `#` optional, lower-cased.
 
 #### poll(ref, , cursor=None, limit=None)
 
-Top-level messages newer than `cursor` (a `ts`), oldest first; a first poll looks back a day.
+Top-level messages newer than `cursor`, oldest first; a first poll looks back a day.
+
+Slack returns history newest first, so a poll walks forward through time windows
+(`oldest` = the cursor’s `ts`, `latest` = it plus a width, both included):
+each window comes back whole and is delivered before the next, and the cursor moves
+to its end, never past Slack’s own clock (its `Date`) less a minute. A window
+holding a full page is narrowed, from that page’s own spread, and asked again; an
+empty one widens the next. The cursor is `<ts>/<width>`, so a poll that only
+narrowed or widened still moves forward, and a plain `ts` (an older cursor) is
+read too. A poll stops after `MAX_REQUESTS_PER_POLL` requests, at `limit`
+events, or at a rate limit, keeping what it delivered: the next resumes there.
 
 #### read(ref, , since=None, limit=None)
 

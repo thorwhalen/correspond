@@ -1,4 +1,4 @@
-> built 2026-10-19 13:21 UTC from dc0991b (main) · correspond 0.0.26. Details: build_info.json
+> built 2026-10-19 13:43 UTC from 30249e2 (main) · correspond 0.0.27. Details: build_info.json
 
 # index.html.md
 
@@ -1595,7 +1595,17 @@ A channel’s id as Slack writes it, or its name, `#` optional, lower-cased.
 
 #### poll(ref, , cursor=None, limit=None)
 
-Top-level messages newer than `cursor` (a `ts`), oldest first; a first poll looks back a day.
+Top-level messages newer than `cursor`, oldest first; a first poll looks back a day.
+
+Slack returns history newest first, so a poll walks forward through time windows
+(`oldest` = the cursor’s `ts`, `latest` = it plus a width, both included):
+each window comes back whole and is delivered before the next, and the cursor moves
+to its end, never past Slack’s own clock (its `Date`) less a minute. A window
+holding a full page is narrowed, from that page’s own spread, and asked again; an
+empty one widens the next. The cursor is `<ts>/<width>`, so a poll that only
+narrowed or widened still moves forward, and a plain `ts` (an older cursor) is
+read too. A poll stops after `MAX_REQUESTS_PER_POLL` requests, at `limit`
+events, or at a rate limit, keeping what it delivered: the next resumes there.
 
 #### read(ref, , since=None, limit=None)
 
@@ -5358,18 +5368,16 @@ Where a channel’s platform delivers its updates now (Telegram: none means list
 
 # About this build
 
-This documentation was built on **2026-10-19 13:21 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/dc0991b35194188f6a4c4827b008c83d4af9114f"><code>dc0991b</code></a> on branch <code>main</code>, for **correspond 0.0.26** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-19 13:43 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/30249e28652bac3e8b08a4e8551864626e694111"><code>30249e2</code></a> on branch <code>main</code>, for **correspond 0.0.27** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.26) is behind the latest release on PyPI (0.0.27): `pip install correspond` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/dc0991b35194188f6a4c4827b008c83d4af9114f"><code>dc0991b35194188f6a4c4827b008c83d4af9114f</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/30249e28652bac3e8b08a4e8551864626e694111"><code>30249e28652bac3e8b08a4e8551864626e694111</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -5380,9 +5388,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39259232435">39259232435</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39262343794">39262343794</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>dc0991b35194188f6a4c4827b008c83d4af9114f</code> (in the history of the built commit)  |
+| Event commit | <code>30249e28652bac3e8b08a4e8551864626e694111</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -5407,13 +5415,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.27/">0.0.27</a>, newer than the documented version (0.0.26).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.27/">0.0.27</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout dc0991b35194188f6a4c4827b008c83d4af9114f
+git checkout 30249e28652bac3e8b08a4e8551864626e694111
 pip install "epythet==0.2.18"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
