@@ -48,6 +48,10 @@ mcp = [
 server = [
     "uvicorn>=0.20",
 ]
+# The Discord channel (a bot over REST) is optional.
+discord = [
+    "discorddol>=0.0.3",
+]
 # The Google Drive folder reader (read only) is optional.
 gdrive = [
     "pydrivedol>=0.0.7",

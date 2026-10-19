@@ -158,10 +158,10 @@ def test_unknown_resolves_to_public_whatever_went_wrong(
 
 
 def test_a_planned_channel_says_it_is_planned_and_where():
-    discord = next(c for c in CHANNELS if c.name == "discord")
-    found = ops.audience("discord:example-channel")
-    _assert_defaulted(found, "discord:example-channel", "discord is planned, not built")
-    assert discord.planned in found.evidence[0]
+    signal = next(c for c in CHANNELS if c.name == "signal")
+    found = ops.audience("signal:example-channel")
+    _assert_defaulted(found, "signal:example-channel", "signal is planned, not built")
+    assert signal.planned in found.evidence[0]
     _assert_defaulted(
         ops.audience(ConversationRef.parse("slack:example"), registry={}),
         "slack:example",
@@ -179,6 +179,7 @@ AUDIENCE_GRADES = {
     "webinbox": "full",
     "apprise": "partial",
     "gdrive": "partial",
+    "discord": "partial",
 }
 
 
@@ -306,7 +307,7 @@ def test_the_acceptance_lines_on_the_command_line(capsys):
         record = json.loads(out)["audience"]
         assert (code, record["scope"], record["retractable"]) == (0, "operator", True)
 
-    code, out = _cli_here(capsys, "audience", "discord:123", "--json")
+    code, out = _cli_here(capsys, "audience", "signal:123", "--json")
     record = json.loads(out)["audience"]
     assert (record["scope"], record["defaulted"]) == ("public", True)
     assert any("channel not built" in line for line in record["evidence"])
