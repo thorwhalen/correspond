@@ -1,4 +1,4 @@
-> built 2026-10-19 12:51 UTC from fcbdc16 (main) · correspond 0.0.24. Details: build_info.json
+> built 2026-10-19 13:11 UTC from 4652410 (main) · correspond 0.0.25. Details: build_info.json
 
 # index.html.md
 
@@ -91,6 +91,7 @@ scope: public
 - `--dry-run` on `send`, `edit` and `react` sends nothing and changes nothing. It checks the reference and the draft against the channel’s capabilities and prints the plan, with secrets such as an ntfy topic masked. A dry run reads only the environment and the config file, plus the audience lookup (a `gh api` call for GitHub, `getChat` with the bot token for Telegram): a value kept in the Keychain or on a remote host is otherwise looked up when sending, and the plan says so.
 - `--cc` and `--bcc` (comma-separated) copy further recipients on channels that grade `cc` (email); elsewhere they are refused by name. Bcc addresses go on the envelope only, never in a header, and they count in the audience.
 - `--notify` (comma-separated, `notify=` in Python) names who must be notified, and the writer guarantees it: on GitHub (and Telegram, for a member of the chat with a public username) a mention (`@octocat`) the text lacks is added on a closing `cc` line; on email an address that is neither To nor Cc goes in Cc, and so counts in the audience. The plan shows what was added (`mentions_added`, `cc_added`). A channel that cannot guarantee it refuses the draft with `NotSupported("notify")` rather than sending without it.
+- **Files.** `correspond upload <ref> <path>` sends one file; `correspond send <ref> "text" --attach a.pdf,b.csv` sends files with the text (email: each attached; Telegram: one, the text its caption). Paths are read only when they are regular files outside hidden folders (`--include-hidden` to allow one), and the plan names each file’s real path. `--idempotency-key` keeps a retried upload from posting twice, and on Telegram `--native '{"as_document": true}'` sends an image as the file it is.
 - **Every write (`send`, `edit`, `react`, `upload`, `label`, `unlabel`, `close`, `reopen`) passes the `before_send` check first** (an upload’s check sees only the file name), on the dry run too. The plan shows `audience` (who can read it, in words), `audience_hash`, and `before_send` (the verdict). With nothing configured the check lets the write go ahead, so the audience line is all it adds. A check can stop the write: `refused` (not as written, not here) or `needs_approval` (wait for the operator), with any details it attached in `before_send_details`. A configured check that does not load stops every write (`before_send_unavailable`), and one that crashes stops that write (`before_send_failed`). Nothing is sent in any of these cases, and `--allow-send` on the MCP server does not skip the check.
 - The check guards drafts, not the process running correspond: whoever sets its environment or edits the config file (`$CORRESPOND_CONFIG` can point at another file) chooses the check. Commands that write without correspond (`gh issue comment`, say) are covered by liaise’s hook, not by this check.
 - A write that fails is a result, not an exception: `ok: false`, an `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`, `unconfirmed`, or one of the four check kinds above), and whether a retry can help (`retryable`, `retry_after`).
@@ -1818,12 +1819,14 @@ webhook back with `getWebhookInfo`. A dry run calls nothing and reads no secret.
 
 What the webhook receiver stored, keyed by zero-padded update id (`listen` reads it when `delivery` is `webhook`).
 
-#### upload(ref, name, data, , media_type='application/octet-stream', dry_run=False)
+#### upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, native=None)
 
 Send a file: `sendPhoto` for an inline image (`PHOTO_TYPES`, 10 MB), else `sendDocument` (50 MB).
 
 A photo Telegram refuses (too large in pixels, too narrow, not really an image) is
 sent again as a document, which takes any file; the plan says so (`photo_refused`).
+`native={"as_document": True}` sends an image as a document: the file as it is,
+not recompressed.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -2448,7 +2451,7 @@ JSON-ready.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, notify=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, notify=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, max_attachments=0, formats=('plain',), draft_fields=(), upload_fields=(), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2468,7 +2471,10 @@ far back `read` sees; `grades` are the authenticity grades the channel can attes
 condition can test), or `None` when the channel does not declare them;
 `draft_fields` are the keys a [`Draft`](_autosummary/correspond.html.md#correspond.Draft) may carry in its `native` for this
 channel (GitHub: `labels`, `assignees`, `milestone` when opening an issue), and
-any other key is refused rather than dropped.
+any other key is refused rather than dropped; `upload_fields` are the options
+`upload` takes in its `native`. `max_attachments` is how many files a send’s
+`Draft.attachments` may carry (0: a send takes none, though `upload` may still
+send a file on its own).
 
 #### *classmethod* from_dict(data)
 
@@ -2596,7 +2602,7 @@ Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exceptio
 
 An expected failure, with a message meant for the person or agent that asked.
 
-### *class* correspond.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=dict(), notify=())
+### *class* correspond.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=dict(), notify=(), attachments=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2629,6 +2635,11 @@ channel that cannot raises `NotSupported("notify")` (see [`correspond.notify`](_
 >>> Draft(text="hi", notify=["octocat", " ", "Octocat", "hubot"]).notify
 ('octocat', 'hubot')
 ```
+
+`attachments` are files that go with the text, each an [`Attachment`](_autosummary/correspond.html.md#correspond.Attachment) whose
+`content()` gives its bytes, on channels whose capabilities grade `upload`. The
+`before_send` check sees them (name, media type, size, SHA-256, `ref`), never their
+bytes.
 
 #### to_dict()
 
@@ -3025,9 +3036,12 @@ Run the chain (bindings, thread continuity, metadata rules, classifier) and retu
 * **Return type:**
   [`RouteDecision`](_autosummary/correspond.routing.html.md#correspond.routing.RouteDecision) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), attachments=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
+
+`attachments` (`Draft.attachments`) are files that go with the text, on channels
+that grade `upload`, each within its `max_upload_bytes`.
 
 `cc` and `bcc` copy further recipients, on channels that grade `cc` (email).
 `native` carries channel-specific fields (`Draft.native`), checked against the
@@ -3064,9 +3078,15 @@ Remove a channel from the registry.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, registry=None, before_send=None)
+### correspond.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, native=None, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send a file to a conversation.
+
+`native` carries the channel’s own options, the keys its `capabilities.draft_fields`
+list (Telegram: `{"as_document": true}` sends an image as a file, not a photo).
+`idempotency_key` keeps a retry from posting the file twice, as for [`send()`](_autosummary/correspond.html.md#correspond.send);
+an upload is not read back, so one whose earlier attempt may have gone out is refused
+as `unconfirmed`.
 
 The `before_send` check sees the file name as the draft’s text (`operation="upload"`)
 and the file’s metadata in `draft.native["upload"]`: `name`, `media_type`,
@@ -3526,7 +3546,7 @@ JSON-ready.
 Short phrases for reader classes, used by [`Audience.in_words()`](_autosummary/correspond.model.html.md#correspond.model.Audience.in_words); a class not listed
 here is shown as written.
 
-### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, notify=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, notify=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, max_attachments=0, formats=('plain',), draft_fields=(), upload_fields=(), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -3546,7 +3566,10 @@ far back `read` sees; `grades` are the authenticity grades the channel can attes
 condition can test), or `None` when the channel does not declare them;
 `draft_fields` are the keys a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft) may carry in its `native` for this
 channel (GitHub: `labels`, `assignees`, `milestone` when opening an issue), and
-any other key is refused rather than dropped.
+any other key is refused rather than dropped; `upload_fields` are the options
+`upload` takes in its `native`. `max_attachments` is how many files a send’s
+`Draft.attachments` may carry (0: a send takes none, though `upload` may still
+send a file on its own).
 
 #### *classmethod* from_dict(data)
 
@@ -3664,7 +3687,7 @@ readers (email notifications), an edit history anyone who reads can see.
 * **Type:**
   What a send leaves behind
 
-### *class* correspond.model.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=dict(), notify=())
+### *class* correspond.model.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=dict(), notify=(), attachments=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -3697,6 +3720,11 @@ channel that cannot raises `NotSupported("notify")` (see [`correspond.notify`](_
 >>> Draft(text="hi", notify=["octocat", " ", "Octocat", "hubot"]).notify
 ('octocat', 'hubot')
 ```
+
+`attachments` are files that go with the text, each an [`Attachment`](_autosummary/correspond.model.html.md#correspond.model.Attachment) whose
+`content()` gives its bytes, on channels whose capabilities grade `upload`. The
+`before_send` check sees them (name, media type, size, SHA-256, `ref`), never their
+bytes.
 
 #### to_dict()
 
@@ -4222,9 +4250,12 @@ Reopen a closed conversation; the `before_send` check sees `reopen` as the draft
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), attachments=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
+
+`attachments` (`Draft.attachments`) are files that go with the text, on channels
+that grade `upload`, each within its `max_upload_bytes`.
 
 `cc` and `bcc` copy further recipients, on channels that grade `cc` (email).
 `native` carries channel-specific fields (`Draft.native`), checked against the
@@ -4254,9 +4285,15 @@ Remove `labels` from a conversation; the `before_send` check sees them, comma-jo
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, registry=None, before_send=None)
+### correspond.ops.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, native=None, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send a file to a conversation.
+
+`native` carries the channel’s own options, the keys its `capabilities.draft_fields`
+list (Telegram: `{"as_document": true}` sends an image as a file, not a photo).
+`idempotency_key` keeps a retry from posting the file twice, as for [`send()`](_autosummary/correspond.ops.html.md#correspond.ops.send);
+an upload is not read back, so one whose earlier attempt may have gone out is refused
+as `unconfirmed`.
 
 The `before_send` check sees the file name as the draft’s text (`operation="upload"`)
 and the file’s metadata in `draft.native["upload"]`: `name`, `media_type`,
@@ -5200,9 +5237,9 @@ What a channel needs (install command, binaries, platform, each setting and wher
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, native=None, notify=None, idempotency_key=None, dry_run=False)
+### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, native=None, notify=None, attach=None, include_hidden=False, idempotency_key=None, dry_run=False)
 
-Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens, the plan reporting which of them stuck; or `{"category": "<name or slug>"}` to open a discussion instead). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
+Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens, the plan reporting which of them stuck; or `{"category": "<name or slug>"}` to open a discussion instead). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. `attach` (comma-separated paths on this machine; a path may not contain a comma) sends files with the text, as many as the channel’s `max_attachments` (email: each attached; Telegram: one, the text its caption); the paths are read as for `upload`, and the plan names each file’s real path. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -5214,9 +5251,9 @@ Remove labels (comma-separated; a label name may not itself contain a comma) fro
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.upload(ref, path, , name=None, media_type=None, include_hidden=False, dry_run=False)
+### correspond.tools.upload(ref, path, , name=None, media_type=None, include_hidden=False, native=None, idempotency_key=None, dry_run=False)
 
-Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`). `name` is what recipients see (the file’s own name by default); `media_type` is guessed from the file’s real name when not given. A path through a hidden file or folder (a dot name, such as ~/.ssh) is refused unless `include_hidden`. Run it with `dry_run` first: the plan shows `source` (the real path read), the name, size and SHA-256; show the operator the source. The before_send check sees that metadata, never the contents, so never upload a file the user did not ask to send.
+Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`). `name` is what recipients see (the file’s own name by default); `media_type` is guessed from the file’s real name when not given. A path through a hidden file or folder (a dot name, such as ~/.ssh) is refused unless `include_hidden`. `native` is a JSON object of the channel’s own options (`upload_fields` in its capabilities; on Telegram `{"as_document": true}` sends an image as the file it is, not a recompressed photo). Give an `idempotency_key` when you may upload it again after a failure: the same key never posts it twice. Run it with `dry_run` first: the plan shows `source` (the real path read), the name, size and SHA-256; show the operator the source. The before_send check sees that metadata, never the contents, so never upload a file the user did not ask to send.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -5228,18 +5265,16 @@ Send the regular file at `path` (on this machine) to a conversation (`capabiliti
 
 # About this build
 
-This documentation was built on **2026-10-19 12:51 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/fcbdc1656a733e2a9e919043f22f3e20466a5406"><code>fcbdc16</code></a> on branch <code>main</code>, for **correspond 0.0.24** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-19 13:11 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/4652410d7ebe5321f99d1395cd10626d5a82ffb5"><code>4652410</code></a> on branch <code>main</code>, for **correspond 0.0.25** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.24) is behind the latest release on PyPI (0.0.25): `pip install correspond` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/fcbdc1656a733e2a9e919043f22f3e20466a5406"><code>fcbdc1656a733e2a9e919043f22f3e20466a5406</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/4652410d7ebe5321f99d1395cd10626d5a82ffb5"><code>4652410d7ebe5321f99d1395cd10626d5a82ffb5</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -5250,9 +5285,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39255184843">39255184843</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39257772370">39257772370</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>fcbdc1656a733e2a9e919043f22f3e20466a5406</code> (in the history of the built commit)  |
+| Event commit | <code>4652410d7ebe5321f99d1395cd10626d5a82ffb5</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -5277,13 +5312,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.25/">0.0.25</a>, newer than the documented version (0.0.24).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.25/">0.0.25</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout fcbdc1656a733e2a9e919043f22f3e20466a5406
+git checkout 4652410d7ebe5321f99d1395cd10626d5a82ffb5
 pip install "epythet==0.2.18"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

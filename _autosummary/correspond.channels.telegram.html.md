@@ -162,12 +162,14 @@ webhook back with `getWebhookInfo`. A dry run calls nothing and reads no secret.
 
 What the webhook receiver stored, keyed by zero-padded update id (`listen` reads it when `delivery` is `webhook`).
 
-#### upload(ref, name, data, , media_type='application/octet-stream', dry_run=False)
+#### upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, native=None)
 
 Send a file: `sendPhoto` for an inline image (`PHOTO_TYPES`, 10 MB), else `sendDocument` (50 MB).
 
 A photo Telegram refuses (too large in pixels, too narrow, not really an image) is
 sent again as a document, which takes any file; the plan says so (`photo_refused`).
+`native={"as_document": True}` sends an image as a document: the file as it is,
+not recompressed.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)

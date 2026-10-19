@@ -256,9 +256,12 @@ Reopen a closed conversation; the `before_send` check sees `reopen` as the draft
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), attachments=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
+
+`attachments` (`Draft.attachments`) are files that go with the text, on channels
+that grade `upload`, each within its `max_upload_bytes`.
 
 `cc` and `bcc` copy further recipients, on channels that grade `cc` (email).
 `native` carries channel-specific fields (`Draft.native`), checked against the
@@ -288,9 +291,15 @@ Remove `labels` from a conversation; the `before_send` check sees them, comma-jo
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, registry=None, before_send=None)
+### correspond.ops.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, native=None, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send a file to a conversation.
+
+`native` carries the channel’s own options, the keys its `capabilities.draft_fields`
+list (Telegram: `{"as_document": true}` sends an image as a file, not a photo).
+`idempotency_key` keeps a retry from posting the file twice, as for [`send()`](#correspond.ops.send);
+an upload is not read back, so one whose earlier attempt may have gone out is refused
+as `unconfirmed`.
 
 The `before_send` check sees the file name as the draft’s text (`operation="upload"`)
 and the file’s metadata in `draft.native["upload"]`: `name`, `media_type`,

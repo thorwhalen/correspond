@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=f91d8841"></script>
+    <script src="../../../_static/documentation_options.js?v=5d650c58"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.24" />
+  <meta name="docsearch:version" content="0.0.25" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -767,6 +767,7 @@ window.runMermaid = runMermaid;</script>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span><span class="p">,</span> <span class="n">MissingRequirement</span><span class="p">,</span> <span class="n">NotSupported</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Attachment</span><span class="p">,</span>
     <span class="n">Account</span><span class="p">,</span>
     <span class="n">Audience</span><span class="p">,</span>
     <span class="n">Authenticity</span><span class="p">,</span>
@@ -800,6 +801,8 @@ window.runMermaid = runMermaid;</script>
 <span class="c1">#: The Bot API's limits on a file a bot sends: any file, and a photo (shown inline).</span>
 <span class="n">MAX_DOCUMENT_BYTES</span> <span class="o">=</span> <span class="mi">50_000_000</span>
 <span class="n">MAX_PHOTO_BYTES</span> <span class="o">=</span> <span class="mi">10_000_000</span>
+<span class="c1">#: How much text a file's caption holds.</span>
+<span class="n">MAX_CAPTION_CHARS</span> <span class="o">=</span> <span class="mi">1024</span>
 <span class="c1">#: The image types ``sendPhoto`` shows inline; anything else goes as a document.</span>
 <span class="n">PHOTO_TYPES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"image/jpeg"</span><span class="p">,</span> <span class="s2">"image/png"</span><span class="p">,</span> <span class="s2">"image/webp"</span><span class="p">)</span>
 <span class="c1">#: A public Telegram username, the only handle a bot's mention reaches.</span>
@@ -837,6 +840,16 @@ window.runMermaid = runMermaid;</script>
 <span class="n">_WEBHOOK_CURSOR</span> <span class="o">=</span> <span class="s2">"w"</span>
 <span class="n">_RECEIVED_KEY_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^(?P&lt;stamp&gt;[0-9]</span><span class="si">{20}</span><span class="s2">)-(?P&lt;update&gt;[0-9]{1,19})\.json$"</span><span class="p">)</span>
 <span class="n">_TRUE</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"1"</span><span class="p">,</span> <span class="s2">"true"</span><span class="p">,</span> <span class="s2">"yes"</span><span class="p">,</span> <span class="s2">"on"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_as_document</span><span class="p">(</span><span class="n">native</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``native["as_document"]`` checked: a file sent as a document, not shown as a photo."""</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">native</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"as_document"</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bool</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"native as_document is true or false, not </span><span class="si">{</span><span class="n">value</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">value</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_secret_matches</span><span class="p">(</span><span class="n">received</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
@@ -1086,6 +1099,9 @@ window.runMermaid = runMermaid;</script>
             <span class="n">grades</span><span class="o">=</span><span class="p">(</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span> <span class="n">Grade</span><span class="o">.</span><span class="n">FORGED</span><span class="p">),</span>
             <span class="n">max_text_length</span><span class="o">=</span><span class="n">MAX_TEXT_CHARS</span><span class="p">,</span>
             <span class="n">max_upload_bytes</span><span class="o">=</span><span class="n">MAX_DOCUMENT_BYTES</span><span class="p">,</span>
+            <span class="n">draft_fields</span><span class="o">=</span><span class="p">(</span><span class="s2">"as_document"</span><span class="p">,),</span>
+            <span class="n">upload_fields</span><span class="o">=</span><span class="p">(</span><span class="s2">"as_document"</span><span class="p">,),</span>
+            <span class="n">max_attachments</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
             <span class="n">reactions_per_message</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
             <span class="n">formats</span><span class="o">=</span><span class="p">(</span><span class="s2">"plain"</span><span class="p">,),</span>
             <span class="n">rate_limits</span><span class="o">=</span><span class="p">(</span>
@@ -1098,7 +1114,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"a bot cannot start a conversation: someone must write to it first"</span><span class="p">,</span>
                 <span class="s2">"notify mentions @username in the text: it reaches a member of the chat with a public username, not anyone outside it"</span><span class="p">,</span>
                 <span class="s2">"a title is prepended to the text: Telegram messages have none"</span><span class="p">,</span>
-                <span class="s2">"upload sends a JPEG, PNG or WebP image up to 10 MB as a photo (sendPhoto, shown inline) and anything else up to 50 MB as a document (sendDocument)"</span><span class="p">,</span>
+                <span class="s2">"upload sends a JPEG, PNG or WebP image up to 10 MB as a photo (sendPhoto, shown inline, recompressed) and anything else up to 50 MB as a document (sendDocument); native as_document sends an image as a document, as it is"</span><span class="p">,</span>
+                <span class="s2">"send takes one attachment, with the text as its caption (1,024 characters at most)"</span><span class="p">,</span>
                 <span class="s2">"audience comes from getChat: a public username, the chat type, history visibility; members are never listed"</span><span class="p">,</span>
                 <span class="s2">"delivery = webhook makes listen read what the webhook receiver (mk_webhook_app) stored instead of calling getUpdates; Telegram serves one or the other, so set_webhook stops getUpdates (409) until delete_webhook"</span><span class="p">,</span>
                 <span class="s2">"the webhook receiver stores only requests carrying the secret token, in arrival order (set_webhook asks for one connection at a time); serve_webhook binds it to 127.0.0.1 unless webhook_allow_remote is set; verify grades one delivery by that header: platform when it matches (it proves Telegram sent it, not a signature over the body), forged otherwise"</span><span class="p">,</span>
@@ -1626,8 +1643,26 @@ window.runMermaid = runMermaid;</script>
 <span class="w">        </span><span class="sd">"""``sendMessage``, the title (if any) prepended; ``draft.notify`` usernames the text does not @mention yet are mentioned on a closing ``cc`` line."""</span>
         <span class="n">added</span> <span class="o">=</span> <span class="n">missing_mentions</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">)</span> <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span> <span class="k">else</span> <span class="p">()</span>
         <span class="n">draft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span>
-        <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
         <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span> <span class="k">else</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">as_document</span> <span class="o">=</span> <span class="n">_as_document</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">native</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">attachments</span><span class="p">:</span>
+            <span class="n">notified</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="p">{</span>
+                    <span class="s2">"notify"</span><span class="p">:</span> <span class="p">[</span><span class="n">handle</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">],</span>
+                    <span class="s2">"mentions_added"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">added</span><span class="p">),</span>
+                <span class="p">}</span>
+                <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span>
+                <span class="k">else</span> <span class="p">{}</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_with_file</span><span class="p">(</span>
+                <span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">as_document</span><span class="p">,</span> <span class="n">notified</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">as_document</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="s2">"as_document applies to a file: attach one, or leave it out"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_TEXT_CHARS</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"with the title the text is </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="si">}</span><span class="s2"> characters; Telegram accepts </span><span class="si">{</span><span class="n">MAX_TEXT_CHARS</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
@@ -1669,31 +1704,112 @@ window.runMermaid = runMermaid;</script>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">media_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"application/octet-stream"</span><span class="p">,</span>
         <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">native</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Send a file: ``sendPhoto`` for an inline image (:data:`PHOTO_TYPES`, 10 MB), else ``sendDocument`` (50 MB).</span>
 
 <span class="sd">        A photo Telegram refuses (too large in pixels, too narrow, not really an image) is</span>
 <span class="sd">        sent again as a document, which takes any file; the plan says so (``photo_refused``).</span>
+<span class="sd">        ``native={"as_document": True}`` sends an image as a document: the file as it is,</span>
+<span class="sd">        not recompressed.</span>
 <span class="sd">        """</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_file</span><span class="p">(</span>
+            <span class="n">ref</span><span class="p">,</span>
+            <span class="n">name</span><span class="p">,</span>
+            <span class="n">data</span><span class="p">,</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="n">media_type</span><span class="p">,</span>
+            <span class="n">as_document</span><span class="o">=</span><span class="n">_as_document</span><span class="p">(</span><span class="n">native</span> <span class="ow">or</span> <span class="p">{}),</span>
+            <span class="n">operation</span><span class="o">=</span><span class="s2">"upload"</span><span class="p">,</span>
+            <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_send_with_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+        <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span>
+        <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">as_document</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">notified</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""One file with the text as its caption: one message, as the draft is one."""</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">attachments</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Telegram sends one file per message with its text; this draft has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">attachments</span><span class="p">)</span><span class="si">}</span><span class="s2">: "</span>
+                <span class="s2">"send the text with one, and upload the others"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_CAPTION_CHARS</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"a file's caption holds </span><span class="si">{</span><span class="n">MAX_CAPTION_CHARS</span><span class="si">}</span><span class="s2"> characters and this text has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="si">}</span><span class="s2">: "</span>
+                <span class="s2">"send the text, then upload the file"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">(</span><span class="n">attachment</span><span class="p">,)</span> <span class="o">=</span> <span class="n">draft</span><span class="o">.</span><span class="n">attachments</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_file</span><span class="p">(</span>
+            <span class="n">ref</span><span class="p">,</span>
+            <span class="n">attachment</span><span class="o">.</span><span class="n">name</span> <span class="ow">or</span> <span class="s2">"file"</span><span class="p">,</span>
+            <span class="n">attachment</span><span class="p">,</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="n">attachment</span><span class="o">.</span><span class="n">media_type</span><span class="p">,</span>
+            <span class="n">as_document</span><span class="o">=</span><span class="n">as_document</span><span class="p">,</span>
+            <span class="n">operation</span><span class="o">=</span><span class="s2">"send"</span><span class="p">,</span>
+            <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+            <span class="n">caption</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">reply_to</span><span class="o">=</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">extra</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"title_prepended"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">)}</span>
+        <span class="k">if</span> <span class="n">notified</span><span class="p">:</span>
+            <span class="n">extra</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">notified</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">result</span><span class="o">.</span><span class="n">plan</span><span class="p">,</span> <span class="o">**</span><span class="n">extra</span><span class="p">})</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_send_file</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span> <span class="o">|</span> <span class="n">Attachment</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">media_type</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">as_document</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">caption</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">reply_to</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
         <span class="n">name</span> <span class="o">=</span> <span class="n">file_name</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
         <span class="n">media_type</span> <span class="o">=</span> <span class="n">_media_type</span><span class="p">(</span><span class="n">media_type</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">Attachment</span><span class="p">):</span>  <span class="c1"># a draft's file: fetched only to send it</span>
+            <span class="n">size</span><span class="p">,</span> <span class="n">digest</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">size</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">sha256</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">dry_run</span> <span class="k">else</span> <span class="n">data</span><span class="o">.</span><span class="n">content</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+            <span class="n">size</span><span class="p">,</span> <span class="n">digest</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
         <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_target</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
-        <span class="n">photo</span> <span class="o">=</span> <span class="n">media_type</span> <span class="ow">in</span> <span class="n">PHOTO_TYPES</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="n">MAX_PHOTO_BYTES</span>
+        <span class="k">if</span> <span class="n">caption</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">"caption"</span><span class="p">]</span> <span class="o">=</span> <span class="n">caption</span>
+        <span class="k">if</span> <span class="n">reply_to</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">"reply_parameters"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"message_id"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message_number</span><span class="p">(</span><span class="n">reply_to</span><span class="p">)}</span>
+        <span class="n">photo</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">as_document</span>
+            <span class="ow">and</span> <span class="n">media_type</span> <span class="ow">in</span> <span class="n">PHOTO_TYPES</span>
+            <span class="ow">and</span> <span class="p">(</span><span class="n">size</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">size</span> <span class="o">&lt;=</span> <span class="n">MAX_PHOTO_BYTES</span><span class="p">)</span>
+        <span class="p">)</span>
         <span class="n">method</span><span class="p">,</span> <span class="n">field</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"sendPhoto"</span><span class="p">,</span> <span class="s2">"photo"</span><span class="p">)</span> <span class="k">if</span> <span class="n">photo</span> <span class="k">else</span> <span class="p">(</span><span class="s2">"sendDocument"</span><span class="p">,</span> <span class="s2">"document"</span><span class="p">)</span>
         <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"action"</span><span class="p">:</span> <span class="n">method</span><span class="p">,</span>
             <span class="o">**</span><span class="n">params</span><span class="p">,</span>
             <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
             <span class="s2">"media_type"</span><span class="p">:</span> <span class="n">media_type</span><span class="p">,</span>
-            <span class="s2">"bytes"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
-            <span class="s2">"sha256"</span><span class="p">:</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">(),</span>
+            <span class="s2">"bytes"</span><span class="p">:</span> <span class="n">size</span><span class="p">,</span>
+            <span class="s2">"sha256"</span><span class="p">:</span> <span class="n">digest</span><span class="p">,</span>
+            <span class="o">**</span><span class="p">({</span><span class="s2">"as_document"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span> <span class="k">if</span> <span class="n">as_document</span> <span class="k">else</span> <span class="p">{}),</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
                 <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
                 <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
-                <span class="n">operation</span><span class="o">=</span><span class="s2">"upload"</span><span class="p">,</span>
+                <span class="n">operation</span><span class="o">=</span><span class="n">operation</span><span class="p">,</span>
                 <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
             <span class="p">)</span>
@@ -1711,12 +1827,11 @@ window.runMermaid = runMermaid;</script>
             <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
             <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
-            <span class="n">operation</span><span class="o">=</span><span class="s2">"upload"</span><span class="p">,</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">operation</span><span class="p">,</span>
             <span class="n">message_id</span><span class="o">=</span><span class="n">message</span><span class="o">.</span><span class="n">id</span> <span class="k">if</span> <span class="n">message</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">account</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_account</span><span class="p">(</span><span class="n">result</span><span class="p">),</span>
             <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
-        <span class="p">)</span></div>
-
+        <span class="p">)</span>
 
 <div class="viewcode-block" id="Telegram.edit">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.telegram.html#correspond.channels.telegram.Telegram.edit">[docs]</a>

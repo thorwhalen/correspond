@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=f91d8841"></script>
+    <script src="../../_static/documentation_options.js?v=5d650c58"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.24" />
+  <meta name="docsearch:version" content="0.0.25" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1372,6 +1372,7 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"reactions"</span><span class="p">,</span>
     <span class="s2">"formats"</span><span class="p">,</span>
     <span class="s2">"draft_fields"</span><span class="p">,</span>
+    <span class="s2">"upload_fields"</span><span class="p">,</span>
     <span class="s2">"rate_limits"</span><span class="p">,</span>
     <span class="s2">"notes"</span><span class="p">,</span>
 <span class="p">)</span>
@@ -1397,7 +1398,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    condition can test), or ``None`` when the channel does not declare them;</span>
 <span class="sd">    ``draft_fields`` are the keys a :class:`Draft` may carry in its ``native`` for this</span>
 <span class="sd">    channel (GitHub: ``labels``, ``assignees``, ``milestone`` when opening an issue), and</span>
-<span class="sd">    any other key is refused rather than dropped.</span>
+<span class="sd">    any other key is refused rather than dropped; ``upload_fields`` are the options</span>
+<span class="sd">    ``upload`` takes in its ``native``. ``max_attachments`` is how many files a send's</span>
+<span class="sd">    ``Draft.attachments`` may carry (0: a send takes none, though ``upload`` may still</span>
+<span class="sd">    send a file on its own).</span>
 <span class="sd">    """</span>
 
     <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span>
@@ -1427,8 +1431,10 @@ window.runMermaid = runMermaid;</script>
     <span class="n">reactions</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
     <span class="n">reactions_per_message</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">max_upload_bytes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">max_attachments</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="n">formats</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"plain"</span><span class="p">,)</span>
     <span class="n">draft_fields</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">upload_fields</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
     <span class="n">native_fields</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">rate_limits</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
     <span class="n">notes</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
@@ -1473,6 +1479,7 @@ window.runMermaid = runMermaid;</script>
             <span class="s2">"edit_max_age_s"</span><span class="p">,</span>
             <span class="s2">"reactions_per_message"</span><span class="p">,</span>
             <span class="s2">"max_upload_bytes"</span><span class="p">,</span>
+            <span class="s2">"max_attachments"</span><span class="p">,</span>
         <span class="p">):</span>
             <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
         <span class="n">data</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="n">name</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">))</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_TUPLE_FIELDS</span><span class="p">})</span>
@@ -1754,6 +1761,11 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">    &gt;&gt;&gt; Draft(text="hi", notify=["octocat", " ", "Octocat", "hubot"]).notify</span>
 <span class="sd">    ('octocat', 'hubot')</span>
+
+<span class="sd">    ``attachments`` are files that go with the text, each an :class:`Attachment` whose</span>
+<span class="sd">    ``content()`` gives its bytes, on channels whose capabilities grade ``upload``. The</span>
+<span class="sd">    ``before_send`` check sees them (name, media type, size, SHA-256, ``ref``), never their</span>
+<span class="sd">    bytes.</span>
 <span class="sd">    """</span>
 
     <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
@@ -1764,6 +1776,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">bcc</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
     <span class="n">native</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
     <span class="n">notify</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">attachments</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Attachment</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">__post_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
@@ -1787,6 +1800,10 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">"draft native must be a mapping, not </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">native</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
         <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"native"</span><span class="p">,</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">):</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">native</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+        <span class="n">attachments</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">attachments</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">Attachment</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">attachments</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">"draft attachments are Attachment objects"</span><span class="p">)</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">"attachments"</span><span class="p">,</span> <span class="n">attachments</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Draft.to_dict">
 <a class="viewcode-back" href="../../_autosummary/correspond.model.html#correspond.Draft.to_dict">[docs]</a>
@@ -1806,6 +1823,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">data</span><span class="p">[</span><span class="s2">"native"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">native</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">:</span>  <span class="c1"># same reason: absent unless set</span>
             <span class="n">data</span><span class="p">[</span><span class="s2">"notify"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">attachments</span><span class="p">:</span>  <span class="c1"># same reason; metadata only, never the bytes</span>
+            <span class="n">data</span><span class="p">[</span><span class="s2">"attachments"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">attachments</span><span class="p">]</span>
         <span class="k">return</span> <span class="n">data</span></div>
 </div>
 

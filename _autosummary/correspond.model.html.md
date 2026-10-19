@@ -215,7 +215,7 @@ JSON-ready.
 Short phrases for reader classes, used by [`Audience.in_words()`](#correspond.model.Audience.in_words); a class not listed
 here is shown as written.
 
-### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, notify=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.model.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, notify=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, max_attachments=0, formats=('plain',), draft_fields=(), upload_fields=(), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -235,7 +235,10 @@ far back `read` sees; `grades` are the authenticity grades the channel can attes
 condition can test), or `None` when the channel does not declare them;
 `draft_fields` are the keys a [`Draft`](#correspond.model.Draft) may carry in its `native` for this
 channel (GitHub: `labels`, `assignees`, `milestone` when opening an issue), and
-any other key is refused rather than dropped.
+any other key is refused rather than dropped; `upload_fields` are the options
+`upload` takes in its `native`. `max_attachments` is how many files a send’s
+`Draft.attachments` may carry (0: a send takes none, though `upload` may still
+send a file on its own).
 
 #### *classmethod* from_dict(data)
 
@@ -353,7 +356,7 @@ readers (email notifications), an edit history anyone who reads can see.
 * **Type:**
   What a send leaves behind
 
-### *class* correspond.model.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=dict(), notify=())
+### *class* correspond.model.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=dict(), notify=(), attachments=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -386,6 +389,11 @@ channel that cannot raises `NotSupported("notify")` (see [`correspond.notify`](c
 >>> Draft(text="hi", notify=["octocat", " ", "Octocat", "hubot"]).notify
 ('octocat', 'hubot')
 ```
+
+`attachments` are files that go with the text, each an [`Attachment`](#correspond.model.Attachment) whose
+`content()` gives its bytes, on channels whose capabilities grade `upload`. The
+`before_send` check sees them (name, media type, size, SHA-256, `ref`), never their
+bytes.
 
 #### to_dict()
 

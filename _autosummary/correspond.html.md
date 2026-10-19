@@ -240,7 +240,7 @@ JSON-ready.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, notify=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, formats=('plain',), draft_fields=(), native_fields=None, rate_limits=(), notes=())
+### *class* correspond.Capabilities(, channel, read=Support.NONE, listen=Support.NONE, send=Support.NONE, edit=Support.NONE, react=Support.NONE, upload=Support.NONE, verify=Support.NONE, audience=Support.NONE, label=Support.NONE, unlabel=Support.NONE, close=Support.NONE, reopen=Support.NONE, initiate=Support.NONE, reply=Support.NONE, priority=Support.NONE, cc=Support.NONE, notify=Support.NONE, history_depth=HistoryDepth.NONE, listen_modes=(), grades=(), max_text_length=None, max_title_length=None, edit_max_age_s=None, reactions=(), reactions_per_message=None, max_upload_bytes=None, max_attachments=0, formats=('plain',), draft_fields=(), upload_fields=(), native_fields=None, rate_limits=(), notes=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -260,7 +260,10 @@ far back `read` sees; `grades` are the authenticity grades the channel can attes
 condition can test), or `None` when the channel does not declare them;
 `draft_fields` are the keys a [`Draft`](#correspond.Draft) may carry in its `native` for this
 channel (GitHub: `labels`, `assignees`, `milestone` when opening an issue), and
-any other key is refused rather than dropped.
+any other key is refused rather than dropped; `upload_fields` are the options
+`upload` takes in its `native`. `max_attachments` is how many files a send’s
+`Draft.attachments` may carry (0: a send takes none, though `upload` may still
+send a file on its own).
 
 #### *classmethod* from_dict(data)
 
@@ -388,7 +391,7 @@ Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exceptio
 
 An expected failure, with a message meant for the person or agent that asked.
 
-### *class* correspond.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=dict(), notify=())
+### *class* correspond.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=dict(), notify=(), attachments=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -421,6 +424,11 @@ channel that cannot raises `NotSupported("notify")` (see [`correspond.notify`](c
 >>> Draft(text="hi", notify=["octocat", " ", "Octocat", "hubot"]).notify
 ('octocat', 'hubot')
 ```
+
+`attachments` are files that go with the text, each an [`Attachment`](#correspond.Attachment) whose
+`content()` gives its bytes, on channels whose capabilities grade `upload`. The
+`before_send` check sees them (name, media type, size, SHA-256, `ref`), never their
+bytes.
 
 #### to_dict()
 
@@ -817,9 +825,12 @@ Run the chain (bindings, thread continuity, metadata rules, classifier) and retu
 * **Return type:**
   [`RouteDecision`](correspond.routing.html.md#correspond.routing.RouteDecision) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), attachments=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
+
+`attachments` (`Draft.attachments`) are files that go with the text, on channels
+that grade `upload`, each within its `max_upload_bytes`.
 
 `cc` and `bcc` copy further recipients, on channels that grade `cc` (email).
 `native` carries channel-specific fields (`Draft.native`), checked against the
@@ -856,9 +867,15 @@ Remove a channel from the registry.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, registry=None, before_send=None)
+### correspond.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, native=None, registry=None, before_send=None, idempotency_key=None, sends=None)
 
 Send a file to a conversation.
+
+`native` carries the channel’s own options, the keys its `capabilities.draft_fields`
+list (Telegram: `{"as_document": true}` sends an image as a file, not a photo).
+`idempotency_key` keeps a retry from posting the file twice, as for [`send()`](#correspond.send);
+an upload is not read back, so one whose earlier attempt may have gone out is refused
+as `unconfirmed`.
 
 The `before_send` check sees the file name as the draft’s text (`operation="upload"`)
 and the file’s metadata in `draft.native["upload"]`: `name`, `media_type`,
