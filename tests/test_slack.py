@@ -310,7 +310,7 @@ def test_a_malformed_url_never_reaches_an_error_through_the_stdlib_transport():
 
 # ------------------------------------------------------------- the Web API, with a token
 
-TOKEN = "xoxb-example-token-for-tests"
+TOKEN = "xoxb-fake"  # fictional; short enough not to look like a real token
 CHANNEL = "C024BE91L"
 
 
