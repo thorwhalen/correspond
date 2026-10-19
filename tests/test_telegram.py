@@ -739,3 +739,90 @@ def test_before_send_sees_an_uploads_metadata_and_a_dry_run_calls_nothing(token)
     assert (
         native["upload"]["bytes"] == 5 and native["upload"]["media_type"] == "text/plain"
     )
+
+
+# ------------------------------------------- the webhook as tools, its store, its command (#58)
+
+
+def test_the_webhook_tools_plan_first_and_reach_the_bot(token, monkeypatch):
+    from correspond import registry as registry_module
+    from correspond import tools
+
+    monkeypatch.setenv("CORRESPOND_TELEGRAM_WEBHOOK_SECRET", SECRET)
+    api = FakeBotApi(setWebhook=True, deleteWebhook=True, getWebhookInfo=HOOKED)
+    monkeypatch.setattr(
+        registry_module, "channels", lambda: {"telegram": Telegram(http=api, log={})}
+    )
+    planned = tools.set_webhook("telegram", "https://example.org/telegram", dry_run=True)
+    assert planned["ok"] and planned["dry_run"] and api.calls == []
+    assert SECRET not in json.dumps(planned)
+    done = tools.set_webhook("telegram", "https://example.org/telegram")
+    assert done["ok"] and [name for name, _ in api.calls] == [
+        "setWebhook",
+        "getWebhookInfo",
+    ]
+    info = tools.webhook_info("telegram")
+    assert info["ok"] and info["webhook"]["url"] == "https://example.org/telegram"
+    gone = tools.delete_webhook("telegram", drop_pending_updates=True)
+    assert gone["ok"] and dict(api.calls)["deleteWebhook"] == {
+        "drop_pending_updates": True
+    }
+    refused = tools.set_webhook("telegram", "http://example.org/telegram")
+    assert (refused["ok"], refused["error_kind"]) == (False, "validation")
+
+
+def test_a_channel_without_a_webhook_says_so(monkeypatch):
+    from correspond import registry as registry_module
+    from correspond import tools
+    from correspond.testing import FakeChannel
+
+    monkeypatch.setattr(registry_module, "channels", lambda: {"fake": FakeChannel()})
+    for result in (
+        tools.webhook_info("fake"),
+        tools.set_webhook("fake", "https://example.org/x", dry_run=True),
+    ):
+        assert (result["ok"], result["error_kind"]) == (False, "not_supported")
+
+
+def test_a_configured_store_is_where_receiver_and_listen_meet(monkeypatch, tmp_path):
+    import sys
+    import types
+
+    from correspond.channels.telegram import webhook_store
+
+    shared = {}
+    module = types.ModuleType("example_webhook_store")
+    module.make = lambda: shared
+    monkeypatch.setitem(sys.modules, "example_webhook_store", module)
+    monkeypatch.setenv("CORRESPOND_TELEGRAM_WEBHOOK_STORE", "example_webhook_store:make")
+    assert webhook_store() is shared and Telegram(http=FakeBotApi()).updates is shared
+    for bad, words in (
+        ("no-colon", "module:attr"),
+        ("example_webhook_store:missing", "could not be loaded"),
+    ):
+        monkeypatch.setenv("CORRESPOND_TELEGRAM_WEBHOOK_STORE", bad)
+        with pytest.raises(ChannelError, match=words):
+            webhook_store()
+    module.not_a_store = 42
+    monkeypatch.setenv(
+        "CORRESPOND_TELEGRAM_WEBHOOK_STORE", "example_webhook_store:not_a_store"
+    )
+    with pytest.raises(ChannelError, match="not a mutable mapping"):
+        webhook_store()
+
+
+def test_the_command_runs_the_receiver_on_this_machine(monkeypatch, capsys):
+    from correspond.channels import telegram as module
+
+    calls = []
+    monkeypatch.setattr(module, "serve_webhook", lambda **kwargs: calls.append(kwargs))
+    module.serve_main(["--port", "9000"])
+    assert calls == [{"host": "127.0.0.1", "port": 9000, "allow_remote": None}]
+
+    def refuse(**kwargs):
+        raise ChannelError("binds to this machine only", kind="validation")
+
+    monkeypatch.setattr(module, "serve_webhook", refuse)
+    with pytest.raises(SystemExit) as stopped:
+        module.serve_main(["--host", "0.0.0.0"])
+    assert stopped.value.code == 2 and "this machine only" in capsys.readouterr().err

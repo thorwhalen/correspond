@@ -279,6 +279,11 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 secret=True,
             ),
             Setting(
+                key="webhook_store",
+                env="CORRESPOND_TELEGRAM_WEBHOOK_STORE",
+                what='where the webhook receiver keeps updates, as "module:attr" naming a MutableMapping or a callable returning one (default: files under the data root)',
+            ),
+            Setting(
                 key="webhook_allow_remote",
                 env="CORRESPOND_TELEGRAM_WEBHOOK_ALLOW_REMOTE",
                 what="true to let serve_webhook bind the webhook receiver to an address other machines reach (it binds 127.0.0.1 otherwise; put your HTTPS reverse proxy in front)",
