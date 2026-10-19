@@ -30,6 +30,9 @@ correspond.ops
       unlabel
       upload
       verify
+      webhook_info
+      set_webhook
+      delete_webhook
       window
       with_final_cursor
    
@@ -49,5 +52,7 @@ correspond.ops
       Unlabeler
       Uploader
       Verifier
+      WebhookManager
+      WebhookReader
       Writer
    

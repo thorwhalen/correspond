@@ -42,10 +42,12 @@ refused (409), and [`Telegram.delete_webhook()`](#correspond.channels.telegram.T
 
 ### Functions
 
-| [`mk_webhook_app`](#correspond.channels.telegram.mk_webhook_app)(\*, secret[, updates, ...])         | The webhook receiver as an ASGI app: Telegram POSTs updates, the app stores them in `updates`.                           |
-|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| [`serve_webhook`](#correspond.channels.telegram.serve_webhook)(\*[, host, port, allow_remote, ...]) | Run the receiver (with uvicorn) on `host`, this machine unless `allow_remote`.                                           |
-| [`webhook_app_from_env`](#correspond.channels.telegram.webhook_app_from_env)()                             | [`mk_webhook_app()`](#correspond.channels.telegram.mk_webhook_app) configured from the settings, for `uvicorn --factory`. |
+| [`mk_webhook_app`](#correspond.channels.telegram.mk_webhook_app)(\*, secret[, updates, ...])         | The webhook receiver as an ASGI app: Telegram POSTs updates, the app stores them in `updates`.                              |
+|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| [`serve_main`](#correspond.channels.telegram.serve_main)([argv])                                 | `correspond-telegram-webhook`: run the webhook receiver ([`serve_webhook()`](#correspond.channels.telegram.serve_webhook)). |
+| [`serve_webhook`](#correspond.channels.telegram.serve_webhook)(\*[, host, port, allow_remote, ...]) | Run the receiver (with uvicorn) on `host`, this machine unless `allow_remote`.                                              |
+| [`webhook_app_from_env`](#correspond.channels.telegram.webhook_app_from_env)()                             | [`mk_webhook_app()`](#correspond.channels.telegram.mk_webhook_app) configured from the settings, for `uvicorn --factory`.    |
+| [`webhook_store`](#correspond.channels.telegram.webhook_store)()                                    | Where the receiver keeps updates: the `webhook_store` setting's `module:attr`, else files under the data root.              |
 
 ### Classes
 
@@ -208,6 +210,13 @@ data root (`telegram-webhook/`), which `listen` reads when `delivery` is
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`Awaitable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable)[[`None`](https://docs.python.org/3/builtins/constants.html#None)]]
 
+### correspond.channels.telegram.serve_main(argv=None)
+
+`correspond-telegram-webhook`: run the webhook receiver ([`serve_webhook()`](#correspond.channels.telegram.serve_webhook)).
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 ### correspond.channels.telegram.serve_webhook(, host='127.0.0.1', port=8081, allow_remote=None, app=None, run=None)
 
 Run the receiver (with uvicorn) on `host`, this machine unless `allow_remote`.
@@ -225,3 +234,15 @@ ignored, since the receiver needs no client address, and one worker keeps the or
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`Awaitable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable)[[`None`](https://docs.python.org/3/builtins/constants.html#None)]]
+
+### correspond.channels.telegram.webhook_store()
+
+Where the receiver keeps updates: the `webhook_store` setting’s `module:attr`, else files under the data root.
+
+The reference names a `MutableMapping`, or a callable returning one, whose values are
+JSON-ready dicts (an update as Telegram sent it): a bytes store, such as a plain
+`s3dol` one, needs a JSON codec around it. The receiver and `listen` read the same
+setting, so they meet in the same store.
+
+* **Return type:**
+  [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]

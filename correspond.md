@@ -1,4 +1,4 @@
-> built 2026-10-19 13:11 UTC from 4652410 (main) · correspond 0.0.25. Details: build_info.json
+> built 2026-10-19 13:21 UTC from dc0991b (main) · correspond 0.0.26. Details: build_info.json
 
 # index.html.md
 
@@ -105,7 +105,7 @@ correspond listen github:owner/repo    # issue, comment, review comment and disc
 correspond listen email: --peek        # look without moving the cursor
 ```
 
-Cursors live under the data root, one per reference. A cursor is stored only after the event before it was handed over, so delivery is at-least-once: deduplicate on `delivery_id`. The first listen looks back a day. Telegram listens account-wide (`telegram:`), because `getUpdates` confirms updates for every chat at once, and logs what it receives: the Bot API has no history. On a server, Telegram can push instead: install `correspond[server]` and run `serve_webhook()` from `correspond.channels.telegram` behind your HTTPS reverse proxy. It binds `127.0.0.1` (another address only with `webhook_allow_remote`), and the receiver stores nothing that lacks the `webhook_secret`, in arrival order. Call `Telegram().set_webhook("https://...")` (one connection at a time) and set `delivery = "webhook"`, and `listen telegram:` reads what the receiver stored. Telegram serves `getUpdates` or a webhook, never both: `Telegram().delete_webhook()` returns to polling.
+Cursors live under the data root, one per reference. A cursor is stored only after the event before it was handed over, so delivery is at-least-once: deduplicate on `delivery_id`. The first listen looks back a day. Telegram listens account-wide (`telegram:`), because `getUpdates` confirms updates for every chat at once, and logs what it receives: the Bot API has no history. On a server, Telegram can push instead: install `correspond[server]` and run `correspond-telegram-webhook` behind your HTTPS reverse proxy. It binds `127.0.0.1` (another address only with `webhook_allow_remote`), and the receiver stores nothing that lacks the `webhook_secret`, in arrival order. Run `correspond set-webhook telegram https://... --dry-run`, then without `--dry-run` (one connection at a time), set `delivery = "webhook"`, and `listen telegram:` reads what the receiver stored; `correspond webhook-info telegram` says where updates go now. The receiver keeps updates under the data root, or in the store `webhook_store = "module:attr"` names (an `s3dol` store on a server, say). Telegram serves `getUpdates` or a webhook, never both: `correspond delete-webhook telegram` returns to polling.
 
 ## Configuration
 
@@ -1699,10 +1699,12 @@ refused (409), and [`Telegram.delete_webhook()`](_autosummary/correspond.channel
 
 ### Functions
 
-| [`mk_webhook_app`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.mk_webhook_app)(\*, secret[, updates, ...])         | The webhook receiver as an ASGI app: Telegram POSTs updates, the app stores them in `updates`.                           |
-|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
-| [`serve_webhook`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.serve_webhook)(\*[, host, port, allow_remote, ...]) | Run the receiver (with uvicorn) on `host`, this machine unless `allow_remote`.                                           |
-| [`webhook_app_from_env`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.webhook_app_from_env)()                             | [`mk_webhook_app()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.mk_webhook_app) configured from the settings, for `uvicorn --factory`. |
+| [`mk_webhook_app`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.mk_webhook_app)(\*, secret[, updates, ...])         | The webhook receiver as an ASGI app: Telegram POSTs updates, the app stores them in `updates`.                              |
+|-----------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| [`serve_main`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.serve_main)([argv])                                 | `correspond-telegram-webhook`: run the webhook receiver ([`serve_webhook()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.serve_webhook)). |
+| [`serve_webhook`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.serve_webhook)(\*[, host, port, allow_remote, ...]) | Run the receiver (with uvicorn) on `host`, this machine unless `allow_remote`.                                              |
+| [`webhook_app_from_env`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.webhook_app_from_env)()                             | [`mk_webhook_app()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.mk_webhook_app) configured from the settings, for `uvicorn --factory`.    |
+| [`webhook_store`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.webhook_store)()                                    | Where the receiver keeps updates: the `webhook_store` setting's `module:attr`, else files under the data root.              |
 
 ### Classes
 
@@ -1865,6 +1867,13 @@ data root (`telegram-webhook/`), which `listen` reads when `delivery` is
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`Awaitable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable)[[`None`](https://docs.python.org/3/builtins/constants.html#None)]]
 
+### correspond.channels.telegram.serve_main(argv=None)
+
+`correspond-telegram-webhook`: run the webhook receiver ([`serve_webhook()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.serve_webhook)).
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 ### correspond.channels.telegram.serve_webhook(, host='127.0.0.1', port=8081, allow_remote=None, app=None, run=None)
 
 Run the receiver (with uvicorn) on `host`, this machine unless `allow_remote`.
@@ -1882,6 +1891,18 @@ ignored, since the receiver needs no client address, and one worker keeps the or
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`Awaitable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable)[[`None`](https://docs.python.org/3/builtins/constants.html#None)]]
+
+### correspond.channels.telegram.webhook_store()
+
+Where the receiver keeps updates: the `webhook_store` setting’s `module:attr`, else files under the data root.
+
+The reference names a `MutableMapping`, or a callable returning one, whose values are
+JSON-ready dicts (an update as Telegram sent it): a bytes store, such as a plain
+`s3dol` one, needs a JSON codec around it. The receiver and `listen` read the same
+setting, so they meet in the same store.
+
+* **Return type:**
+  [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
 
 # _autosummary/correspond.channels.webinbox.html.md
@@ -4056,6 +4077,9 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 | [`unlabel`](_autosummary/correspond.ops.html.md#correspond.ops.unlabel)(ref, labels, \*[, dry_run, registry, ...]) | Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                        |
 | [`upload`](_autosummary/correspond.ops.html.md#correspond.ops.upload)(ref, name, data, \*[, media_type, ...])     | Send a file to a conversation.                                                                                                                                                    |
 | [`verify`](_autosummary/correspond.ops.html.md#correspond.ops.verify)(channel, headers, body, \*[, registry])     | Grade an inbound delivery on `channel` from its headers and raw body.                                                                                                             |
+| [`webhook_info`](_autosummary/correspond.ops.html.md#correspond.ops.webhook_info)(channel, \*[, registry])              | Where `channel`'s platform delivers its updates now (an empty `url`: polling).                                                                                                    |
+| [`set_webhook`](_autosummary/correspond.ops.html.md#correspond.ops.set_webhook)(channel, url, \*[, dry_run, ...])      | Have `channel`'s platform POST its updates to `url`: listening by polling stops until [`delete_webhook()`](_autosummary/correspond.ops.html.md#correspond.ops.delete_webhook).                          |
+| [`delete_webhook`](_autosummary/correspond.ops.html.md#correspond.ops.delete_webhook)(channel, \*[, ...])                 | Stop webhook delivery for `channel`, so it can be polled again; the `before_send` check runs (`operation="delete_webhook"`).                                                      |
 | [`window`](_autosummary/correspond.ops.html.md#correspond.ops.window)(messages, \*[, since, limit])               | Messages sent or edited at or after `since`, oldest first, keeping the last `limit`.                                                                                              |
 | [`with_final_cursor`](_autosummary/correspond.ops.html.md#correspond.ops.with_final_cursor)(events, final_cursor)            | Yield `events`, then hand `final_cursor` to [`listen()`](_autosummary/correspond.ops.html.md#correspond.ops.listen), so a quiet poll still moves the cursor forward.                            |
 
@@ -4074,6 +4098,8 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 | [`Unlabeler`](_autosummary/correspond.ops.html.md#correspond.ops.Unlabeler)(\*args, \*\*kwargs)        | Remove labels from a conversation.                                                                     |
 | [`Uploader`](_autosummary/correspond.ops.html.md#correspond.ops.Uploader)(\*args, \*\*kwargs)         | Send a file to a conversation.                                                                         |
 | [`Verifier`](_autosummary/correspond.ops.html.md#correspond.ops.Verifier)(\*args, \*\*kwargs)         | Grade an inbound delivery (a webhook, a posted report) from its headers and raw body.                  |
+| [`WebhookManager`](_autosummary/correspond.ops.html.md#correspond.ops.WebhookManager)(\*args, \*\*kwargs)   | Move where a channel's platform delivers its updates.                                                  |
+| [`WebhookReader`](_autosummary/correspond.ops.html.md#correspond.ops.WebhookReader)(\*args, \*\*kwargs)    | Where a channel's platform delivers its updates now: polling, or a webhook it POSTs to.                |
 | [`Writer`](_autosummary/correspond.ops.html.md#correspond.ops.Writer)(\*args, \*\*kwargs)           | Send a draft to a conversation.                                                                        |
 
 ### *class* correspond.ops.AudienceReader(\*args, \*\*kwargs)
@@ -4152,6 +4178,22 @@ Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protoco
 
 Grade an inbound delivery (a webhook, a posted report) from its headers and raw body.
 
+### *class* correspond.ops.WebhookManager(\*args, \*\*kwargs)
+
+Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
+
+Move where a channel’s platform delivers its updates.
+
+Not an operation in [`OPERATIONS`](_autosummary/correspond.model.html.md#correspond.model.OPERATIONS), but a write all the same:
+whoever the webhook points at reads every update the account receives, so it runs the
+`before_send` check (`operation="set_webhook"`, the URL as the draft’s text).
+
+### *class* correspond.ops.WebhookReader(\*args, \*\*kwargs)
+
+Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
+
+Where a channel’s platform delivers its updates now: polling, or a webhook it POSTs to.
+
 ### *class* correspond.ops.Writer(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
@@ -4180,6 +4222,13 @@ What a channel can do, graded, with its limits.
 ### correspond.ops.close(ref, , reason=None, dry_run=False, registry=None, before_send=None)
 
 Close a conversation (an issue or a discussion), with an optional `reason` in the channel’s vocabulary; the `before_send` check sees the reason (or `close`) as the draft’s text.
+
+* **Return type:**
+  [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
+
+### correspond.ops.delete_webhook(channel, , drop_pending_updates=False, dry_run=False, registry=None, before_send=None)
+
+Stop webhook delivery for `channel`, so it can be polled again; the `before_send` check runs (`operation="delete_webhook"`).
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -4278,6 +4327,17 @@ plain one is checked, then set, which covers one process.
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
+### correspond.ops.set_webhook(channel, url, , dry_run=False, registry=None, before_send=None)
+
+Have `channel`’s platform POST its updates to `url`: listening by polling stops until [`delete_webhook()`](_autosummary/correspond.ops.html.md#correspond.ops.delete_webhook).
+
+Whoever `url` belongs to reads every update the account receives from then on, so the
+`before_send` check runs (`operation="set_webhook"`, the URL as the draft’s text),
+on the dry run too.
+
+* **Return type:**
+  [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
+
 ### correspond.ops.unlabel(ref, labels, , dry_run=False, registry=None, before_send=None)
 
 Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft’s text.
@@ -4311,6 +4371,13 @@ Grade an inbound delivery on `channel` from its headers and raw body.
 * **Return type:**
   [`Authenticity`](_autosummary/correspond.model.html.md#correspond.model.Authenticity)
 
+### correspond.ops.webhook_info(channel, , registry=None)
+
+Where `channel`’s platform delivers its updates now (an empty `url`: polling).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 ### correspond.ops.window(messages, , since=None, limit=None)
 
 Messages sent or edited at or after `since`, oldest first, keeping the last `limit`.
@@ -4338,7 +4405,9 @@ A check is a callable:
 before_send(ref, draft, audience, *, operation, dry_run, message_id, **context) -> None
 ```
 
-`operation` is `send`, `edit`, `react`, `upload`, `label`, `unlabel`, `close` or `reopen`; `message_id` is the message
+`operation` is `send`, `edit`, `react`, `upload`, `label`, `unlabel`, `close`, `reopen`,
+`set_webhook` (its draft’s text the URL that will receive every update) or
+`delete_webhook`; `message_id` is the message
 an edit or a reaction targets (`None` otherwise); a reaction’s draft text is the reaction,
 an upload’s is the file name. Accept `**context`: later versions may pass more. Returning
 lets the write go ahead; raising [`Refused`](_autosummary/correspond.errors.html.md#correspond.errors.Refused) blocks it; raising
@@ -4500,7 +4569,7 @@ One value a channel reads: its config key, its environment variable, what it is 
 A `secret` is never read from the config file: it comes from `env`, else (on macOS)
 the Keychain.
 
-### correspond.registry.build_registry(infos=(ChannelInfo(name='github', summary="GitHub issues, pull request conversations and discussions, through the gh CLI (the machine's gh login; correspond holds no token)", factory='correspond.channels.github:GitHub', modules=(), extra=None, binaries=(('gh',),), platforms=(), settings=(Setting(key='webhook_secret', env='GITHUB_WEBHOOK_SECRET', what='the webhook secret, used only to verify deliveries', where='the secret set on the repository or organization webhook (Settings, Webhooks)', secret=True, required=False, default=None),), notes=('log in once with \`gh auth login\` (https://cli.github.com/); check with \`gh auth status\`',), check='', planned=None), ChannelInfo(name='email', summary='Email: IMAP to read and listen, SMTP to send, with the standard library', factory='correspond.channels.mail:Email', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='imap_host', env='CORRESPOND_EMAIL_IMAP_HOST', what='the IMAP server', where="your mail provider's IMAP settings", secret=False, required=True, default=None), Setting(key='imap_port', env='CORRESPOND_EMAIL_IMAP_PORT', what='the IMAP port (TLS)', where='', secret=False, required=False, default='993'), Setting(key='smtp_host', env='CORRESPOND_EMAIL_SMTP_HOST', what='the SMTP server', where="your mail provider's SMTP settings", secret=False, required=True, default=None), Setting(key='smtp_port', env='CORRESPOND_EMAIL_SMTP_PORT', what='the SMTP port: 465 for TLS, 587 for STARTTLS', where='', secret=False, required=False, default='465'), Setting(key='user', env='CORRESPOND_EMAIL_USER', what='the mailbox login, usually its address', where='', secret=False, required=True, default=None), Setting(key='password', env='CORRESPOND_EMAIL_PASSWORD', what='the mailbox password, preferably an app password', where="your mail provider's app-password page (for Gmail: https://myaccount.google.com/apppasswords)", secret=True, required=True, default=None), Setting(key='from_address', env='CORRESPOND_EMAIL_FROM', what='the From address of sends (default: the login)', where='', secret=False, required=False, default=None), Setting(key='folder', env='CORRESPOND_EMAIL_FOLDER', what='the folder read and listened to when a reference names none (?folder=)', where='', secret=False, required=False, default='INBOX'), Setting(key='trusted_authserv_ids', env='CORRESPOND_EMAIL_TRUSTED_AUTHSERV_IDS', what='comma-separated authserv-ids of your own receiving server; only their Authentication-Results can make a sender \`domain\`', where='the topmost Authentication-Results header of a message your provider delivered (for Gmail: mx.google.com)', secret=False, required=False, default=None), Setting(key='own_domains', env='CORRESPOND_EMAIL_OWN_DOMAINS', what="comma-separated mail domains that are your own (and their subdomains); a recipient anywhere else makes an email's audience external", where='', secret=False, required=False, default=None), Setting(key='lists', env='CORRESPOND_EMAIL_LISTS', what='comma-separated mailing-list addresses, or @domain for a whole list server; local parts such as list, all, team, dev, announce and info count as lists anyway', where='', secret=False, required=False, default=None)), notes=(), check='', planned=None), ChannelInfo(name='ntfy', summary='Push notifications through an ntfy server (send only)', factory='correspond.channels.ntfy:Ntfy', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='url', env='NTFY_URL', what='the ntfy server', where='', secret=False, required=False, default='https://ntfy.sh'), Setting(key='topic', env='NTFY_TOPIC', what='the default topic, used by \`ntfy:\` with no topic', where='any long, hard-to-guess string; subscribe to it in the ntfy app (https://ntfy.sh)', secret=True, required=False, default=None), Setting(key='token', env='NTFY_TOKEN', what='an access token, for a server that requires one', where="your ntfy server's account page", secret=True, required=False, default=None), Setting(key='topic_remote', env='CORRESPOND_NTFY_TOPIC_REMOTE', what='an ssh host asked for the default topic when neither the environment nor the Keychain has it', where='', secret=False, required=False, default=None), Setting(key='topic_remote_file', env='CORRESPOND_NTFY_TOPIC_REMOTE_FILE', what='the file on that host holding a NTFY_TOPIC=... line', where='', secret=False, required=False, default=None), Setting(key='denies_anonymous_read', env='CORRESPOND_NTFY_DENIES_ANONYMOUS_READ', what='true when the server denies anonymous reads (its auth-default-access), so only the accounts it grants can read a topic; unset, anyone who knows a topic can', where='', secret=False, required=False, default=None), Setting(key='cache_duration', env='CORRESPOND_NTFY_CACHE_DURATION', what='how long the server keeps a message for subscribers who connect later (its cache-duration)', where='', secret=False, required=False, default='12h')), notes=('anyone who knows an unauthenticated topic can publish to it and read it: treat it as a secret',), check='', planned=None), ChannelInfo(name='macos', summary='Notification Centre banners on this Mac (send only)', factory='correspond.channels.macos:MacOS', modules=(), extra=None, binaries=(('terminal-notifier', 'osascript'),), platforms=('darwin',), settings=(), notes=('terminal-notifier (\`brew install terminal-notifier\`) keeps bodies intact; osascript is the fallback',), check='', planned=None), ChannelInfo(name='telegram', summary='A Telegram bot over the Bot API: listen with getUpdates or a webhook, read what was logged, send, edit, react', factory='correspond.channels.telegram:Telegram', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='token', env='TELEGRAM_BOT_TOKEN', what='the bot token', where='create a bot with BotFather in Telegram (https://core.telegram.org/bots/tutorial)', secret=True, required=True, default=None), Setting(key='api_url', env='CORRESPOND_TELEGRAM_API_URL', what='the Bot API server', where='', secret=False, required=False, default='https://api.telegram.org'), Setting(key='delivery', env='CORRESPOND_TELEGRAM_DELIVERY', what='where listen takes updates from: poll (getUpdates) or webhook (what the webhook receiver stored); Telegram serves one or the other', where='', secret=False, required=False, default='poll'), Setting(key='webhook_secret', env='CORRESPOND_TELEGRAM_WEBHOOK_SECRET', what='the secret token Telegram sends with every webhook delivery (1-256 of A-Z, a-z, 0-9, \_ and -)', where='generate one with: python -c "import secrets; print(secrets.token_urlsafe(32))"', secret=True, required=False, default=None), Setting(key='webhook_allow_remote', env='CORRESPOND_TELEGRAM_WEBHOOK_ALLOW_REMOTE', what='true to let serve_webhook bind the webhook receiver to an address other machines reach (it binds 127.0.0.1 otherwise; put your HTTPS reverse proxy in front)', where='', secret=False, required=False, default='false')), notes=('a bot can write only to chats that wrote to it first, or groups it was added to', 'privacy mode (on by default) hides group messages that do not address the bot', "webhook delivery on a server: install correspond[server], run serve_webhook() from correspond.channels.telegram (127.0.0.1:8081, one worker) behind your HTTPS reverse proxy, call Telegram().set_webhook('https://...'), and set delivery = webhook"), check='', planned=None), ChannelInfo(name='webinbox', summary="Reports posted from web pages to correspond's ASGI collector, and a reader over what it stored", factory='correspond.channels.webinbox:WebInbox', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='sites', env='CORRESPOND_WEBINBOX_SITES', what='comma-separated site names the collector accepts', where='', secret=False, required=False, default=None), Setting(key='origins', env='CORRESPOND_WEBINBOX_ORIGINS', what='comma-separated page origins allowed to post, e.g. https://app.example.org', where='', secret=False, required=False, default=None), Setting(key='secret', env='CORRESPOND_WEBINBOX_SECRET', what="the HMAC key shared with the host application's server, which signs its logged-in user (a single site; several sites need CORRESPOND_WEBINBOX_SECRET_<SITE> each)", where='generate one with: python -c "import secrets; print(secrets.token_hex(32))"', secret=True, required=False, default=None), Setting(key='max_age_s', env='CORRESPOND_WEBINBOX_MAX_AGE_S', what='how long a signed identity stays valid, in seconds', where='', secret=False, required=False, default='86400'), Setting(key='rate_per_minute', env='CORRESPOND_WEBINBOX_RATE_PER_MINUTE', what='reports accepted per client per minute, per site', where='', secret=False, required=False, default='10'), Setting(key='burst', env='CORRESPOND_WEBINBOX_BURST', what='reports a client may send in a burst', where='', secret=False, required=False, default='5'), Setting(key='max_body_bytes', env='CORRESPOND_WEBINBOX_MAX_BODY_BYTES', what='the largest request accepted, attachments included', where='', secret=False, required=False, default='5000000'), Setting(key='trusted_proxies', env='CORRESPOND_WEBINBOX_TRUSTED_PROXIES', what='how many reverse proxies of yours stand in front of the collector; the address rate-limited is read that many hops from the right of X-Forwarded-For (0: the connecting address)', where='', secret=False, required=False, default='0')), notes=('serve the collector on localhost behind your own server, e.g. \`uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1\`', 'for a reverse proxy on another host set CORRESPOND_WEBINBOX_TRUSTED_PROXIES (1 for one proxy), or every visitor shares one rate limit; uvicorn already resolves a proxy on 127.0.0.1', "several sites on one collector need a secret each, CORRESPOND_WEBINBOX_SECRET_<SITE> (upper case, - as \_) or the Keychain item correspond-webinbox-secret-<site>, so no site's server can sign for another"), check='correspond.channels.webinbox:requirements_problems', planned=None), ChannelInfo(name='discord', summary='Discord: a bot reading, polling and posting in channels over REST, through discorddol', factory='correspond.channels.discord:Discord', modules=('discorddol',), extra='discord', binaries=(), platforms=(), settings=(Setting(key='token', env='DISCORD_BOT_TOKEN', what='the bot token', where='Discord Developer Portal (https://discord.com/developers/applications): your application, Bot, Reset Token; invite the bot to the server with the View Channels, Read Message History and Send Messages permissions', secret=True, required=True, default=None),), notes=('enable the Message Content intent (Developer Portal, Bot, Privileged Gateway Intents) or the bot reads empty text for messages that do not mention it',), check='', planned=None), ChannelInfo(name='slack', summary="Slack: drafts in Slack's own formatting (mrkdwn); reading, polling and posting with a token over the Web API, or posting through an incoming webhook", factory='correspond.channels.slack:Slack', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='token', env='CORRESPOND_SLACK_TOKEN', what='a Slack token: a bot token (xoxb-) acts as the app, a user token (xoxp-) as the person', where='api.slack.com/apps: create an app for your workspace (internal, not distributed), add the bot scopes channels:history, channels:read, chat:write and files:read (groups:history and groups:read for private channels), install it, copy the Bot User OAuth Token, and invite the app to each channel', secret=True, required=False, default=None), Setting(key='signing_secret', env='CORRESPOND_SLACK_SIGNING_SECRET', what="the app's signing secret, used only to verify requests Slack sends (Events API, interactivity)", where='api.slack.com/apps: your app, Basic Information, App Credentials', secret=True, required=False, default=None)), notes=("slack:<name> needs nothing for a dry run, which renders the draft as mrkdwn to paste; a real send needs the name's incoming webhook in CORRESPOND_SLACK_WEBHOOK_<NAME> (upper case, - and . as \_) or the Keychain item correspond-slack-webhook-<name>", "create the webhook in your Slack app's settings (Incoming Webhooks), one per channel: https://api.slack.com/messaging/webhooks", 'with CORRESPOND_SLACK_TOKEN, read, listen and send use the Web API (and send replies in threads); without one, send uses the webhook'), check='', planned=None), ChannelInfo(name='signal', summary='Signal through signal-cli-rest-api', factory='', modules=(), extra='signal', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/4'), ChannelInfo(name='gdrive', summary='A Google Drive folder, read only: the files a conversation announces, each as a message with the file attached', factory='correspond.channels.gdrive:GoogleDrive', modules=('pydrivedol',), extra='gdrive', binaries=(), platforms=(), settings=(Setting(key='service_account_file', env='CORRESPOND_GDRIVE_SERVICE_ACCOUNT_FILE', what='the path of a Google service-account key (JSON), used with the read-only Drive scope', where='Google Cloud console: create a service account with the Drive API enabled, add a JSON key, then share each folder with its client_email as Viewer', secret=False, required=True, default=None),), notes=('gdrive:<folder id> lists the folder and its subfolders; it never listens or writes', "the folder must be shared with the service account's client_email"), check='', planned=None), ChannelInfo(name='apprise', summary='Apprise: send-only notifications to about 155 services, each named by an alias (send only)', factory='correspond.channels.apprise:Apprise', modules=('apprise',), extra='apprise', binaries=(), platforms=(), settings=(Setting(key='config', env='CORRESPOND_APPRISE_CONFIG', what='an Apprise config file (YAML or TEXT); an alias with no URL of its own is used as a tag in it', where='https://pypi.org/project/apprise/ (its configuration-file documentation)', secret=False, required=False, default=None),), notes=('apprise:<alias> sends to the URL in CORRESPOND_APPRISE_URL_<ALIAS> (or the Keychain item correspond-apprise-url-<alias>), else to the URLs tagged <alias> in the config file', "a reference never holds an Apprise URL: the URL carries the service's credentials"), check='', planned=None)), , name='correspond channels')
+### correspond.registry.build_registry(infos=(ChannelInfo(name='github', summary="GitHub issues, pull request conversations and discussions, through the gh CLI (the machine's gh login; correspond holds no token)", factory='correspond.channels.github:GitHub', modules=(), extra=None, binaries=(('gh',),), platforms=(), settings=(Setting(key='webhook_secret', env='GITHUB_WEBHOOK_SECRET', what='the webhook secret, used only to verify deliveries', where='the secret set on the repository or organization webhook (Settings, Webhooks)', secret=True, required=False, default=None),), notes=('log in once with \`gh auth login\` (https://cli.github.com/); check with \`gh auth status\`',), check='', planned=None), ChannelInfo(name='email', summary='Email: IMAP to read and listen, SMTP to send, with the standard library', factory='correspond.channels.mail:Email', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='imap_host', env='CORRESPOND_EMAIL_IMAP_HOST', what='the IMAP server', where="your mail provider's IMAP settings", secret=False, required=True, default=None), Setting(key='imap_port', env='CORRESPOND_EMAIL_IMAP_PORT', what='the IMAP port (TLS)', where='', secret=False, required=False, default='993'), Setting(key='smtp_host', env='CORRESPOND_EMAIL_SMTP_HOST', what='the SMTP server', where="your mail provider's SMTP settings", secret=False, required=True, default=None), Setting(key='smtp_port', env='CORRESPOND_EMAIL_SMTP_PORT', what='the SMTP port: 465 for TLS, 587 for STARTTLS', where='', secret=False, required=False, default='465'), Setting(key='user', env='CORRESPOND_EMAIL_USER', what='the mailbox login, usually its address', where='', secret=False, required=True, default=None), Setting(key='password', env='CORRESPOND_EMAIL_PASSWORD', what='the mailbox password, preferably an app password', where="your mail provider's app-password page (for Gmail: https://myaccount.google.com/apppasswords)", secret=True, required=True, default=None), Setting(key='from_address', env='CORRESPOND_EMAIL_FROM', what='the From address of sends (default: the login)', where='', secret=False, required=False, default=None), Setting(key='folder', env='CORRESPOND_EMAIL_FOLDER', what='the folder read and listened to when a reference names none (?folder=)', where='', secret=False, required=False, default='INBOX'), Setting(key='trusted_authserv_ids', env='CORRESPOND_EMAIL_TRUSTED_AUTHSERV_IDS', what='comma-separated authserv-ids of your own receiving server; only their Authentication-Results can make a sender \`domain\`', where='the topmost Authentication-Results header of a message your provider delivered (for Gmail: mx.google.com)', secret=False, required=False, default=None), Setting(key='own_domains', env='CORRESPOND_EMAIL_OWN_DOMAINS', what="comma-separated mail domains that are your own (and their subdomains); a recipient anywhere else makes an email's audience external", where='', secret=False, required=False, default=None), Setting(key='lists', env='CORRESPOND_EMAIL_LISTS', what='comma-separated mailing-list addresses, or @domain for a whole list server; local parts such as list, all, team, dev, announce and info count as lists anyway', where='', secret=False, required=False, default=None)), notes=(), check='', planned=None), ChannelInfo(name='ntfy', summary='Push notifications through an ntfy server (send only)', factory='correspond.channels.ntfy:Ntfy', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='url', env='NTFY_URL', what='the ntfy server', where='', secret=False, required=False, default='https://ntfy.sh'), Setting(key='topic', env='NTFY_TOPIC', what='the default topic, used by \`ntfy:\` with no topic', where='any long, hard-to-guess string; subscribe to it in the ntfy app (https://ntfy.sh)', secret=True, required=False, default=None), Setting(key='token', env='NTFY_TOKEN', what='an access token, for a server that requires one', where="your ntfy server's account page", secret=True, required=False, default=None), Setting(key='topic_remote', env='CORRESPOND_NTFY_TOPIC_REMOTE', what='an ssh host asked for the default topic when neither the environment nor the Keychain has it', where='', secret=False, required=False, default=None), Setting(key='topic_remote_file', env='CORRESPOND_NTFY_TOPIC_REMOTE_FILE', what='the file on that host holding a NTFY_TOPIC=... line', where='', secret=False, required=False, default=None), Setting(key='denies_anonymous_read', env='CORRESPOND_NTFY_DENIES_ANONYMOUS_READ', what='true when the server denies anonymous reads (its auth-default-access), so only the accounts it grants can read a topic; unset, anyone who knows a topic can', where='', secret=False, required=False, default=None), Setting(key='cache_duration', env='CORRESPOND_NTFY_CACHE_DURATION', what='how long the server keeps a message for subscribers who connect later (its cache-duration)', where='', secret=False, required=False, default='12h')), notes=('anyone who knows an unauthenticated topic can publish to it and read it: treat it as a secret',), check='', planned=None), ChannelInfo(name='macos', summary='Notification Centre banners on this Mac (send only)', factory='correspond.channels.macos:MacOS', modules=(), extra=None, binaries=(('terminal-notifier', 'osascript'),), platforms=('darwin',), settings=(), notes=('terminal-notifier (\`brew install terminal-notifier\`) keeps bodies intact; osascript is the fallback',), check='', planned=None), ChannelInfo(name='telegram', summary='A Telegram bot over the Bot API: listen with getUpdates or a webhook, read what was logged, send, edit, react', factory='correspond.channels.telegram:Telegram', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='token', env='TELEGRAM_BOT_TOKEN', what='the bot token', where='create a bot with BotFather in Telegram (https://core.telegram.org/bots/tutorial)', secret=True, required=True, default=None), Setting(key='api_url', env='CORRESPOND_TELEGRAM_API_URL', what='the Bot API server', where='', secret=False, required=False, default='https://api.telegram.org'), Setting(key='delivery', env='CORRESPOND_TELEGRAM_DELIVERY', what='where listen takes updates from: poll (getUpdates) or webhook (what the webhook receiver stored); Telegram serves one or the other', where='', secret=False, required=False, default='poll'), Setting(key='webhook_secret', env='CORRESPOND_TELEGRAM_WEBHOOK_SECRET', what='the secret token Telegram sends with every webhook delivery (1-256 of A-Z, a-z, 0-9, \_ and -)', where='generate one with: python -c "import secrets; print(secrets.token_urlsafe(32))"', secret=True, required=False, default=None), Setting(key='webhook_store', env='CORRESPOND_TELEGRAM_WEBHOOK_STORE', what='where the webhook receiver keeps updates, as "module:attr" naming a MutableMapping of JSON-ready dicts, or a callable returning one (a bytes store needs a JSON codec; default: files under the data root)', where='', secret=False, required=False, default=None), Setting(key='webhook_allow_remote', env='CORRESPOND_TELEGRAM_WEBHOOK_ALLOW_REMOTE', what='true to let serve_webhook bind the webhook receiver to an address other machines reach (it binds 127.0.0.1 otherwise; put your HTTPS reverse proxy in front)', where='', secret=False, required=False, default='false')), notes=('a bot can write only to chats that wrote to it first, or groups it was added to', 'privacy mode (on by default) hides group messages that do not address the bot', "webhook delivery on a server: install correspond[server], run serve_webhook() from correspond.channels.telegram (127.0.0.1:8081, one worker) behind your HTTPS reverse proxy, call Telegram().set_webhook('https://...'), and set delivery = webhook"), check='', planned=None), ChannelInfo(name='webinbox', summary="Reports posted from web pages to correspond's ASGI collector, and a reader over what it stored", factory='correspond.channels.webinbox:WebInbox', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='sites', env='CORRESPOND_WEBINBOX_SITES', what='comma-separated site names the collector accepts', where='', secret=False, required=False, default=None), Setting(key='origins', env='CORRESPOND_WEBINBOX_ORIGINS', what='comma-separated page origins allowed to post, e.g. https://app.example.org', where='', secret=False, required=False, default=None), Setting(key='secret', env='CORRESPOND_WEBINBOX_SECRET', what="the HMAC key shared with the host application's server, which signs its logged-in user (a single site; several sites need CORRESPOND_WEBINBOX_SECRET_<SITE> each)", where='generate one with: python -c "import secrets; print(secrets.token_hex(32))"', secret=True, required=False, default=None), Setting(key='max_age_s', env='CORRESPOND_WEBINBOX_MAX_AGE_S', what='how long a signed identity stays valid, in seconds', where='', secret=False, required=False, default='86400'), Setting(key='rate_per_minute', env='CORRESPOND_WEBINBOX_RATE_PER_MINUTE', what='reports accepted per client per minute, per site', where='', secret=False, required=False, default='10'), Setting(key='burst', env='CORRESPOND_WEBINBOX_BURST', what='reports a client may send in a burst', where='', secret=False, required=False, default='5'), Setting(key='max_body_bytes', env='CORRESPOND_WEBINBOX_MAX_BODY_BYTES', what='the largest request accepted, attachments included', where='', secret=False, required=False, default='5000000'), Setting(key='trusted_proxies', env='CORRESPOND_WEBINBOX_TRUSTED_PROXIES', what='how many reverse proxies of yours stand in front of the collector; the address rate-limited is read that many hops from the right of X-Forwarded-For (0: the connecting address)', where='', secret=False, required=False, default='0')), notes=('serve the collector on localhost behind your own server, e.g. \`uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1\`', 'for a reverse proxy on another host set CORRESPOND_WEBINBOX_TRUSTED_PROXIES (1 for one proxy), or every visitor shares one rate limit; uvicorn already resolves a proxy on 127.0.0.1', "several sites on one collector need a secret each, CORRESPOND_WEBINBOX_SECRET_<SITE> (upper case, - as \_) or the Keychain item correspond-webinbox-secret-<site>, so no site's server can sign for another"), check='correspond.channels.webinbox:requirements_problems', planned=None), ChannelInfo(name='discord', summary='Discord: a bot reading, polling and posting in channels over REST, through discorddol', factory='correspond.channels.discord:Discord', modules=('discorddol',), extra='discord', binaries=(), platforms=(), settings=(Setting(key='token', env='DISCORD_BOT_TOKEN', what='the bot token', where='Discord Developer Portal (https://discord.com/developers/applications): your application, Bot, Reset Token; invite the bot to the server with the View Channels, Read Message History and Send Messages permissions', secret=True, required=True, default=None),), notes=('enable the Message Content intent (Developer Portal, Bot, Privileged Gateway Intents) or the bot reads empty text for messages that do not mention it',), check='', planned=None), ChannelInfo(name='slack', summary="Slack: drafts in Slack's own formatting (mrkdwn); reading, polling and posting with a token over the Web API, or posting through an incoming webhook", factory='correspond.channels.slack:Slack', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='token', env='CORRESPOND_SLACK_TOKEN', what='a Slack token: a bot token (xoxb-) acts as the app, a user token (xoxp-) as the person', where='api.slack.com/apps: create an app for your workspace (internal, not distributed), add the bot scopes channels:history, channels:read, chat:write and files:read (groups:history and groups:read for private channels), install it, copy the Bot User OAuth Token, and invite the app to each channel', secret=True, required=False, default=None), Setting(key='signing_secret', env='CORRESPOND_SLACK_SIGNING_SECRET', what="the app's signing secret, used only to verify requests Slack sends (Events API, interactivity)", where='api.slack.com/apps: your app, Basic Information, App Credentials', secret=True, required=False, default=None)), notes=("slack:<name> needs nothing for a dry run, which renders the draft as mrkdwn to paste; a real send needs the name's incoming webhook in CORRESPOND_SLACK_WEBHOOK_<NAME> (upper case, - and . as \_) or the Keychain item correspond-slack-webhook-<name>", "create the webhook in your Slack app's settings (Incoming Webhooks), one per channel: https://api.slack.com/messaging/webhooks", 'with CORRESPOND_SLACK_TOKEN, read, listen and send use the Web API (and send replies in threads); without one, send uses the webhook'), check='', planned=None), ChannelInfo(name='signal', summary='Signal through signal-cli-rest-api', factory='', modules=(), extra='signal', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/4'), ChannelInfo(name='gdrive', summary='A Google Drive folder, read only: the files a conversation announces, each as a message with the file attached', factory='correspond.channels.gdrive:GoogleDrive', modules=('pydrivedol',), extra='gdrive', binaries=(), platforms=(), settings=(Setting(key='service_account_file', env='CORRESPOND_GDRIVE_SERVICE_ACCOUNT_FILE', what='the path of a Google service-account key (JSON), used with the read-only Drive scope', where='Google Cloud console: create a service account with the Drive API enabled, add a JSON key, then share each folder with its client_email as Viewer', secret=False, required=True, default=None),), notes=('gdrive:<folder id> lists the folder and its subfolders; it never listens or writes', "the folder must be shared with the service account's client_email"), check='', planned=None), ChannelInfo(name='apprise', summary='Apprise: send-only notifications to about 155 services, each named by an alias (send only)', factory='correspond.channels.apprise:Apprise', modules=('apprise',), extra='apprise', binaries=(), platforms=(), settings=(Setting(key='config', env='CORRESPOND_APPRISE_CONFIG', what='an Apprise config file (YAML or TEXT); an alias with no URL of its own is used as a tag in it', where='https://pypi.org/project/apprise/ (its configuration-file documentation)', secret=False, required=False, default=None),), notes=('apprise:<alias> sends to the URL in CORRESPOND_APPRISE_URL_<ALIAS> (or the Keychain item correspond-apprise-url-<alias>), else to the URLs tagged <alias> in the config file', "a reference never holds an Apprise URL: the URL carries the service's credentials"), check='', planned=None)), , name='correspond channels')
 
 A fresh `xdol.Registry` with a lazy entry for every built channel whose optional modules import.
 
@@ -5128,14 +5197,17 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 | [`send`](_autosummary/correspond.tools.html.md#correspond.tools.send)(ref, text, \*[, title, reply_to, ...])     | Send a message to a conversation.                                                                                                                                                                              |
 | [`unlabel`](_autosummary/correspond.tools.html.md#correspond.tools.unlabel)(ref, labels, \*[, dry_run])             | Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation.                                                                                                              |
 | [`upload`](_autosummary/correspond.tools.html.md#correspond.tools.upload)(ref, path, \*[, name, media_type, ...])  | Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`).                                                                                    |
+| [`webhook_info`](_autosummary/correspond.tools.html.md#correspond.tools.webhook_info)(channel)                           | Where a channel's platform delivers its updates now (Telegram: none means listen polls with getUpdates; a host means a webhook receiver gets them, with `pending_update_count` and the last delivery error).   |
+| [`set_webhook`](_autosummary/correspond.tools.html.md#correspond.tools.set_webhook)(channel, url, \*[, dry_run])        | Have a channel's platform POST every update to `url` (HTTPS) instead of being polled (Telegram: with the configured webhook_secret, one connection at a time).                                                 |
+| [`delete_webhook`](_autosummary/correspond.tools.html.md#correspond.tools.delete_webhook)(channel, \*[, ...])              | Stop a channel's webhook delivery, so it can be polled again (listen then needs delivery = poll).                                                                                                              |
 
-### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'authored': 'read', 'authored_thread': 'read', 'capabilities': 'read', 'channels': 'read', 'close': 'external', 'edit': 'external', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'reopen': 'external', 'requirements': 'read', 'send': 'external', 'unlabel': 'external', 'upload': 'external'}*
+### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'authored': 'read', 'authored_thread': 'read', 'capabilities': 'read', 'channels': 'read', 'close': 'external', 'delete_webhook': 'external', 'edit': 'external', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'reopen': 'external', 'requirements': 'read', 'send': 'external', 'set_webhook': 'external', 'unlabel': 'external', 'upload': 'external', 'webhook_info': 'external-read'}*
 
 What each tool touches, for surfaces deciding what to expose. `read` stays on this
 machine; `external-read` reads a remote service (`listen` also stores its cursor
 locally); `external` writes to a remote service, where people see it.
 
-### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function upload>, <function label>, <function unlabel>, <function close>, <function reopen>, <function authored>, <function authored_thread>]*
+### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function upload>, <function label>, <function unlabel>, <function close>, <function reopen>, <function webhook_info>, <function set_webhook>, <function delete_webhook>, <function authored>, <function authored_thread>]*
 
 Every tool, in the order surfaces list them.
 
@@ -5177,6 +5249,13 @@ List the channels correspond knows: available, missing a module, planned (with i
 ### correspond.tools.close(ref, , reason=None, dry_run=False)
 
 Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it). `reason` is in the channel’s vocabulary (GitHub issues: completed, not_planned or duplicate; GitHub discussions: resolved, outdated or duplicate). Run it with `dry_run` first. It passes the before_send check, as for `send`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### correspond.tools.delete_webhook(channel, , drop_pending_updates=False, dry_run=False)
+
+Stop a channel’s webhook delivery, so it can be polled again (listen then needs delivery = poll). Pending updates are kept unless `drop_pending_updates`. Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -5244,6 +5323,13 @@ Send a message to a conversation. Run it with `dry_run` first and show the plan,
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
+### correspond.tools.set_webhook(channel, url, , dry_run=False)
+
+Have a channel’s platform POST every update to `url` (HTTPS) instead of being polled (Telegram: with the configured webhook_secret, one connection at a time). Whoever `url` belongs to reads every message the account receives from then on: only ever a URL the operator gave for their own receiver. Listening by polling stops until `delete_webhook`, and listen then needs delivery = webhook. Run it with `dry_run` first and show the operator the plan. It passes the before_send check, as for `send`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 ### correspond.tools.unlabel(ref, labels, , dry_run=False)
 
 Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation. Run it with `dry_run` first. It passes the before_send check, as for `send`.
@@ -5258,6 +5344,13 @@ Send the regular file at `path` (on this machine) to a conversation (`capabiliti
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
+### correspond.tools.webhook_info(channel)
+
+Where a channel’s platform delivers its updates now (Telegram: none means listen polls with getUpdates; a host means a webhook receiver gets them, with `pending_update_count` and the last delivery error). Only the URL’s host is shown: a URL’s path often holds a token.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 
 # about-this-build.html.md
 
@@ -5265,16 +5358,18 @@ Send the regular file at `path` (on this machine) to a conversation (`capabiliti
 
 # About this build
 
-This documentation was built on **2026-10-19 13:11 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/4652410d7ebe5321f99d1395cd10626d5a82ffb5"><code>4652410</code></a> on branch <code>main</code>, for **correspond 0.0.25** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-19 13:21 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/dc0991b35194188f6a4c4827b008c83d4af9114f"><code>dc0991b</code></a> on branch <code>main</code>, for **correspond 0.0.26** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.26) is behind the latest release on PyPI (0.0.27): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/4652410d7ebe5321f99d1395cd10626d5a82ffb5"><code>4652410d7ebe5321f99d1395cd10626d5a82ffb5</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/dc0991b35194188f6a4c4827b008c83d4af9114f"><code>dc0991b35194188f6a4c4827b008c83d4af9114f</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -5285,9 +5380,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39257772370">39257772370</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39259232435">39259232435</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>4652410d7ebe5321f99d1395cd10626d5a82ffb5</code> (in the history of the built commit)  |
+| Event commit | <code>dc0991b35194188f6a4c4827b008c83d4af9114f</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -5312,13 +5407,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.25/">0.0.25</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.27/">0.0.27</a>, newer than the documented version (0.0.26).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 4652410d7ebe5321f99d1395cd10626d5a82ffb5
+git checkout dc0991b35194188f6a4c4827b008c83d4af9114f
 pip install "epythet==0.2.18"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

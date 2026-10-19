@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=5d650c58"></script>
+    <script src="../_static/documentation_options.js?v=6a9d8632"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.25" />
+  <meta name="docsearch:version" content="0.0.26" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -536,10 +536,19 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 <tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.verify" title="correspond.ops.verify"><code class="xref py py-obj docutils literal notranslate"><span class="pre">verify</span></code></a>(channel, headers, body, *[, registry])</p></td>
 <td><p>Grade an inbound delivery on <code class="docutils literal notranslate"><span class="pre">channel</span></code> from its headers and raw body.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.window" title="correspond.ops.window"><code class="xref py py-obj docutils literal notranslate"><span class="pre">window</span></code></a>(messages, *[, since, limit])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.webhook_info" title="correspond.ops.webhook_info"><code class="xref py py-obj docutils literal notranslate"><span class="pre">webhook_info</span></code></a>(channel, *[, registry])</p></td>
+<td><p>Where <code class="docutils literal notranslate"><span class="pre">channel</span></code>'s platform delivers its updates now (an empty <code class="docutils literal notranslate"><span class="pre">url</span></code>: polling).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.set_webhook" title="correspond.ops.set_webhook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_webhook</span></code></a>(channel, url, *[, dry_run, ...])</p></td>
+<td><p>Have <code class="docutils literal notranslate"><span class="pre">channel</span></code>'s platform POST its updates to <code class="docutils literal notranslate"><span class="pre">url</span></code>: listening by polling stops until <a class="reference internal" href="#correspond.ops.delete_webhook" title="correspond.ops.delete_webhook"><code class="xref py py-func docutils literal notranslate"><span class="pre">delete_webhook()</span></code></a>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.delete_webhook" title="correspond.ops.delete_webhook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">delete_webhook</span></code></a>(channel, *[, ...])</p></td>
+<td><p>Stop webhook delivery for <code class="docutils literal notranslate"><span class="pre">channel</span></code>, so it can be polled again; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check runs (<code class="docutils literal notranslate"><span class="pre">operation=&quot;delete_webhook&quot;</span></code>).</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.window" title="correspond.ops.window"><code class="xref py py-obj docutils literal notranslate"><span class="pre">window</span></code></a>(messages, *[, since, limit])</p></td>
 <td><p>Messages sent or edited at or after <code class="docutils literal notranslate"><span class="pre">since</span></code>, oldest first, keeping the last <code class="docutils literal notranslate"><span class="pre">limit</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.with_final_cursor" title="correspond.ops.with_final_cursor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_final_cursor</span></code></a>(events, final_cursor)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.with_final_cursor" title="correspond.ops.with_final_cursor"><code class="xref py py-obj docutils literal notranslate"><span class="pre">with_final_cursor</span></code></a>(events, final_cursor)</p></td>
 <td><p>Yield <code class="docutils literal notranslate"><span class="pre">events</span></code>, then hand <code class="docutils literal notranslate"><span class="pre">final_cursor</span></code> to <a class="reference internal" href="#correspond.ops.listen" title="correspond.ops.listen"><code class="xref py py-func docutils literal notranslate"><span class="pre">listen()</span></code></a>, so a quiet poll still moves the cursor forward.</p></td>
 </tr>
 </tbody>
@@ -583,6 +592,12 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.Verifier" title="correspond.ops.Verifier"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Verifier</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Grade an inbound delivery (a webhook, a posted report) from its headers and raw body.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.WebhookManager" title="correspond.ops.WebhookManager"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WebhookManager</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Move where a channel's platform delivers its updates.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.ops.WebhookReader" title="correspond.ops.WebhookReader"><code class="xref py py-obj docutils literal notranslate"><span class="pre">WebhookReader</span></code></a>(*args, **kwargs)</p></td>
+<td><p>Where a channel's platform delivers its updates now: polling, or a webhook it POSTs to.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.ops.Writer" title="correspond.ops.Writer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Writer</span></code></a>(*args, **kwargs)</p></td>
 <td><p>Send a draft to a conversation.</p></td>
@@ -681,6 +696,23 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="correspond.ops.WebhookManager">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">WebhookManager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#WebhookManager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.WebhookManager" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>Move where a channel’s platform delivers its updates.</p>
+<p>Not an operation in <a class="reference internal" href="correspond.model.html#correspond.model.OPERATIONS" title="correspond.model.OPERATIONS"><code class="xref py py-data docutils literal notranslate"><span class="pre">OPERATIONS</span></code></a>, but a write all the same:
+whoever the webhook points at reads every update the account receives, so it runs the
+<code class="docutils literal notranslate"><span class="pre">before_send</span></code> check (<code class="docutils literal notranslate"><span class="pre">operation=&quot;set_webhook&quot;</span></code>, the URL as the draft’s text).</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.ops.WebhookReader">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">WebhookReader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#WebhookReader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.WebhookReader" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
+<p>Where a channel’s platform delivers its updates now: polling, or a webhook it POSTs to.</p>
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="correspond.ops.Writer">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">Writer</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#Writer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.Writer" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Protocol" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Protocol</span></code></a></p>
@@ -717,6 +749,17 @@ right before sending.</p>
 <dt class="sig sig-object py" id="correspond.ops.close">
 <span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">close</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">reason</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#close"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.close" title="Link to this definition">#</a></dt>
 <dd><p>Close a conversation (an issue or a discussion), with an optional <code class="docutils literal notranslate"><span class="pre">reason</span></code> in the channel’s vocabulary; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees the reason (or <code class="docutils literal notranslate"><span class="pre">close</span></code>) as the draft’s text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.delete_webhook">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">delete_webhook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_pending_updates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#delete_webhook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.delete_webhook" title="Link to this definition">#</a></dt>
+<dd><p>Stop webhook delivery for <code class="docutils literal notranslate"><span class="pre">channel</span></code>, so it can be polled again; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check runs (<code class="docutils literal notranslate"><span class="pre">operation=&quot;delete_webhook&quot;</span></code>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
@@ -855,6 +898,20 @@ plain one is checked, then set, which covers one process.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.set_webhook">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">set_webhook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#set_webhook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.set_webhook" title="Link to this definition">#</a></dt>
+<dd><p>Have <code class="docutils literal notranslate"><span class="pre">channel</span></code>’s platform POST its updates to <code class="docutils literal notranslate"><span class="pre">url</span></code>: listening by polling stops until <a class="reference internal" href="#correspond.ops.delete_webhook" title="correspond.ops.delete_webhook"><code class="xref py py-func docutils literal notranslate"><span class="pre">delete_webhook()</span></code></a>.</p>
+<p>Whoever <code class="docutils literal notranslate"><span class="pre">url</span></code> belongs to reads every update the account receives from then on, so the
+<code class="docutils literal notranslate"><span class="pre">before_send</span></code> check runs (<code class="docutils literal notranslate"><span class="pre">operation=&quot;set_webhook&quot;</span></code>, the URL as the draft’s text),
+on the dry run too.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="correspond.ops.unlabel">
 <span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">unlabel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">before_send</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#unlabel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.unlabel" title="Link to this definition">#</a></dt>
 <dd><p>Remove <code class="docutils literal notranslate"><span class="pre">labels</span></code> from a conversation; the <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check sees them, comma-joined, as the draft’s text.</p>
@@ -893,6 +950,17 @@ check that must vet them should hold or refuse.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.Authenticity" title="correspond.model.Authenticity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Authenticity</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.ops.webhook_info">
+<span class="sig-prename descclassname"><span class="pre">correspond.ops.</span></span><span class="sig-name descname"><span class="pre">webhook_info</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">registry</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/ops.html#webhook_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.ops.webhook_info" title="Link to this definition">#</a></dt>
+<dd><p>Where <code class="docutils literal notranslate"><span class="pre">channel</span></code>’s platform delivers its updates now (an empty <code class="docutils literal notranslate"><span class="pre">url</span></code>: polling).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -981,10 +1049,13 @@ check that must vet them should hold or refuse.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Unlabeler"><code class="docutils literal notranslate"><span class="pre">Unlabeler</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Uploader"><code class="docutils literal notranslate"><span class="pre">Uploader</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Verifier"><code class="docutils literal notranslate"><span class="pre">Verifier</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.WebhookManager"><code class="docutils literal notranslate"><span class="pre">WebhookManager</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.WebhookReader"><code class="docutils literal notranslate"><span class="pre">WebhookReader</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.Writer"><code class="docutils literal notranslate"><span class="pre">Writer</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.audience"><code class="docutils literal notranslate"><span class="pre">audience()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.capabilities"><code class="docutils literal notranslate"><span class="pre">capabilities()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.close"><code class="docutils literal notranslate"><span class="pre">close()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.delete_webhook"><code class="docutils literal notranslate"><span class="pre">delete_webhook()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.edit"><code class="docutils literal notranslate"><span class="pre">edit()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.get_channel"><code class="docutils literal notranslate"><span class="pre">get_channel()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.implemented"><code class="docutils literal notranslate"><span class="pre">implemented()</span></code></a></li>
@@ -995,9 +1066,11 @@ check that must vet them should hold or refuse.</p>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.read"><code class="docutils literal notranslate"><span class="pre">read()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.reopen"><code class="docutils literal notranslate"><span class="pre">reopen()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.send"><code class="docutils literal notranslate"><span class="pre">send()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.set_webhook"><code class="docutils literal notranslate"><span class="pre">set_webhook()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.unlabel"><code class="docutils literal notranslate"><span class="pre">unlabel()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.upload"><code class="docutils literal notranslate"><span class="pre">upload()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.verify"><code class="docutils literal notranslate"><span class="pre">verify()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.webhook_info"><code class="docutils literal notranslate"><span class="pre">webhook_info()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.window"><code class="docutils literal notranslate"><span class="pre">window()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.ops.with_final_cursor"><code class="docutils literal notranslate"><span class="pre">with_final_cursor()</span></code></a></li>
 </ul>

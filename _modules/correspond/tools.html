@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=5d650c58"></script>
+    <script src="../../_static/documentation_options.js?v=6a9d8632"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.25" />
+  <meta name="docsearch:version" content="0.0.26" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -733,6 +733,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">mimetypes</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">stat</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">urlsplit</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">timezone</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
@@ -781,6 +782,9 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"send"</span><span class="p">,</span>
     <span class="s2">"unlabel"</span><span class="p">,</span>
     <span class="s2">"upload"</span><span class="p">,</span>
+    <span class="s2">"webhook_info"</span><span class="p">,</span>
+    <span class="s2">"set_webhook"</span><span class="p">,</span>
+    <span class="s2">"delete_webhook"</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -1382,6 +1386,58 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<span class="c1"># ------------------------------------------------------------------------------ webhooks</span>
+
+
+<div class="viewcode-block" id="webhook_info">
+<a class="viewcode-back" href="../../_autosummary/correspond.tools.html#correspond.tools.webhook_info">[docs]</a>
+<span class="nd">@_as_result</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">webhook_info</span><span class="p">(</span><span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Where a channel's platform delivers its updates now (Telegram: none means listen polls with getUpdates; a host means a webhook receiver gets them, with `pending_update_count` and the last delivery error). Only the URL's host is shown: a URL's path often holds a token."""</span>
+    <span class="n">channel</span> <span class="o">=</span> <span class="n">channel</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">":"</span><span class="p">)</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ops</span><span class="o">.</span><span class="n">webhook_info</span><span class="p">(</span><span class="n">channel</span><span class="p">))</span>
+    <span class="n">url</span> <span class="o">=</span> <span class="n">info</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">"url"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
+    <span class="n">host</span> <span class="o">=</span> <span class="n">urlsplit</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">hostname</span> <span class="k">if</span> <span class="n">url</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="n">info</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"webhook_set"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">url</span><span class="p">),</span> <span class="s2">"host"</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span> <span class="o">**</span><span class="n">info</span><span class="p">}</span>
+    <span class="n">where</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"a webhook at </span><span class="si">{</span><span class="n">host</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">url</span> <span class="k">else</span> <span class="s2">"nowhere: it is polled"</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"ok"</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">"channel"</span><span class="p">:</span> <span class="n">channel</span><span class="p">,</span>
+        <span class="s2">"webhook"</span><span class="p">:</span> <span class="n">info</span><span class="p">,</span>
+        <span class="s2">"summary"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2"> delivers its updates to </span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="s2">"text"</span><span class="p">:</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">v</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">info</span><span class="o">.</span><span class="n">items</span><span class="p">()),</span>
+    <span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="set_webhook">
+<a class="viewcode-back" href="../../_autosummary/correspond.tools.html#correspond.tools.set_webhook">[docs]</a>
+<span class="nd">@_as_result</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_webhook</span><span class="p">(</span><span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Have a channel's platform POST every update to `url` (HTTPS) instead of being polled (Telegram: with the configured webhook_secret, one connection at a time). Whoever `url` belongs to reads every message the account receives from then on: only ever a URL the operator gave for their own receiver. Listening by polling stops until `delete_webhook`, and listen then needs delivery = webhook. Run it with `dry_run` first and show the operator the plan. It passes the before_send check, as for `send`."""</span>
+    <span class="k">return</span> <span class="n">_write_result</span><span class="p">(</span>
+        <span class="n">ops</span><span class="o">.</span><span class="n">set_webhook</span><span class="p">(</span><span class="n">channel</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">":"</span><span class="p">),</span> <span class="n">url</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="delete_webhook">
+<a class="viewcode-back" href="../../_autosummary/correspond.tools.html#correspond.tools.delete_webhook">[docs]</a>
+<span class="nd">@_as_result</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">delete_webhook</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">drop_pending_updates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Stop a channel's webhook delivery, so it can be polled again (listen then needs delivery = poll). Pending updates are kept unless `drop_pending_updates`. Run it with `dry_run` first. It passes the before_send check, as for `send`."""</span>
+    <span class="k">return</span> <span class="n">_write_result</span><span class="p">(</span>
+        <span class="n">ops</span><span class="o">.</span><span class="n">delete_webhook</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">":"</span><span class="p">),</span>
+            <span class="n">drop_pending_updates</span><span class="o">=</span><span class="n">drop_pending_updates</span><span class="p">,</span>
+            <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
 <span class="c1"># --------------------------------------------------------------------------- authored text</span>
 
 
@@ -1491,6 +1547,9 @@ window.runMermaid = runMermaid;</script>
     <span class="n">unlabel</span><span class="p">,</span>
     <span class="n">close</span><span class="p">,</span>
     <span class="n">reopen</span><span class="p">,</span>
+    <span class="n">webhook_info</span><span class="p">,</span>
+    <span class="n">set_webhook</span><span class="p">,</span>
+    <span class="n">delete_webhook</span><span class="p">,</span>
     <span class="n">authored</span><span class="p">,</span>
     <span class="n">authored_thread</span><span class="p">,</span>
 <span class="p">]</span>
@@ -1514,6 +1573,9 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"unlabel"</span><span class="p">:</span> <span class="s2">"external"</span><span class="p">,</span>
     <span class="s2">"close"</span><span class="p">:</span> <span class="s2">"external"</span><span class="p">,</span>
     <span class="s2">"reopen"</span><span class="p">:</span> <span class="s2">"external"</span><span class="p">,</span>
+    <span class="s2">"webhook_info"</span><span class="p">:</span> <span class="s2">"external-read"</span><span class="p">,</span>
+    <span class="s2">"set_webhook"</span><span class="p">:</span> <span class="s2">"external"</span><span class="p">,</span>
+    <span class="s2">"delete_webhook"</span><span class="p">:</span> <span class="s2">"external"</span><span class="p">,</span>
     <span class="s2">"authored"</span><span class="p">:</span> <span class="s2">"read"</span><span class="p">,</span>
     <span class="s2">"authored_thread"</span><span class="p">:</span> <span class="s2">"read"</span><span class="p">,</span>
 <span class="p">}</span>

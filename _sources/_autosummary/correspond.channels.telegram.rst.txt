@@ -15,8 +15,10 @@ correspond.channels.telegram
    .. autosummary::
    
       mk_webhook_app
+      serve_main
       serve_webhook
       webhook_app_from_env
+      webhook_store
    
    .. rubric:: Classes
 

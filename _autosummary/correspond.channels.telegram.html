@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=5d650c58"></script>
+    <script src="../_static/documentation_options.js?v=6a9d8632"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.25" />
+  <meta name="docsearch:version" content="0.0.26" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -462,11 +462,17 @@ refused (409), and <a class="reference internal" href="#correspond.channels.tele
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.telegram.mk_webhook_app" title="correspond.channels.telegram.mk_webhook_app"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mk_webhook_app</span></code></a>(*, secret[, updates, ...])</p></td>
 <td><p>The webhook receiver as an ASGI app: Telegram POSTs updates, the app stores them in <code class="docutils literal notranslate"><span class="pre">updates</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channels.telegram.serve_webhook" title="correspond.channels.telegram.serve_webhook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">serve_webhook</span></code></a>(*[, host, port, allow_remote, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channels.telegram.serve_main" title="correspond.channels.telegram.serve_main"><code class="xref py py-obj docutils literal notranslate"><span class="pre">serve_main</span></code></a>([argv])</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">correspond-telegram-webhook</span></code>: run the webhook receiver (<a class="reference internal" href="#correspond.channels.telegram.serve_webhook" title="correspond.channels.telegram.serve_webhook"><code class="xref py py-func docutils literal notranslate"><span class="pre">serve_webhook()</span></code></a>).</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.telegram.serve_webhook" title="correspond.channels.telegram.serve_webhook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">serve_webhook</span></code></a>(*[, host, port, allow_remote, ...])</p></td>
 <td><p>Run the receiver (with uvicorn) on <code class="docutils literal notranslate"><span class="pre">host</span></code>, this machine unless <code class="docutils literal notranslate"><span class="pre">allow_remote</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.telegram.webhook_app_from_env" title="correspond.channels.telegram.webhook_app_from_env"><code class="xref py py-obj docutils literal notranslate"><span class="pre">webhook_app_from_env</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channels.telegram.webhook_app_from_env" title="correspond.channels.telegram.webhook_app_from_env"><code class="xref py py-obj docutils literal notranslate"><span class="pre">webhook_app_from_env</span></code></a>()</p></td>
 <td><p><a class="reference internal" href="#correspond.channels.telegram.mk_webhook_app" title="correspond.channels.telegram.mk_webhook_app"><code class="xref py py-func docutils literal notranslate"><span class="pre">mk_webhook_app()</span></code></a> configured from the settings, for <code class="docutils literal notranslate"><span class="pre">uvicorn</span> <span class="pre">--factory</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.telegram.webhook_store" title="correspond.channels.telegram.webhook_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">webhook_store</span></code></a>()</p></td>
+<td><p>Where the receiver keeps updates: the <code class="docutils literal notranslate"><span class="pre">webhook_store</span></code> setting's <code class="docutils literal notranslate"><span class="pre">module:attr</span></code>, else files under the data root.</p></td>
 </tr>
 </tbody>
 </table>
@@ -699,6 +705,17 @@ data root (<code class="docutils literal notranslate"><span class="pre">telegram
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.telegram.serve_main">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.telegram.</span></span><span class="sig-name descname"><span class="pre">serve_main</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">argv</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#serve_main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.serve_main" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">correspond-telegram-webhook</span></code>: run the webhook receiver (<a class="reference internal" href="#correspond.channels.telegram.serve_webhook" title="correspond.channels.telegram.serve_webhook"><code class="xref py py-func docutils literal notranslate"><span class="pre">serve_webhook()</span></code></a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="correspond.channels.telegram.serve_webhook">
 <span class="sig-prename descclassname"><span class="pre">correspond.channels.telegram.</span></span><span class="sig-name descname"><span class="pre">serve_webhook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'127.0.0.1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8081</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_remote</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">app</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#serve_webhook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.serve_webhook" title="Link to this definition">#</a></dt>
 <dd><p>Run the receiver (with uvicorn) on <code class="docutils literal notranslate"><span class="pre">host</span></code>, this machine unless <code class="docutils literal notranslate"><span class="pre">allow_remote</span></code>.</p>
@@ -719,6 +736,21 @@ ignored, since the receiver needs no client address, and one worker keeps the or
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code></a>[<span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.telegram.webhook_store">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.telegram.</span></span><span class="sig-name descname"><span class="pre">webhook_store</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#webhook_store"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.webhook_store" title="Link to this definition">#</a></dt>
+<dd><p>Where the receiver keeps updates: the <code class="docutils literal notranslate"><span class="pre">webhook_store</span></code> setting’s <code class="docutils literal notranslate"><span class="pre">module:attr</span></code>, else files under the data root.</p>
+<p>The reference names a <code class="docutils literal notranslate"><span class="pre">MutableMapping</span></code>, or a callable returning one, whose values are
+JSON-ready dicts (an update as Telegram sent it): a bytes store, such as a plain
+<code class="docutils literal notranslate"><span class="pre">s3dol</span></code> one, needs a JSON codec around it. The receiver and <code class="docutils literal notranslate"><span class="pre">listen</span></code> read the same
+setting, so they meet in the same store.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">MutableMapping</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -793,8 +825,10 @@ ignored, since the receiver needs no client address, and one worker keeps the or
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.mk_webhook_app"><code class="docutils literal notranslate"><span class="pre">mk_webhook_app()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.serve_main"><code class="docutils literal notranslate"><span class="pre">serve_main()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.serve_webhook"><code class="docutils literal notranslate"><span class="pre">serve_webhook()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.webhook_app_from_env"><code class="docutils literal notranslate"><span class="pre">webhook_app_from_env()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.webhook_store"><code class="docutils literal notranslate"><span class="pre">webhook_store()</span></code></a></li>
 </ul>
   </nav></div>
 

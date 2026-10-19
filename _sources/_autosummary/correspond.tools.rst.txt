@@ -32,4 +32,7 @@ correspond.tools
       send
       unlabel
       upload
+      webhook_info
+      set_webhook
+      delete_webhook
    

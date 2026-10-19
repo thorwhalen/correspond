@@ -38,14 +38,17 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 | [`send`](#correspond.tools.send)(ref, text, \*[, title, reply_to, ...])     | Send a message to a conversation.                                                                                                                                                                              |
 | [`unlabel`](#correspond.tools.unlabel)(ref, labels, \*[, dry_run])             | Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation.                                                                                                              |
 | [`upload`](#correspond.tools.upload)(ref, path, \*[, name, media_type, ...])  | Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`).                                                                                    |
+| [`webhook_info`](#correspond.tools.webhook_info)(channel)                           | Where a channel's platform delivers its updates now (Telegram: none means listen polls with getUpdates; a host means a webhook receiver gets them, with `pending_update_count` and the last delivery error).   |
+| [`set_webhook`](#correspond.tools.set_webhook)(channel, url, \*[, dry_run])        | Have a channel's platform POST every update to `url` (HTTPS) instead of being polled (Telegram: with the configured webhook_secret, one connection at a time).                                                 |
+| [`delete_webhook`](#correspond.tools.delete_webhook)(channel, \*[, ...])              | Stop a channel's webhook delivery, so it can be polled again (listen then needs delivery = poll).                                                                                                              |
 
-### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'authored': 'read', 'authored_thread': 'read', 'capabilities': 'read', 'channels': 'read', 'close': 'external', 'edit': 'external', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'reopen': 'external', 'requirements': 'read', 'send': 'external', 'unlabel': 'external', 'upload': 'external'}*
+### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'authored': 'read', 'authored_thread': 'read', 'capabilities': 'read', 'channels': 'read', 'close': 'external', 'delete_webhook': 'external', 'edit': 'external', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'reopen': 'external', 'requirements': 'read', 'send': 'external', 'set_webhook': 'external', 'unlabel': 'external', 'upload': 'external', 'webhook_info': 'external-read'}*
 
 What each tool touches, for surfaces deciding what to expose. `read` stays on this
 machine; `external-read` reads a remote service (`listen` also stores its cursor
 locally); `external` writes to a remote service, where people see it.
 
-### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function upload>, <function label>, <function unlabel>, <function close>, <function reopen>, <function authored>, <function authored_thread>]*
+### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function upload>, <function label>, <function unlabel>, <function close>, <function reopen>, <function webhook_info>, <function set_webhook>, <function delete_webhook>, <function authored>, <function authored_thread>]*
 
 Every tool, in the order surfaces list them.
 
@@ -87,6 +90,13 @@ List the channels correspond knows: available, missing a module, planned (with i
 ### correspond.tools.close(ref, , reason=None, dry_run=False)
 
 Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it). `reason` is in the channel’s vocabulary (GitHub issues: completed, not_planned or duplicate; GitHub discussions: resolved, outdated or duplicate). Run it with `dry_run` first. It passes the before_send check, as for `send`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### correspond.tools.delete_webhook(channel, , drop_pending_updates=False, dry_run=False)
+
+Stop a channel’s webhook delivery, so it can be polled again (listen then needs delivery = poll). Pending updates are kept unless `drop_pending_updates`. Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -154,6 +164,13 @@ Send a message to a conversation. Run it with `dry_run` first and show the plan,
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
+### correspond.tools.set_webhook(channel, url, , dry_run=False)
+
+Have a channel’s platform POST every update to `url` (HTTPS) instead of being polled (Telegram: with the configured webhook_secret, one connection at a time). Whoever `url` belongs to reads every message the account receives from then on: only ever a URL the operator gave for their own receiver. Listening by polling stops until `delete_webhook`, and listen then needs delivery = webhook. Run it with `dry_run` first and show the operator the plan. It passes the before_send check, as for `send`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 ### correspond.tools.unlabel(ref, labels, , dry_run=False)
 
 Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation. Run it with `dry_run` first. It passes the before_send check, as for `send`.
@@ -164,6 +181,13 @@ Remove labels (comma-separated; a label name may not itself contain a comma) fro
 ### correspond.tools.upload(ref, path, , name=None, media_type=None, include_hidden=False, native=None, idempotency_key=None, dry_run=False)
 
 Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`). `name` is what recipients see (the file’s own name by default); `media_type` is guessed from the file’s real name when not given. A path through a hidden file or folder (a dot name, such as ~/.ssh) is refused unless `include_hidden`. `native` is a JSON object of the channel’s own options (`upload_fields` in its capabilities; on Telegram `{"as_document": true}` sends an image as the file it is, not a recompressed photo). Give an `idempotency_key` when you may upload it again after a failure: the same key never posts it twice. Run it with `dry_run` first: the plan shows `source` (the real path read), the name, size and SHA-256; show the operator the source. The before_send check sees that metadata, never the contents, so never upload a file the user did not ask to send.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### correspond.tools.webhook_info(channel)
+
+Where a channel’s platform delivers its updates now (Telegram: none means listen polls with getUpdates; a host means a webhook receiver gets them, with `pending_update_count` and the last delivery error). Only the URL’s host is shown: a URL’s path often holds a token.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

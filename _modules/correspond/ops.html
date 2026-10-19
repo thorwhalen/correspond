@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=5d650c58"></script>
+    <script src="../../_static/documentation_options.js?v=6a9d8632"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.25" />
+  <meta name="docsearch:version" content="0.0.26" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -808,6 +808,8 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"Unlabeler"</span><span class="p">,</span>
     <span class="s2">"Uploader"</span><span class="p">,</span>
     <span class="s2">"Verifier"</span><span class="p">,</span>
+    <span class="s2">"WebhookManager"</span><span class="p">,</span>
+    <span class="s2">"WebhookReader"</span><span class="p">,</span>
     <span class="s2">"Writer"</span><span class="p">,</span>
     <span class="s2">"audience"</span><span class="p">,</span>
     <span class="s2">"capabilities"</span><span class="p">,</span>
@@ -825,6 +827,9 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"unlabel"</span><span class="p">,</span>
     <span class="s2">"upload"</span><span class="p">,</span>
     <span class="s2">"verify"</span><span class="p">,</span>
+    <span class="s2">"webhook_info"</span><span class="p">,</span>
+    <span class="s2">"set_webhook"</span><span class="p">,</span>
+    <span class="s2">"delete_webhook"</span><span class="p">,</span>
     <span class="s2">"window"</span><span class="p">,</span>
     <span class="s2">"with_final_cursor"</span><span class="p">,</span>
 <span class="p">]</span>
@@ -1002,6 +1007,35 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">"""Unsettle a closed conversation."""</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">reopen</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span> <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="WebhookReader">
+<a class="viewcode-back" href="../../_autosummary/correspond.ops.html#correspond.WebhookReader">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">WebhookReader</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Where a channel's platform delivers its updates now: polling, or a webhook it POSTs to."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">webhook_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span> <span class="o">...</span></div>
+
+
+
+<div class="viewcode-block" id="WebhookManager">
+<a class="viewcode-back" href="../../_autosummary/correspond.ops.html#correspond.WebhookManager">[docs]</a>
+<span class="nd">@runtime_checkable</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">WebhookManager</span><span class="p">(</span><span class="n">Protocol</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Move where a channel's platform delivers its updates.</span>
+
+<span class="sd">    Not an operation in :data:`~correspond.model.OPERATIONS`, but a write all the same:</span>
+<span class="sd">    whoever the webhook points at reads every update the account receives, so it runs the</span>
+<span class="sd">    ``before_send`` check (``operation="set_webhook"``, the URL as the draft's text).</span>
+<span class="sd">    """</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_webhook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span> <span class="o">...</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_webhook</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">drop_pending_updates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span> <span class="o">...</span></div>
 
 
 
@@ -1216,6 +1250,107 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">Verifier</span><span class="p">):</span>
         <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span><span class="s2">"verify"</span><span class="p">,</span> <span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">adapter</span><span class="o">.</span><span class="n">verify</span><span class="p">(</span><span class="n">headers</span><span class="p">,</span> <span class="n">body</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_webhook_adapter</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">protocol</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span> <span class="n">what</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="n">adapter</span> <span class="o">=</span> <span class="n">get_channel</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">protocol</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
+            <span class="n">what</span><span class="p">,</span>
+            <span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> has no webhook correspond can </span><span class="si">{</span><span class="n">what</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">adapter</span>
+
+
+<div class="viewcode-block" id="webhook_info">
+<a class="viewcode-back" href="../../_autosummary/correspond.ops.html#correspond.webhook_info">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">webhook_info</span><span class="p">(</span><span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Where ``channel``'s platform delivers its updates now (an empty ``url``: polling)."""</span>
+    <span class="n">adapter</span> <span class="o">=</span> <span class="n">_webhook_adapter</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">registry</span><span class="p">,</span> <span class="n">WebhookReader</span><span class="p">,</span> <span class="s2">"read the webhook"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">dict</span><span class="p">(</span><span class="n">adapter</span><span class="o">.</span><span class="n">webhook_info</span><span class="p">())</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_webhook_write</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">call</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">Any</span><span class="p">,</span> <span class="nb">bool</span><span class="p">],</span> <span class="n">SendResult</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="n">before_send</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+    <span class="n">adapter</span> <span class="o">=</span> <span class="n">_webhook_adapter</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">registry</span><span class="p">,</span> <span class="n">WebhookManager</span><span class="p">,</span> <span class="s2">"set the webhook"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_checked_write</span><span class="p">(</span>
+        <span class="n">adapter</span><span class="p">,</span>
+        <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">""</span><span class="p">),</span>
+        <span class="n">operation</span><span class="p">,</span>
+        <span class="n">Draft</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">),</span>
+        <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="n">before_send</span><span class="o">=</span><span class="n">before_send</span><span class="p">,</span>
+        <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>
+        <span class="n">write</span><span class="o">=</span><span class="k">lambda</span> <span class="n">rehearse</span><span class="p">:</span> <span class="n">call</span><span class="p">(</span><span class="n">adapter</span><span class="p">,</span> <span class="n">rehearse</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="set_webhook">
+<a class="viewcode-back" href="../../_autosummary/correspond.ops.html#correspond.set_webhook">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_webhook</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">before_send</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Have ``channel``'s platform POST its updates to ``url``: listening by polling stops until :func:`delete_webhook`.</span>
+
+<span class="sd">    Whoever ``url`` belongs to reads every update the account receives from then on, so the</span>
+<span class="sd">    ``before_send`` check runs (``operation="set_webhook"``, the URL as the draft's text),</span>
+<span class="sd">    on the dry run too.</span>
+<span class="sd">    """</span>
+    <span class="k">return</span> <span class="n">_webhook_write</span><span class="p">(</span>
+        <span class="n">channel</span><span class="p">,</span>
+        <span class="s2">"set_webhook"</span><span class="p">,</span>
+        <span class="n">url</span><span class="p">,</span>
+        <span class="k">lambda</span> <span class="n">adapter</span><span class="p">,</span> <span class="n">rehearse</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">set_webhook</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">rehearse</span><span class="p">),</span>
+        <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="n">before_send</span><span class="o">=</span><span class="n">before_send</span><span class="p">,</span>
+        <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="delete_webhook">
+<a class="viewcode-back" href="../../_autosummary/correspond.ops.html#correspond.delete_webhook">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">delete_webhook</span><span class="p">(</span>
+    <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">drop_pending_updates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">before_send</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Stop webhook delivery for ``channel``, so it can be polled again; the ``before_send`` check runs (``operation="delete_webhook"``)."""</span>
+    <span class="k">return</span> <span class="n">_webhook_write</span><span class="p">(</span>
+        <span class="n">channel</span><span class="p">,</span>
+        <span class="s2">"delete_webhook"</span><span class="p">,</span>
+        <span class="s2">"delete the webhook"</span>
+        <span class="o">+</span> <span class="p">(</span><span class="s2">" and drop pending updates"</span> <span class="k">if</span> <span class="n">drop_pending_updates</span> <span class="k">else</span> <span class="s2">""</span><span class="p">),</span>
+        <span class="k">lambda</span> <span class="n">adapter</span><span class="p">,</span> <span class="n">rehearse</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">delete_webhook</span><span class="p">(</span>
+            <span class="n">drop_pending_updates</span><span class="o">=</span><span class="n">drop_pending_updates</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">rehearse</span>
+        <span class="p">),</span>
+        <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="n">before_send</span><span class="o">=</span><span class="n">before_send</span><span class="p">,</span>
+        <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>
+    <span class="p">)</span></div>
 
 
 

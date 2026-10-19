@@ -62,6 +62,9 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 | [`unlabel`](#correspond.ops.unlabel)(ref, labels, \*[, dry_run, registry, ...]) | Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                        |
 | [`upload`](#correspond.ops.upload)(ref, name, data, \*[, media_type, ...])     | Send a file to a conversation.                                                                                                                                                    |
 | [`verify`](#correspond.ops.verify)(channel, headers, body, \*[, registry])     | Grade an inbound delivery on `channel` from its headers and raw body.                                                                                                             |
+| [`webhook_info`](#correspond.ops.webhook_info)(channel, \*[, registry])              | Where `channel`'s platform delivers its updates now (an empty `url`: polling).                                                                                                    |
+| [`set_webhook`](#correspond.ops.set_webhook)(channel, url, \*[, dry_run, ...])      | Have `channel`'s platform POST its updates to `url`: listening by polling stops until [`delete_webhook()`](#correspond.ops.delete_webhook).                          |
+| [`delete_webhook`](#correspond.ops.delete_webhook)(channel, \*[, ...])                 | Stop webhook delivery for `channel`, so it can be polled again; the `before_send` check runs (`operation="delete_webhook"`).                                                      |
 | [`window`](#correspond.ops.window)(messages, \*[, since, limit])               | Messages sent or edited at or after `since`, oldest first, keeping the last `limit`.                                                                                              |
 | [`with_final_cursor`](#correspond.ops.with_final_cursor)(events, final_cursor)            | Yield `events`, then hand `final_cursor` to [`listen()`](#correspond.ops.listen), so a quiet poll still moves the cursor forward.                            |
 
@@ -80,6 +83,8 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 | [`Unlabeler`](#correspond.ops.Unlabeler)(\*args, \*\*kwargs)        | Remove labels from a conversation.                                                                     |
 | [`Uploader`](#correspond.ops.Uploader)(\*args, \*\*kwargs)         | Send a file to a conversation.                                                                         |
 | [`Verifier`](#correspond.ops.Verifier)(\*args, \*\*kwargs)         | Grade an inbound delivery (a webhook, a posted report) from its headers and raw body.                  |
+| [`WebhookManager`](#correspond.ops.WebhookManager)(\*args, \*\*kwargs)   | Move where a channel's platform delivers its updates.                                                  |
+| [`WebhookReader`](#correspond.ops.WebhookReader)(\*args, \*\*kwargs)    | Where a channel's platform delivers its updates now: polling, or a webhook it POSTs to.                |
 | [`Writer`](#correspond.ops.Writer)(\*args, \*\*kwargs)           | Send a draft to a conversation.                                                                        |
 
 ### *class* correspond.ops.AudienceReader(\*args, \*\*kwargs)
@@ -158,6 +163,22 @@ Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protoco
 
 Grade an inbound delivery (a webhook, a posted report) from its headers and raw body.
 
+### *class* correspond.ops.WebhookManager(\*args, \*\*kwargs)
+
+Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
+
+Move where a channel’s platform delivers its updates.
+
+Not an operation in [`OPERATIONS`](correspond.model.html.md#correspond.model.OPERATIONS), but a write all the same:
+whoever the webhook points at reads every update the account receives, so it runs the
+`before_send` check (`operation="set_webhook"`, the URL as the draft’s text).
+
+### *class* correspond.ops.WebhookReader(\*args, \*\*kwargs)
+
+Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
+
+Where a channel’s platform delivers its updates now: polling, or a webhook it POSTs to.
+
 ### *class* correspond.ops.Writer(\*args, \*\*kwargs)
 
 Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protocol)
@@ -186,6 +207,13 @@ What a channel can do, graded, with its limits.
 ### correspond.ops.close(ref, , reason=None, dry_run=False, registry=None, before_send=None)
 
 Close a conversation (an issue or a discussion), with an optional `reason` in the channel’s vocabulary; the `before_send` check sees the reason (or `close`) as the draft’s text.
+
+* **Return type:**
+  [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
+
+### correspond.ops.delete_webhook(channel, , drop_pending_updates=False, dry_run=False, registry=None, before_send=None)
+
+Stop webhook delivery for `channel`, so it can be polled again; the `before_send` check runs (`operation="delete_webhook"`).
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
@@ -284,6 +312,17 @@ plain one is checked, then set, which covers one process.
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
+### correspond.ops.set_webhook(channel, url, , dry_run=False, registry=None, before_send=None)
+
+Have `channel`’s platform POST its updates to `url`: listening by polling stops until [`delete_webhook()`](#correspond.ops.delete_webhook).
+
+Whoever `url` belongs to reads every update the account receives from then on, so the
+`before_send` check runs (`operation="set_webhook"`, the URL as the draft’s text),
+on the dry run too.
+
+* **Return type:**
+  [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
+
 ### correspond.ops.unlabel(ref, labels, , dry_run=False, registry=None, before_send=None)
 
 Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft’s text.
@@ -316,6 +355,13 @@ Grade an inbound delivery on `channel` from its headers and raw body.
 
 * **Return type:**
   [`Authenticity`](correspond.model.html.md#correspond.model.Authenticity)
+
+### correspond.ops.webhook_info(channel, , registry=None)
+
+Where `channel`’s platform delivers its updates now (an empty `url`: polling).
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### correspond.ops.window(messages, , since=None, limit=None)
 
