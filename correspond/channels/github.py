@@ -54,6 +54,7 @@ import hashlib
 import hmac
 import itertools
 import json
+import logging
 import re
 import subprocess
 import time
@@ -167,7 +168,7 @@ DISCUSSION_QUERY = (
     + _ACTOR
     + " comments(first:100,after:$after){pageInfo{hasNextPage endCursor} nodes{"
     + _POST
-    + " replies(first:100){totalCount nodes{"
+    + " replies(last:100){totalCount nodes{"
     + _POST
     + "}}}}}}}"
 )
@@ -243,6 +244,7 @@ PRIVATE_DURABILITY = ("copies_pushed", "edit_history_visible")
 PUBLIC_WIDENING = ("forks", "visibility_flip")
 PRIVATE_WIDENING = ("joiners_read_history", "forks", "visibility_flip")
 _REFUSED_LISTING = ("permission", "not_found")
+_log = logging.getLogger(__name__)
 
 
 def signature(secret: str | bytes, body: bytes) -> str:
@@ -477,7 +479,7 @@ class GitHub:
         return Capabilities(
             channel=NAME,
             read=Support.FULL,
-            listen=Support.FULL,
+            listen=Support.PARTIAL,
             send=Support.FULL,
             edit=Support.FULL,
             react=Support.FULL,
@@ -511,6 +513,7 @@ class GitHub:
                 "replies_truncated",
                 "path",
                 "line",
+                "original_line",
                 "review_id",
                 "diff_hunk",
             ),
@@ -520,9 +523,12 @@ class GitHub:
             ),
             notes=(
                 "listen polls the issue, comment, pull request review comment and discussion activity of a repository, or of one issue, pull request or discussion",
-                "discussions have no since filter: listen walks a repository's discussions by GitHub's latest-activity order and reads each one active since the cursor (one extra call each); a reply GitHub does not count as activity on its discussion surfaces only once something else in that discussion changes, and listening to one discussion reads it whole on every poll",
+                "listen is partial on a repository's discussions: GitHub has no since filter for them, so listen walks them by GitHub's latest-activity order and reads each one active since the cursor (one extra call each); a post GitHub does not count as activity on its discussion (seen on some replies) is not delivered there, and only a comment's latest 100 replies are seen; listening to one discussion reads it whole on every poll and misses none of its posts",
+                "a gh token that may not read discussions listens to a repository's issues, comments and review comments only (logged as a warning)",
+                "GitHub moves a review comment's updated_at when its review is submitted and when a push outdates it, so listen reports those as message.updated with the text unchanged, and a review comment carries no edited_at",
                 "reply_to works in discussions and in pull request review threads (a reply to a reply joins its thread); issue and pull request conversation comments are flat",
-                "reading or listening to a pull request includes its review comments on the diff (message ids discussion_rID, with path, line, review_id and diff_hunk in native); reviews' own summary bodies are not read",
+                "reading or listening to a pull request includes its review comments on the diff (message ids discussion_rID, with path, line, original_line, review_id and diff_hunk in native); reviews' own summary bodies are not read",
+                "a discussion comment's replies are its latest 100 (native replies_truncated when there are more)",
                 "notify mentions each handle the text lacks; GitHub notifies a mentioned user or team who can see the repository, so on a private one a non-member is not reached",
                 "listen can miss a change only when more than 2,000 issues or comments change within the same second",
                 "audience is the repository's readership and never complete (installed apps, webhooks and security managers cannot be listed); a 404 or 403 resolves to public",
@@ -788,10 +794,11 @@ class GitHub:
 
         GitHub threads review comments one level deep: every reply's ``in_reply_to_id``
         is the comment that opened the thread, so it is both ``reply_to`` and
-        ``thread_root``.
+        ``thread_root``. ``edited_at`` stays unset: GitHub moves a review comment's
+        ``updated_at`` when its review is submitted and when a push outdates it, so it does
+        not say the text changed. ``line`` is ``None`` once a push outdates the comment;
+        ``original_line`` is where it was written.
         """
-        created = parse_time(comment["created_at"])
-        updated = parse_time(comment.get("updated_at"))
         parent = comment.get("in_reply_to_id")
         root = f"discussion_r{parent}" if parent else None
         return Message(
@@ -799,18 +806,17 @@ class GitHub:
             conversation=conversation,
             author=self._identity(comment.get("user"), comment.get("author_association")),
             authenticity=_PLATFORM,
-            sent_at=created,
+            sent_at=parse_time(comment["created_at"]),
             text=comment.get("body") or "",
             body=comment.get("body") or "",
             body_format="markdown",
-            edited_at=updated if updated and updated != created else None,
             url=comment.get("html_url"),
             reply_to=root,
             thread_root=root,
             native={
-                "kind": "review_comment",
                 "path": comment.get("path"),
-                "line": comment.get("line") or comment.get("original_line"),
+                "line": comment.get("line"),
+                "original_line": comment.get("original_line"),
                 "review_id": comment.get("pull_request_review_id"),
                 "diff_hunk": comment.get("diff_hunk"),
             },
@@ -1150,23 +1156,34 @@ class GitHub:
         reviews: list[Any] = []
         reviews_cut = False
         discussions: list[int] = []
+        # The server's Date on each list read: every list is complete up to its own, so the
+        # earliest is how far this poll can vouch for, whatever is read after it.
+        dates: list[str | None] = []
         if number is None:
             comments, comments_cut, date = self._collect(
                 f"repos/{owner}/{repo}/issues/comments?sort=updated&direction=asc&since={stamp}"
             )
-            issues, issues_cut, _ = self._collect(
+            issues, issues_cut, issues_date = self._collect(
                 f"repos/{owner}/{repo}/issues?state=all&sort=updated&direction=asc&since={stamp}"
             )
-            reviews, reviews_cut, _ = self._collect(
+            reviews, reviews_cut, reviews_date = self._collect(
                 f"repos/{owner}/{repo}/pulls/comments?sort=updated&direction=asc&since={stamp}"
             )
-            discussions = self._active_discussions(owner, repo, position)
+            dates += [date, issues_date, reviews_date]
+            try:
+                discussions = self._active_discussions(owner, repo, position)
+            except ChannelError as error:
+                if error.kind not in _REFUSED_LISTING:
+                    raise
+                # A token that may not read discussions still listens to everything else.
+                _log.warning("listen %s: discussions skipped: %s", ref.encoded, error)
         else:
             probe = self._api(f"repos/{owner}/{repo}/issues/{number}", allow=(404, 410))
             issues, issues_cut = [], False
             if probe.status >= 400:
                 # Not an issue: read as a discussion, which raises not_found when it is not one.
-                comments, comments_cut, date = [], False, None
+                comments, comments_cut = [], False
+                dates.append(probe.headers.get("date"))
                 discussions = [number]
             else:
                 # One issue's comments come ordered by id, not by update, so a cut list would
@@ -1176,11 +1193,13 @@ class GitHub:
                     f"repos/{owner}/{repo}/issues/{number}/comments?since={stamp}",
                     bounded=False,
                 )
+                dates.append(date)
                 if (probe.json() or {}).get("pull_request"):
-                    reviews, reviews_cut, _ = self._collect(
+                    reviews, reviews_cut, reviews_date = self._collect(
                         f"repos/{owner}/{repo}/pulls/{number}/comments?since={stamp}",
                         bounded=False,
                     )
+                    dates.append(reviews_date)
 
         candidates: list[tuple[datetime, str, str, Message]] = []
         for comment in comments:
@@ -1232,9 +1251,14 @@ class GitHub:
                 )
             )
         for discussion_number in discussions:
-            candidates += self._discussion_activity(
-                owner, repo, discussion_number, position
-            )
+            try:
+                candidates += self._discussion_activity(
+                    owner, repo, discussion_number, position
+                )
+            except ChannelError as error:
+                if number is not None or error.kind != "not_found":
+                    raise
+                continue  # deleted between the walk and the read: nothing left to deliver
         candidates = [c for c in candidates if not (c[0] <= position and c[1] in seen)]
         # A list cut short is complete only up to its last item: later events wait for the
         # next poll, which starts from there.
@@ -1247,6 +1271,11 @@ class GitHub:
             )
             if cut and items
         ]
+        # Nothing after the earliest list's server time (less the clock skew) is vouched for:
+        # a later event would move the cursor past what that list could not yet hold.
+        server_times = [t for t in map(_http_date, dates) if t is not None]
+        if server_times:
+            horizons.append(min(server_times) - CLOCK_SKEW)
         horizon = min(horizons) if horizons else None
         if horizon is not None:
             candidates = [c for c in candidates if c[0] <= horizon]
@@ -1280,9 +1309,6 @@ class GitHub:
                 position, openings_from if issues_cut else position, delivered
             )
         elif not limited:
-            server_now = _http_date(date)
-            if server_now is not None and server_now - CLOCK_SKEW > position:
-                position, delivered = server_now - CLOCK_SKEW, set()
             final = _encode_cursor(position, position, delivered)
         return with_final_cursor(events, final)
 
@@ -1634,6 +1660,12 @@ class GitHub:
             ).get("createDiscussion")
             or {}
         ).get("discussion") or {}
+        if not created.get("number"):
+            raise ChannelError(
+                f"GitHub answered createDiscussion without the discussion; it may have been "
+                f"opened: read github:{owner}/{repo} before trying again",
+                kind="unavailable",
+            )
         plan["landed"] = {
             DISCUSSION_FIELD: (created.get("category") or {}).get("name")
             or found.get("name")

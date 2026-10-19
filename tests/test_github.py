@@ -1863,6 +1863,7 @@ def _review(
         "pull_request_url": f"https://api.github.com/repos/{REPO}/pulls/{pull}",
         "path": "src/export.py",
         "line": 12,
+        "original_line": 12,
         "pull_request_review_id": 40,
         "diff_hunk": "@@ -10,3 +10,3 @@",
     }
@@ -1907,12 +1908,15 @@ def test_reading_a_pull_request_threads_its_review_comments_under_their_first():
     assert first.reply_to is None and first.conversation.kind == "pull_request"
     assert reply.reply_to == reply.thread_root == "discussion_r61"
     assert first.native == {
-        "kind": "review_comment",
         "path": "src/export.py",
         "line": 12,
+        "original_line": 12,
         "review_id": 40,
         "diff_hunk": "@@ -10,3 +10,3 @@",
     }
+    assert first.edited_at is None, (
+        "updated_at moves on review submission, not only on edits"
+    )
     assert set(first.native) <= set(GitHub().capabilities.native_fields)
 
 
@@ -2265,3 +2269,100 @@ def test_opening_a_discussion_still_needs_a_title():
         registry={"github": GitHub(run=gh)},
     )
     assert (result.ok, result.error_kind) == (False, "validation")
+
+
+def _repository_poll(since, date, graphql, *, comments=()):
+    return ScriptedGh(
+        WHOAMI,
+        (
+            "GET",
+            rf"repos/{REPO}/issues/comments\?sort=updated&direction=asc&since={since}&per_page=100&page=1",
+            (200, list(comments), {"Date": date}),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since={since}&per_page=100&page=1",
+            (200, [], {"Date": date}),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/pulls/comments\?sort=updated&direction=asc&since={since}&per_page=100&page=1",
+            (200, [], {"Date": date}),
+        ),
+        ("POST", "graphql", graphql),
+    )
+
+
+def test_a_discussion_post_newer_than_the_lists_waits_for_the_next_poll():
+    """Read after the REST lists, a discussion must not move the cursor past what they could hold."""
+    since = "2026-09-11T08:00:00Z"
+    late = _numbered_discussion(
+        5,
+        "2026-09-01T00:00:00Z",
+        [_post(501, created="2026-09-11T12:00:30Z", replies=[])],
+    )
+
+    def graphql(payload):
+        if "discussions(" in payload["query"]:
+            return 200, _activity((5, "2026-09-11T12:00:30Z"))
+        return 200, late
+
+    gh = _repository_poll(since, "Fri, 11 Sep 2026 12:00:00 GMT", graphql)
+    cursors = {f"github:{REPO}": since}
+    events = list(
+        correspond.listen(
+            f"github:{REPO}", cursors=cursors, registry={"github": GitHub(run=gh)}
+        )
+    )
+    assert events == []
+    assert json.loads(cursors[f"github:{REPO}"])["t"] == "2026-09-11T11:59:55Z"
+
+
+def test_a_token_that_may_not_read_discussions_still_listens_to_the_rest(caplog):
+    forbidden = {"errors": [{"type": "FORBIDDEN", "message": "Resource not accessible"}]}
+    gh = _repository_poll(
+        "2026-09-11T08:00:00Z",
+        "Fri, 11 Sep 2026 12:00:00 GMT",
+        (200, forbidden),
+        comments=[_comment(21, created="2026-09-11T09:00:00Z")],
+    )
+    events = list(
+        correspond.listen(
+            f"github:{REPO}",
+            cursors={f"github:{REPO}": "2026-09-11T08:00:00Z"},
+            registry={"github": GitHub(run=gh)},
+        )
+    )
+    assert [e.message.id for e in events] == ["issuecomment-21"]
+    assert "discussions skipped" in caplog.text
+
+
+def test_a_discussion_deleted_between_the_walk_and_the_read_is_skipped():
+    def graphql(payload):
+        if "discussions(" in payload["query"]:
+            return 200, _activity((5, "2026-09-11T09:00:00Z"))
+        return 200, {"data": {"repository": {"discussion": None}}}
+
+    gh = _repository_poll(
+        "2026-09-11T08:00:00Z", "Fri, 11 Sep 2026 12:00:00 GMT", graphql
+    )
+    events = list(
+        correspond.listen(
+            f"github:{REPO}",
+            cursors={f"github:{REPO}": "2026-09-11T08:00:00Z"},
+            registry={"github": GitHub(run=gh)},
+        )
+    )
+    assert events == []
+
+
+def test_listen_asks_for_a_comments_latest_replies():
+    from correspond.channels.github import DISCUSSION_QUERY
+
+    assert "replies(last:100)" in DISCUSSION_QUERY
+
+
+def test_listen_is_declared_partial_with_why():
+    caps = GitHub().capabilities
+    assert caps.listen is Support.PARTIAL
+    assert any("listen is partial on a repository's discussions" in n for n in caps.notes)
