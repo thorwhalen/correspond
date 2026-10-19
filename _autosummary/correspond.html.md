@@ -856,9 +856,15 @@ Remove a channel from the registry.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, registry=None, before_send=None)
+### correspond.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, registry=None, before_send=None)
 
-Send a file to a conversation. The `before_send` check sees only the file name as the draft’s text (`operation="upload"`): a check that cannot vet the bytes should hold or refuse.
+Send a file to a conversation.
+
+The `before_send` check sees the file name as the draft’s text (`operation="upload"`)
+and the file’s metadata in `draft.native["upload"]`: `name`, `media_type`,
+`bytes`, `sha256` and, when the caller read it from disk, `source` (its path), so a
+check can hold a large, unknown or out-of-place file. It never sees the contents: a
+check that must vet them should hold or refuse.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)

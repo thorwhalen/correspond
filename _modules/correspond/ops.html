@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=2fd7553c"></script>
+    <script src="../../_static/documentation_options.js?v=056c92e6"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.19" />
+  <meta name="docsearch:version" content="0.0.20" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -755,6 +755,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">dataclasses</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Protocol</span><span class="p">,</span> <span class="n">runtime_checkable</span>
@@ -1819,10 +1820,18 @@ window.runMermaid = runMermaid;</script>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">media_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"application/octet-stream"</span><span class="p">,</span>
     <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">before_send</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Send a file to a conversation. The ``before_send`` check sees only the file name as the draft's text (``operation="upload"``): a check that cannot vet the bytes should hold or refuse."""</span>
+<span class="w">    </span><span class="sd">"""Send a file to a conversation.</span>
+
+<span class="sd">    The ``before_send`` check sees the file name as the draft's text (``operation="upload"``)</span>
+<span class="sd">    and the file's metadata in ``draft.native["upload"]``: ``name``, ``media_type``,</span>
+<span class="sd">    ``bytes``, ``sha256`` and, when the caller read it from disk, ``source`` (its path), so a</span>
+<span class="sd">    check can hold a large, unknown or out-of-place file. It never sees the contents: a</span>
+<span class="sd">    check that must vet them should hold or refuse.</span>
+<span class="sd">    """</span>
     <span class="n">adapter</span><span class="p">,</span> <span class="n">ref</span> <span class="o">=</span> <span class="n">_adapter_for</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"upload"</span><span class="p">,</span> <span class="n">registry</span><span class="p">)</span>
     <span class="n">limit</span> <span class="o">=</span> <span class="n">adapter</span><span class="o">.</span><span class="n">capabilities</span><span class="o">.</span><span class="n">max_upload_bytes</span>
     <span class="k">if</span> <span class="n">limit</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">limit</span><span class="p">:</span>
@@ -1833,18 +1842,28 @@ window.runMermaid = runMermaid;</script>
             <span class="n">dry_run</span><span class="p">,</span>
             <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2"> bytes; </span><span class="si">{</span><span class="n">adapter</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> accepts at most </span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="p">)</span>
-    <span class="k">return</span> <span class="n">_checked_write</span><span class="p">(</span>
+    <span class="n">upload</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
+        <span class="s2">"media_type"</span><span class="p">:</span> <span class="n">media_type</span><span class="p">,</span>
+        <span class="s2">"bytes"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+        <span class="s2">"sha256"</span><span class="p">:</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">(),</span>
+        <span class="o">**</span><span class="p">({</span><span class="s2">"source"</span><span class="p">:</span> <span class="n">source</span><span class="p">}</span> <span class="k">if</span> <span class="n">source</span> <span class="k">else</span> <span class="p">{}),</span>
+    <span class="p">}</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">_checked_write</span><span class="p">(</span>
         <span class="n">adapter</span><span class="p">,</span>
         <span class="n">ref</span><span class="p">,</span>
         <span class="s2">"upload"</span><span class="p">,</span>
-        <span class="n">Draft</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">name</span><span class="p">),</span>
+        <span class="n">Draft</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">native</span><span class="o">=</span><span class="p">{</span><span class="s2">"upload"</span><span class="p">:</span> <span class="n">upload</span><span class="p">}),</span>
         <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
         <span class="n">before_send</span><span class="o">=</span><span class="n">before_send</span><span class="p">,</span>
         <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">,</span>
         <span class="n">write</span><span class="o">=</span><span class="k">lambda</span> <span class="n">rehearse</span><span class="p">:</span> <span class="n">adapter</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span>
             <span class="n">ref</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">media_type</span><span class="o">=</span><span class="n">media_type</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">rehearse</span>
         <span class="p">),</span>
-    <span class="p">)</span></div>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">source</span><span class="p">:</span>  <span class="c1"># what is really sent, whatever the name says</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">dataclasses</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="p">{</span><span class="s2">"source"</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span> <span class="o">**</span><span class="n">result</span><span class="o">.</span><span class="n">plan</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">result</span></div>
 
 
 

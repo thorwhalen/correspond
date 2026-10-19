@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-19T11:29:21Z",
+  "built_at": "2026-10-19T11:46:16Z",
   "package": {
     "name": "correspond",
-    "version": "0.0.19",
+    "version": "0.0.20",
     "display_name": "correspond",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "d5a67cc55700d92c873fc08310cc6e54b1d1f949",
-    "short_commit": "d5a67cc",
+    "commit": "8b5dac5aa642ade02e7cb0e2c7c02f2903b4b2da",
+    "short_commit": "8b5dac5",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/thorwhalen/correspond",
-    "commit_url": "https://github.com/thorwhalen/correspond/commit/d5a67cc55700d92c873fc08310cc6e54b1d1f949",
+    "commit_url": "https://github.com/thorwhalen/correspond/commit/8b5dac5aa642ade02e7cb0e2c7c02f2903b4b2da",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "thorwhalen/correspond",
-    "sha": "d5a67cc55700d92c873fc08310cc6e54b1d1f949",
+    "sha": "8b5dac5aa642ade02e7cb0e2c7c02f2903b4b2da",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "39244795151",
-    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/39244795151",
+    "run_id": "39246843720",
+    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/39246843720",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -56,20 +56,20 @@
   },
   "site": {
     "modules_documented": 25,
-    "objects_documented": 409
+    "objects_documented": 412
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.20",
+    "latest": "0.0.21",
     "relation": "behind",
     "error": null
   },
-  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout d5a67cc55700d92c873fc08310cc6e54b1d1f949\npip install \"epythet==0.2.18\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout 8b5dac5aa642ade02e7cb0e2c7c02f2903b4b2da\npip install \"epythet==0.2.18\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": false,
     "notes": [
-      "The documented version (0.0.19) is behind the latest release on PyPI (0.0.20): `pip install correspond` gives newer code than these docs describe."
+      "The documented version (0.0.20) is behind the latest release on PyPI (0.0.21): `pip install correspond` gives newer code than these docs describe."
     ]
   }
 }

@@ -123,6 +123,13 @@ added to Cc (and so leaves Bcc, which would hide it); the plan lists it under
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
+#### upload(ref, name, data, , media_type='application/octet-stream', dry_run=False)
+
+Email a file to `ref`’s address: a message with the file attached and its name as the subject.
+
+* **Return type:**
+  [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
+
 ### correspond.channels.mail.LIST_LOCAL_PARTS *= ('list', 'all', 'team', 'dev', 'announce', 'info')*
 
 Words that, as a part of an address’s local part (`dev-team@`), mark it as a possible mailing list.

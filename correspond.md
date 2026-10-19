@@ -1,4 +1,4 @@
-> built 2026-10-19 11:29 UTC from d5a67cc (main) · correspond 0.0.19. Details: build_info.json
+> built 2026-10-19 11:46 UTC from 8b5dac5 (main) · correspond 0.0.20. Details: build_info.json
 
 # index.html.md
 
@@ -26,10 +26,10 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 | Channel    | References                                                                                                                                                                                                                                                                                                        | Operations                                                                                                                                                                                                                                                            | Built on                                                                        |
 |------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
 | `github`   | `github:owner/repo`, `github:owner/repo#12`                                                                                                                                                                                                                                                                       | read, listen (issues, comments, pull request review threads, discussions), send (opening an issue takes `native` labels, assignees, milestone; `native` category opens a discussion instead), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token                           |
-| `email`    | `email:` (the folder), `email:someone@example.org`; either takes `?folder=<name>` (a Gmail label is a folder), and `email:` takes `?from=<address or domain>,...` (a domain as `@example.org`); on Gmail, `?gmail=<search>` adds Gmail’s search syntax; quote such a reference in a shell: `'email:?folder=News'` | read, listen, send (with cc and bcc), audience                                                                                                                                                                                                                        | `imaplib`, `smtplib`                                                            |
+| `email`    | `email:` (the folder), `email:someone@example.org`; either takes `?folder=<name>` (a Gmail label is a folder), and `email:` takes `?from=<address or domain>,...` (a domain as `@example.org`); on Gmail, `?gmail=<search>` adds Gmail’s search syntax; quote such a reference in a shell: `'email:?folder=News'` | read, listen, send (with cc and bcc), upload (an attachment), audience                                                                                                                                                                                                | `imaplib`, `smtplib`                                                            |
 | `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                                                                                                                                                                                                                                                       | send, audience                                                                                                                                                                                                                                                        | `urllib`                                                                        |
 | `macos`    | `macos:`                                                                                                                                                                                                                                                                                                          | send, audience                                                                                                                                                                                                                                                        | `terminal-notifier` or `osascript`                                              |
-| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>`                                                                                                                                                                                                                              | listen (`getUpdates`, or a webhook on a server), read (what listening logged), send, edit, react, audience, verify (webhook deliveries)                                                                                                                               | the Bot API over `urllib`                                                       |
+| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>`                                                                                                                                                                                                                              | listen (`getUpdates`, or a webhook on a server), read (what listening logged), send, edit, react, upload (a photo or a document), audience, verify (webhook deliveries)                                                                                               | the Bot API over `urllib`                                                       |
 | `webinbox` | `webinbox:<site>`                                                                                                                                                                                                                                                                                                 | read, listen, audience                                                                                                                                                                                                                                                | the ASGI collector below, and `dol` stores                                      |
 | `apprise`  | `apprise:<alias>`                                                                                                                                                                                                                                                                                                 | send, audience                                                                                                                                                                                                                                                        | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`) |
 
@@ -88,7 +88,7 @@ scope: public
 - `--dry-run` on `send`, `edit` and `react` sends nothing and changes nothing. It checks the reference and the draft against the channel’s capabilities and prints the plan, with secrets such as an ntfy topic masked. A dry run reads only the environment and the config file, plus the audience lookup (a `gh api` call for GitHub, `getChat` with the bot token for Telegram): a value kept in the Keychain or on a remote host is otherwise looked up when sending, and the plan says so.
 - `--cc` and `--bcc` (comma-separated) copy further recipients on channels that grade `cc` (email); elsewhere they are refused by name. Bcc addresses go on the envelope only, never in a header, and they count in the audience.
 - `--notify` (comma-separated, `notify=` in Python) names who must be notified, and the writer guarantees it: on GitHub (and Telegram, for a member of the chat with a public username) a mention (`@octocat`) the text lacks is added on a closing `cc` line; on email an address that is neither To nor Cc goes in Cc, and so counts in the audience. The plan shows what was added (`mentions_added`, `cc_added`). A channel that cannot guarantee it refuses the draft with `NotSupported("notify")` rather than sending without it.
-- **Every write (`send`, `edit`, `react`, and `upload` in Python) passes the `before_send` check first**, on the dry run too. The plan shows `audience` (who can read it, in words), `audience_hash`, and `before_send` (the verdict). With nothing configured the check lets the write go ahead, so the audience line is all it adds. A check can stop the write: `refused` (not as written, not here) or `needs_approval` (wait for the operator), with any details it attached in `before_send_details`. A configured check that does not load stops every write (`before_send_unavailable`), and one that crashes stops that write (`before_send_failed`). Nothing is sent in any of these cases, and `--allow-send` on the MCP server does not skip the check.
+- **Every write (`send`, `edit`, `react`, `upload`, `label`, `unlabel`, `close`, `reopen`) passes the `before_send` check first** (an upload’s check sees only the file name), on the dry run too. The plan shows `audience` (who can read it, in words), `audience_hash`, and `before_send` (the verdict). With nothing configured the check lets the write go ahead, so the audience line is all it adds. A check can stop the write: `refused` (not as written, not here) or `needs_approval` (wait for the operator), with any details it attached in `before_send_details`. A configured check that does not load stops every write (`before_send_unavailable`), and one that crashes stops that write (`before_send_failed`). Nothing is sent in any of these cases, and `--allow-send` on the MCP server does not skip the check.
 - The check guards drafts, not the process running correspond: whoever sets its environment or edits the config file (`$CORRESPOND_CONFIG` can point at another file) chooses the check. Commands that write without correspond (`gh issue comment`, say) are covered by liaise’s hook, not by this check.
 - A write that fails is a result, not an exception: `ok: false`, an `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`, `unconfirmed`, or one of the four check kinds above), and whether a retry can help (`retryable`, `retry_after`).
 - **`--idempotency-key KEY` (`idempotency_key=` in Python) keeps a message from going out twice.** A channel can post and then fail (the platform took the message, and its answer never came), so a retry would post it again. With a key, correspond remembers what the key did (under the data root, in `sends/`): the same key after a send that went out posts nothing and returns that result. After a failure that may have posted (`network`, `unavailable`, a crash), it reads the conversation back for its own message with the same text and returns it if found. If it cannot confirm, it sends nothing and fails with `unconfirmed`: check the conversation, then send with a new key. A key reused for a different message is refused (`validation`). Nothing is added to the posted text. Two processes sending with the same key at the same moment are not covered.
@@ -224,7 +224,7 @@ pip install "correspond[mcp]"
 {"mcpServers": {"correspond": {"command": "correspond-mcp"}}}
 ```
 
-The server exposes the reading tools. `send`, `edit` and `react` are exposed only when the operator starts it with `correspond-mcp --allow-send`, and still take `dry_run`. The data root is the server’s, never the model’s.
+The server exposes the reading tools. The writes (`send`, `edit`, `react`, `upload`, and the rest) are exposed only when the operator starts it with `correspond-mcp --allow-send`, and still take `dry_run`. The data root is the server’s, never the model’s.
 
 ## Claude Code channel
 
@@ -1224,6 +1224,13 @@ added to Cc (and so leaves Bcc, which would hide it); the plan lists it under
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
+#### upload(ref, name, data, , media_type='application/octet-stream', dry_run=False)
+
+Email a file to `ref`’s address: a message with the file attached and its name as the subject.
+
+* **Return type:**
+  [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
+
 ### correspond.channels.mail.LIST_LOCAL_PARTS *= ('list', 'all', 'team', 'dev', 'announce', 'info')*
 
 Words that, as a part of an address’s local part (`dev-team@`), mark it as a possible mailing list.
@@ -1474,6 +1481,16 @@ webhook back with `getWebhookInfo`. A dry run calls nothing and reads no secret.
 #### *property* updates *: [MutableMapping](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Any](https://docs.python.org/3/library/typing.html#typing.Any)]*
 
 What the webhook receiver stored, keyed by zero-padded update id (`listen` reads it when `delivery` is `webhook`).
+
+#### upload(ref, name, data, , media_type='application/octet-stream', dry_run=False)
+
+Send a file: `sendPhoto` for an inline image (`PHOTO_TYPES`, 10 MB), else `sendDocument` (50 MB).
+
+A photo Telegram refuses (too large in pixels, too narrow, not really an image) is
+sent again as a document, which takes any file; the plan says so (`photo_refused`).
+
+* **Return type:**
+  [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
 #### verify(headers, body)
 
@@ -2711,9 +2728,15 @@ Remove a channel from the registry.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, registry=None, before_send=None)
+### correspond.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, registry=None, before_send=None)
 
-Send a file to a conversation. The `before_send` check sees only the file name as the draft’s text (`operation="upload"`): a check that cannot vet the bytes should hold or refuse.
+Send a file to a conversation.
+
+The `before_send` check sees the file name as the draft’s text (`operation="upload"`)
+and the file’s metadata in `draft.native["upload"]`: `name`, `media_type`,
+`bytes`, `sha256` and, when the caller read it from disk, `source` (its path), so a
+check can hold a large, unknown or out-of-place file. It never sees the contents: a
+check that must vet them should hold or refuse.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -3895,9 +3918,15 @@ Remove `labels` from a conversation; the `before_send` check sees them, comma-jo
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, registry=None, before_send=None)
+### correspond.ops.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, registry=None, before_send=None)
 
-Send a file to a conversation. The `before_send` check sees only the file name as the draft’s text (`operation="upload"`): a check that cannot vet the bytes should hold or refuse.
+Send a file to a conversation.
+
+The `before_send` check sees the file name as the draft’s text (`operation="upload"`)
+and the file’s metadata in `draft.native["upload"]`: `name`, `media_type`,
+`bytes`, `sha256` and, when the caller read it from disk, `source` (its path), so a
+check can hold a large, unknown or out-of-place file. It never sees the contents: a
+check that must vet them should hold or refuse.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -4725,14 +4754,15 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 | [`requirements`](_autosummary/correspond.tools.html.md#correspond.tools.requirements)(channel)                           | What a channel needs (install command, binaries, platform, each setting and where to get it) and what is missing.                                                                                              |
 | [`send`](_autosummary/correspond.tools.html.md#correspond.tools.send)(ref, text, \*[, title, reply_to, ...])     | Send a message to a conversation.                                                                                                                                                                              |
 | [`unlabel`](_autosummary/correspond.tools.html.md#correspond.tools.unlabel)(ref, labels, \*[, dry_run])             | Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation.                                                                                                              |
+| [`upload`](_autosummary/correspond.tools.html.md#correspond.tools.upload)(ref, path, \*[, name, media_type, ...])  | Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`).                                                                                    |
 
-### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'authored': 'read', 'authored_thread': 'read', 'capabilities': 'read', 'channels': 'read', 'close': 'external', 'edit': 'external', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'reopen': 'external', 'requirements': 'read', 'send': 'external', 'unlabel': 'external'}*
+### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'authored': 'read', 'authored_thread': 'read', 'capabilities': 'read', 'channels': 'read', 'close': 'external', 'edit': 'external', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'reopen': 'external', 'requirements': 'read', 'send': 'external', 'unlabel': 'external', 'upload': 'external'}*
 
 What each tool touches, for surfaces deciding what to expose. `read` stays on this
 machine; `external-read` reads a remote service (`listen` also stores its cursor
 locally); `external` writes to a remote service, where people see it.
 
-### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function label>, <function unlabel>, <function close>, <function reopen>, <function authored>, <function authored_thread>]*
+### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function upload>, <function label>, <function unlabel>, <function close>, <function reopen>, <function authored>, <function authored_thread>]*
 
 Every tool, in the order surfaces list them.
 
@@ -4848,6 +4878,13 @@ Remove labels (comma-separated; a label name may not itself contain a comma) fro
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
+### correspond.tools.upload(ref, path, , name=None, media_type=None, include_hidden=False, dry_run=False)
+
+Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`). `name` is what recipients see (the file’s own name by default); `media_type` is guessed from the file’s real name when not given. A path through a hidden file or folder (a dot name, such as ~/.ssh) is refused unless `include_hidden`. Run it with `dry_run` first: the plan shows `source` (the real path read), the name, size and SHA-256; show the operator the source. The before_send check sees that metadata, never the contents, so never upload a file the user did not ask to send.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
 
 # about-this-build.html.md
 
@@ -4855,18 +4892,18 @@ Remove labels (comma-separated; a label name may not itself contain a comma) fro
 
 # About this build
 
-This documentation was built on **2026-10-19 11:29 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/d5a67cc55700d92c873fc08310cc6e54b1d1f949"><code>d5a67cc</code></a> on branch <code>main</code>, for **correspond 0.0.19** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-19 11:46 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/8b5dac5aa642ade02e7cb0e2c7c02f2903b4b2da"><code>8b5dac5</code></a> on branch <code>main</code>, for **correspond 0.0.20** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.19) is behind the latest release on PyPI (0.0.20): `pip install correspond` gives newer code than these docs describe.
+- The documented version (0.0.20) is behind the latest release on PyPI (0.0.21): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/d5a67cc55700d92c873fc08310cc6e54b1d1f949"><code>d5a67cc55700d92c873fc08310cc6e54b1d1f949</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/8b5dac5aa642ade02e7cb0e2c7c02f2903b4b2da"><code>8b5dac5aa642ade02e7cb0e2c7c02f2903b4b2da</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -4877,9 +4914,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39244795151">39244795151</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39246843720">39246843720</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>d5a67cc55700d92c873fc08310cc6e54b1d1f949</code> (in the history of the built commit)  |
+| Event commit | <code>8b5dac5aa642ade02e7cb0e2c7c02f2903b4b2da</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -4904,13 +4941,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.20/">0.0.20</a>, newer than the documented version (0.0.19).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.21/">0.0.21</a>, newer than the documented version (0.0.20).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout d5a67cc55700d92c873fc08310cc6e54b1d1f949
+git checkout 8b5dac5aa642ade02e7cb0e2c7c02f2903b4b2da
 pip install "epythet==0.2.18"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

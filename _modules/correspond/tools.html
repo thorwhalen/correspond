@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=2fd7553c"></script>
+    <script src="../../_static/documentation_options.js?v=056c92e6"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.19" />
+  <meta name="docsearch:version" content="0.0.20" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -729,6 +729,9 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">mimetypes</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">stat</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">timezone</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
@@ -745,6 +748,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">OPERATIONS</span><span class="p">,</span>
     <span class="n">Audience</span><span class="p">,</span>
+    <span class="n">ConversationRef</span><span class="p">,</span>
     <span class="n">Draft</span><span class="p">,</span>
     <span class="n">HistoryDepth</span><span class="p">,</span>
     <span class="n">Message</span><span class="p">,</span>
@@ -774,6 +778,7 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"requirements"</span><span class="p">,</span>
     <span class="s2">"send"</span><span class="p">,</span>
     <span class="s2">"unlabel"</span><span class="p">,</span>
+    <span class="s2">"upload"</span><span class="p">,</span>
 <span class="p">]</span>
 
 
@@ -1231,6 +1236,71 @@ window.runMermaid = runMermaid;</script>
 
 
 
+<div class="viewcode-block" id="upload">
+<a class="viewcode-back" href="../../_autosummary/correspond.tools.html#correspond.tools.upload">[docs]</a>
+<span class="nd">@_as_result</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">upload</span><span class="p">(</span>
+    <span class="n">ref</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">media_type</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">include_hidden</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`). `name` is what recipients see (the file's own name by default); `media_type` is guessed from the file's real name when not given. A path through a hidden file or folder (a dot name, such as ~/.ssh) is refused unless `include_hidden`. Run it with `dry_run` first: the plan shows `source` (the real path read), the name, size and SHA-256; show the operator the source. The before_send check sees that metadata, never the contents, so never upload a file the user did not ask to send."""</span>
+    <span class="n">channel</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span><span class="o">.</span><span class="n">channel</span>
+    <span class="n">caps</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">capabilities</span><span class="p">(</span><span class="n">channel</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">caps</span><span class="o">.</span><span class="n">upload</span> <span class="ow">is</span> <span class="n">Support</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span><span class="s2">"upload"</span><span class="p">,</span> <span class="n">channel</span><span class="p">)</span>
+    <span class="n">real</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">realpath</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">expanduser</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">include_hidden</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span>
+        <span class="n">part</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">real</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">)</span> <span class="k">if</span> <span class="n">part</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">real</span><span class="si">}</span><span class="s2"> goes through a hidden file or folder; pass include_hidden only when the user asked to send it"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"permission"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">real</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"no file at </span><span class="si">{</span><span class="n">real</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"not_found"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"could not read </span><span class="si">{</span><span class="n">real</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="o">.</span><span class="n">strerror</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">error</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"permission"</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">stat</span><span class="o">.</span><span class="n">S_ISREG</span><span class="p">(</span><span class="n">info</span><span class="o">.</span><span class="n">st_mode</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">real</span><span class="si">}</span><span class="s2"> is not a regular file (a folder, a device or a pipe)"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">limit</span> <span class="o">=</span> <span class="n">caps</span><span class="o">.</span><span class="n">max_upload_bytes</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">real</span><span class="p">,</span> <span class="s2">"rb"</span><span class="p">)</span> <span class="k">as</span> <span class="n">handle</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">handle</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">limit</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">limit</span> <span class="k">else</span> <span class="n">handle</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+    <span class="k">except</span> <span class="ne">OSError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"could not read </span><span class="si">{</span><span class="n">real</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="o">.</span><span class="n">strerror</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="n">error</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"permission"</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">if</span> <span class="n">limit</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">limit</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">real</span><span class="si">}</span><span class="s2"> is over </span><span class="si">{</span><span class="n">limit</span><span class="si">}</span><span class="s2"> bytes, the most </span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2"> accepts"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">kind</span> <span class="o">=</span> <span class="n">media_type</span> <span class="ow">or</span> <span class="n">mimetypes</span><span class="o">.</span><span class="n">guess_type</span><span class="p">(</span><span class="n">real</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">"application/octet-stream"</span>
+    <span class="k">return</span> <span class="n">_write_result</span><span class="p">(</span>
+        <span class="n">ops</span><span class="o">.</span><span class="n">upload</span><span class="p">(</span>
+            <span class="n">ref</span><span class="p">,</span>
+            <span class="n">name</span> <span class="ow">or</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">real</span><span class="p">),</span>
+            <span class="n">data</span><span class="p">,</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span>
+            <span class="n">source</span><span class="o">=</span><span class="n">real</span><span class="p">,</span>
+            <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
 <div class="viewcode-block" id="label">
 <a class="viewcode-back" href="../../_autosummary/correspond.tools.html#correspond.tools.label">[docs]</a>
 <span class="nd">@_as_result</span>
@@ -1371,6 +1441,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">send</span><span class="p">,</span>
     <span class="n">edit</span><span class="p">,</span>
     <span class="n">react</span><span class="p">,</span>
+    <span class="n">upload</span><span class="p">,</span>
     <span class="n">label</span><span class="p">,</span>
     <span class="n">unlabel</span><span class="p">,</span>
     <span class="n">close</span><span class="p">,</span>
@@ -1393,6 +1464,7 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"send"</span><span class="p">:</span> <span class="s2">"external"</span><span class="p">,</span>
     <span class="s2">"edit"</span><span class="p">:</span> <span class="s2">"external"</span><span class="p">,</span>
     <span class="s2">"react"</span><span class="p">:</span> <span class="s2">"external"</span><span class="p">,</span>
+    <span class="s2">"upload"</span><span class="p">:</span> <span class="s2">"external"</span><span class="p">,</span>
     <span class="s2">"label"</span><span class="p">:</span> <span class="s2">"external"</span><span class="p">,</span>
     <span class="s2">"unlabel"</span><span class="p">:</span> <span class="s2">"external"</span><span class="p">,</span>
     <span class="s2">"close"</span><span class="p">:</span> <span class="s2">"external"</span><span class="p">,</span>
