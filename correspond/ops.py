@@ -67,6 +67,7 @@ from correspond.idempotency import (
     settled,
 )
 from correspond.model import (
+    Attachment,
     Audience,
     Authenticity,
     Capabilities,
@@ -511,6 +512,25 @@ def _feature_check(adapter: Any, draft: Draft) -> str | None:
             adapter.name,
             alternatives=("notify them on a channel that can, or send without notify",),
         )
+    if draft.attachments:
+        if not caps.max_attachments:
+            raise NotSupported(
+                "attachments",
+                adapter.name,
+                alternatives=(
+                    "send the text, and upload the files"
+                    if caps.upload is not Support.NONE
+                    else "send the text, and the files on a channel that takes them",
+                ),
+            )
+        if len(draft.attachments) > caps.max_attachments:
+            return f"{adapter.name} takes {caps.max_attachments} file(s) with a message; this draft has {len(draft.attachments)}"
+        limit = caps.max_upload_bytes
+        for (
+            attachment
+        ) in draft.attachments:  # sized from metadata: nothing is fetched here
+            if limit and attachment.size is not None and attachment.size > limit:
+                return f"{attachment.name or attachment.ref} is {attachment.size} bytes; {adapter.name} accepts at most {limit}"
     unknown = sorted(set(draft.native) - set(caps.draft_fields))
     if unknown:
         accepted = ", ".join(caps.draft_fields) or "none"
@@ -616,6 +636,7 @@ def send(
     bcc: Iterable[str] = (),
     native: Mapping[str, Any] | None = None,
     notify: Iterable[str] = (),
+    attachments: Iterable[Attachment] = (),
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
@@ -623,6 +644,9 @@ def send(
     sends: MutableMapping[str, Any] | None = None,
 ) -> SendResult:
     """Send ``text`` (or a :class:`~correspond.model.Draft`) to a conversation; ``dry_run`` shows the plan and sends nothing.
+
+    ``attachments`` (``Draft.attachments``) are files that go with the text, on channels
+    that grade ``upload``, each within its ``max_upload_bytes``.
 
     ``cc`` and ``bcc`` copy further recipients, on channels that grade ``cc`` (email).
     ``native`` carries channel-specific fields (``Draft.native``), checked against the
@@ -642,12 +666,17 @@ def send(
     ``claim(key, record) -> bool`` (as that store has) is exclusive across processes; a
     plain one is checked, then set, which covers one process.
     """
-    cc, bcc, notify = tuple(cc), tuple(bcc), tuple(notify)
+    cc, bcc, notify, attachments = (
+        tuple(cc),
+        tuple(bcc),
+        tuple(notify),
+        tuple(attachments),
+    )
     if isinstance(text, Draft) and (
-        title or reply_to or priority or cc or bcc or native or notify
+        title or reply_to or priority or cc or bcc or native or notify or attachments
     ):
         raise ValueError(
-            "pass a Draft or title/reply_to/priority/cc/bcc/native/notify, not both: the Draft already carries them"
+            "pass a Draft or title/reply_to/priority/cc/bcc/native/notify/attachments, not both: the Draft already carries them"
         )
     adapter, ref = _adapter_for(ref, "send", registry)
     draft = (
@@ -662,9 +691,25 @@ def send(
             bcc=tuple(bcc),
             native=native or {},
             notify=notify,
+            attachments=attachments,
         )
     )
     key = None if idempotency_key is None else check_key(idempotency_key)
+    if key is not None and any(a.sha256 is None for a in draft.attachments):
+        # A key is bound to what is sent: an attachment's bytes count, not only its name.
+        draft = dataclasses.replace(
+            draft,
+            attachments=tuple(
+                a
+                if a.sha256 is not None
+                else dataclasses.replace(
+                    a,
+                    sha256=hashlib.sha256(a.content()).hexdigest(),
+                    size=a.size if a.size is not None else len(a.content()),
+                )
+                for a in draft.attachments
+            ),
+        )
     # The draft as the channel will send it (``notify`` materialised: a mention added,
     # an address copied): what the length checks and the before_send check must see.
     # The adapter is still handed ``draft`` and materialises it the same way.
@@ -710,6 +755,9 @@ def send(
         registry=registry,
         write=write,
     )
+    if draft.attachments:  # what is really sent: each file's own ref (a real path, say)
+        files = [a.to_dict() for a in draft.attachments]
+        result = dataclasses.replace(result, plan={**result.plan, "files": files})
     if key is not None and not dry_run and result.ok:
         record = sends.get(key)
         if record and record.get("state") == SENT and "idempotency" not in result.plan:
@@ -797,6 +845,7 @@ def _earlier_send(
     sends: MutableMapping[str, Any],
     *,
     dry_run: bool,
+    read_back: bool = True,
 ) -> SendResult | None:
     """What an earlier send with ``key`` settles for this one, or None when this one goes ahead.
 
@@ -849,7 +898,10 @@ def _earlier_send(
             error=f"{check_it}; a real send reads the conversation back before deciding",
             error_kind="unconfirmed",
         )
-    found, why = _read_back(adapter, ref, draft, since=attempted_at(record))
+    if read_back:
+        found, why = _read_back(adapter, ref, draft, since=attempted_at(record))
+    else:
+        found, why = None, "an upload is not read back to confirm it"
     if found is None:
         return SendResult(
             ok=False,
@@ -1021,10 +1073,19 @@ def upload(
     media_type: str = "application/octet-stream",
     dry_run: bool = False,
     source: str | None = None,
+    native: Mapping[str, Any] | None = None,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
+    idempotency_key: str | None = None,
+    sends: MutableMapping[str, Any] | None = None,
 ) -> SendResult:
     """Send a file to a conversation.
+
+    ``native`` carries the channel's own options, the keys its ``capabilities.draft_fields``
+    list (Telegram: ``{"as_document": true}`` sends an image as a file, not a photo).
+    ``idempotency_key`` keeps a retry from posting the file twice, as for :func:`send`;
+    an upload is not read back, so one whose earlier attempt may have gone out is refused
+    as ``unconfirmed``.
 
     The ``before_send`` check sees the file name as the draft's text (``operation="upload"``)
     and the file's metadata in ``draft.native["upload"]``: ``name``, ``media_type``,
@@ -1033,7 +1094,19 @@ def upload(
     check that must vet them should hold or refuse.
     """
     adapter, ref = _adapter_for(ref, "upload", registry)
-    limit = adapter.capabilities.max_upload_bytes
+    native = dict(native or {})
+    caps = adapter.capabilities
+    unknown = sorted(set(native) - set(caps.upload_fields))
+    if unknown:
+        accepted = ", ".join(caps.upload_fields) or "none"
+        return _invalid(
+            adapter,
+            ref,
+            "upload",
+            dry_run,
+            f"{adapter.name} does not take native field(s) {unknown}; it takes: {accepted}",
+        )
+    limit = caps.max_upload_bytes
     if limit and len(data) > limit:
         return _invalid(
             adapter,
@@ -1048,21 +1121,54 @@ def upload(
         "bytes": len(data),
         "sha256": hashlib.sha256(data).hexdigest(),
         **({"source": source} if source else {}),
+        **({"native": native} if native else {}),
     }
+    draft = Draft(text=name, native={"upload": upload})
+    key = None if idempotency_key is None else check_key(idempotency_key)
+
+    def write(rehearse: bool) -> SendResult:
+        # ``native`` only when given, so an adapter written before it keeps working.
+        options = {"native": native} if native else {}
+        return adapter.upload(
+            ref, name, data, media_type=media_type, dry_run=rehearse, **options
+        )
+
+    if key is not None:
+        if sends is None:
+            from correspond.stores import send_store
+
+            sends = send_store()
+        earlier = _earlier_send(
+            adapter, ref, draft, key, sends, dry_run=dry_run, read_back=False
+        )
+        if earlier is not None:
+            return earlier
+        write = _claiming(
+            write,
+            key,
+            ref,
+            sends,
+            bound_to=fingerprint(ref.encoded, draft),
+            taken=lambda: _earlier_send(
+                adapter, ref, draft, key, sends, dry_run=False, read_back=False
+            ),
+        )
     result = _checked_write(
         adapter,
         ref,
         "upload",
-        Draft(text=name, native={"upload": upload}),
+        draft,
         dry_run=dry_run,
         before_send=before_send,
         registry=registry,
-        write=lambda rehearse: adapter.upload(
-            ref, name, data, media_type=media_type, dry_run=rehearse
-        ),
+        write=write,
     )
     if source:  # what is really sent, whatever the name says
         result = dataclasses.replace(result, plan={"source": source, **result.plan})
+    if key is not None and not dry_run and result.ok:
+        record = sends.get(key)
+        if record and record.get("state") == SENT and "idempotency" not in result.plan:
+            sends[key] = settled(record, SENT, result.to_dict())  # with its source
     return result
 
 

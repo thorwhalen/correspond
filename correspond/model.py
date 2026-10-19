@@ -568,6 +568,7 @@ _TUPLE_FIELDS = (
     "reactions",
     "formats",
     "draft_fields",
+    "upload_fields",
     "rate_limits",
     "notes",
 )
@@ -591,7 +592,10 @@ class Capabilities:
     condition can test), or ``None`` when the channel does not declare them;
     ``draft_fields`` are the keys a :class:`Draft` may carry in its ``native`` for this
     channel (GitHub: ``labels``, ``assignees``, ``milestone`` when opening an issue), and
-    any other key is refused rather than dropped.
+    any other key is refused rather than dropped; ``upload_fields`` are the options
+    ``upload`` takes in its ``native``. ``max_attachments`` is how many files a send's
+    ``Draft.attachments`` may carry (0: a send takes none, though ``upload`` may still
+    send a file on its own).
     """
 
     channel: str
@@ -621,8 +625,10 @@ class Capabilities:
     reactions: tuple[str, ...] = ()
     reactions_per_message: int | None = None
     max_upload_bytes: int | None = None
+    max_attachments: int = 0
     formats: tuple[str, ...] = ("plain",)
     draft_fields: tuple[str, ...] = ()
+    upload_fields: tuple[str, ...] = ()
     native_fields: tuple[str, ...] | None = None
     rate_limits: tuple[str, ...] = ()
     notes: tuple[str, ...] = ()
@@ -662,6 +668,7 @@ class Capabilities:
             "edit_max_age_s",
             "reactions_per_message",
             "max_upload_bytes",
+            "max_attachments",
         ):
             data[name] = getattr(self, name)
         data.update({name: list(getattr(self, name)) for name in _TUPLE_FIELDS})
@@ -921,6 +928,11 @@ class Draft:
 
     >>> Draft(text="hi", notify=["octocat", " ", "Octocat", "hubot"]).notify
     ('octocat', 'hubot')
+
+    ``attachments`` are files that go with the text, each an :class:`Attachment` whose
+    ``content()`` gives its bytes, on channels whose capabilities grade ``upload``. The
+    ``before_send`` check sees them (name, media type, size, SHA-256, ``ref``), never their
+    bytes.
     """
 
     text: str
@@ -931,6 +943,7 @@ class Draft:
     bcc: tuple[str, ...] = ()
     native: Mapping[str, Any] = field(default_factory=dict)
     notify: tuple[str, ...] = ()
+    attachments: tuple[Attachment, ...] = ()
 
     def __post_init__(self):
         if not isinstance(self.text, str):
@@ -954,6 +967,10 @@ class Draft:
                 f"draft native must be a mapping, not {type(self.native).__name__}"
             )
         object.__setattr__(self, "native", {str(k): v for k, v in self.native.items()})
+        attachments = tuple(self.attachments)
+        if not all(isinstance(a, Attachment) for a in attachments):
+            raise TypeError("draft attachments are Attachment objects")
+        object.__setattr__(self, "attachments", attachments)
 
     def to_dict(self) -> dict:
         """JSON-ready. ``native`` and ``notify`` appear only when set, so a draft without them keeps the
@@ -971,6 +988,8 @@ class Draft:
             data["native"] = dict(self.native)
         if self.notify:  # same reason: absent unless set
             data["notify"] = list(self.notify)
+        if self.attachments:  # same reason; metadata only, never the bytes
+            data["attachments"] = [a.to_dict() for a in self.attachments]
         return data
 
 

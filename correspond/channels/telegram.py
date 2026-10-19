@@ -53,6 +53,7 @@ from correspond.channels._http import (
 )
 from correspond.errors import ChannelError, InvalidRef, MissingRequirement, NotSupported
 from correspond.model import (
+    Attachment,
     Account,
     Audience,
     Authenticity,
@@ -86,6 +87,8 @@ MAX_TEXT_CHARS = 4096
 #: The Bot API's limits on a file a bot sends: any file, and a photo (shown inline).
 MAX_DOCUMENT_BYTES = 50_000_000
 MAX_PHOTO_BYTES = 10_000_000
+#: How much text a file's caption holds.
+MAX_CAPTION_CHARS = 1024
 #: The image types ``sendPhoto`` shows inline; anything else goes as a document.
 PHOTO_TYPES = ("image/jpeg", "image/png", "image/webp")
 #: A public Telegram username, the only handle a bot's mention reaches.
@@ -123,6 +126,16 @@ WEBHOOK_PORT = 8081
 _WEBHOOK_CURSOR = "w"
 _RECEIVED_KEY_RE = re.compile(r"^(?P<stamp>[0-9]{20})-(?P<update>[0-9]{1,19})\.json$")
 _TRUE = ("1", "true", "yes", "on")
+
+
+def _as_document(native: Mapping[str, Any]) -> bool:
+    """``native["as_document"]`` checked: a file sent as a document, not shown as a photo."""
+    value = native.get("as_document", False)
+    if not isinstance(value, bool):
+        raise ChannelError(
+            f"native as_document is true or false, not {value!r}", kind="validation"
+        )
+    return value
 
 
 def _secret_matches(received: str, secret: str) -> bool:
@@ -361,6 +374,9 @@ class Telegram:
             grades=(Grade.PLATFORM, Grade.FORGED),
             max_text_length=MAX_TEXT_CHARS,
             max_upload_bytes=MAX_DOCUMENT_BYTES,
+            draft_fields=("as_document",),
+            upload_fields=("as_document",),
+            max_attachments=1,
             reactions_per_message=1,
             formats=("plain",),
             rate_limits=(
@@ -373,7 +389,8 @@ class Telegram:
                 "a bot cannot start a conversation: someone must write to it first",
                 "notify mentions @username in the text: it reaches a member of the chat with a public username, not anyone outside it",
                 "a title is prepended to the text: Telegram messages have none",
-                "upload sends a JPEG, PNG or WebP image up to 10 MB as a photo (sendPhoto, shown inline) and anything else up to 50 MB as a document (sendDocument)",
+                "upload sends a JPEG, PNG or WebP image up to 10 MB as a photo (sendPhoto, shown inline, recompressed) and anything else up to 50 MB as a document (sendDocument); native as_document sends an image as a document, as it is",
+                "send takes one attachment, with the text as its caption (1,024 characters at most)",
                 "audience comes from getChat: a public username, the chat type, history visibility; members are never listed",
                 "delivery = webhook makes listen read what the webhook receiver (mk_webhook_app) stored instead of calling getUpdates; Telegram serves one or the other, so set_webhook stops getUpdates (409) until delete_webhook",
                 "the webhook receiver stores only requests carrying the secret token, in arrival order (set_webhook asks for one connection at a time); serve_webhook binds it to 127.0.0.1 unless webhook_allow_remote is set; verify grades one delivery by that header: platform when it matches (it proves Telegram sent it, not a signature over the body), forged otherwise",
@@ -872,8 +889,26 @@ class Telegram:
         """``sendMessage``, the title (if any) prepended; ``draft.notify`` usernames the text does not @mention yet are mentioned on a closing ``cc`` line."""
         added = missing_mentions(draft.text, draft.notify) if draft.notify else ()
         draft = self.prepare(ref, draft)
-        params = self._target(ref)
         text = f"{draft.title}\n\n{draft.text}" if draft.title else draft.text
+        as_document = _as_document(draft.native)
+        if draft.attachments:
+            notified = (
+                {
+                    "notify": [handle(n) for n in draft.notify],
+                    "mentions_added": list(added),
+                }
+                if draft.notify
+                else {}
+            )
+            return self._send_with_file(
+                ref, draft, text, as_document, notified, dry_run=dry_run
+            )
+        if as_document:
+            raise ChannelError(
+                "as_document applies to a file: attach one, or leave it out",
+                kind="validation",
+            )
+        params = self._target(ref)
         if len(text) > MAX_TEXT_CHARS:
             raise ChannelError(
                 f"with the title the text is {len(text)} characters; Telegram accepts {MAX_TEXT_CHARS}",
@@ -912,31 +947,111 @@ class Telegram:
         *,
         media_type: str = "application/octet-stream",
         dry_run: bool = False,
+        native: Mapping[str, Any] | None = None,
     ) -> SendResult:
         """Send a file: ``sendPhoto`` for an inline image (:data:`PHOTO_TYPES`, 10 MB), else ``sendDocument`` (50 MB).
 
         A photo Telegram refuses (too large in pixels, too narrow, not really an image) is
         sent again as a document, which takes any file; the plan says so (``photo_refused``).
+        ``native={"as_document": True}`` sends an image as a document: the file as it is,
+        not recompressed.
         """
+        return self._send_file(
+            ref,
+            name,
+            data,
+            media_type=media_type,
+            as_document=_as_document(native or {}),
+            operation="upload",
+            dry_run=dry_run,
+        )
+
+    def _send_with_file(
+        self,
+        ref: ConversationRef,
+        draft: Draft,
+        text: str,
+        as_document: bool,
+        notified: Mapping[str, Any],
+        *,
+        dry_run: bool,
+    ) -> SendResult:
+        """One file with the text as its caption: one message, as the draft is one."""
+        if len(draft.attachments) > 1:
+            raise ChannelError(
+                f"Telegram sends one file per message with its text; this draft has {len(draft.attachments)}: "
+                "send the text with one, and upload the others",
+                kind="validation",
+            )
+        if len(text) > MAX_CAPTION_CHARS:
+            raise ChannelError(
+                f"a file's caption holds {MAX_CAPTION_CHARS} characters and this text has {len(text)}: "
+                "send the text, then upload the file",
+                kind="validation",
+            )
+        (attachment,) = draft.attachments
+        result = self._send_file(
+            ref,
+            attachment.name or "file",
+            attachment,
+            media_type=attachment.media_type,
+            as_document=as_document,
+            operation="send",
+            dry_run=dry_run,
+            caption=text,
+            reply_to=draft.reply_to,
+        )
+        extra: dict[str, Any] = {"title_prepended": bool(draft.title)}
+        if notified:
+            extra.update(notified)
+        return replace(result, plan={**result.plan, **extra})
+
+    def _send_file(
+        self,
+        ref: ConversationRef,
+        name: str,
+        data: bytes | Attachment,
+        *,
+        media_type: str,
+        as_document: bool,
+        operation: str,
+        dry_run: bool,
+        caption: str | None = None,
+        reply_to: str | None = None,
+    ) -> SendResult:
         name = file_name(name)
         media_type = _media_type(media_type)
+        if isinstance(data, Attachment):  # a draft's file: fetched only to send it
+            size, digest = data.size, data.sha256
+            data = None if dry_run else data.content()
+        if isinstance(data, bytes):
+            size, digest = len(data), hashlib.sha256(data).hexdigest()
         params = self._target(ref)
-        photo = media_type in PHOTO_TYPES and len(data) <= MAX_PHOTO_BYTES
+        if caption:
+            params["caption"] = caption
+        if reply_to:
+            params["reply_parameters"] = {"message_id": self._message_number(reply_to)}
+        photo = (
+            not as_document
+            and media_type in PHOTO_TYPES
+            and (size is None or size <= MAX_PHOTO_BYTES)
+        )
         method, field = ("sendPhoto", "photo") if photo else ("sendDocument", "document")
         plan = {
             "action": method,
             **params,
             "name": name,
             "media_type": media_type,
-            "bytes": len(data),
-            "sha256": hashlib.sha256(data).hexdigest(),
+            "bytes": size,
+            "sha256": digest,
+            **({"as_document": True} if as_document else {}),
         }
         if dry_run:
             return SendResult(
                 ok=True,
                 channel=NAME,
                 conversation=ref.encoded,
-                operation="upload",
+                operation=operation,
                 dry_run=True,
                 plan=plan,
             )
@@ -954,7 +1069,7 @@ class Telegram:
             ok=True,
             channel=NAME,
             conversation=ref.encoded,
-            operation="upload",
+            operation=operation,
             message_id=message.id if message else None,
             account=self._account(result),
             plan=plan,
