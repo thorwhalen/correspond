@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=3294188c"></script>
+    <script src="../_static/documentation_options.js?v=f91d8841"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.23" />
+  <meta name="docsearch:version" content="0.0.24" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -419,7 +419,7 @@
                   
   <section id="module-correspond.channels.slack">
 <span id="correspond-channels-slack"></span><h1>correspond.channels.slack<a class="headerlink" href="#module-correspond.channels.slack" title="Link to this heading">#</a></h1>
-<p>Slack: messages formatted as Slack writes them, posted through an incoming webhook.</p>
+<p>Slack: drafts in Slack’s own formatting; reading, polling and posting with a token; posting through a webhook.</p>
 <p>Reference: <code class="docutils literal notranslate"><span class="pre">slack:&lt;channel&gt;</span></code>, a Slack channel by its name (<code class="docutils literal notranslate"><span class="pre">#</span></code> optional, lower-cased;
 1-80 of <code class="docutils literal notranslate"><span class="pre">a-z</span></code>, <code class="docutils literal notranslate"><span class="pre">0-9</span></code>, <code class="docutils literal notranslate"><span class="pre">-</span></code> and <code class="docutils literal notranslate"><span class="pre">_</span></code>) or by its id (<code class="docutils literal notranslate"><span class="pre">C024BE91L</span></code>, kept as Slack
 writes it). A post goes through the channel’s <strong>incoming webhook</strong>, which Slack ties to one
@@ -427,21 +427,35 @@ channel when it is created: <code class="docutils literal notranslate"><span cla
 <code class="docutils literal notranslate"><span class="pre">_</span></code> and <code class="docutils literal notranslate"><span class="pre">_</span></code> as <code class="docutils literal notranslate"><span class="pre">__</span></code>, so no two channels share a variable), else on macOS the Keychain
 item <code class="docutils literal notranslate"><span class="pre">correspond-slack-webhook-&lt;channel&gt;</span></code>. The webhook URL is a credential: it never
 appears in a reference, a plan or an error.</p>
-<p>Two uses, one channel:</p>
-<ul class="simple">
+<p>Three uses, one channel, each needing a little more set up:</p>
+<ul>
 <li><p><strong>A draft the operator sends.</strong> <code class="docutils literal notranslate"><span class="pre">send(...,</span> <span class="pre">dry_run=True)</span></code> needs nothing configured: the
 plan holds the text rendered as Slack <code class="docutils literal notranslate"><span class="pre">mrkdwn</span></code> (<a class="reference internal" href="#correspond.channels.slack.to_mrkdwn" title="correspond.channels.slack.to_mrkdwn"><code class="xref py py-func docutils literal notranslate"><span class="pre">to_mrkdwn()</span></code></a>), its length against
 Slack’s limit, and says nothing was sent. That is the whole interaction when an agent
 writes the reply and a person pastes it, including on a workspace where no app will
 ever be installed.</p></li>
-<li><p><strong>A post.</strong> With a webhook for the name, <code class="docutils literal notranslate"><span class="pre">send</span></code> posts the same text to its channel.</p></li>
+<li><p><strong>A post through a webhook.</strong> With the channel’s webhook, <code class="docutils literal notranslate"><span class="pre">send</span></code> posts the same text
+there, as the app that owns the webhook. A webhook cannot reply in a thread.</p></li>
+<li><p><strong>The Web API, with a token</strong> (<code class="docutils literal notranslate"><span class="pre">CORRESPOND_SLACK_TOKEN</span></code>: a bot token <code class="docutils literal notranslate"><span class="pre">xoxb-</span></code> acts as
+the app, a user token <code class="docutils literal notranslate"><span class="pre">xoxp-</span></code> as the person). <code class="docutils literal notranslate"><span class="pre">read</span></code> returns a channel’s latest
+top-level messages (<code class="docutils literal notranslate"><span class="pre">conversations.history</span></code>), <code class="docutils literal notranslate"><span class="pre">listen</span></code> polls for newer ones (the
+cursor is a message <code class="docutils literal notranslate"><span class="pre">ts</span></code>), and <code class="docutils literal notranslate"><span class="pre">send</span></code> posts with <code class="docutils literal notranslate"><span class="pre">chat.postMessage</span></code>, replying in a
+thread when <code class="docutils literal notranslate"><span class="pre">reply_to</span></code> is a message’s <code class="docutils literal notranslate"><span class="pre">ts</span></code>. A channel given by name is looked up
+once with <code class="docutils literal notranslate"><span class="pre">conversations.list</span></code>. Install the app in your own workspace: Slack limits a
+commercially distributed app outside its Marketplace to one history request a minute.
+<a class="reference internal" href="#correspond.channels.slack.Slack.verify" title="correspond.channels.slack.Slack.verify"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Slack.verify()</span></code></a> checks a request Slack sends (<code class="docutils literal notranslate"><span class="pre">X-Slack-Signature</span></code>, with the</p>
+<blockquote>
+<div><p>signing secret), graded <code class="docutils literal notranslate"><span class="pre">crypto</span></code>.</p>
+</div></blockquote>
+</li>
 </ul>
 <p>Slack’s <code class="docutils literal notranslate"><span class="pre">mrkdwn</span></code> is not Markdown: <code class="docutils literal notranslate"><span class="pre">*bold*</span></code>, <code class="docutils literal notranslate"><span class="pre">_italic_</span></code>, <code class="docutils literal notranslate"><span class="pre">~strike~</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;url|text&gt;</span></code>
 links, no headings, no tables, and <code class="docutils literal notranslate"><span class="pre">&amp;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> and <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> escaped. <a class="reference internal" href="#correspond.channels.slack.to_mrkdwn" title="correspond.channels.slack.to_mrkdwn"><code class="xref py py-func docutils literal notranslate"><span class="pre">to_mrkdwn()</span></code></a>
 converts the common Markdown into it, so a draft written as GitHub Markdown does not paste
 as literal asterisks and pipes. Because every <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> in the text is escaped, a draft cannot
 carry a Slack mention (<code class="docutils literal notranslate"><span class="pre">&lt;!channel&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;&#64;U...&gt;</span></code>) that would notify people.</p>
-<p>Reading and listening need a Slack app and token (<code class="docutils literal notranslate"><span class="pre">slack-sdk</span></code>), and are not built yet.</p>
+<p>Messages read are <code class="docutils literal notranslate"><span class="pre">platform</span></code>: Slack authenticated the account, and correspond fetched
+them itself. Neither the token nor a webhook URL appears in a plan or an error.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">to_mrkdwn</span><span class="p">(</span><span class="s2">"**Fixed** in [#12](https://example.org/12) &amp; shipped"</span><span class="p">)</span>
 <span class="go">'*Fixed* in &lt;https://example.org/12|#12&gt; &amp;amp; shipped'</span>
 </pre></div>
@@ -470,8 +484,8 @@ carry a Slack mention (<code class="docutils literal notranslate"><span class="p
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.slack.Slack" title="correspond.channels.slack.Slack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Slack</span></code></a>(*[, http, keychain])</p></td>
-<td><p>Slack: a draft in Slack's own formatting, and a post through an incoming webhook.</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.slack.Slack" title="correspond.channels.slack.Slack"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Slack</span></code></a>(*[, http, keychain, run, clock, sleep])</p></td>
+<td><p>Slack: drafts in Slack's own formatting; reading, polling and posting with a token; posting through a webhook.</p></td>
 </tr>
 </tbody>
 </table>
@@ -484,15 +498,15 @@ carry a Slack mention (<code class="docutils literal notranslate"><span class="p
 
 <dl class="py class">
 <dt class="sig sig-object py" id="correspond.channels.slack.Slack">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.slack.</span></span><span class="sig-name descname"><span class="pre">Slack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">http</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">urllib_http&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keychain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/slack.html#Slack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.slack.Slack" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.slack.</span></span><span class="sig-name descname"><span class="pre">Slack</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">http</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">urllib_http&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keychain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">time&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sleep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">sleep&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/slack.html#Slack"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.slack.Slack" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>Slack: a draft in Slack’s own formatting, and a post through an incoming webhook.</p>
+<p>Slack: drafts in Slack’s own formatting; reading, polling and posting with a token; posting through a webhook.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.slack.Slack.audience">
 <span class="sig-name descname"><span class="pre">audience</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/slack.html#Slack.audience"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.slack.Slack.audience" title="Link to this definition">#</a></dt>
-<dd><p>The members of the webhook’s channel, never listed; a shared channel reaches other workspaces.</p>
+<dd><p>The channel’s members, never listed; a shared channel reaches other workspaces.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.Audience" title="correspond.model.Audience"><code class="xref py py-class docutils literal notranslate"><span class="pre">Audience</span></code></a></span></p>
@@ -503,7 +517,15 @@ carry a Slack mention (<code class="docutils literal notranslate"><span class="p
 <dl class="py property">
 <dt class="sig sig-object py" id="correspond.channels.slack.Slack.capabilities">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">capabilities</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="correspond.model.html#correspond.model.Capabilities" title="correspond.model.Capabilities"><span class="pre">Capabilities</span></a></span><a class="headerlink" href="#correspond.channels.slack.Slack.capabilities" title="Link to this definition">#</a></dt>
-<dd><p>A dry run always; a post where a webhook is configured.</p>
+<dd><p>post; with nothing: a draft.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>With a token</p>
+</dd>
+<dt class="field-even">Type<span class="colon">:</span></dt>
+<dd class="field-even"><p>read, poll, post and reply in threads; with a webhook</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -518,14 +540,44 @@ carry a Slack mention (<code class="docutils literal notranslate"><span class="p
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.slack.Slack.poll">
+<span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/slack.html#Slack.poll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.slack.Slack.poll" title="Link to this definition">#</a></dt>
+<dd><p>Top-level messages newer than <code class="docutils literal notranslate"><span class="pre">cursor</span></code> (a <code class="docutils literal notranslate"><span class="pre">ts</span></code>), oldest first; a first poll looks back a day.</p>
+<dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.slack.Slack.read">
+<span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">since</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/slack.html#Slack.read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.slack.Slack.read" title="Link to this definition">#</a></dt>
+<dd><p>The channel’s latest top-level messages (<code class="docutils literal notranslate"><span class="pre">limit</span></code>, else 50), oldest first.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="correspond.model.html#correspond.model.Message" title="correspond.model.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.slack.Slack.send">
 <span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/slack.html#Slack.send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.slack.Slack.send" title="Link to this definition">#</a></dt>
-<dd><p>Render <code class="docutils literal notranslate"><span class="pre">draft</span></code> as mrkdwn; post it through the channel’s webhook unless <code class="docutils literal notranslate"><span class="pre">dry_run</span></code>.</p>
-<p>A reply (<code class="docutils literal notranslate"><span class="pre">draft.reply_to</span></code>, the message’s <code class="docutils literal notranslate"><span class="pre">ts</span></code>) renders in a dry run, for the
-operator to paste in that thread; a webhook cannot post one.</p>
+<dd><p>Render <code class="docutils literal notranslate"><span class="pre">draft</span></code> as mrkdwn, then post it with the token (<code class="docutils literal notranslate"><span class="pre">chat.postMessage</span></code>), else through the channel’s webhook.</p>
+<p><code class="docutils literal notranslate"><span class="pre">draft.reply_to</span></code> (a message’s <code class="docutils literal notranslate"><span class="pre">ts</span></code>) posts in that thread with a token; through a
+webhook, which cannot thread, it renders in a dry run for the operator to paste.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.slack.Slack.verify">
+<span class="sig-name descname"><span class="pre">verify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">headers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/slack.html#Slack.verify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.slack.Slack.verify" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">crypto</span></code> when <code class="docutils literal notranslate"><span class="pre">X-Slack-Signature</span></code> matches the signing secret over a fresh timestamp, <code class="docutils literal notranslate"><span class="pre">forged</span></code> otherwise.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.Authenticity" title="correspond.model.Authenticity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Authenticity</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -622,7 +674,10 @@ operator to paste in that thread; a webhook cannot post one.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.slack.Slack.audience"><code class="docutils literal notranslate"><span class="pre">Slack.audience()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.slack.Slack.capabilities"><code class="docutils literal notranslate"><span class="pre">Slack.capabilities</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.slack.Slack.parse_ref"><code class="docutils literal notranslate"><span class="pre">Slack.parse_ref()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.slack.Slack.poll"><code class="docutils literal notranslate"><span class="pre">Slack.poll()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.slack.Slack.read"><code class="docutils literal notranslate"><span class="pre">Slack.read()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.slack.Slack.send"><code class="docutils literal notranslate"><span class="pre">Slack.send()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.slack.Slack.verify"><code class="docutils literal notranslate"><span class="pre">Slack.verify()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.slack.to_mrkdwn"><code class="docutils literal notranslate"><span class="pre">to_mrkdwn()</span></code></a></li>

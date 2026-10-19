@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=3294188c"></script>
+    <script src="../../../_static/documentation_options.js?v=f91d8841"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.23" />
+  <meta name="docsearch:version" content="0.0.24" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -712,7 +712,7 @@ window.runMermaid = runMermaid;</script>
                 <article class="bd-article">
                   
   <h1>Source code for correspond.channels.slack</h1><div class="highlight"><pre>
-<span></span><span class="sd">"""Slack: messages formatted as Slack writes them, posted through an incoming webhook.</span>
+<span></span><span class="sd">"""Slack: drafts in Slack's own formatting; reading, polling and posting with a token; posting through a webhook.</span>
 
 <span class="sd">Reference: ``slack:&lt;channel&gt;``, a Slack channel by its name (``#`` optional, lower-cased;</span>
 <span class="sd">1-80 of ``a-z``, ``0-9``, ``-`` and ``_``) or by its id (``C024BE91L``, kept as Slack</span>
@@ -722,14 +722,24 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">item ``correspond-slack-webhook-&lt;channel&gt;``. The webhook URL is a credential: it never</span>
 <span class="sd">appears in a reference, a plan or an error.</span>
 
-<span class="sd">Two uses, one channel:</span>
+<span class="sd">Three uses, one channel, each needing a little more set up:</span>
 
 <span class="sd">- **A draft the operator sends.** ``send(..., dry_run=True)`` needs nothing configured: the</span>
 <span class="sd">  plan holds the text rendered as Slack ``mrkdwn`` (:func:`to_mrkdwn`), its length against</span>
 <span class="sd">  Slack's limit, and says nothing was sent. That is the whole interaction when an agent</span>
 <span class="sd">  writes the reply and a person pastes it, including on a workspace where no app will</span>
 <span class="sd">  ever be installed.</span>
-<span class="sd">- **A post.** With a webhook for the name, ``send`` posts the same text to its channel.</span>
+<span class="sd">- **A post through a webhook.** With the channel's webhook, ``send`` posts the same text</span>
+<span class="sd">  there, as the app that owns the webhook. A webhook cannot reply in a thread.</span>
+<span class="sd">- **The Web API, with a token** (``CORRESPOND_SLACK_TOKEN``: a bot token ``xoxb-`` acts as</span>
+<span class="sd">  the app, a user token ``xoxp-`` as the person). ``read`` returns a channel's latest</span>
+<span class="sd">  top-level messages (``conversations.history``), ``listen`` polls for newer ones (the</span>
+<span class="sd">  cursor is a message ``ts``), and ``send`` posts with ``chat.postMessage``, replying in a</span>
+<span class="sd">  thread when ``reply_to`` is a message's ``ts``. A channel given by name is looked up</span>
+<span class="sd">  once with ``conversations.list``. Install the app in your own workspace: Slack limits a</span>
+<span class="sd">  commercially distributed app outside its Marketplace to one history request a minute.</span>
+<span class="sd">  :meth:`Slack.verify` checks a request Slack sends (``X-Slack-Signature``, with the</span>
+<span class="sd">  signing secret), graded ``crypto``.</span>
 
 <span class="sd">Slack's ``mrkdwn`` is not Markdown: ``*bold*``, ``_italic_``, ``~strike~``, ``&lt;url|text&gt;``</span>
 <span class="sd">links, no headings, no tables, and ``&amp;``, ``&lt;`` and ``&gt;`` escaped. :func:`to_mrkdwn`</span>
@@ -737,7 +747,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">as literal asterisks and pipes. Because every ``&lt;`` in the text is escaped, a draft cannot</span>
 <span class="sd">carry a Slack mention (``&lt;!channel&gt;``, ``&lt;@U...&gt;``) that would notify people.</span>
 
-<span class="sd">Reading and listening need a Slack app and token (``slack-sdk``), and are not built yet.</span>
+<span class="sd">Messages read are ``platform``: Slack authenticated the account, and correspond fetched</span>
+<span class="sd">them itself. Neither the token nor a webhook URL appears in a plan or an error.</span>
 
 <span class="sd">&gt;&gt;&gt; to_mrkdwn("**Fixed** in [#12](https://example.org/12) &amp; shipped")</span>
 <span class="sd">'*Fixed* in &lt;https://example.org/12|#12&gt; &amp;amp; shipped'</span>
@@ -745,24 +756,40 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">hmac</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">urlencode</span><span class="p">,</span> <span class="n">urlsplit</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond</span><span class="w"> </span><span class="kn">import</span> <span class="n">settings</span> <span class="k">as</span> <span class="n">_settings</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.channels._http</span><span class="w"> </span><span class="kn">import</span> <span class="n">urllib_http</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.channels._http</span><span class="w"> </span><span class="kn">import</span> <span class="n">retry_after_seconds</span><span class="p">,</span> <span class="n">urllib_http</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span><span class="p">,</span> <span class="n">MissingRequirement</span><span class="p">,</span> <span class="n">NotSupported</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Account</span><span class="p">,</span>
+    <span class="n">Attachment</span><span class="p">,</span>
     <span class="n">Audience</span><span class="p">,</span>
+    <span class="n">Authenticity</span><span class="p">,</span>
     <span class="n">Capabilities</span><span class="p">,</span>
+    <span class="n">ChannelIdentity</span><span class="p">,</span>
     <span class="n">ConversationRef</span><span class="p">,</span>
     <span class="n">Draft</span><span class="p">,</span>
+    <span class="n">Event</span><span class="p">,</span>
+    <span class="n">Grade</span><span class="p">,</span>
+    <span class="n">HistoryDepth</span><span class="p">,</span>
+    <span class="n">Message</span><span class="p">,</span>
     <span class="n">Scope</span><span class="p">,</span>
     <span class="n">SendResult</span><span class="p">,</span>
     <span class="n">Support</span><span class="p">,</span>
 <span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">with_final_cursor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">require</span><span class="p">,</span> <span class="n">value</span>
 
 <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"MAX_TEXT_CHARS"</span><span class="p">,</span> <span class="s2">"Slack"</span><span class="p">,</span> <span class="s2">"to_mrkdwn"</span><span class="p">,</span> <span class="s2">"webhook_env"</span><span class="p">]</span>
 
@@ -932,10 +959,72 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="sa">f</span><span class="s2">"correspond-</span><span class="si">{</span><span class="n">NAME</span><span class="si">}</span><span class="s2">-webhook-</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span>
 
 
+<span class="c1">#: Slack Web API errors, as correspond's error kinds.</span>
+<span class="n">_API_ERRORS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"invalid_auth"</span><span class="p">:</span> <span class="s2">"auth"</span><span class="p">,</span>
+    <span class="s2">"not_authed"</span><span class="p">:</span> <span class="s2">"auth"</span><span class="p">,</span>
+    <span class="s2">"account_inactive"</span><span class="p">:</span> <span class="s2">"auth"</span><span class="p">,</span>
+    <span class="s2">"token_revoked"</span><span class="p">:</span> <span class="s2">"auth"</span><span class="p">,</span>
+    <span class="s2">"token_expired"</span><span class="p">:</span> <span class="s2">"auth"</span><span class="p">,</span>
+    <span class="s2">"missing_scope"</span><span class="p">:</span> <span class="s2">"permission"</span><span class="p">,</span>
+    <span class="s2">"not_in_channel"</span><span class="p">:</span> <span class="s2">"permission"</span><span class="p">,</span>
+    <span class="s2">"restricted_action"</span><span class="p">:</span> <span class="s2">"permission"</span><span class="p">,</span>
+    <span class="s2">"is_archived"</span><span class="p">:</span> <span class="s2">"permission"</span><span class="p">,</span>
+    <span class="s2">"channel_not_found"</span><span class="p">:</span> <span class="s2">"not_found"</span><span class="p">,</span>
+    <span class="s2">"thread_not_found"</span><span class="p">:</span> <span class="s2">"not_found"</span><span class="p">,</span>
+    <span class="s2">"message_not_found"</span><span class="p">:</span> <span class="s2">"not_found"</span><span class="p">,</span>
+    <span class="s2">"ratelimited"</span><span class="p">:</span> <span class="s2">"rate_limited"</span><span class="p">,</span>
+    <span class="s2">"msg_too_long"</span><span class="p">:</span> <span class="s2">"validation"</span><span class="p">,</span>
+    <span class="s2">"no_text"</span><span class="p">:</span> <span class="s2">"validation"</span><span class="p">,</span>
+    <span class="s2">"invalid_arguments"</span><span class="p">:</span> <span class="s2">"validation"</span><span class="p">,</span>
+    <span class="s2">"invalid_cursor"</span><span class="p">:</span> <span class="s2">"validation"</span><span class="p">,</span>
+    <span class="s2">"invalid_ts_oldest"</span><span class="p">:</span> <span class="s2">"validation"</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">API_BASE</span> <span class="o">=</span> <span class="s2">"https://slack.com/api"</span>
+<span class="n">PAGE_SIZE</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">READ_DEFAULT</span> <span class="o">=</span> <span class="mi">50</span>
+<span class="n">LISTEN_LOOKBACK_S</span> <span class="o">=</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">3600</span>
+<span class="c1">#: How far behind the clock a quiet first poll sets its cursor (this clock may run ahead of Slack's).</span>
+<span class="n">CLOCK_SKEW_S</span> <span class="o">=</span> <span class="mi">60</span>
+<span class="c1">#: How long a poll waits out a rate limit met partway through its pages, and how many times.</span>
+<span class="n">RATE_WAIT_MAX_S</span> <span class="o">=</span> <span class="mi">60</span>
+<span class="n">RATE_WAIT_TRIES</span> <span class="o">=</span> <span class="mi">3</span>
+<span class="c1">#: Hosts a file's link may name for the token to go with it.</span>
+<span class="n">FILE_HOST_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^(?:[a-z0-9-]+\.)*slack\.com$"</span><span class="p">)</span>
+<span class="c1">#: Message subtypes that are someone writing (others, like channel_join, are Slack's own notices).</span>
+<span class="n">MESSAGE_SUBTYPES</span> <span class="o">=</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="s2">"bot_message"</span><span class="p">,</span> <span class="s2">"thread_broadcast"</span><span class="p">,</span> <span class="s2">"file_share"</span><span class="p">,</span> <span class="s2">"me_message"</span><span class="p">)</span>
+<span class="c1">#: How old a signed request may be before :meth:`Slack.verify` calls it a replay.</span>
+<span class="n">SIGNATURE_MAX_AGE_S</span> <span class="o">=</span> <span class="mi">300</span>
+<span class="n">TS_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^[0-9]{1,12}\.[0-9]{1,9}$"</span><span class="p">)</span>
+<span class="n">_PLATFORM</span> <span class="o">=</span> <span class="n">Authenticity</span><span class="p">(</span>
+    <span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span> <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"attested_by"</span><span class="p">:</span> <span class="s2">"the Slack Web API"</span><span class="p">}</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_posts_as</span><span class="p">(</span><span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whose name a token posts under, as far as its shape says (a real send asks Slack).</span>
+
+<span class="sd">    &gt;&gt;&gt; _posts_as("xoxb-1"), _posts_as("xoxe.xoxb-1"), _posts_as("xoxp-1")</span>
+<span class="sd">    ('the app (a bot token)', 'the app (a bot token)', 'the person whose token it is (a user token)')</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="s2">"xoxb-"</span> <span class="ow">in</span> <span class="n">token</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"the app (a bot token)"</span>
+    <span class="k">if</span> <span class="s2">"xoxp-"</span> <span class="ow">in</span> <span class="n">token</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"the person whose token it is (a user token)"</span>
+    <span class="k">return</span> <span class="s2">"whoever the token belongs to (checked when sending)"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ts_time</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">ts</span><span class="p">),</span> <span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="k">if</span> <span class="n">ts</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">TypeError</span><span class="p">,</span> <span class="ne">ValueError</span><span class="p">,</span> <span class="ne">OverflowError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+
 <div class="viewcode-block" id="Slack">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.slack.html#correspond.channels.slack.Slack">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">Slack</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Slack: a draft in Slack's own formatting, and a post through an incoming webhook."""</span>
+<span class="w">    </span><span class="sd">"""Slack: drafts in Slack's own formatting; reading, polling and posting with a token; posting through a webhook."""</span>
 
     <span class="n">name</span> <span class="o">=</span> <span class="n">NAME</span>
 
@@ -944,28 +1033,51 @@ window.runMermaid = runMermaid;</script>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">http</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">urllib_http</span><span class="p">,</span>
         <span class="n">keychain</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">run</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">,</span>
+        <span class="n">clock</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">,</span>
+        <span class="n">sleep</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">http</span> <span class="o">=</span> <span class="n">http</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">run</span> <span class="o">=</span> <span class="n">run</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clock</span> <span class="o">=</span> <span class="n">clock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sleep</span> <span class="o">=</span> <span class="n">sleep</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_keychain</span> <span class="o">=</span> <span class="n">keychain</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_ids</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_whoami</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Account</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Capabilities</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""A dry run always; a post where a webhook is configured."""</span>
+<span class="w">        </span><span class="sd">"""With a token: read, poll, post and reply in threads; with a webhook: post; with nothing: a draft."""</span>
         <span class="k">return</span> <span class="n">Capabilities</span><span class="p">(</span>
             <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
-            <span class="n">send</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
+            <span class="n">read</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
+            <span class="n">listen</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
+            <span class="n">send</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">audience</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
+            <span class="n">verify</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">initiate</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
-            <span class="n">reply</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
+            <span class="n">reply</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">history_depth</span><span class="o">=</span><span class="n">HistoryDepth</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">listen_modes</span><span class="o">=</span><span class="p">(</span><span class="s2">"poll"</span><span class="p">,),</span>
+            <span class="n">grades</span><span class="o">=</span><span class="p">(</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span> <span class="n">Grade</span><span class="o">.</span><span class="n">CRYPTO</span><span class="p">,</span> <span class="n">Grade</span><span class="o">.</span><span class="n">FORGED</span><span class="p">),</span>
             <span class="n">max_text_length</span><span class="o">=</span><span class="n">MAX_TEXT_CHARS</span><span class="p">,</span>
             <span class="n">formats</span><span class="o">=</span><span class="p">(</span><span class="s2">"mrkdwn"</span><span class="p">,),</span>
-            <span class="n">rate_limits</span><span class="o">=</span><span class="p">(</span><span class="s2">"about one message per second per webhook"</span><span class="p">,),</span>
+            <span class="n">native_fields</span><span class="o">=</span><span class="p">(</span><span class="s2">"ts"</span><span class="p">,</span> <span class="s2">"thread_ts"</span><span class="p">,</span> <span class="s2">"reply_count"</span><span class="p">,</span> <span class="s2">"subtype"</span><span class="p">,</span> <span class="s2">"bot_id"</span><span class="p">),</span>
+            <span class="n">rate_limits</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"conversations.history: about 50 requests a minute for an internal app; a commercially distributed app outside the Marketplace gets 1 a minute and 15 messages"</span><span class="p">,</span>
+                <span class="s2">"chat.postMessage: about one message per second per channel"</span><span class="p">,</span>
+            <span class="p">),</span>
             <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
                 <span class="s2">"a dry run renders the text as Slack mrkdwn (bold *x*, italic _x_, links &lt;url|text&gt;, no headings or tables) and needs nothing configured: it is the draft the operator can paste, a reply included (paste it in the thread)"</span><span class="p">,</span>
-                <span class="s2">"a real send posts through the incoming webhook configured for the name (CORRESPOND_SLACK_WEBHOOK_&lt;NAME&gt;, or the Keychain); a webhook posts to the one channel it was made for, as the app that owns it"</span><span class="p">,</span>
+                <span class="s2">"with a token (CORRESPOND_SLACK_TOKEN) read, listen and send use the Web API, and send replies in a thread with reply_to = the message's ts; a bot token posts as the app, a user token as the person, and the plan says which"</span><span class="p">,</span>
+                <span class="s2">"a channel with its own incoming webhook (CORRESPOND_SLACK_WEBHOOK_&lt;CHANNEL&gt;, or the Keychain) posts through it, a reply excepted (a webhook cannot thread); a channel without one posts with the token"</span><span class="p">,</span>
                 <span class="s2">"the text cannot mention anyone: every &lt; is escaped and only http, https and mailto targets become links, so &lt;!channel&gt;, &lt;@U...&gt; or [x](!here) arrive as text"</span><span class="p">,</span>
-                <span class="s2">"a title is prepended as a bold line; a webhook cannot post in a thread"</span><span class="p">,</span>
-                <span class="s2">"read and listen need a Slack app token (slack-sdk) and are not built"</span><span class="p">,</span>
+                <span class="s2">"read and listen see a channel's top-level messages, thread parents and replies also sent to the channel, not the other replies inside threads; Slack's own notices (someone joined, the topic changed) are left out; listen polls over the Web API and sees new messages, not edits"</span><span class="p">,</span>
+                <span class="s2">"push delivery (the Events API, Socket Mode) is not built: listen polls; verify is ready for a receiver of Slack's signed requests"</span><span class="p">,</span>
+                <span class="s2">"install the app in your own workspace: a commercially distributed app outside Slack's Marketplace gets one history request a minute, which polling cannot keep up with; a rate limit met partway through a poll is waited out (up to a minute, three times)"</span><span class="p">,</span>
+                <span class="s2">"a file is fetched with the token only from Slack's own hosts (the token needs files:read); a file hosted elsewhere is not fetched"</span><span class="p">,</span>
+                <span class="s2">"a channel named rather than given by id is looked up with conversations.list (the token needs channels:read, and groups:read for a private one)"</span><span class="p">,</span>
+                <span class="s2">"verify checks a request's X-Slack-Signature with the signing secret, and refuses one older than 5 minutes"</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span>
 
@@ -985,6 +1097,329 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"channel"</span><span class="p">)</span></div>
 
 
+    <span class="c1"># ------------------------------------------------------------------ plumbing</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The Web API token, or ``None``; a dry run reads only the environment."""</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"token"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">,</span> <span class="n">keychain</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"token"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_api</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""One Web API call (form-encoded); ``ok: false`` and HTTP failures as correspond's error kinds."""</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">reply</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="p">(</span>
+                <span class="s2">"POST"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">API_BASE</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">headers</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"Authorization"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Bearer </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="s2">"Content-Type"</span><span class="p">:</span> <span class="s2">"application/x-www-form-urlencoded"</span><span class="p">,</span>
+                <span class="p">},</span>
+                <span class="n">body</span><span class="o">=</span><span class="n">urlencode</span><span class="p">({</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">params</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">})</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span>
+                    <span class="s2">"utf-8"</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Slack </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">token</span><span class="p">,</span> <span class="s2">"&lt;token&gt;"</span><span class="p">),</span>
+                <span class="n">kind</span><span class="o">=</span><span class="n">error</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span>
+                <span class="n">retryable</span><span class="o">=</span><span class="n">error</span><span class="o">.</span><span class="n">retryable</span><span class="p">,</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+        <span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">429</span><span class="p">:</span>
+            <span class="n">wait</span> <span class="o">=</span> <span class="n">retry_after_seconds</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">headers</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Slack </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">: rate limited"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"rate_limited"</span><span class="p">,</span>
+                <span class="n">retryable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">retry_after</span><span class="o">=</span><span class="n">wait</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">reply</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="mi">200</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Slack </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">: HTTP </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"unavailable"</span> <span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">500</span> <span class="k">else</span> <span class="s2">"validation"</span><span class="p">,</span>
+                <span class="n">retryable</span><span class="o">=</span><span class="n">reply</span><span class="o">.</span><span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">500</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ok"</span><span class="p">):</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"error"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"unknown_error"</span><span class="p">)</span>
+            <span class="n">kind</span> <span class="o">=</span> <span class="n">_API_ERRORS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="s2">"unavailable"</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Slack </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span>
+                <span class="o">+</span> <span class="p">(</span><span class="sa">f</span><span class="s2">" (needed: </span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="s1">'needed'</span><span class="p">]</span><span class="si">}</span><span class="s2">)"</span> <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"needed"</span><span class="p">)</span> <span class="k">else</span> <span class="s2">""</span><span class="p">),</span>
+                <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span>
+                <span class="n">retryable</span><span class="o">=</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"rate_limited"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_require_token</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">what</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_token</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">token</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MissingRequirement</span><span class="p">(</span>
+                <span class="n">NAME</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"no Slack token to </span><span class="si">{</span><span class="n">what</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">fix</span><span class="o">=</span><span class="p">(</span>
+                    <span class="s2">"create a Slack app installed in your workspace (internal, not distributed), give its bot "</span>
+                    <span class="s2">"channels:history, channels:read and chat:write (groups:* for private channels), invite it to "</span>
+                    <span class="s2">"the channel, and set CORRESPOND_SLACK_TOKEN to its xoxb- token (or keep it in the Keychain)"</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">token</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_channel_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The channel's id: the reference's own, or a name looked up with ``conversations.list``."""</span>
+        <span class="k">if</span> <span class="n">CHANNEL_ID_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span>
+        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_ids</span><span class="p">:</span>
+            <span class="n">cursor</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span>
+                    <span class="s2">"conversations.list"</span><span class="p">,</span>
+                    <span class="p">{</span>
+                        <span class="s2">"types"</span><span class="p">:</span> <span class="s2">"public_channel,private_channel"</span><span class="p">,</span>
+                        <span class="s2">"exclude_archived"</span><span class="p">:</span> <span class="s2">"true"</span><span class="p">,</span>
+                        <span class="s2">"limit"</span><span class="p">:</span> <span class="n">PAGE_SIZE</span><span class="p">,</span>
+                        <span class="s2">"cursor"</span><span class="p">:</span> <span class="n">cursor</span><span class="p">,</span>
+                    <span class="p">},</span>
+                    <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"channels"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">():</span>
+                    <span class="k">if</span> <span class="n">channel</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_ids</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">channel</span><span class="p">[</span><span class="s2">"name"</span><span class="p">],</span> <span class="n">channel</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
+                <span class="n">cursor</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"response_metadata"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"next_cursor"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_ids</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">cursor</span><span class="p">:</span>
+                    <span class="k">break</span>
+        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_ids</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"no channel #</span><span class="si">{</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> that the token can see (invite the app, or give its id)"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"not_found"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_ids</span><span class="p">[</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_history</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">channel</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">oldest</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""``conversations.history``, newest first, every page up to ``limit`` messages."""</span>
+        <span class="n">found</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"channel"</span><span class="p">:</span> <span class="n">channel</span><span class="p">,</span>
+                <span class="s2">"oldest"</span><span class="p">:</span> <span class="n">oldest</span><span class="p">,</span>
+                <span class="s2">"limit"</span><span class="p">:</span> <span class="nb">min</span><span class="p">(</span><span class="n">PAGE_SIZE</span><span class="p">,</span> <span class="n">limit</span><span class="p">)</span> <span class="k">if</span> <span class="n">limit</span> <span class="k">else</span> <span class="n">PAGE_SIZE</span><span class="p">,</span>
+                <span class="s2">"cursor"</span><span class="p">:</span> <span class="n">cursor</span><span class="p">,</span>
+            <span class="p">}</span>
+            <span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">RATE_WAIT_TRIES</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="s2">"conversations.history"</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
+                    <span class="k">break</span>
+                <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                    <span class="c1"># Pages already read would be lost: wait a rate limit out, a few times.</span>
+                    <span class="n">wait</span> <span class="o">=</span> <span class="n">error</span><span class="o">.</span><span class="n">retry_after</span> <span class="ow">or</span> <span class="n">RATE_WAIT_MAX_S</span>
+                    <span class="k">if</span> <span class="p">(</span>
+                        <span class="n">error</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s2">"rate_limited"</span>
+                        <span class="ow">or</span> <span class="ow">not</span> <span class="n">found</span>
+                        <span class="ow">or</span> <span class="n">attempt</span> <span class="o">==</span> <span class="n">RATE_WAIT_TRIES</span>
+                        <span class="ow">or</span> <span class="n">wait</span> <span class="o">&gt;</span> <span class="n">RATE_WAIT_MAX_S</span>
+                    <span class="p">):</span>
+                        <span class="k">raise</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">wait</span><span class="p">)</span>
+            <span class="n">found</span> <span class="o">+=</span> <span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"messages"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">())</span>
+            <span class="n">cursor</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"response_metadata"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"next_cursor"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">cursor</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"has_more"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">limit</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">found</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">limit</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">found</span><span class="p">[:</span><span class="n">limit</span><span class="p">]</span> <span class="k">if</span> <span class="n">limit</span> <span class="k">else</span> <span class="n">found</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conversation</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+        <span class="n">ts</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"ts"</span><span class="p">])</span>
+        <span class="n">thread</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"thread_ts"</span><span class="p">)</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="n">thread</span> <span class="k">if</span> <span class="n">thread</span> <span class="ow">and</span> <span class="n">thread</span> <span class="o">!=</span> <span class="n">ts</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">loader</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">mime</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bytes</span><span class="p">:</span>
+                <span class="n">parts</span> <span class="o">=</span> <span class="n">urlsplit</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">parts</span><span class="o">.</span><span class="n">scheme</span> <span class="o">!=</span> <span class="s2">"https"</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">FILE_HOST_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span>
+                    <span class="n">parts</span><span class="o">.</span><span class="n">hostname</span> <span class="ow">or</span> <span class="s2">""</span>
+                <span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"this file is hosted outside Slack (</span><span class="si">{</span><span class="n">parts</span><span class="o">.</span><span class="n">hostname</span><span class="si">}</span><span class="s2">); open its link: the token is never sent there"</span><span class="p">,</span>
+                        <span class="n">kind</span><span class="o">=</span><span class="s2">"permission"</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="n">reply</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="p">(</span>
+                    <span class="s2">"GET"</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"Authorization"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"Bearer </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">"</span><span class="p">}</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">reply</span><span class="o">.</span><span class="n">status</span> <span class="o">!=</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"Slack answered </span><span class="si">{</span><span class="n">reply</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2"> for a file"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"unavailable"</span>
+                    <span class="p">)</span>
+                <span class="n">kind</span> <span class="o">=</span> <span class="n">reply</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"content-type"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">kind</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"text/html"</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">mime</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"text/html"</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                        <span class="s2">"Slack answered with a sign-in page, not the file: the token needs the files:read scope"</span><span class="p">,</span>
+                        <span class="n">kind</span><span class="o">=</span><span class="s2">"permission"</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">return</span> <span class="n">reply</span><span class="o">.</span><span class="n">body</span>
+
+            <span class="k">return</span> <span class="n">load</span>
+
+        <span class="k">return</span> <span class="n">Message</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">conversation</span><span class="p">,</span>
+            <span class="n">author</span><span class="o">=</span><span class="n">ChannelIdentity</span><span class="p">(</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                <span class="n">native_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"bot_id"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">),</span>
+                <span class="n">display_name</span><span class="o">=</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"bot_profile"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"username"</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">is_bot</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"bot_id"</span><span class="p">)),</span>
+            <span class="p">),</span>
+            <span class="n">authenticity</span><span class="o">=</span><span class="n">_PLATFORM</span><span class="p">,</span>
+            <span class="n">sent_at</span><span class="o">=</span><span class="n">_ts_time</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span> <span class="ow">or</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">),</span>
+            <span class="n">edited_at</span><span class="o">=</span><span class="n">_ts_time</span><span class="p">((</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"edited"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ts"</span><span class="p">)),</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+            <span class="n">body_format</span><span class="o">=</span><span class="s2">"mrkdwn"</span><span class="p">,</span>
+            <span class="n">reply_to</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span>
+            <span class="n">thread_root</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span>
+            <span class="n">attachments</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span>
+                <span class="n">Attachment</span><span class="p">(</span>
+                    <span class="n">ref</span><span class="o">=</span><span class="sa">f</span><span class="s2">"slack-file:</span><span class="si">{</span><span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'id'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">media_type</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"mimetype"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"application/octet-stream"</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">),</span>
+                    <span class="n">size</span><span class="o">=</span><span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"size"</span><span class="p">),</span>
+                    <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">(</span>
+                        <span class="n">f</span><span class="p">[</span><span class="s2">"url_private"</span><span class="p">],</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"mimetype"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"application/octet-stream"</span>
+                    <span class="p">)</span>
+                    <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"url_private"</span><span class="p">)</span>
+                    <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"files"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">()</span>
+            <span class="p">),</span>
+            <span class="n">native</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"ts"</span><span class="p">:</span> <span class="n">ts</span><span class="p">,</span>
+                <span class="s2">"thread_ts"</span><span class="p">:</span> <span class="n">thread</span><span class="p">,</span>
+                <span class="s2">"reply_count"</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"reply_count"</span><span class="p">),</span>
+                <span class="s2">"subtype"</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"subtype"</span><span class="p">),</span>
+                <span class="s2">"bot_id"</span><span class="p">:</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"bot_id"</span><span class="p">),</span>
+            <span class="p">},</span>
+            <span class="n">raw</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="c1"># ------------------------------------------------------------------ reading</span>
+
+<div class="viewcode-block" id="Slack.read">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.slack.html#correspond.channels.slack.Slack.read">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">since</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The channel's latest top-level messages (``limit``, else 50), oldest first."""</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_token</span><span class="p">(</span><span class="s2">"read a channel"</span><span class="p">)</span>
+        <span class="n">channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_id</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+        <span class="n">oldest</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">since</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">since</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">limit</span><span class="p">))</span> <span class="k">if</span> <span class="n">limit</span> <span class="k">else</span> <span class="n">READ_DEFAULT</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">oldest</span><span class="o">=</span><span class="n">oldest</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">count</span><span class="p">)</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">found</span>
+            <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"subtype"</span><span class="p">)</span> <span class="ow">in</span> <span class="n">MESSAGE_SUBTYPES</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">window</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="n">since</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">count</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Slack.poll">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.slack.html#correspond.channels.slack.Slack.poll">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">poll</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Top-level messages newer than ``cursor`` (a ``ts``), oldest first; a first poll looks back a day."""</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_require_token</span><span class="p">(</span><span class="s2">"listen to a channel"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cursor</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">TS_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">cursor</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"a Slack cursor is a message ts, not </span><span class="si">{</span><span class="n">cursor</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span>
+            <span class="p">)</span>
+        <span class="n">channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_id</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+        <span class="n">oldest</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span> <span class="k">if</span> <span class="n">cursor</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">now</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">LISTEN_LOOKBACK_S</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_history</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">oldest</span><span class="o">=</span><span class="n">oldest</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="kc">None</span><span class="p">),</span>
+            <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="nb">float</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="s2">"ts"</span><span class="p">]),</span>
+        <span class="p">)</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="p">[</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">found</span> <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="s2">"ts"</span><span class="p">])</span> <span class="o">&gt;</span> <span class="nb">float</span><span class="p">(</span><span class="n">oldest</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">limit</span><span class="p">:</span>
+            <span class="n">found</span> <span class="o">=</span> <span class="n">found</span><span class="p">[:</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">limit</span><span class="p">))]</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">Event</span><span class="p">(</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"message.created"</span><span class="p">,</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                <span class="n">delivery_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"slack:</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">data</span><span class="p">[</span><span class="s1">'ts'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">cursor</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"ts"</span><span class="p">]),</span>
+                <span class="n">message</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">token</span><span class="p">),</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">found</span>
+            <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"subtype"</span><span class="p">)</span> <span class="ow">in</span> <span class="n">MESSAGE_SUBTYPES</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">found</span><span class="p">:</span>
+            <span class="n">final</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">found</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">"ts"</span><span class="p">])</span>  <span class="c1"># past Slack's own notices too</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">cursor</span><span class="p">:</span>
+            <span class="c1"># A quiet first poll starts the next from now, less this clock's lead on Slack's.</span>
+            <span class="n">final</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">now</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">CLOCK_SKEW_S</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">final</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">with_final_cursor</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">final</span><span class="p">)</span></div>
+
+
+    <span class="c1"># ----------------------------------------------------------------- audience</span>
+
+<div class="viewcode-block" id="Slack.audience">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.slack.html#correspond.channels.slack.Slack.audience">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">audience</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Audience</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The channel's members, never listed; a shared channel reaches other workspaces."""</span>
+        <span class="k">return</span> <span class="n">Audience</span><span class="p">(</span>
+            <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">scope</span><span class="o">=</span><span class="n">Scope</span><span class="o">.</span><span class="n">GROUP</span><span class="p">,</span>
+            <span class="n">complete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">classes</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"the members of the channel (anyone in the workspace, for a public channel)"</span><span class="p">,</span>
+                <span class="s2">"guests and members of other organisations, when the channel is shared (Slack Connect)"</span><span class="p">,</span>
+                <span class="s2">"apps and integrations installed in the channel"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">durability</span><span class="o">=</span><span class="p">(</span><span class="s2">"copies_pushed"</span><span class="p">,</span> <span class="s2">"archived_by_others"</span><span class="p">,</span> <span class="s2">"edit_history_visible"</span><span class="p">),</span>
+            <span class="n">widening</span><span class="o">=</span><span class="p">(</span><span class="s2">"joiners_read_history"</span><span class="p">,</span> <span class="s2">"forwarding"</span><span class="p">,</span> <span class="s2">"visibility_flip"</span><span class="p">),</span>
+            <span class="n">evidence</span><span class="o">=</span><span class="p">(</span><span class="s2">"a Slack channel's members are not listed by correspond"</span><span class="p">,),</span>
+        <span class="p">)</span></div>
+
+
+    <span class="c1"># ----------------------------------------------------------------- verifying</span>
+
+<div class="viewcode-block" id="Slack.verify">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.slack.html#correspond.channels.slack.Slack.verify">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">verify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">body</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Authenticity</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``crypto`` when ``X-Slack-Signature`` matches the signing secret over a fresh timestamp, ``forged`` otherwise."""</span>
+        <span class="n">secret</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"signing_secret"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+        <span class="n">lowered</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">headers</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">stamp</span> <span class="o">=</span> <span class="n">lowered</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"x-slack-request-timestamp"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">received</span> <span class="o">=</span> <span class="n">lowered</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"x-slack-signature"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">stamp</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="k">return</span> <span class="n">Authenticity</span><span class="p">(</span>
+                <span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">FORGED</span><span class="p">,</span> <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"signature"</span><span class="p">:</span> <span class="s2">"no timestamp"</span><span class="p">}</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span> <span class="o">-</span> <span class="nb">int</span><span class="p">(</span><span class="n">stamp</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">SIGNATURE_MAX_AGE_S</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Authenticity</span><span class="p">(</span>
+                <span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">FORGED</span><span class="p">,</span> <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"signature"</span><span class="p">:</span> <span class="s2">"stale (a replay?)"</span><span class="p">}</span>
+            <span class="p">)</span>
+        <span class="n">base</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">"v0:"</span> <span class="o">+</span> <span class="n">stamp</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span> <span class="o">+</span> <span class="sa">b</span><span class="s2">":"</span> <span class="o">+</span> <span class="n">body</span>
+        <span class="n">expected</span> <span class="o">=</span> <span class="s2">"v0="</span> <span class="o">+</span> <span class="n">hmac</span><span class="o">.</span><span class="n">new</span><span class="p">(</span><span class="n">secret</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="n">base</span><span class="p">,</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">sha256</span><span class="p">)</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">received</span><span class="o">.</span><span class="n">isascii</span><span class="p">()</span> <span class="ow">and</span> <span class="n">received</span> <span class="ow">and</span> <span class="n">hmac</span><span class="o">.</span><span class="n">compare_digest</span><span class="p">(</span><span class="n">received</span><span class="p">,</span> <span class="n">expected</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Authenticity</span><span class="p">(</span><span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">CRYPTO</span><span class="p">,</span> <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"signature"</span><span class="p">:</span> <span class="s2">"valid"</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">Authenticity</span><span class="p">(</span>
+            <span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">FORGED</span><span class="p">,</span>
+            <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"signature"</span><span class="p">:</span> <span class="s2">"mismatch"</span> <span class="k">if</span> <span class="n">received</span> <span class="k">else</span> <span class="s2">"missing"</span><span class="p">},</span>
+        <span class="p">)</span></div>
+
+
+    <span class="c1"># ------------------------------------------------------------------ writing</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_webhook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">webhook_env</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">url</span><span class="p">:</span>
@@ -998,51 +1433,26 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">url</span> <span class="ow">or</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="Slack.audience">
-<a class="viewcode-back" href="../../../_autosummary/correspond.channels.slack.html#correspond.channels.slack.Slack.audience">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">audience</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Audience</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""The members of the webhook's channel, never listed; a shared channel reaches other workspaces."""</span>
-        <span class="k">return</span> <span class="n">Audience</span><span class="p">(</span>
-            <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
-            <span class="n">scope</span><span class="o">=</span><span class="n">Scope</span><span class="o">.</span><span class="n">GROUP</span><span class="p">,</span>
-            <span class="n">complete</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="n">classes</span><span class="o">=</span><span class="p">(</span>
-                <span class="s2">"the members of the channel the webhook posts to (anyone in the workspace, for a public channel)"</span><span class="p">,</span>
-                <span class="s2">"guests and members of other organisations, when the channel is shared (Slack Connect)"</span><span class="p">,</span>
-            <span class="p">),</span>
-            <span class="n">durability</span><span class="o">=</span><span class="p">(</span><span class="s2">"copies_pushed"</span><span class="p">,</span> <span class="s2">"archived_by_others"</span><span class="p">,</span> <span class="s2">"edit_history_visible"</span><span class="p">),</span>
-            <span class="n">widening</span><span class="o">=</span><span class="p">(</span><span class="s2">"joiners_read_history"</span><span class="p">,</span> <span class="s2">"forwarding"</span><span class="p">,</span> <span class="s2">"visibility_flip"</span><span class="p">),</span>
-            <span class="n">evidence</span><span class="o">=</span><span class="p">(</span>
-                <span class="s2">"a webhook posts to one channel, whose members correspond does not list"</span><span class="p">,</span>
-            <span class="p">),</span>
-        <span class="p">)</span></div>
-
-
 <div class="viewcode-block" id="Slack.send">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.slack.html#correspond.channels.slack.Slack.send">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Render ``draft`` as mrkdwn; post it through the channel's webhook unless ``dry_run``.</span>
+<span class="w">        </span><span class="sd">"""Render ``draft`` as mrkdwn, then post it with the token (``chat.postMessage``), else through the channel's webhook.</span>
 
-<span class="sd">        A reply (``draft.reply_to``, the message's ``ts``) renders in a dry run, for the</span>
-<span class="sd">        operator to paste in that thread; a webhook cannot post one.</span>
+<span class="sd">        ``draft.reply_to`` (a message's ``ts``) posts in that thread with a token; through a</span>
+<span class="sd">        webhook, which cannot thread, it renders in a dry run for the operator to paste.</span>
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">dry_run</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
-                <span class="s2">"reply"</span><span class="p">,</span>
-                <span class="n">NAME</span><span class="p">,</span>
-                <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span>
-                    <span class="s2">"a webhook cannot thread: the dry run gives the text to paste in the thread"</span><span class="p">,</span>
-                <span class="p">),</span>
-            <span class="p">)</span>
         <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
                 <span class="s2">"notify"</span><span class="p">,</span>
                 <span class="n">NAME</span><span class="p">,</span>
-                <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span>
-                    <span class="s2">"a webhook's text cannot mention anyone; name them in the text"</span><span class="p">,</span>
-                <span class="p">),</span>
+                <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"the text cannot mention anyone; name them in it"</span><span class="p">,),</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">TS_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"reply_to is a Slack message ts such as 1700000000.000100, not </span><span class="si">{</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_TEXT_CHARS</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
@@ -1060,32 +1470,100 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">"the rendered text is </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span><span class="si">}</span><span class="s2"> characters; Slack keeps </span><span class="si">{</span><span class="n">MAX_TEXT_CHARS</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
                 <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="n">configured</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">webhook_env</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">),</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_token</span><span class="p">(</span><span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
+        <span class="n">webhook_set</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">webhook_env</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">),</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+        <span class="c1"># A channel's own webhook is the operator's explicit choice for it, a reply excepted.</span>
+        <span class="n">via_webhook</span> <span class="o">=</span> <span class="n">webhook_set</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span>
         <span class="n">plan</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"post through the channel's incoming webhook"</span><span class="p">,</span>
-            <span class="s2">"name"</span><span class="p">:</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"post through the channel's incoming webhook"</span>
+            <span class="k">if</span> <span class="n">via_webhook</span>
+            <span class="k">else</span> <span class="s2">"post with the token (chat.postMessage)"</span>
+            <span class="k">if</span> <span class="n">token</span>
+            <span class="k">else</span> <span class="s2">"post with the token if one is found when sending, else through the channel's incoming webhook"</span><span class="p">,</span>
+            <span class="s2">"channel"</span><span class="p">:</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
             <span class="s2">"format"</span><span class="p">:</span> <span class="s2">"mrkdwn"</span><span class="p">,</span>
             <span class="s2">"text"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
             <span class="s2">"characters"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">),</span>
             <span class="s2">"max_characters"</span><span class="p">:</span> <span class="n">MAX_TEXT_CHARS</span><span class="p">,</span>
-            <span class="o">**</span><span class="p">({</span><span class="s2">"paste_in_thread_of"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">}</span> <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span> <span class="k">else</span> <span class="p">{}),</span>
-            <span class="s2">"webhook"</span><span class="p">:</span> <span class="s2">"configured (environment)"</span>
-            <span class="k">if</span> <span class="n">configured</span>
-            <span class="k">else</span> <span class="sa">f</span><span class="s2">"looked up when sending: </span><span class="si">{</span><span class="n">webhook_env</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="si">}</span><span class="s2">, else the Keychain item </span><span class="si">{</span><span class="n">webhook_keychain_service</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="p">}</span>
+        <span class="k">if</span> <span class="n">token</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">via_webhook</span><span class="p">:</span>
+            <span class="n">plan</span><span class="p">[</span><span class="s2">"posts_as"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_posts_as</span><span class="p">(</span><span class="n">token</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">:</span>
+            <span class="n">plan</span><span class="p">[</span><span class="s2">"in_thread_of"</span> <span class="k">if</span> <span class="n">token</span> <span class="k">else</span> <span class="s2">"paste_in_thread_of"</span><span class="p">]</span> <span class="o">=</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">token</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">webhook_set</span><span class="p">:</span>
+            <span class="n">plan</span><span class="p">[</span><span class="s2">"looked_up_when_sending"</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="s2">"CORRESPOND_SLACK_TOKEN (or the Keychain)"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">webhook_env</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="si">}</span><span class="s2"> (or the Keychain item </span><span class="si">{</span><span class="n">webhook_keychain_service</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="si">}</span><span class="s2">)"</span><span class="p">,</span>
+            <span class="p">]</span>
         <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
                 <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="n">plan</span>
             <span class="p">)</span>
+        <span class="k">if</span> <span class="n">via_webhook</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_post_webhook</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">token</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_webhook</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_post_webhook</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">token</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_post</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span> <span class="n">token</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
+                <span class="s2">"reply"</span><span class="p">,</span>
+                <span class="n">NAME</span><span class="p">,</span>
+                <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span>
+                    <span class="s2">"a webhook cannot thread: set a token, or paste the dry run's text in the thread"</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_post_webhook</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_post</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">thread</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">plan</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+        <span class="n">channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_id</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span>
+            <span class="s2">"chat.postMessage"</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">"channel"</span><span class="p">:</span> <span class="n">channel</span><span class="p">,</span>
+                <span class="s2">"text"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+                <span class="s2">"thread_ts"</span><span class="p">:</span> <span class="n">thread</span><span class="p">,</span>
+                <span class="s2">"unfurl_links"</span><span class="p">:</span> <span class="s2">"false"</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">posted</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">message_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ts"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">posted</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ts"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">account</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_account</span><span class="p">(</span><span class="n">token</span><span class="p">),</span>
+            <span class="n">plan</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">plan</span><span class="p">,</span> <span class="s2">"channel_id"</span><span class="p">:</span> <span class="n">channel</span><span class="p">},</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_account</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Account</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Whose name the token posts under, asked of Slack once (``auth.test``): a bot or a person."""</span>
+        <span class="k">if</span> <span class="n">token</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_whoami</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="s2">"auth.test"</span><span class="p">,</span> <span class="p">{},</span> <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">ChannelError</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">None</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_whoami</span><span class="p">[</span><span class="n">token</span><span class="p">]</span> <span class="o">=</span> <span class="n">Account</span><span class="p">(</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                <span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user_id"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"bot_id"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">),</span>
+                <span class="n">acts_as</span><span class="o">=</span><span class="s2">"bot"</span> <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"bot_id"</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"user"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_whoami</span><span class="p">[</span><span class="n">token</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_post_webhook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">plan</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
         <span class="n">url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_webhook</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">MissingRequirement</span><span class="p">(</span>
                 <span class="n">NAME</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">"no incoming webhook for slack:</span><span class="si">{</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"no Slack token and no incoming webhook for slack:</span><span class="si">{</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
                 <span class="n">fix</span><span class="o">=</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">"create one for the channel (Slack app settings, Incoming Webhooks) and set "</span>
-                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">webhook_env</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="si">}</span><span class="s2">, or store it in the Keychain as </span><span class="si">{</span><span class="n">webhook_keychain_service</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="si">}</span><span class="s2">; "</span>
-                    <span class="s2">"without one, a dry run gives the text to paste"</span>
+                    <span class="sa">f</span><span class="s2">"set CORRESPOND_SLACK_TOKEN, or create an incoming webhook for the channel (Slack app settings, "</span>
+                    <span class="sa">f</span><span class="s2">"Incoming Webhooks) and set </span><span class="si">{</span><span class="n">webhook_env</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="si">}</span><span class="s2"> or the Keychain item "</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">webhook_keychain_service</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="si">}</span><span class="s2">; without either, a dry run gives the text to paste"</span>
                 <span class="p">),</span>
                 <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
             <span class="p">)</span>
@@ -1116,9 +1594,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
             <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
             <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
-            <span class="n">plan</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">plan</span><span class="p">,</span> <span class="s2">"webhook"</span><span class="p">:</span> <span class="s2">"used"</span><span class="p">},</span>
+            <span class="n">plan</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">plan</span><span class="p">,</span> <span class="s2">"via"</span><span class="p">:</span> <span class="s2">"webhook"</span><span class="p">},</span>
         <span class="p">)</span></div>
-</div>
 
 </pre></div>
 
