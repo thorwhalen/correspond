@@ -163,6 +163,21 @@ def _completed(argv, status, body, headers):
 
 
 WHOAMI = ("GET", "user", (200, {"login": "example-bot"}))
+NO_DISCUSSIONS = {
+    "data": {
+        "repository": {
+            "discussions": {
+                "pageInfo": {"hasNextPage": False, "endCursor": None},
+                "nodes": [],
+            }
+        }
+    }
+}
+#: A repository poll's further reads, answered with nothing: no review comments, no discussions.
+QUIET = (
+    ("GET", rf"repos/{REPO}/pulls/comments\?.*", (200, [])),
+    ("POST", "graphql", (200, NO_DISCUSSIONS)),
+)
 
 
 def _read(gh, ref, **kwargs):
@@ -504,7 +519,9 @@ def test_label_adds_labels_and_reports_what_landed():
         ),
     )
     result = correspond.label(
-        f"github:{REPO}#1", ["bug", "needs-triage", "bug"], registry={"github": GitHub(run=gh)}
+        f"github:{REPO}#1",
+        ["bug", "needs-triage", "bug"],
+        registry={"github": GitHub(run=gh)},
     )
     assert result.ok and result.message_id == "issue-1"
     assert result.plan["labels"] == ["bug", "needs-triage"]  # de-duplicated
@@ -551,7 +568,11 @@ def test_unlabel_removes_labels_one_call_each_and_tolerates_an_absent_one():
         WHOAMI,
         ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
         ("DELETE", rf"repos/{REPO}/issues/1/labels/bug", (200, [])),
-        ("DELETE", rf"repos/{REPO}/issues/1/labels/wontfix", (404, {"message": "Label does not exist"})),
+        (
+            "DELETE",
+            rf"repos/{REPO}/issues/1/labels/wontfix",
+            (404, {"message": "Label does not exist"}),
+        ),
     )
     result = correspond.unlabel(
         f"github:{REPO}#1", ["bug", "wontfix"], registry={"github": GitHub(run=gh)}
@@ -579,7 +600,11 @@ def test_label_on_a_discussion_is_refused_by_name():
     gh = ScriptedGh(
         WHOAMI,
         ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
-        ("POST", "graphql", (200, {"data": {"repository": {"discussion": {"id": "D_node5"}}}})),
+        (
+            "POST",
+            "graphql",
+            (200, {"data": {"repository": {"discussion": {"id": "D_node5"}}}}),
+        ),
     )
     with pytest.raises(NotSupported, match="label"):
         correspond.label(f"github:{REPO}#5", ["bug"], registry={"github": GitHub(run=gh)})
@@ -719,6 +744,7 @@ def test_polling_a_repository_orders_new_issues_and_comment_activity_and_moves_t
                 ],
             ),
         ),
+        *QUIET,
     )
     cursors = {f"github:{REPO}": "2026-09-11T08:00:00Z"}
     events = list(
@@ -740,20 +766,53 @@ def test_polling_a_repository_orders_new_issues_and_comment_activity_and_moves_t
     }
 
 
-def test_listening_to_a_discussion_is_refused_by_name():
+def test_listening_to_one_discussion_delivers_its_new_and_edited_posts_once():
+    since = "2026-09-11T09:00:00Z"
+    replies = [_post(503, created="2026-09-11T10:05:00Z", replies=None)]
+    thread = _discussion(
+        [
+            _post(501, created="2026-09-11T08:40:00Z", edited="2026-09-11T09:30:00Z"),
+            _post(502, created="2026-09-11T08:50:00Z", replies=replies),
+        ]
+    )
     gh = ScriptedGh(
         WHOAMI,
         ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
-        (
-            "POST",
-            "graphql",
-            (200, {"data": {"repository": {"discussion": {"id": "D_node5"}}}}),
-        ),
+        ("POST", "graphql", (200, thread)),
     )
-    with pytest.raises(NotSupported, match="listen to a discussion"):
-        correspond.listen(
-            f"github:{REPO}#5", cursors={}, registry={"github": GitHub(run=gh)}
+    cursors = {f"github:{REPO}#5": since}
+    registry = {"github": GitHub(run=gh)}
+    events = list(
+        correspond.listen(f"github:{REPO}#5", cursors=cursors, registry=registry)
+    )
+    assert [(e.kind, e.message.id) for e in events] == [
+        ("message.updated", "discussioncomment-501"),
+        ("message.created", "discussioncomment-503"),
+    ], "the discussion (08:30) and comment 502 (08:50) predate the cursor"
+    assert events[1].message.reply_to == "discussioncomment-502"
+    assert (
+        events[1].delivery_id
+        == f"github:{REPO}:discussioncomment-503@2026-09-11T10:05:00Z"
+    )
+    again = list(
+        correspond.listen(f"github:{REPO}#5", cursors=cursors, registry=registry)
+    )
+    assert again == []
+
+
+def test_listening_to_a_number_that_is_nothing_is_not_found():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/9", (404, {"message": "Not Found"})),
+        ("POST", "graphql", (200, {"data": {"repository": {"discussion": None}}})),
+    )
+    with pytest.raises(ChannelError) as caught:
+        list(
+            correspond.listen(
+                f"github:{REPO}#9", cursors={}, registry={"github": GitHub(run=gh)}
+            )
         )
+    assert caught.value.kind == "not_found"
 
 
 def test_webhook_deliveries_are_crypto_when_the_signature_matches(monkeypatch):
@@ -853,6 +912,7 @@ def test_a_list_cut_short_holds_back_later_events_from_the_other_list(monkeypatc
             rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since={since}&per_page=2&page=1",
             (200, [_issue(7, created="2026-09-11T09:30:00Z")]),
         ),
+        *QUIET,
     )
     cursors = {f"github:{REPO}": since}
     events = list(
@@ -921,6 +981,7 @@ def _paged_routes(since, *, comments=(), issues=(), page_size=2):
             rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since={since}&per_page={page_size}&page=1",
             (200, list(issues)),
         ),
+        *QUIET,
     ]
 
 
@@ -1077,7 +1138,11 @@ ISSUE = f"github:{APP}#12"
 PUBLIC_WORDS = "world-readable; emailed to watchers and participants; archived by others; edits keep a visible history; not retractable"
 PRIVATE_DURABILITY = {"copies_pushed", "edit_history_visible"}
 PRIVATE_WIDENING = {"joiners_read_history", "forks", "visibility_flip"}
-RATE_LIMITED = (403, {"message": "API rate limit exceeded"}, {"X-RateLimit-Remaining": "0"})
+RATE_LIMITED = (
+    403,
+    {"message": "API rate limit exceeded"},
+    {"X-RateLimit-Remaining": "0"},
+)
 
 
 def _repository(
@@ -1262,12 +1327,18 @@ def test_a_users_private_repository_is_never_complete_because_apps_and_webhooks_
         _owned_by_example_bot(_user("ada", 3), _user("example-bot", 7)),
         "github:example-bot/app#12",
     )
-    assert reordered.hash == shared.hash, "the platform's listing order is not the audience"
+    assert reordered.hash == shared.hash, (
+        "the platform's listing order is not the audience"
+    )
 
 
 def test_the_audience_does_not_depend_on_who_asks_or_whether_gh_can_say():
     routes = (
-        ("GET", r"repos/example-bot/app", (200, _repository("private", owner="example-bot", owner_id=7, admin=True))),
+        (
+            "GET",
+            r"repos/example-bot/app",
+            (200, _repository("private", owner="example-bot", owner_id=7, admin=True)),
+        ),
         (
             "GET",
             r"repos/example-bot/app/collaborators\?per_page=100&page=1",
@@ -1302,7 +1373,9 @@ def test_collaborators_refused_despite_write_access_leave_the_list_unknown():
     found = _audience(gh)
     assert (found.complete, found.defaulted) == (False, False)
     assert UNLISTED_COLLABORATORS in found.classes
-    assert any(line.startswith("collaborators could not be listed") for line in found.evidence)
+    assert any(
+        line.startswith("collaborators could not be listed") for line in found.evidence
+    )
 
 
 def test_a_collaborator_list_cut_short_says_so():
@@ -1359,7 +1432,10 @@ def test_a_rate_limit_raises_in_the_adapter_and_resolves_to_public_through_the_r
 
     def offline(argv, **kwargs):
         return subprocess.CompletedProcess(
-            argv, 1, stdout="", stderr="error connecting to api.github.com: could not resolve host"
+            argv,
+            1,
+            stdout="",
+            stderr="error connecting to api.github.com: could not resolve host",
         )
 
     unreachable = _audience(offline)
@@ -1394,7 +1470,9 @@ def test_correspond_audience_on_the_command_line(monkeypatch, capsys):
     organisation = ScriptedGh(
         _org_repository(), ("GET", r"orgs/example-org", (403, {"message": "Forbidden"}))
     )
-    _, out = _cli(monkeypatch, capsys, organisation, "audience", "github:example-org/app#12")
+    _, out = _cli(
+        monkeypatch, capsys, organisation, "audience", "github:example-org/app#12"
+    )
     assert {"scope: org", f"class: {BASE_PERMISSION_DEFAULT}", "complete: false"} <= set(
         out.splitlines()
     )
@@ -1409,7 +1487,9 @@ def test_correspond_audience_on_the_command_line(monkeypatch, capsys):
 
     code, out = _cli(monkeypatch, capsys, ScriptedGh(), "capabilities", "github")
     assert code == 0 and "audience: full" in out.splitlines()
-    code, out = _cli(monkeypatch, capsys, ScriptedGh(), "capabilities", "github", "--json")
+    code, out = _cli(
+        monkeypatch, capsys, ScriptedGh(), "capabilities", "github", "--json"
+    )
     assert code == 0 and json.loads(out)["capabilities"]["audience"] == "full"
 
 
@@ -1556,7 +1636,10 @@ def test_reopen_patches_the_state_back_to_open():
 def test_close_dry_run_patches_nothing():
     gh = ScriptedGh(WHOAMI, ("GET", r".*", (404, {"message": "Not Found"})))
     result = correspond.close(
-        f"github:{REPO}#1", reason="not_planned", dry_run=True, registry={"github": GitHub(run=gh)}
+        f"github:{REPO}#1",
+        reason="not_planned",
+        dry_run=True,
+        registry={"github": GitHub(run=gh)},
     )
     assert result.ok and result.dry_run and result.plan["state_reason"] == "not_planned"
     assert "PATCH" not in {c["method"] for c in gh.calls}
@@ -1725,10 +1808,15 @@ def test_close_on_nothing_at_that_number_is_not_found():
 def test_close_dry_run_plans_for_either_kind_and_reads_nothing():
     gh = ScriptedGh(WHOAMI)
     result = correspond.close(
-        f"github:{REPO}#5", reason="resolved", dry_run=True, registry={"github": GitHub(run=gh)}
+        f"github:{REPO}#5",
+        reason="resolved",
+        dry_run=True,
+        registry={"github": GitHub(run=gh)},
     )
     assert result.ok and result.dry_run
-    assert "closeDiscussion" in result.plan["request"] and "PATCH" in result.plan["request"]
+    assert (
+        "closeDiscussion" in result.plan["request"] and "PATCH" in result.plan["request"]
+    )
     # (the before_send audience may read the repository; the close itself reads nothing)
     assert not [c for c in gh.calls if "/issues/" in c["path"] or c["path"] == "graphql"]
 
@@ -1749,4 +1837,532 @@ def test_close_reopen_and_draft_fields_are_in_capabilities():
     caps = correspond.capabilities("github")
     assert {"close", "reopen"} <= set(caps.operations)
     assert (caps.close, caps.reopen) == (Support.FULL, Support.FULL)
-    assert caps.draft_fields == ("labels", "assignees", "milestone")
+    assert caps.draft_fields == ("labels", "assignees", "milestone", "category")
+
+
+# ------------------------------- review threads, discussion listening, opening a discussion (#9)
+
+
+def _review(
+    comment_id,
+    *,
+    pull=3,
+    reply_to=None,
+    created="2026-09-11T09:00:00Z",
+    updated=None,
+    user="octocat",
+):
+    data = {
+        "id": comment_id,
+        "user": {"login": user, "id": 3, "type": "User"},
+        "body": f"review {comment_id}",
+        "created_at": created,
+        "updated_at": updated or created,
+        "author_association": "MEMBER",
+        "html_url": f"https://github.com/{REPO}/pull/{pull}#discussion_r{comment_id}",
+        "pull_request_url": f"https://api.github.com/repos/{REPO}/pulls/{pull}",
+        "path": "src/export.py",
+        "line": 12,
+        "original_line": 12,
+        "pull_request_review_id": 40,
+        "diff_hunk": "@@ -10,3 +10,3 @@",
+    }
+    if reply_to is not None:
+        data["in_reply_to_id"] = reply_to
+    return data
+
+
+def _pull_routes(*reviews, comments=()):
+    return (
+        ("GET", rf"repos/{REPO}/issues/3", (200, _issue(3, pr=True))),
+        (
+            "GET",
+            rf"repos/{REPO}/issues/3/comments\?per_page=100&page=1",
+            (200, list(comments)),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/pulls/3/comments\?per_page=100&page=1",
+            (200, list(reviews)),
+        ),
+    )
+
+
+def test_reading_a_pull_request_threads_its_review_comments_under_their_first():
+    gh = ScriptedGh(
+        WHOAMI,
+        *_pull_routes(
+            _review(61, created="2026-09-11T09:00:00Z"),
+            _review(62, reply_to=61, created="2026-09-11T09:20:00Z"),
+            comments=[_comment(11, issue=3, created="2026-09-11T09:10:00Z")],
+        ),
+    )
+    messages = _read(gh, f"github:{REPO}#3")
+    assert [m.id for m in messages] == [
+        "issue-3",
+        "discussion_r61",
+        "issuecomment-11",
+        "discussion_r62",
+    ]
+    first, reply = messages[1], messages[3]
+    assert first.reply_to is None and first.conversation.kind == "pull_request"
+    assert reply.reply_to == reply.thread_root == "discussion_r61"
+    assert first.native == {
+        "path": "src/export.py",
+        "line": 12,
+        "original_line": 12,
+        "review_id": 40,
+        "diff_hunk": "@@ -10,3 +10,3 @@",
+    }
+    assert first.edited_at is None, (
+        "updated_at moves on review submission, not only on edits"
+    )
+    assert set(first.native) <= set(GitHub().capabilities.native_fields)
+
+
+def test_an_issue_is_read_without_asking_for_review_comments():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/1", (200, _issue())),
+        ("GET", rf"repos/{REPO}/issues/1/comments\?per_page=100&page=1", (200, [])),
+    )
+    assert [m.id for m in _read(gh, f"github:{REPO}#1")] == ["issue-1"]
+    assert not any("pulls" in path for path in gh.paths())
+
+
+def test_a_reply_to_a_review_reply_joins_the_thread_of_its_first_comment():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/3", (200, _issue(3, pr=True))),
+        ("GET", rf"repos/{REPO}/pulls/comments/62", (200, _review(62, reply_to=61))),
+        (
+            "POST",
+            rf"repos/{REPO}/pulls/3/comments/61/replies",
+            (201, _review(63, reply_to=61)),
+        ),
+    )
+    result = correspond.send(
+        f"github:{REPO}#3",
+        "agreed",
+        reply_to="discussion_r62",
+        registry={"github": GitHub(run=gh)},
+    )
+    assert result.ok and result.message_id == "discussion_r63"
+    assert result.plan["thread_root"] == "discussion_r61"
+    (post,) = [c for c in gh.calls if c["method"] == "POST"]
+    assert post["payload"] == {"body": "agreed"} and "agreed" not in post["argv"]
+
+
+def test_a_review_comment_on_another_pull_request_is_refused_before_writing():
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/3", (200, _issue(3, pr=True))),
+        ("GET", rf"repos/{REPO}/pulls/comments/70", (200, _review(70, pull=4))),
+    )
+    result = correspond.send(
+        f"github:{REPO}#3",
+        "x",
+        reply_to="discussion_r70",
+        registry={"github": GitHub(run=gh)},
+    )
+    assert (result.ok, result.error_kind) == (False, "validation")
+    assert "POST" not in {c["method"] for c in gh.calls}
+
+
+def test_a_review_reply_on_an_issue_is_refused_by_name():
+    gh = ScriptedGh(WHOAMI, ("GET", rf"repos/{REPO}/issues/1", (200, _issue())))
+    with pytest.raises(NotSupported, match="discussion_rID"):
+        correspond.send(
+            f"github:{REPO}#1",
+            "x",
+            reply_to="discussion_r61",
+            registry={"github": GitHub(run=gh)},
+        )
+
+
+def test_a_dry_run_review_reply_plans_the_thread_endpoint_and_reads_nothing():
+    gh = ScriptedGh(WHOAMI, ("GET", rf"repos/{REPO}$", (404, {"message": "Not Found"})))
+    result = correspond.send(
+        f"github:{REPO}#3",
+        "x",
+        reply_to="discussion_r62",
+        dry_run=True,
+        registry={"github": GitHub(run=gh)},
+    )
+    assert result.ok and "/replies" in result.plan["request"]
+    assert not any("pulls" in path or "issues" in path for path in gh.paths())
+
+
+def test_edit_and_react_on_a_review_comment_use_the_pulls_endpoints():
+    gh = ScriptedGh(
+        WHOAMI,
+        (
+            "PATCH",
+            rf"repos/{REPO}/pulls/comments/61",
+            (200, {"html_url": "https://example.org/r61"}),
+        ),
+        (
+            "POST",
+            rf"repos/{REPO}/pulls/comments/61/reactions",
+            (201, {"content": "eyes"}),
+        ),
+    )
+    registry = {"github": GitHub(run=gh)}
+    assert correspond.edit(
+        f"github:{REPO}#3", "discussion_r61", "fixed", registry=registry
+    ).url.endswith("r61")
+    assert correspond.react(
+        f"github:{REPO}#3", "discussion_r61", "eyes", registry=registry
+    ).ok
+    for bad in ("discussion_r", "discussion_r-5", "discussion-r5"):
+        assert (
+            correspond.edit(f"github:{REPO}#3", bad, "x", registry=registry).error_kind
+            == "validation"
+        )
+
+
+def test_listening_to_a_pull_request_includes_review_comment_activity():
+    since = "2026-09-11T08:00:00Z"
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/3", (200, _issue(3, pr=True))),
+        (
+            "GET",
+            rf"repos/{REPO}/issues/3/comments\?since={since}&per_page=100&page=1",
+            (200, []),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/pulls/3/comments\?since={since}&per_page=100&page=1",
+            (
+                200,
+                [
+                    _review(
+                        61, created="2026-09-11T07:00:00Z", updated="2026-09-11T08:30:00Z"
+                    ),
+                    _review(62, reply_to=61, created="2026-09-11T08:10:00Z"),
+                ],
+            ),
+        ),
+    )
+    events = list(
+        correspond.listen(
+            f"github:{REPO}#3",
+            cursors={f"github:{REPO}#3": since},
+            registry={"github": GitHub(run=gh)},
+        )
+    )
+    assert [(e.kind, e.message.id) for e in events] == [
+        ("message.created", "discussion_r62"),
+        ("message.updated", "discussion_r61"),
+    ]
+
+
+def _activity(*nodes, next_page=None):
+    return {
+        "data": {
+            "repository": {
+                "discussions": {
+                    "pageInfo": {
+                        "hasNextPage": next_page is not None,
+                        "endCursor": next_page,
+                    },
+                    "nodes": [{"number": n, "updatedAt": t} for n, t in nodes],
+                }
+            }
+        }
+    }
+
+
+def _numbered_discussion(number, created, comments=()):
+    data = _discussion(comments)
+    data["data"]["repository"]["discussion"].update(
+        id=f"D_node{number}", number=number, createdAt=created
+    )
+    return data
+
+
+def test_polling_a_repository_finds_review_comments_and_active_discussions():
+    since = "2026-09-11T08:00:00Z"
+    date = {"Date": "Fri, 11 Sep 2026 12:00:00 GMT"}
+    discussions = {
+        5: _numbered_discussion(
+            5,
+            "2026-09-01T00:00:00Z",
+            [_post(501, created="2026-09-11T09:00:00Z", replies=[])],
+        ),
+        6: _numbered_discussion(6, "2026-09-11T10:00:00Z"),
+    }
+
+    def graphql(payload):
+        variables = payload["variables"]
+        if "discussions(" in payload["query"]:
+            if variables["after"] is None:
+                # One page, newest activity first: 8 is older than the cursor, 5 after it still counts.
+                return 200, _activity(
+                    (6, "2026-09-11T10:00:00Z"),
+                    (8, "2026-09-10T00:00:00Z"),
+                    (5, "2026-09-11T09:00:00Z"),
+                    next_page="more",
+                )
+            raise AssertionError("a page holding an older discussion is the last read")
+        return 200, discussions[variables["number"]]
+
+    gh = ScriptedGh(
+        WHOAMI,
+        (
+            "GET",
+            rf"repos/{REPO}/issues/comments\?sort=updated&direction=asc&since={since}&per_page=100&page=1",
+            (200, [], date),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since={since}&per_page=100&page=1",
+            (200, []),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/pulls/comments\?sort=updated&direction=asc&since={since}&per_page=100&page=1",
+            (200, [_review(61, created="2026-09-11T08:30:00Z")]),
+        ),
+        ("POST", "graphql", graphql),
+    )
+    cursors = {f"github:{REPO}": since}
+    events = list(
+        correspond.listen(
+            f"github:{REPO}", cursors=cursors, registry={"github": GitHub(run=gh)}
+        )
+    )
+    assert [(e.kind, e.message.id) for e in events] == [
+        ("message.created", "discussion_r61"),
+        ("message.created", "discussioncomment-501"),
+        ("message.created", "discussion-6"),
+    ]
+    assert events[0].message.conversation.encoded == f"github:{REPO}#3"
+    assert events[1].message.conversation.kind == "discussion"
+    assert json.loads(cursors[f"github:{REPO}"])["t"] == "2026-09-11T11:59:55Z"
+
+
+def test_discussion_activity_reads_further_pages_while_every_entry_is_active():
+    def graphql(payload):
+        if payload["variables"]["after"] is None:
+            return 200, _activity((6, "2026-09-11T10:00:00Z"), next_page="p2")
+        return 200, _activity((5, "2026-09-11T09:00:00Z"), (4, "2026-09-01T00:00:00Z"))
+
+    gh = ScriptedGh(("POST", "graphql", graphql))
+    since = correspond.model.parse_time("2026-09-11T08:00:00Z")
+    assert GitHub(run=gh)._active_discussions("octocat", "hello-world", since) == [6, 5]
+
+
+def _categories(enabled=True):
+    return {
+        "data": {
+            "repository": {
+                "id": "R_node1",
+                "hasDiscussionsEnabled": enabled,
+                "discussionCategories": {
+                    "nodes": [
+                        {"id": "DIC_ideas", "name": "Ideas", "slug": "ideas"},
+                        {"id": "DIC_qa", "name": "Q&A", "slug": "q-a"},
+                    ]
+                },
+            }
+        }
+    }
+
+
+def _creating(categories):
+    def graphql(payload):
+        if "createDiscussion" in payload["query"]:
+            return 200, {
+                "data": {
+                    "createDiscussion": {
+                        "discussion": {
+                            "number": 12,
+                            "url": f"https://github.com/{REPO}/discussions/12",
+                            "category": {"name": "Q&A"},
+                        }
+                    }
+                }
+            }
+        return 200, categories
+
+    return ScriptedGh(WHOAMI, ("POST", "graphql", graphql))
+
+
+def test_a_category_opens_a_discussion_instead_of_an_issue():
+    gh = _creating(_categories())
+    result = correspond.send(
+        f"github:{REPO}",
+        Draft(title="How do I export?", text="Asking here", native={"category": "Q-A"}),
+        registry={"github": GitHub(run=gh)},
+    )
+    assert result.ok and result.conversation == f"github:{REPO}#12"
+    assert result.message_id == "discussion-12" and result.url.endswith("/discussions/12")
+    assert result.plan["landed"] == {"category": "Q&A"}
+    mutation = next(
+        c["payload"]
+        for c in gh.calls
+        if c["payload"] and "createDiscussion" in c["payload"]["query"]
+    )
+    assert mutation["variables"] == {
+        "repositoryId": "R_node1",
+        "categoryId": "DIC_qa",
+        "title": "How do I export?",
+        "body": "Asking here",
+    }
+    assert not any(path.endswith("/issues") for path in gh.paths("POST"))
+
+
+def test_an_unknown_category_or_disabled_discussions_create_nothing():
+    unknown = correspond.send(
+        f"github:{REPO}",
+        Draft(title="T", text="x", native={"category": "General"}),
+        registry={"github": GitHub(run=(gh := _creating(_categories())))},
+    )
+    assert (unknown.ok, unknown.error_kind) == (False, "validation")
+    assert "Ideas" in unknown.error and "Q&A" in unknown.error
+    assert not any(
+        "createDiscussion" in (c["payload"] or {}).get("query", "") for c in gh.calls
+    )
+    with pytest.raises(NotSupported, match="enable discussions"):
+        correspond.send(
+            f"github:{REPO}",
+            Draft(title="T", text="x", native={"category": "Ideas"}),
+            registry={"github": GitHub(run=_creating(_categories(enabled=False)))},
+        )
+
+
+@pytest.mark.parametrize(
+    "native",
+    [{"category": "Ideas", "labels": ["question"]}, {"category": ""}, {"category": 3}],
+)
+def test_a_malformed_discussion_draft_is_refused_with_no_graphql_call(native):
+    gh = _creating(_categories())
+    result = correspond.send(
+        f"github:{REPO}",
+        Draft(title="T", text="x", native=native),
+        registry={"github": GitHub(run=gh)},
+    )
+    assert (result.ok, result.error_kind) == (False, "validation")
+    assert "graphql" not in gh.paths("POST")
+
+
+def test_a_dry_run_discussion_plans_the_category_and_creates_nothing():
+    gh = ScriptedGh(WHOAMI, ("GET", rf"repos/{REPO}$", (404, {"message": "Not Found"})))
+    result = correspond.send(
+        f"github:{REPO}",
+        Draft(title="T", text="x", native={"category": "Ideas"}),
+        dry_run=True,
+        registry={"github": GitHub(run=gh)},
+    )
+    assert result.ok and result.plan["action"] == "open a discussion"
+    assert result.plan["category"] == "Ideas"
+    assert "POST" not in {c["method"] for c in gh.calls}
+
+
+def test_opening_a_discussion_still_needs_a_title():
+    gh = _creating(_categories())
+    result = correspond.send(
+        f"github:{REPO}",
+        Draft(text="x", native={"category": "Ideas"}),
+        registry={"github": GitHub(run=gh)},
+    )
+    assert (result.ok, result.error_kind) == (False, "validation")
+
+
+def _repository_poll(since, date, graphql, *, comments=()):
+    return ScriptedGh(
+        WHOAMI,
+        (
+            "GET",
+            rf"repos/{REPO}/issues/comments\?sort=updated&direction=asc&since={since}&per_page=100&page=1",
+            (200, list(comments), {"Date": date}),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since={since}&per_page=100&page=1",
+            (200, [], {"Date": date}),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/pulls/comments\?sort=updated&direction=asc&since={since}&per_page=100&page=1",
+            (200, [], {"Date": date}),
+        ),
+        ("POST", "graphql", graphql),
+    )
+
+
+def test_a_discussion_post_newer_than_the_lists_waits_for_the_next_poll():
+    """Read after the REST lists, a discussion must not move the cursor past what they could hold."""
+    since = "2026-09-11T08:00:00Z"
+    late = _numbered_discussion(
+        5,
+        "2026-09-01T00:00:00Z",
+        [_post(501, created="2026-09-11T12:00:30Z", replies=[])],
+    )
+
+    def graphql(payload):
+        if "discussions(" in payload["query"]:
+            return 200, _activity((5, "2026-09-11T12:00:30Z"))
+        return 200, late
+
+    gh = _repository_poll(since, "Fri, 11 Sep 2026 12:00:00 GMT", graphql)
+    cursors = {f"github:{REPO}": since}
+    events = list(
+        correspond.listen(
+            f"github:{REPO}", cursors=cursors, registry={"github": GitHub(run=gh)}
+        )
+    )
+    assert events == []
+    assert json.loads(cursors[f"github:{REPO}"])["t"] == "2026-09-11T11:59:55Z"
+
+
+def test_a_token_that_may_not_read_discussions_still_listens_to_the_rest(caplog):
+    forbidden = {"errors": [{"type": "FORBIDDEN", "message": "Resource not accessible"}]}
+    gh = _repository_poll(
+        "2026-09-11T08:00:00Z",
+        "Fri, 11 Sep 2026 12:00:00 GMT",
+        (200, forbidden),
+        comments=[_comment(21, created="2026-09-11T09:00:00Z")],
+    )
+    events = list(
+        correspond.listen(
+            f"github:{REPO}",
+            cursors={f"github:{REPO}": "2026-09-11T08:00:00Z"},
+            registry={"github": GitHub(run=gh)},
+        )
+    )
+    assert [e.message.id for e in events] == ["issuecomment-21"]
+    assert "discussions skipped" in caplog.text
+
+
+def test_a_discussion_deleted_between_the_walk_and_the_read_is_skipped():
+    def graphql(payload):
+        if "discussions(" in payload["query"]:
+            return 200, _activity((5, "2026-09-11T09:00:00Z"))
+        return 200, {"data": {"repository": {"discussion": None}}}
+
+    gh = _repository_poll(
+        "2026-09-11T08:00:00Z", "Fri, 11 Sep 2026 12:00:00 GMT", graphql
+    )
+    events = list(
+        correspond.listen(
+            f"github:{REPO}",
+            cursors={f"github:{REPO}": "2026-09-11T08:00:00Z"},
+            registry={"github": GitHub(run=gh)},
+        )
+    )
+    assert events == []
+
+
+def test_listen_asks_for_a_comments_latest_replies():
+    from correspond.channels.github import DISCUSSION_QUERY
+
+    assert "replies(last:100)" in DISCUSSION_QUERY
+
+
+def test_listen_is_declared_partial_with_why():
+    caps = GitHub().capabilities
+    assert caps.listen is Support.PARTIAL
+    assert any("listen is partial on a repository's discussions" in n for n in caps.notes)

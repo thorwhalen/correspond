@@ -23,8 +23,8 @@ Add `--json` to any command for the full result. A result with `ok: false` exits
 
 | Reference | Is |
 |---|---|
-| `github:owner/repo` | a repository: read lists open issues and pull requests; send opens an issue (`--title` required) |
-| `github:owner/repo#12` | an issue, pull request or discussion, with its comments |
+| `github:owner/repo` | a repository: read lists open issues and pull requests; send opens an issue (`--title` required), or a discussion with `--native '{"category": "Q&A"}'` |
+| `github:owner/repo#12` | an issue, pull request or discussion, with its comments; a pull request's review comments on the diff come threaded (ids `discussion_rID`; reply to one with `--reply-to` to join its thread) |
 | `email:` | the mail folder (INBOX); `email:someone@example.org` the correspondence with one address |
 | `ntfy:` | the operator's default notification topic; `ntfy:<topic>` a named one |
 | `macos:` | a banner on this Mac |
