@@ -47,7 +47,13 @@ class FakeTelegram:
     def __call__(self, method, url, *, headers=None, body=None, timeout=None):
         name = url.rsplit("/", 1)[-1]
         if name == "getChat":
-            return Response(200, {}, json.dumps({"ok": True, "result": {"id": -4001, "type": "group"}}).encode())
+            return Response(
+                200,
+                {},
+                json.dumps(
+                    {"ok": True, "result": {"id": -4001, "type": "group"}}
+                ).encode(),
+            )
         self.calls.append((name, headers.get("Content-Type", ""), body))
         result = {
             "message_id": 77,
@@ -338,3 +344,167 @@ def test_the_send_tool_attaches_local_files_and_names_their_real_paths(
     assert (refused["ok"], refused["error_kind"]) == (False, "permission")
     nowhere = tools.send("github:example/demo#1", "x", attach=str(first), dry_run=True)
     assert (nowhere["ok"], nowhere["error_kind"]) == (False, "not_supported")
+
+
+# ------------------------------------------------------------ review fixes (#60)
+
+
+class Counting:
+    """A lazy file that counts its fetches."""
+
+    def __init__(self, data):
+        self.data, self.fetched = data, 0
+
+    def __call__(self):
+        self.fetched += 1
+        return self.data
+
+
+def _lazy(name, data, media_type="application/octet-stream", **known):
+    loader = Counting(data)
+    return Attachment(
+        ref=f"memory:{name}", name=name, media_type=media_type, loader=loader, **known
+    ), loader
+
+
+def test_a_channel_that_uploads_but_whose_send_takes_no_files_refuses_them():
+    class UploadsOnly(FakeChannel):
+        @property
+        def capabilities(self):
+            from dataclasses import replace
+
+            from correspond.model import Support
+
+            return replace(super().capabilities, upload=Support.FULL)
+
+        def upload(self, ref, name, data, *, media_type="", dry_run=False):
+            raise AssertionError("not called")
+
+    with pytest.raises(NotSupported, match="attachments") as caught:
+        correspond.send(
+            "fake:example/demo",
+            "x",
+            attachments=[_file("a.txt", b"x")],
+            registry={"fake": UploadsOnly()},
+        )
+    assert "upload the files" in str(caught.value)
+
+
+def test_a_key_is_bound_to_an_attachments_bytes_not_only_its_name(mail):
+    smtp, registry = mail
+    sends = {}
+    one, _ = _lazy("r.txt", b"one", "text/plain")
+    two, _ = _lazy("r.txt", b"two", "text/plain")
+    assert correspond.send(
+        "email:ada@example.org",
+        "x",
+        attachments=[one],
+        idempotency_key="k",
+        sends=sends,
+        registry=registry,
+    ).ok
+    other = correspond.send(
+        "email:ada@example.org",
+        "x",
+        attachments=[two],
+        idempotency_key="k",
+        sends=sends,
+        registry=registry,
+    )
+    assert (other.ok, other.error_kind) == (False, "validation") and len(smtp.sent) == 1
+
+
+def test_a_dry_run_fetches_no_attachment(mail, bot):
+    _, mail_registry = mail
+    _, bot_registry = bot
+    for ref, registry in (
+        ("email:ada@example.org", mail_registry),
+        ("telegram:-4001", bot_registry),
+    ):
+        lazy, loader = _lazy("a.png", PNG, "image/png")
+        planned = correspond.send(
+            ref, "x", attachments=[lazy], dry_run=True, registry=registry
+        )
+        assert planned.ok and loader.fetched == 0, ref
+
+
+def test_a_real_telegram_send_fetches_the_file_once_and_keeps_the_plan_complete(bot):
+    api, registry = bot
+    lazy, loader = _lazy("a.png", PNG, "image/png")
+    result = correspond.send(
+        "telegram:-4001",
+        "hi",
+        title="T",
+        notify=["ada_example"],
+        attachments=[lazy],
+        registry=registry,
+    )
+    assert result.ok and loader.fetched == 1
+    assert result.plan["title_prepended"] is True and result.plan["mentions_added"] == [
+        "ada_example"
+    ]
+
+
+def test_upload_options_are_their_own_list_not_send_fields(bot):
+    class SendFieldsOnly(FakeChannel):
+        @property
+        def capabilities(self):
+            from dataclasses import replace
+
+            from correspond.model import Support
+
+            return replace(
+                super().capabilities, upload=Support.FULL, draft_fields=("as_document",)
+            )
+
+        def upload(
+            self, ref, name, data, *, media_type="", dry_run=False
+        ):  # the old signature
+            raise AssertionError("not called")
+
+    result = correspond.upload(
+        "fake:example/demo",
+        "a.txt",
+        b"x",
+        native={"as_document": True},
+        registry={"fake": SendFieldsOnly()},
+    )
+    assert (result.ok, result.error_kind) == (False, "validation")
+
+
+def test_an_email_checks_its_attachments_together(mail, monkeypatch):
+    from correspond.channels import mail as module
+
+    monkeypatch.setattr(module, "MAX_ATTACHMENT_BYTES", 10)
+    smtp, registry = mail
+    result = correspond.send(
+        "email:ada@example.org",
+        "x",
+        attachments=[_file("a.bin", b"123456"), _file("b.bin", b"123456")],
+        registry=registry,
+    )
+    assert (result.ok, result.error_kind) == (False, "validation") and smtp.sent == []
+
+
+def test_a_replayed_upload_keeps_its_source(bot):
+    _, registry = bot
+    sends = {}
+    first = correspond.upload(
+        "telegram:-4001",
+        "a.txt",
+        b"x",
+        source="/tmp/example/a.txt",
+        idempotency_key="k",
+        sends=sends,
+        registry=registry,
+    )
+    again = correspond.upload(
+        "telegram:-4001",
+        "a.txt",
+        b"x",
+        source="/tmp/example/a.txt",
+        idempotency_key="k",
+        sends=sends,
+        registry=registry,
+    )
+    assert first.plan["source"] == again.plan["source"] == "/tmp/example/a.txt"

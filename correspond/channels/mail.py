@@ -114,6 +114,8 @@ LIST_LOCAL_PARTS = ("list", "all", "team", "dev", "announce", "info")
 _LOCAL_PART_SPLIT = re.compile(r"[-._+]")
 #: About 25 MB once base64-encoded, the message limit of Gmail and most providers.
 MAX_ATTACHMENT_BYTES = 18_000_000
+#: How many files one email carries; together they stay within MAX_ATTACHMENT_BYTES.
+MAX_ATTACHMENTS = 20
 FETCH_BATCH = 50
 DEFAULT_READ_LIMIT = 50
 LISTEN_LOOKBACK = timedelta(days=1)
@@ -465,11 +467,15 @@ def _body(message: EmailMessage) -> tuple[str, str | None, str]:
     return content.strip(), content, "plain"
 
 
-def _part(attachment: Attachment) -> tuple[str, bytes, str, str]:
-    """A draft's attachment as ``(name, bytes, maintype, subtype)``, its name and type checked."""
-    name = file_name(attachment.name or attachment.ref)
+def _part(attachment: Attachment, *, load: bool = True) -> tuple[str, Any, str, str]:
+    """A draft's attachment as ``(name, bytes, maintype, subtype)``, its name and type checked.
+
+    ``load=False`` (a dry run) fetches nothing: the bytes are replaced by the attachment
+    itself, whose metadata the plan shows.
+    """
+    name = file_name(attachment.name or "file")
     maintype, _, subtype = _media_type(attachment.media_type).partition("/")
-    return name, attachment.content(), maintype, subtype
+    return name, attachment.content() if load else attachment, maintype, subtype
 
 
 def _with_notify(to: str, draft: Draft) -> tuple[Draft, tuple[str, ...]]:
@@ -511,6 +517,7 @@ class Email:
             cc=Support.FULL,
             notify=Support.FULL,
             upload=Support.FULL,
+            max_attachments=MAX_ATTACHMENTS,
             history_depth=HistoryDepth.FULL,
             listen_modes=("poll",),
             grades=(Grade.DOMAIN, Grade.CLAIMED),
@@ -1053,8 +1060,20 @@ class Email:
         operation: str = "send",
         dry_run: bool = False,
     ) -> SendResult:
-        if attachments is None:  # a send: the draft's own files
-            attachments = [_part(a) for a in draft.attachments]
+        if (
+            attachments is None
+        ):  # a send: the draft's own files, fetched only to send them
+            total = sum(a.size or 0 for a in draft.attachments)
+            if total > MAX_ATTACHMENT_BYTES:
+                raise ChannelError(
+                    f"the attachments come to {total} bytes; one email carries at most {MAX_ATTACHMENT_BYTES}",
+                    kind="validation",
+                )
+            attachments = (
+                [_part(a, load=False) for a in draft.attachments]
+                if dry_run
+                else [_part(a) for a in draft.attachments]
+            )
         to = _scope(ref.id).address
         if not to:
             raise ChannelError("send to an address: email:<address>", kind="validation")
@@ -1092,9 +1111,10 @@ class Email:
                 message["Importance"], message["X-Priority"] = "low", "5"
             message.set_content(draft.text)
             for name, data, maintype, subtype in attachments:
-                message.add_attachment(
-                    data, maintype=maintype, subtype=subtype, filename=name
-                )
+                if isinstance(data, bytes):  # a dry run builds the message without them
+                    message.add_attachment(
+                        data, maintype=maintype, subtype=subtype, filename=name
+                    )
         except (ValueError, TypeError) as error:
             raise ChannelError(
                 f"the message could not be built: {error}", kind="validation"
@@ -1118,8 +1138,10 @@ class Email:
                 {
                     "name": name,
                     "media_type": f"{maintype}/{subtype}",
-                    "bytes": len(data),
-                    "sha256": hashlib.sha256(data).hexdigest(),
+                    "bytes": len(data) if isinstance(data, bytes) else data.size,
+                    "sha256": hashlib.sha256(data).hexdigest()
+                    if isinstance(data, bytes)
+                    else data.sha256,
                 }
                 for name, data, maintype, subtype in attachments
             ]

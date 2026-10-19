@@ -513,23 +513,24 @@ def _feature_check(adapter: Any, draft: Draft) -> str | None:
             alternatives=("notify them on a channel that can, or send without notify",),
         )
     if draft.attachments:
-        if caps.upload is Support.NONE:
+        if not caps.max_attachments:
             raise NotSupported(
                 "attachments",
                 adapter.name,
                 alternatives=(
-                    "send the text, and the files on a channel that takes them",
+                    "send the text, and upload the files"
+                    if caps.upload is not Support.NONE
+                    else "send the text, and the files on a channel that takes them",
                 ),
             )
+        if len(draft.attachments) > caps.max_attachments:
+            return f"{adapter.name} takes {caps.max_attachments} file(s) with a message; this draft has {len(draft.attachments)}"
         limit = caps.max_upload_bytes
-        for attachment in draft.attachments:
-            size = (
-                attachment.size
-                if attachment.size is not None
-                else len(attachment.content())
-            )
-            if limit and size > limit:
-                return f"{attachment.name or attachment.ref} is {size} bytes; {adapter.name} accepts at most {limit}"
+        for (
+            attachment
+        ) in draft.attachments:  # sized from metadata: nothing is fetched here
+            if limit and attachment.size is not None and attachment.size > limit:
+                return f"{attachment.name or attachment.ref} is {attachment.size} bytes; {adapter.name} accepts at most {limit}"
     unknown = sorted(set(draft.native) - set(caps.draft_fields))
     if unknown:
         accepted = ", ".join(caps.draft_fields) or "none"
@@ -694,6 +695,21 @@ def send(
         )
     )
     key = None if idempotency_key is None else check_key(idempotency_key)
+    if key is not None and any(a.sha256 is None for a in draft.attachments):
+        # A key is bound to what is sent: an attachment's bytes count, not only its name.
+        draft = dataclasses.replace(
+            draft,
+            attachments=tuple(
+                a
+                if a.sha256 is not None
+                else dataclasses.replace(
+                    a,
+                    sha256=hashlib.sha256(a.content()).hexdigest(),
+                    size=a.size if a.size is not None else len(a.content()),
+                )
+                for a in draft.attachments
+            ),
+        )
     # The draft as the channel will send it (``notify`` materialised: a mention added,
     # an address copied): what the length checks and the before_send check must see.
     # The adapter is still handed ``draft`` and materialises it the same way.
@@ -1080,9 +1096,9 @@ def upload(
     adapter, ref = _adapter_for(ref, "upload", registry)
     native = dict(native or {})
     caps = adapter.capabilities
-    unknown = sorted(set(native) - set(caps.draft_fields))
+    unknown = sorted(set(native) - set(caps.upload_fields))
     if unknown:
-        accepted = ", ".join(caps.draft_fields) or "none"
+        accepted = ", ".join(caps.upload_fields) or "none"
         return _invalid(
             adapter,
             ref,
@@ -1149,6 +1165,10 @@ def upload(
     )
     if source:  # what is really sent, whatever the name says
         result = dataclasses.replace(result, plan={"source": source, **result.plan})
+    if key is not None and not dry_run and result.ok:
+        record = sends.get(key)
+        if record and record.get("state") == SENT and "idempotency" not in result.plan:
+            sends[key] = settled(record, SENT, result.to_dict())  # with its source
     return result
 
 

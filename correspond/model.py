@@ -568,6 +568,7 @@ _TUPLE_FIELDS = (
     "reactions",
     "formats",
     "draft_fields",
+    "upload_fields",
     "rate_limits",
     "notes",
 )
@@ -591,7 +592,10 @@ class Capabilities:
     condition can test), or ``None`` when the channel does not declare them;
     ``draft_fields`` are the keys a :class:`Draft` may carry in its ``native`` for this
     channel (GitHub: ``labels``, ``assignees``, ``milestone`` when opening an issue), and
-    any other key is refused rather than dropped.
+    any other key is refused rather than dropped; ``upload_fields`` are the options
+    ``upload`` takes in its ``native``. ``max_attachments`` is how many files a send's
+    ``Draft.attachments`` may carry (0: a send takes none, though ``upload`` may still
+    send a file on its own).
     """
 
     channel: str
@@ -621,8 +625,10 @@ class Capabilities:
     reactions: tuple[str, ...] = ()
     reactions_per_message: int | None = None
     max_upload_bytes: int | None = None
+    max_attachments: int = 0
     formats: tuple[str, ...] = ("plain",)
     draft_fields: tuple[str, ...] = ()
+    upload_fields: tuple[str, ...] = ()
     native_fields: tuple[str, ...] | None = None
     rate_limits: tuple[str, ...] = ()
     notes: tuple[str, ...] = ()
@@ -662,6 +668,7 @@ class Capabilities:
             "edit_max_age_s",
             "reactions_per_message",
             "max_upload_bytes",
+            "max_attachments",
         ):
             data[name] = getattr(self, name)
         data.update({name: list(getattr(self, name)) for name in _TUPLE_FIELDS})

@@ -53,6 +53,7 @@ from correspond.channels._http import (
 )
 from correspond.errors import ChannelError, InvalidRef, MissingRequirement, NotSupported
 from correspond.model import (
+    Attachment,
     Account,
     Audience,
     Authenticity,
@@ -374,6 +375,8 @@ class Telegram:
             max_text_length=MAX_TEXT_CHARS,
             max_upload_bytes=MAX_DOCUMENT_BYTES,
             draft_fields=("as_document",),
+            upload_fields=("as_document",),
+            max_attachments=1,
             reactions_per_message=1,
             formats=("plain",),
             rate_limits=(
@@ -889,7 +892,17 @@ class Telegram:
         text = f"{draft.title}\n\n{draft.text}" if draft.title else draft.text
         as_document = _as_document(draft.native)
         if draft.attachments:
-            return self._send_with_file(ref, draft, text, as_document, dry_run=dry_run)
+            notified = (
+                {
+                    "notify": [handle(n) for n in draft.notify],
+                    "mentions_added": list(added),
+                }
+                if draft.notify
+                else {}
+            )
+            return self._send_with_file(
+                ref, draft, text, as_document, notified, dry_run=dry_run
+            )
         if as_document:
             raise ChannelError(
                 "as_document applies to a file: attach one, or leave it out",
@@ -959,6 +972,7 @@ class Telegram:
         draft: Draft,
         text: str,
         as_document: bool,
+        notified: Mapping[str, Any],
         *,
         dry_run: bool,
     ) -> SendResult:
@@ -976,10 +990,10 @@ class Telegram:
                 kind="validation",
             )
         (attachment,) = draft.attachments
-        return self._send_file(
+        result = self._send_file(
             ref,
             attachment.name or "file",
-            attachment.content(),
+            attachment,
             media_type=attachment.media_type,
             as_document=as_document,
             operation="send",
@@ -987,12 +1001,16 @@ class Telegram:
             caption=text,
             reply_to=draft.reply_to,
         )
+        extra: dict[str, Any] = {"title_prepended": bool(draft.title)}
+        if notified:
+            extra.update(notified)
+        return replace(result, plan={**result.plan, **extra})
 
     def _send_file(
         self,
         ref: ConversationRef,
         name: str,
-        data: bytes,
+        data: bytes | Attachment,
         *,
         media_type: str,
         as_document: bool,
@@ -1003,13 +1021,20 @@ class Telegram:
     ) -> SendResult:
         name = file_name(name)
         media_type = _media_type(media_type)
+        if isinstance(data, Attachment):  # a draft's file: fetched only to send it
+            size, digest = data.size, data.sha256
+            data = None if dry_run else data.content()
+        if isinstance(data, bytes):
+            size, digest = len(data), hashlib.sha256(data).hexdigest()
         params = self._target(ref)
         if caption:
             params["caption"] = caption
         if reply_to:
             params["reply_parameters"] = {"message_id": self._message_number(reply_to)}
         photo = (
-            not as_document and media_type in PHOTO_TYPES and len(data) <= MAX_PHOTO_BYTES
+            not as_document
+            and media_type in PHOTO_TYPES
+            and (size is None or size <= MAX_PHOTO_BYTES)
         )
         method, field = ("sendPhoto", "photo") if photo else ("sendDocument", "document")
         plan = {
@@ -1017,8 +1042,8 @@ class Telegram:
             **params,
             "name": name,
             "media_type": media_type,
-            "bytes": len(data),
-            "sha256": hashlib.sha256(data).hexdigest(),
+            "bytes": size,
+            "sha256": digest,
             **({"as_document": True} if as_document else {}),
         }
         if dry_run:

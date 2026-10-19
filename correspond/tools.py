@@ -218,13 +218,16 @@ def capabilities(channel: str) -> dict:
         "edit_max_age_s",
         "reactions_per_message",
         "max_upload_bytes",
+        "max_attachments",
     ):
-        if data[name] is not None:
+        if data[name]:
             lines.append(f"{name}: {data[name]}")
     if caps.native_fields:
         lines.append(f"native fields: {', '.join(caps.native_fields)}")
     if caps.draft_fields:
         lines.append(f"draft fields: {', '.join(caps.draft_fields)}")
+    if caps.upload_fields:
+        lines.append(f"upload fields: {', '.join(caps.upload_fields)}")
     if caps.reactions:
         lines.append(f"reactions: {' '.join(caps.reactions)}")
     lines += [f"rate limit: {r}" for r in caps.rate_limits]
@@ -466,7 +469,7 @@ def send(
     idempotency_key: str | None = None,
     dry_run: bool = False,
 ) -> dict:
-    """Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens, the plan reporting which of them stuck; or `{"category": "<name or slug>"}` to open a discussion instead). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. `attach` (comma-separated paths on this machine) sends files with the text, on channels whose `capabilities` grade `upload` (email: each attached; Telegram: one, the text its caption); the paths are read as for `upload`, and the plan names each file's real path. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""
+    """Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens, the plan reporting which of them stuck; or `{"category": "<name or slug>"}` to open a discussion instead). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. `attach` (comma-separated paths on this machine; a path may not contain a comma) sends files with the text, as many as the channel's `max_attachments` (email: each attached; Telegram: one, the text its caption); the paths are read as for `upload`, and the plan names each file's real path. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""
     return _write_result(
         ops.send(
             ref,
@@ -579,7 +582,7 @@ def upload(
     idempotency_key: str | None = None,
     dry_run: bool = False,
 ) -> dict:
-    """Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`). `name` is what recipients see (the file's own name by default); `media_type` is guessed from the file's real name when not given. A path through a hidden file or folder (a dot name, such as ~/.ssh) is refused unless `include_hidden`. `native` is a JSON object of the channel's own options (`draft_fields` in its capabilities; on Telegram `{"as_document": true}` sends an image as the file it is, not a recompressed photo). Give an `idempotency_key` when you may upload it again after a failure: the same key never posts it twice. Run it with `dry_run` first: the plan shows `source` (the real path read), the name, size and SHA-256; show the operator the source. The before_send check sees that metadata, never the contents, so never upload a file the user did not ask to send."""
+    """Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`). `name` is what recipients see (the file's own name by default); `media_type` is guessed from the file's real name when not given. A path through a hidden file or folder (a dot name, such as ~/.ssh) is refused unless `include_hidden`. `native` is a JSON object of the channel's own options (`upload_fields` in its capabilities; on Telegram `{"as_document": true}` sends an image as the file it is, not a recompressed photo). Give an `idempotency_key` when you may upload it again after a failure: the same key never posts it twice. Run it with `dry_run` first: the plan shows `source` (the real path read), the name, size and SHA-256; show the operator the source. The before_send check sees that metadata, never the contents, so never upload a file the user did not ask to send."""
     channel = ConversationRef.parse(ref).channel
     real, data = _local_file(channel, path, include_hidden=include_hidden)
     return _write_result(
