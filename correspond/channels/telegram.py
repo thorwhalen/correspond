@@ -226,9 +226,10 @@ def mk_webhook_app(
 def webhook_store() -> MutableMapping[str, Any]:
     """Where the receiver keeps updates: the ``webhook_store`` setting's ``module:attr``, else files under the data root.
 
-    The reference names a ``MutableMapping``, or a callable returning one (an ``s3dol``
-    store on a server, say); the receiver and ``listen`` read the same setting, so they
-    meet in the same store.
+    The reference names a ``MutableMapping``, or a callable returning one, whose values are
+    JSON-ready dicts (an update as Telegram sent it): a bytes store, such as a plain
+    ``s3dol`` one, needs a JSON codec around it. The receiver and ``listen`` read the same
+    setting, so they meet in the same store.
     """
     reference = value(NAME, "webhook_store")
     if not reference:
@@ -327,15 +328,15 @@ def serve_main(argv: list[str] | None = None) -> None:
     )
     parser.add_argument(
         "--allow-remote",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
         default=None,
-        help="bind to an address other machines reach (else the webhook_allow_remote setting decides)",
+        help="bind to an address other machines reach, or --no-allow-remote to refuse (else the webhook_allow_remote setting decides)",
     )
     args = parser.parse_args(argv)
     try:
         serve_webhook(host=args.host, port=args.port, allow_remote=args.allow_remote)
     except ChannelError as error:
-        parser.exit(2, f"correspond-telegram-webhook: {error}\n")
+        parser.exit(1, f"correspond-telegram-webhook: {error}\n")
 
 
 def _log_key(message: Message) -> str:
@@ -674,7 +675,7 @@ class Telegram:
         if not self._webhook_state().get("url"):
             raise ChannelError(
                 "delivery is webhook, but no webhook is set for this bot: "
-                "run Telegram().set_webhook('https://...'), or set delivery = poll",
+                "run `correspond set-webhook telegram https://...`, or set delivery = poll",
                 kind="validation",
             )
 

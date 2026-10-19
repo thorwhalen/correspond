@@ -95,6 +95,7 @@ __all__ = [
     "Uploader",
     "Verifier",
     "WebhookManager",
+    "WebhookReader",
     "Writer",
     "audience",
     "capabilities",
@@ -256,16 +257,21 @@ class Reopener(Protocol):
     def reopen(self, ref: ConversationRef, *, dry_run: bool = False) -> SendResult: ...
 
 
-#: Operation name → the protocol an adapter implements to have it.
 @runtime_checkable
-class WebhookManager(Protocol):
-    """Where a channel's platform delivers its updates: polling, or a webhook it POSTs to.
-
-    Not an operation in :data:`~correspond.model.OPERATIONS`: it sends no message to
-    anyone, it moves where the account's updates go.
-    """
+class WebhookReader(Protocol):
+    """Where a channel's platform delivers its updates now: polling, or a webhook it POSTs to."""
 
     def webhook_info(self) -> dict: ...
+
+
+@runtime_checkable
+class WebhookManager(Protocol):
+    """Move where a channel's platform delivers its updates.
+
+    Not an operation in :data:`~correspond.model.OPERATIONS`, but a write all the same:
+    whoever the webhook points at reads every update the account receives, so it runs the
+    ``before_send`` check (``operation="set_webhook"``, the URL as the draft's text).
+    """
 
     def set_webhook(self, url: str, *, dry_run: bool = False) -> SendResult: ...
 
@@ -274,6 +280,7 @@ class WebhookManager(Protocol):
     ) -> SendResult: ...
 
 
+#: Operation name → the protocol an adapter implements to have it.
 PROTOCOLS: dict[str, type] = {
     "read": Reader,
     "listen": Listener,
@@ -460,20 +467,48 @@ def verify(
     return adapter.verify(headers, body)
 
 
-def _webhook_manager(channel: str, registry: Mapping[str, Any] | None) -> Any:
+def _webhook_adapter(
+    channel: str, registry: Mapping[str, Any] | None, protocol: type, what: str
+) -> Any:
     adapter = get_channel(channel, registry=registry)
-    if not isinstance(adapter, WebhookManager):
+    if not isinstance(adapter, protocol):
         raise NotSupported(
-            "webhook",
+            what,
             adapter.name,
-            alternatives=("this channel's updates are read by polling only",),
+            alternatives=(
+                f"{adapter.name} has no webhook correspond can {what.split()[0]}",
+            ),
         )
     return adapter
 
 
 def webhook_info(channel: str, *, registry: Mapping[str, Any] | None = None) -> dict:
     """Where ``channel``'s platform delivers its updates now (an empty ``url``: polling)."""
-    return dict(_webhook_manager(channel, registry).webhook_info())
+    adapter = _webhook_adapter(channel, registry, WebhookReader, "read the webhook")
+    return dict(adapter.webhook_info())
+
+
+def _webhook_write(
+    channel: str,
+    operation: str,
+    text: str,
+    call: Callable[[Any, bool], SendResult],
+    *,
+    dry_run: bool,
+    before_send: Callable[..., None] | None,
+    registry: Mapping[str, Any] | None,
+) -> SendResult:
+    adapter = _webhook_adapter(channel, registry, WebhookManager, "set the webhook")
+    return _checked_write(
+        adapter,
+        ConversationRef(channel=adapter.name, id=""),
+        operation,
+        Draft(text=text),
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
+        write=lambda rehearse: call(adapter, rehearse),
+    )
 
 
 def set_webhook(
@@ -482,18 +517,22 @@ def set_webhook(
     *,
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
+    before_send: Callable[..., None] | None = None,
 ) -> SendResult:
     """Have ``channel``'s platform POST its updates to ``url``: listening by polling stops until :func:`delete_webhook`.
 
-    No ``before_send`` check runs: nothing is said to anyone. The change is the account's,
-    so surfaces expose it as a write, dry run first.
+    Whoever ``url`` belongs to reads every update the account receives from then on, so the
+    ``before_send`` check runs (``operation="set_webhook"``, the URL as the draft's text),
+    on the dry run too.
     """
-    return _write(
-        get_channel(channel, registry=registry),
-        ConversationRef(channel=channel, id=""),
+    return _webhook_write(
+        channel,
         "set_webhook",
-        dry_run,
-        lambda: _webhook_manager(channel, registry).set_webhook(url, dry_run=dry_run),
+        url,
+        lambda adapter, rehearse: adapter.set_webhook(url, dry_run=rehearse),
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
     )
 
 
@@ -503,16 +542,20 @@ def delete_webhook(
     drop_pending_updates: bool = False,
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
+    before_send: Callable[..., None] | None = None,
 ) -> SendResult:
-    """Stop webhook delivery for ``channel``, so it can be polled again."""
-    return _write(
-        get_channel(channel, registry=registry),
-        ConversationRef(channel=channel, id=""),
+    """Stop webhook delivery for ``channel``, so it can be polled again; the ``before_send`` check runs (``operation="delete_webhook"``)."""
+    return _webhook_write(
+        channel,
         "delete_webhook",
-        dry_run,
-        lambda: _webhook_manager(channel, registry).delete_webhook(
-            drop_pending_updates=drop_pending_updates, dry_run=dry_run
+        "delete the webhook"
+        + (" and drop pending updates" if drop_pending_updates else ""),
+        lambda adapter, rehearse: adapter.delete_webhook(
+            drop_pending_updates=drop_pending_updates, dry_run=rehearse
         ),
+        dry_run=dry_run,
+        before_send=before_send,
+        registry=registry,
     )
 
 

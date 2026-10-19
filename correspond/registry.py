@@ -281,7 +281,7 @@ CHANNELS: tuple[ChannelInfo, ...] = (
             Setting(
                 key="webhook_store",
                 env="CORRESPOND_TELEGRAM_WEBHOOK_STORE",
-                what='where the webhook receiver keeps updates, as "module:attr" naming a MutableMapping or a callable returning one (default: files under the data root)',
+                what='where the webhook receiver keeps updates, as "module:attr" naming a MutableMapping of JSON-ready dicts, or a callable returning one (a bytes store needs a JSON codec; default: files under the data root)',
             ),
             Setting(
                 key="webhook_allow_remote",

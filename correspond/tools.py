@@ -19,6 +19,7 @@ import json
 import mimetypes
 import os
 import stat
+from urllib.parse import urlsplit
 from collections.abc import Callable
 from datetime import timezone
 from typing import Any
@@ -631,32 +632,40 @@ def reopen(ref: str, *, dry_run: bool = False) -> dict:
 
 @_as_result
 def webhook_info(channel: str) -> dict:
-    """Where a channel's platform delivers its updates now (Telegram: `url` empty means listen polls with getUpdates; set means the webhook receiver gets them, with `pending_update_count` and the last delivery error)."""
-    info = ops.webhook_info(channel)
-    where = info.get("url") or "nowhere: polling"
+    """Where a channel's platform delivers its updates now (Telegram: none means listen polls with getUpdates; a host means a webhook receiver gets them, with `pending_update_count` and the last delivery error). Only the URL's host is shown: a URL's path often holds a token."""
+    channel = channel.strip().rstrip(":")
+    info = dict(ops.webhook_info(channel))
+    url = info.pop("url", "") or ""
+    host = urlsplit(url).hostname if url else None
+    info = {"webhook_set": bool(url), "host": host, **info}
+    where = f"a webhook at {host}" if url else "nowhere: it is polled"
     return {
         "ok": True,
         "channel": channel,
         "webhook": info,
         "summary": f"{channel} delivers its updates to {where}",
-        "text": "\n".join(f"{k}: {v}" for k, v in info.items()) or "no webhook",
+        "text": "\n".join(f"{k}: {v}" for k, v in info.items()),
     }
 
 
 @_as_result
 def set_webhook(channel: str, url: str, *, dry_run: bool = False) -> dict:
-    """Have a channel's platform POST every update to `url` (HTTPS) instead of being polled (Telegram: with the configured webhook_secret, one connection at a time). Listening by polling stops until `delete_webhook`, and listen then needs delivery = webhook. Run it with `dry_run` first and show the operator the plan: it moves where the account's updates go. No before_send check runs, since nothing is said to anyone."""
-    return _write_result(ops.set_webhook(channel, url, dry_run=dry_run))
+    """Have a channel's platform POST every update to `url` (HTTPS) instead of being polled (Telegram: with the configured webhook_secret, one connection at a time). Whoever `url` belongs to reads every message the account receives from then on: only ever a URL the operator gave for their own receiver. Listening by polling stops until `delete_webhook`, and listen then needs delivery = webhook. Run it with `dry_run` first and show the operator the plan. It passes the before_send check, as for `send`."""
+    return _write_result(
+        ops.set_webhook(channel.strip().rstrip(":"), url, dry_run=dry_run)
+    )
 
 
 @_as_result
 def delete_webhook(
     channel: str, *, drop_pending_updates: bool = False, dry_run: bool = False
 ) -> dict:
-    """Stop a channel's webhook delivery, so it can be polled again (listen then needs delivery = poll). Pending updates are kept unless `drop_pending_updates`. Run it with `dry_run` first."""
+    """Stop a channel's webhook delivery, so it can be polled again (listen then needs delivery = poll). Pending updates are kept unless `drop_pending_updates`. Run it with `dry_run` first. It passes the before_send check, as for `send`."""
     return _write_result(
         ops.delete_webhook(
-            channel, drop_pending_updates=drop_pending_updates, dry_run=dry_run
+            channel.strip().rstrip(":"),
+            drop_pending_updates=drop_pending_updates,
+            dry_run=dry_run,
         )
     )
 

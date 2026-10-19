@@ -761,8 +761,15 @@ def test_the_webhook_tools_plan_first_and_reach_the_bot(token, monkeypatch):
         "setWebhook",
         "getWebhookInfo",
     ]
-    info = tools.webhook_info("telegram")
-    assert info["ok"] and info["webhook"]["url"] == "https://example.org/telegram"
+    info = tools.webhook_info("telegram:")
+    assert (
+        info["ok"]
+        and info["webhook"]["host"] == "example.org"
+        and info["webhook"]["webhook_set"]
+    )
+    assert "/telegram" not in json.dumps(info), (
+        "a URL's path may hold a token: only the host is shown"
+    )
     gone = tools.delete_webhook("telegram", drop_pending_updates=True)
     assert gone["ok"] and dict(api.calls)["deleteWebhook"] == {
         "drop_pending_updates": True
@@ -825,4 +832,56 @@ def test_the_command_runs_the_receiver_on_this_machine(monkeypatch, capsys):
     monkeypatch.setattr(module, "serve_webhook", refuse)
     with pytest.raises(SystemExit) as stopped:
         module.serve_main(["--host", "0.0.0.0"])
-    assert stopped.value.code == 2 and "this machine only" in capsys.readouterr().err
+    assert stopped.value.code == 1 and "this machine only" in capsys.readouterr().err
+    monkeypatch.setattr(module, "serve_webhook", lambda **kwargs: calls.append(kwargs))
+    module.serve_main(["--no-allow-remote"])
+    assert calls[-1]["allow_remote"] is False
+
+
+def test_set_and_delete_webhook_pass_the_operators_check(token, monkeypatch):
+    from correspond.errors import Refused
+
+    monkeypatch.setenv("CORRESPOND_TELEGRAM_WEBHOOK_SECRET", SECRET)
+    api = FakeBotApi(setWebhook=True, deleteWebhook=True, getWebhookInfo=HOOKED)
+    registry = {"telegram": Telegram(http=api, log={})}
+    seen = []
+
+    def check(ref, draft, audience, *, operation, **context):
+        seen.append((operation, draft.text))
+        raise Refused("no redirects")
+
+    redirected = correspond.ops.set_webhook(
+        "telegram",
+        "https://attacker.example.org/hook",
+        before_send=check,
+        registry=registry,
+    )
+    deleted = correspond.ops.delete_webhook(
+        "telegram", before_send=check, registry=registry
+    )
+    assert (redirected.ok, redirected.error_kind, deleted.ok) == (False, "refused", False)
+    assert seen == [
+        ("set_webhook", "https://attacker.example.org/hook"),
+        ("delete_webhook", "delete the webhook"),
+    ]
+    assert [name for name, _ in api.calls] == [], "nothing reached Telegram"
+
+
+def test_the_receiver_from_the_settings_writes_where_listen_reads(monkeypatch):
+    import sys
+    import types
+
+    from correspond.channels.telegram import webhook_app_from_env
+
+    shared = {}
+    module = types.ModuleType("example_webhook_store_2")
+    module.make = lambda: shared
+    monkeypatch.setitem(sys.modules, "example_webhook_store_2", module)
+    monkeypatch.setenv(
+        "CORRESPOND_TELEGRAM_WEBHOOK_STORE", "example_webhook_store_2:make"
+    )
+    monkeypatch.setenv("CORRESPOND_TELEGRAM_WEBHOOK_SECRET", SECRET)
+    assert (
+        _deliver(webhook_app_from_env(), {"update_id": 5, "message": _message(1)}) == 200
+    )
+    assert len(shared) == 1 and Telegram(http=FakeBotApi()).updates is shared
