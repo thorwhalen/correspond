@@ -14,16 +14,17 @@ Senders are ``platform``: Telegram authenticated the account, and correspond pul
 update from the Bot API itself. The bot token never appears in an error or a plan.
 
 **Webhook delivery**, for a server: :meth:`Telegram.set_webhook` asks Telegram to POST
-every update to an HTTPS address, carrying the configured ``webhook_secret`` in the
-``X-Telegram-Bot-Api-Secret-Token`` header. :func:`mk_webhook_app` is the receiver (an ASGI
-app; ``uvicorn --factory correspond.channels.telegram:webhook_app_from_env --host
-127.0.0.1``): it checks that header, refuses connections from anything but this machine
-unless ``webhook_allow_remote`` is set (put your own HTTPS reverse proxy in front), and
-stores each update under the data root (``telegram-webhook/``). With ``delivery =
-"webhook"`` in the config, ``listen`` reads what the receiver stored instead of calling
-``getUpdates``: Telegram serves one or the other, never both, so while a webhook is set
-``getUpdates`` is refused (409), and :meth:`Telegram.delete_webhook` returns the bot to
-polling. :meth:`Telegram.verify` grades one delivery by the same header.
+every update, one at a time, to an HTTPS address, carrying the configured
+``webhook_secret`` in the ``X-Telegram-Bot-Api-Secret-Token`` header.
+:func:`mk_webhook_app` is the receiver, an ASGI app that stores each update carrying that
+secret under the data root (``telegram-webhook/``), in the order it arrives; the secret is
+the gate, and nothing without it is stored. :func:`serve_webhook` runs it (with uvicorn,
+the ``server`` extra) on ``127.0.0.1`` behind your own HTTPS reverse proxy, and refuses
+any other address unless ``webhook_allow_remote`` is set. With ``delivery = "webhook"`` in
+the config, ``listen`` reads what the receiver stored instead of calling ``getUpdates``:
+Telegram serves one or the other, never both, so while a webhook is set ``getUpdates`` is
+refused (409), and :meth:`Telegram.delete_webhook` returns the bot to polling.
+:meth:`Telegram.verify` grades one delivery by the same header.
 
 >>> Telegram().parse_ref("-4001/7").parent.encoded
 'telegram:-4001'
@@ -36,6 +37,7 @@ import ipaddress
 import json
 import re
 import subprocess
+import time
 from collections.abc import Awaitable, Callable, Mapping, MutableMapping
 from dataclasses import replace
 from datetime import datetime, timezone
@@ -43,7 +45,7 @@ from typing import Any
 
 from correspond.channels._asgi import TOO_LARGE, lifespan, read_body, respond
 from correspond.channels._http import urllib_http
-from correspond.errors import ChannelError, InvalidRef, NotSupported
+from correspond.errors import ChannelError, InvalidRef, MissingRequirement, NotSupported
 from correspond.model import (
     Account,
     Audience,
@@ -64,7 +66,13 @@ from correspond.notify import handle, missing_mentions, with_mentions
 from correspond.ops import window, with_final_cursor
 from correspond.registry import require, value
 
-__all__ = ["SECRET_HEADER", "Telegram", "mk_webhook_app", "webhook_app_from_env"]
+__all__ = [
+    "SECRET_HEADER",
+    "Telegram",
+    "mk_webhook_app",
+    "serve_webhook",
+    "webhook_app_from_env",
+]
 
 NAME = "telegram"
 CHAT_RE = re.compile(r"^(?:-?[1-9][0-9]{0,19}|@[A-Za-z][A-Za-z0-9_]{3,31})$")
@@ -92,23 +100,18 @@ DELIVERIES = ("poll", "webhook")
 #: The data-root folder the webhook receiver stores updates in.
 WEBHOOK_KIND = "telegram-webhook"
 MAX_WEBHOOK_BODY_BYTES = 1_000_000
+#: Telegram's update ids are signed 64-bit integers.
+MAX_UPDATE_ID = 2**63 - 1
+#: How far back a first webhook listen looks, as getUpdates' buffer does.
+WEBHOOK_LOOKBACK_NS = 24 * 3600 * 10**9
+#: How long the receiver's updates are kept once a listen has passed them.
+WEBHOOK_RETENTION_NS = 7 * 24 * 3600 * 10**9
+WEBHOOK_HOST = "127.0.0.1"
+WEBHOOK_PORT = 8081
+#: The prefix of a webhook listen cursor (a getUpdates cursor is a bare offset).
+_WEBHOOK_CURSOR = "w"
+_RECEIVED_KEY_RE = re.compile(r"^(?P<stamp>[0-9]{20})-(?P<update>[0-9]{1,19})\.json$")
 _TRUE = ("1", "true", "yes", "on")
-
-
-def _update_key(update_id: int) -> str:
-    """The store key of one update: its id zero-padded, so keys sort as the ids do."""
-    return f"{update_id:020d}.json"
-
-
-def _is_local(scope: Mapping[str, Any]) -> bool:
-    """Whether an ASGI connection comes from this machine (a loopback address or a Unix socket)."""
-    client = scope.get("client")
-    if not client:
-        return True  # a Unix socket has no peer address
-    try:
-        return ipaddress.ip_address(str(client[0])).is_loopback
-    except ValueError:
-        return False
 
 
 def _secret_matches(received: str, secret: str) -> bool:
@@ -119,42 +122,45 @@ def _secret_matches(received: str, secret: str) -> bool:
     )
 
 
-def mk_webhook_app(
-    *,
-    secret: str,
-    updates: MutableMapping[str, Any] | None = None,
-    allow_remote: bool = False,
-    max_body_bytes: int = MAX_WEBHOOK_BODY_BYTES,
-) -> Callable[..., Awaitable[None]]:
-    """The webhook receiver as an ASGI app: Telegram POSTs updates, the app stores them in ``updates``.
-
-    A request without ``secret`` in ``X-Telegram-Bot-Api-Secret-Token`` is refused (401)
-    and nothing is stored. So is a connection from another machine (403) unless
-    ``allow_remote``: Telegram reaches a webhook only over HTTPS on a public address, so
-    the receiver belongs behind your own reverse proxy on this machine. A delivery Telegram
-    repeats overwrites the same key. ``updates`` defaults to files under the data root
-    (``telegram-webhook/``), which ``listen`` reads when ``delivery`` is ``webhook``.
-    """
+def _check_secret(secret: Any) -> str:
     if not isinstance(secret, str) or not SECRET_TOKEN_RE.match(secret):
         raise ValueError(
             "the webhook secret is 1 to 256 characters of A-Z, a-z, 0-9, _ and - (Telegram's rule for secret_token)"
         )
+    return secret
+
+
+def mk_webhook_app(
+    *,
+    secret: str,
+    updates: MutableMapping[str, Any] | None = None,
+    max_body_bytes: int = MAX_WEBHOOK_BODY_BYTES,
+    clock: Callable[[], int] = time.time_ns,
+) -> Callable[..., Awaitable[None]]:
+    """The webhook receiver as an ASGI app: Telegram POSTs updates, the app stores them in ``updates``.
+
+    A request without ``secret`` in ``X-Telegram-Bot-Api-Secret-Token`` is refused (401)
+    and nothing is stored: the secret is the only gate, since behind a reverse proxy every
+    connection comes from this machine. Each update is stored under
+    ``<arrival time in ns>-<update id>.json``, so ``listen`` takes them in the order they
+    came, whatever their ids (Telegram restarts them at random after a week without
+    updates). One receiver process per bot keeps that order: :meth:`Telegram.set_webhook`
+    asks Telegram for one connection at a time. ``updates`` defaults to files under the
+    data root (``telegram-webhook/``), which ``listen`` reads when ``delivery`` is
+    ``webhook``.
+    """
+    _check_secret(secret)
     if updates is None:
         from correspond.stores import json_store
 
         updates = json_store(WEBHOOK_KIND)
+    last = [0]
 
     async def app(scope, receive, send):
         if scope["type"] == "lifespan":
             return await lifespan(receive, send)
         if scope["type"] != "http":
             return None
-        if not allow_remote and not _is_local(scope):
-            return await respond(
-                send,
-                403,
-                {"error": "this receiver answers connections from this machine only"},
-            )
         if scope.get("method", "GET") != "POST":
             return await respond(send, 405, {"error": "use POST"}, {"allow": "POST"})
         headers = {
@@ -173,12 +179,19 @@ def mk_webhook_app(
             return await respond(send, 413, {"error": "the update is too large"})
         try:
             update = json.loads(body)
-        except (UnicodeDecodeError, json.JSONDecodeError):
+        except ValueError:  # not JSON, not UTF-8, or an integer too long to read
             return await respond(send, 400, {"error": "the body is not JSON"})
         update_id = update.get("update_id") if isinstance(update, dict) else None
-        if isinstance(update_id, bool) or not isinstance(update_id, int) or update_id < 0:
+        if (
+            isinstance(update_id, bool)
+            or not isinstance(update_id, int)
+            or not 0 <= update_id <= MAX_UPDATE_ID
+        ):
             return await respond(send, 400, {"error": "an update carries an update_id"})
-        updates[_update_key(update_id)] = update
+        last[0] = max(
+            clock(), last[0] + 1
+        )  # strictly increasing, whatever the clock does
+        updates[f"{last[0]:020d}-{update_id}.json"] = update
         return await respond(send, 200, None)
 
     return app
@@ -186,8 +199,59 @@ def mk_webhook_app(
 
 def webhook_app_from_env() -> Callable[..., Awaitable[None]]:
     """:func:`mk_webhook_app` configured from the settings, for ``uvicorn --factory``."""
-    allow = str(value(NAME, "webhook_allow_remote") or "").strip().lower() in _TRUE
-    return mk_webhook_app(secret=require(NAME, "webhook_secret"), allow_remote=allow)
+    return mk_webhook_app(secret=require(NAME, "webhook_secret"))
+
+
+def _is_loopback(host: str) -> bool:
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def serve_webhook(
+    *,
+    host: str = WEBHOOK_HOST,
+    port: int = WEBHOOK_PORT,
+    allow_remote: bool | None = None,
+    app: Callable[..., Awaitable[None]] | None = None,
+    run: Callable[..., Any] | None = None,
+) -> None:
+    """Run the receiver (with uvicorn) on ``host``, this machine unless ``allow_remote``.
+
+    ``allow_remote`` defaults to the ``webhook_allow_remote`` setting. Put your HTTPS
+    reverse proxy in front: Telegram reaches only public HTTPS addresses. Proxy headers are
+    ignored, since the receiver needs no client address, and one worker keeps the order.
+    """
+    if allow_remote is None:
+        allow_remote = (
+            str(value(NAME, "webhook_allow_remote") or "").strip().lower() in _TRUE
+        )
+    if not allow_remote and not _is_loopback(host):
+        raise ChannelError(
+            f"the webhook receiver binds to this machine only ({WEBHOOK_HOST}), not {host!r}, "
+            "unless webhook_allow_remote is set",
+            kind="validation",
+        )
+    if run is None:
+        try:
+            import uvicorn
+        except ImportError:
+            raise MissingRequirement(
+                NAME,
+                "uvicorn, to serve the webhook receiver",
+                fix="pip install 'correspond[server]'",
+            ) from None
+        run = uvicorn.run
+    run(
+        app or webhook_app_from_env(),
+        host=host,
+        port=port,
+        workers=1,
+        proxy_headers=False,
+    )
 
 
 def _log_key(message: Message) -> str:
@@ -238,9 +302,11 @@ class Telegram:
         log: MutableMapping[str, Any] | None = None,
         updates: MutableMapping[str, Any] | None = None,
         run: Callable[..., Any] = subprocess.run,
+        clock: Callable[[], int] = time.time_ns,
     ):
         self.http = http
         self.run = run
+        self.clock = clock
         self._log = log
         self._updates = updates
 
@@ -296,7 +362,8 @@ class Telegram:
                 "a title is prepended to the text: Telegram messages have none",
                 "audience comes from getChat: a public username, the chat type, history visibility; members are never listed",
                 "delivery = webhook makes listen read what the webhook receiver (mk_webhook_app) stored instead of calling getUpdates; Telegram serves one or the other, so set_webhook stops getUpdates (409) until delete_webhook",
-                "the webhook receiver answers this machine only unless webhook_allow_remote is set, and refuses a request without the secret token; verify grades one delivery by that header: platform when it matches (it proves Telegram sent it, not a signature over the body), forged otherwise",
+                "the webhook receiver stores only requests carrying the secret token, in arrival order (set_webhook asks for one connection at a time); serve_webhook binds it to 127.0.0.1 unless webhook_allow_remote is set; verify grades one delivery by that header: platform when it matches (it proves Telegram sent it, not a signature over the body), forged otherwise",
+                "listen in webhook mode looks back a day on its first poll, deletes what it passed once a week old, and, when nothing is new, asks getWebhookInfo whether a webhook is set at all; a delivery Telegram repeats arrives twice, with one delivery_id",
             ),
         )
 
@@ -431,10 +498,11 @@ class Telegram:
     def poll(
         self, ref: ConversationRef, *, cursor: str | None = None, limit: int | None = None
     ):
-        """Updates since ``cursor`` (an update offset), every one logged before it is handed over.
+        """Updates since ``cursor``, every one logged before it is handed over.
 
-        They come from ``getUpdates``, or, with ``delivery = "webhook"`` in the config, from
-        what the webhook receiver stored (:func:`mk_webhook_app`); the cursor is the same.
+        They come from ``getUpdates`` (the cursor is an update offset), or, with ``delivery
+        = "webhook"`` in the config, from what the webhook receiver stored
+        (:meth:`_poll_received`).
         """
         if ref.id:
             raise NotSupported(
@@ -442,36 +510,77 @@ class Telegram:
                 NAME,
                 alternatives=("listen to telegram: and route by conversation",),
             )
+        count = max(1, min(MAX_UPDATES, int(limit))) if limit else None
+        if self._delivery() == "webhook":
+            return self._poll_received(cursor, count)
         if cursor and not str(cursor).isdigit():
             raise ChannelError(
                 f"a Telegram cursor is an update offset, not {cursor!r}",
                 kind="validation",
             )
-        count = max(1, min(MAX_UPDATES, int(limit))) if limit else None
-        if self._delivery() == "webhook":
-            offset = int(cursor) if cursor else 0
-            received = sorted(
-                (int(key[: -len(".json")]), key)
-                for key in self.updates
-                if key.endswith(".json") and key[: -len(".json")].isdigit()
-            )
-            updates = [self.updates[key] for number, key in received if number >= offset]
-            authenticity = _WEBHOOK
-        else:
-            params: dict[str, Any] = {
-                "timeout": 0,
-                "allowed_updates": list(UPDATE_TYPES),
-            }
-            if cursor:
-                params["offset"] = int(cursor)
-            if count:
-                params["limit"] = count
-            updates = self._call("getUpdates", params) or []
-            authenticity = _PLATFORM
+        params: dict[str, Any] = {"timeout": 0, "allowed_updates": list(UPDATE_TYPES)}
+        if cursor:
+            params["offset"] = int(cursor)
         if count:
-            updates = updates[:count]
+            params["limit"] = count
+        updates = (self._call("getUpdates", params) or [])[: count or None]
+        pairs = [(u, str(int(u["update_id"]) + 1)) for u in updates]
+        return with_final_cursor(
+            self._events(pairs, _PLATFORM), pairs[-1][1] if pairs else None
+        )
+
+    def _poll_received(self, cursor: str | None, count: int | None):
+        """What the webhook receiver stored after ``cursor`` (``w<arrival ns>``), in arrival order.
+
+        A first listen, or one whose cursor is a ``getUpdates`` offset from before the
+        switch, looks back a day. Updates a listen has passed are deleted once they are a
+        week old. When nothing is new, ``getWebhookInfo`` is asked whether a webhook is set
+        at all, so a bot left polling is not mistaken for a quiet one.
+        """
+        now = self.clock()
+        text = str(cursor or "")
+        if text.startswith(_WEBHOOK_CURSOR) and text[1:].isdigit():
+            after = int(text[1:])
+        elif not text or text.isdigit():
+            after = now - WEBHOOK_LOOKBACK_NS
+        else:
+            raise ChannelError(
+                f"a Telegram webhook cursor is {_WEBHOOK_CURSOR}<arrival ns>, not {cursor!r}",
+                kind="validation",
+            )
+        received = sorted(
+            (int(match["stamp"]), key)
+            for key in list(self.updates)
+            if (match := _RECEIVED_KEY_RE.match(key))
+        )
+        for stamp, key in received:
+            if stamp <= after and stamp < now - WEBHOOK_RETENTION_NS:
+                self.updates.pop(key, None)
+        pending = [(stamp, key) for stamp, key in received if stamp > after]
+        if count:
+            pending = pending[:count]
+        if not pending:
+            self._require_webhook()
+            return with_final_cursor([], None)
+        pairs = [
+            (self.updates[key], f"{_WEBHOOK_CURSOR}{stamp}") for stamp, key in pending
+        ]
+        return with_final_cursor(self._events(pairs, _WEBHOOK), pairs[-1][1])
+
+    def _require_webhook(self) -> None:
+        if not self._webhook_state().get("url"):
+            raise ChannelError(
+                "delivery is webhook, but no webhook is set for this bot: "
+                "run Telegram().set_webhook('https://...'), or set delivery = poll",
+                kind="validation",
+            )
+
+    def _events(
+        self, pairs: list[tuple[Mapping[str, Any], str]], authenticity: Authenticity
+    ) -> list[Event]:
+        """One event per update of a type listen takes, each with the cursor that follows it; every message logged."""
         events = []
-        for update in updates:
+        for update, after in pairs:
             update_id = int(update["update_id"])
             kind = next((k for k in UPDATE_TYPES if k in update), None)
             if kind is None:
@@ -485,13 +594,12 @@ class Telegram:
                     else "message.created",
                     channel=NAME,
                     delivery_id=f"telegram:update-{update_id}",
-                    cursor=str(update_id + 1),
+                    cursor=after,
                     message=message,
                     payload={"update_id": update_id, "type": kind},
                 )
             )
-        final = str(int(updates[-1]["update_id"]) + 1) if updates else None
-        return with_final_cursor(events, final)
+        return events
 
     def _delivery(self) -> str:
         delivery = str(value(NAME, "delivery") or "poll").strip().lower()
@@ -540,7 +648,7 @@ class Telegram:
         "webhook"`` so ``listen`` reads what the receiver stores. The plan reads the
         webhook back with ``getWebhookInfo``. A dry run calls nothing and reads no secret.
         """
-        if not str(url).startswith("https://"):
+        if not str(url).lower().startswith("https://"):
             raise ChannelError(
                 f"Telegram delivers webhooks over HTTPS only, not to {url!r}",
                 kind="validation",
@@ -550,6 +658,7 @@ class Telegram:
             "request": "setWebhook",
             "url": url,
             "allowed_updates": list(UPDATE_TYPES),
+            "max_connections": 1,
             "secret_token": "the configured webhook_secret",
             "consequence": "getUpdates is refused until delete_webhook; listen needs delivery = webhook",
         }
@@ -563,7 +672,12 @@ class Telegram:
             )
         self._call(
             "setWebhook",
-            {"url": url, "secret_token": secret, "allowed_updates": list(UPDATE_TYPES)},
+            {
+                "url": url,
+                "secret_token": secret,
+                "allowed_updates": list(UPDATE_TYPES),
+                "max_connections": 1,
+            },
         )
         plan["now"] = self._webhook_state()
         return self._bot_change("set_webhook", plan, dry_run=False)

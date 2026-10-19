@@ -44,6 +44,10 @@ correspond-channel = "correspond.channel:main"
 mcp = [
     "py2mcp",
 ]
+# The ASGI server for correspond's receivers (the Telegram webhook, the web inbox).
+server = [
+    "uvicorn>=0.20",
+]
 # The Apprise channel (about 155 notification services, send only) is optional.
 apprise = [
     "apprise>=1.6",

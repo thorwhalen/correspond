@@ -281,14 +281,14 @@ CHANNELS: tuple[ChannelInfo, ...] = (
             Setting(
                 key="webhook_allow_remote",
                 env="CORRESPOND_TELEGRAM_WEBHOOK_ALLOW_REMOTE",
-                what="true to let the webhook receiver answer connections from other machines (it answers this machine only otherwise; put your HTTPS reverse proxy in front)",
+                what="true to let serve_webhook bind the webhook receiver to an address other machines reach (it binds 127.0.0.1 otherwise; put your HTTPS reverse proxy in front)",
                 default="false",
             ),
         ),
         notes=(
             "a bot can write only to chats that wrote to it first, or groups it was added to",
             "privacy mode (on by default) hides group messages that do not address the bot",
-            "webhook delivery on a server: serve the receiver on this machine behind your HTTPS reverse proxy (`uvicorn --factory correspond.channels.telegram:webhook_app_from_env --host 127.0.0.1`), call Telegram().set_webhook('https://...'), and set delivery = webhook",
+            "webhook delivery on a server: install correspond[server], run serve_webhook() from correspond.channels.telegram (127.0.0.1:8081, one worker) behind your HTTPS reverse proxy, call Telegram().set_webhook('https://...'), and set delivery = webhook",
         ),
     ),
     ChannelInfo(
