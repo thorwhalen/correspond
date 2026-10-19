@@ -347,8 +347,16 @@ class FakeSlackApi:
             found = [
                 m
                 for m in self.history
-                if float(m["ts"]) > float(params.get("oldest") or 0)
-                and float(m["ts"]) < float(params.get("latest") or "inf")
+                if (
+                    float(m["ts"]) >= float(params.get("oldest") or 0)
+                    if params.get("inclusive") == "true"
+                    else float(m["ts"]) > float(params.get("oldest") or 0)
+                )
+                and (
+                    float(m["ts"]) <= float(params.get("latest") or "inf")
+                    if params.get("inclusive") == "true"
+                    else float(m["ts"]) < float(params.get("latest") or "inf")
+                )
             ]
             size = int(params.get("limit") or 200)
             start = int(params.get("cursor") or 0)
@@ -478,7 +486,9 @@ def test_listen_polls_by_ts_and_sets_a_cursor_on_a_quiet_first_poll(token):
         )
     )
     assert [e.message.id for e in events] == ["1760000020.000100", "1760000030.000100"]
-    assert cursors[f"slack:{CHANNEL}"] == f"{NOW - 60:.6f}", "the end of the windows read"
+    assert cursors[f"slack:{CHANNEL}"].split("/")[0] == f"{NOW - 60:.6f}", (
+        "the end of the windows read"
+    )
     quiet = {}
     assert (
         list(
@@ -488,7 +498,9 @@ def test_listen_polls_by_ts_and_sets_a_cursor_on_a_quiet_first_poll(token):
         )
         == []
     )
-    assert quiet == {f"slack:{CHANNEL}": f"{NOW - 60:.6f}"}, "a minute behind this clock"
+    assert quiet[f"slack:{CHANNEL}"].split("/")[0] == f"{NOW - 60:.6f}", (
+        "a minute behind this clock"
+    )
 
 
 def test_listen_reads_every_page_and_a_limit_drains_over_polls(token):
@@ -774,7 +786,9 @@ def test_slacks_own_notices_are_not_messages_but_the_cursor_moves_past_them(toke
         )
         == []
     )
-    assert float(cursors[f"slack:{CHANNEL}"]) >= 1760000013.0, "past the notice"
+    assert float(cursors[f"slack:{CHANNEL}"].split("/")[0]) >= 1760000013.0, (
+        "past the notice"
+    )
     assert [
         m.text for m in correspond.read(f"slack:{CHANNEL}", registry=_api_registry(api))
     ] == ["hi"]
@@ -830,3 +844,113 @@ def test_a_channels_own_webhook_wins_for_a_plain_post_and_the_token_threads(
         and threaded.message_id == "1760000100.000200"
         and hooked == [{"text": "plain"}]
     )
+
+
+# ------------------------------------------------------------ the walk's review (#69)
+
+
+def _walker(api, *, clock=1760010000.0):
+    return {"slack": Slack(http=api, keychain=lambda s: "", clock=lambda: clock)}
+
+
+def test_a_message_on_a_window_boundary_is_delivered_once(token):
+    start = 1760000000.0
+    on_edge = _msg(f"{start + 3600:.6f}", "on the edge")
+    api = FakeSlackApi([on_edge, _msg(f"{start + 4000:.6f}", "after")])
+    cursors = {f"slack:{CHANNEL}": f"{start:.6f}"}
+    seen = []
+    for _ in range(3):
+        seen += [
+            e.message.text
+            for e in correspond.listen(
+                f"slack:{CHANNEL}", cursors=cursors, registry=_walker(api)
+            )
+        ]
+    assert seen == ["on the edge", "after"]
+
+
+def test_one_request_a_poll_still_drains_a_dense_backlog(token):
+    """The tier the walk is for: a narrowing is progress, kept in the cursor."""
+    many = [_msg(f"{1760000000 + 60 * i}.000000", f"m{i}") for i in range(40)]
+    inner = FakeSlackApi(many)
+    state = {"allowed": 0}
+
+    def one_a_poll(method, url, *, headers=None, body=None, timeout=None):
+        if "conversations.history" in url:
+            if not state["allowed"]:
+                return Response(429, {"retry-after": "60"}, b"")
+            state["allowed"] -= 1
+        return inner(method, url, headers=headers, body=body)
+
+    from correspond.channels import slack as module
+
+    original, module.PAGE_SIZE = module.PAGE_SIZE, 15
+    try:
+        cursors = {f"slack:{CHANNEL}": "1759999999.000000"}
+        seen = []
+        for _ in range(80):
+            state["allowed"] = 1
+            seen += [
+                e.message.text
+                for e in correspond.listen(
+                    f"slack:{CHANNEL}", cursors=cursors, registry=_walker(one_a_poll)
+                )
+            ]
+            if len(seen) == 40:
+                break
+    finally:
+        module.PAGE_SIZE = original
+    assert seen == [f"m{i}" for i in range(40)]
+
+
+def test_slacks_clock_bounds_the_walk_when_this_one_runs_ahead(token):
+    from email.utils import formatdate
+
+    slack_now = 1760010000.0
+    later = _msg(f"{slack_now + 30:.6f}", "posted after the poll, by Slack's clock")
+
+    class Behind(FakeSlackApi):
+        def __call__(self, method, url, **kwargs):
+            reply = super().__call__(method, url, **kwargs)
+            return Response(
+                reply.status, {"date": formatdate(slack_now, usegmt=True)}, reply.body
+            )
+
+    api = Behind([])
+    cursors = {f"slack:{CHANNEL}": f"{slack_now - 7200:.6f}"}
+    list(
+        correspond.listen(
+            f"slack:{CHANNEL}",
+            cursors=cursors,
+            registry=_walker(api, clock=slack_now + 120),
+        )
+    )
+    assert float(cursors[f"slack:{CHANNEL}"].split("/")[0]) <= slack_now - 60
+    api.history = [later]
+    events = list(
+        correspond.listen(
+            f"slack:{CHANNEL}",
+            cursors=cursors,
+            registry=_walker(api, clock=slack_now + 240),
+        )
+    )
+    assert [e.message.text for e in events] == ["posted after the poll, by Slack's clock"]
+
+
+def test_a_plain_ts_cursor_from_before_still_works(token):
+    api = FakeSlackApi([_msg("1760000100.000000", "hi")])
+    cursors = {f"slack:{CHANNEL}": "1760000000.000000"}
+    events = list(
+        correspond.listen(f"slack:{CHANNEL}", cursors=cursors, registry=_walker(api))
+    )
+    assert [e.message.text for e in events] == ["hi"] and "/" in cursors[
+        f"slack:{CHANNEL}"
+    ]
+    with pytest.raises(correspond.ChannelError):
+        list(
+            correspond.listen(
+                f"slack:{CHANNEL}",
+                cursors={f"slack:{CHANNEL}": "x/1"},
+                registry=_walker(api),
+            )
+        )
