@@ -164,7 +164,7 @@ CHANNELS: tuple[ChannelInfo, ...] = (
             Setting(
                 key="folder",
                 env="CORRESPOND_EMAIL_FOLDER",
-                what="the folder read and listened to",
+                what="the folder read and listened to when a reference names none (?folder=)",
                 default="INBOX",
             ),
             Setting(

@@ -20,7 +20,7 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 | Channel | References | Operations | Built on |
 |---|---|---|---|
 | `github` | `github:owner/repo`, `github:owner/repo#12` | read, listen (issues, comments, pull request review threads, discussions), send (opening an issue takes `native` labels, assignees, milestone; `native` category opens a discussion instead), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token |
-| `email` | `email:` (the folder), `email:someone@example.org` | read, listen, send (with cc and bcc), audience | `imaplib`, `smtplib` |
+| `email` | `email:` (the folder), `email:someone@example.org`; either takes `?folder=<name>` (a Gmail label is a folder), and `email:` takes `?from=<address or domain>,...` (a domain as `@example.org`); quote such a reference in a shell: `'email:?folder=News'` | read, listen, send (with cc and bcc), audience | `imaplib`, `smtplib` |
 | `ntfy` | `ntfy:` (the default topic), `ntfy:<topic>` | send, audience | `urllib` |
 | `macos` | `macos:` | send, audience | `terminal-notifier` or `osascript` |
 | `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience | the Bot API over `urllib` |

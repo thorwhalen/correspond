@@ -376,7 +376,11 @@ def _read_one(monkeypatch, raw):
 def test_a_multipart_newsletter_keeps_the_html_part_and_list_headers(monkeypatch):
     message = _read_one(
         monkeypatch,
-        _mail(body="Issue 7: see the web version", html=_NEWSLETTER_HTML, headers=_LIST_HEADERS),
+        _mail(
+            body="Issue 7: see the web version",
+            html=_NEWSLETTER_HTML,
+            headers=_LIST_HEADERS,
+        ),
     )
     assert message.body_format == "plain" and message.text.startswith("Issue 7")
     assert "https://example.org/item-1" in message.native["html"]
@@ -411,9 +415,7 @@ def test_plain_mail_without_list_headers_adds_no_keys(monkeypatch):
 
 
 def test_newsletter_native_keys_are_declared(monkeypatch):
-    message = _read_one(
-        monkeypatch, _mail(html=_NEWSLETTER_HTML, headers=_LIST_HEADERS)
-    )
+    message = _read_one(monkeypatch, _mail(html=_NEWSLETTER_HTML, headers=_LIST_HEADERS))
     assert set(message.native) <= set(Email().capabilities.native_fields)
 
 
@@ -427,3 +429,251 @@ def test_folded_list_headers_are_unfolded(monkeypatch):
     assert message.native["list_unsubscribe"] == (
         "<https://example.org/u>, <mailto:unsub@example.org>"
     )
+
+
+# ------------------------------------------ a folder and several senders per reference (#39)
+
+
+class FakeFolders(FakeImap):
+    """Several folders, each its own UIDs; ``FROM`` matches a substring, as IMAP servers do."""
+
+    def __init__(self, folders, **kwargs):
+        super().__init__({}, **kwargs)
+        self.folders = {name: dict(messages) for name, messages in folders.items()}
+
+    def select(self, mailbox, readonly=False):
+        self.commands.append(("SELECT", mailbox, readonly))
+        name = mailbox.strip('"')
+        if name not in self.folders:
+            return "NO", [b"no such mailbox"]
+        self.messages = self.folders[name]
+        return "OK", [str(len(self.messages)).encode()]
+
+    def uid(self, command, *args):
+        if command != "SEARCH":
+            return super().uid(command, *args)
+        self.commands.append((command, *args))
+        uids, tokens = sorted(self.messages), list(args)
+        for index, token in enumerate(tokens):
+            if token == "FROM":
+                needle = tokens[index + 1].strip('"')
+                uids = [u for u in uids if any(needle in s for s in self._sender(u))]
+            elif token == "SINCE":
+                day = tokens[index + 1]
+                uids = [u for u in uids if self._day(u) >= day]
+            elif token == "UID":
+                start = int(tokens[index + 1].split(":")[0])
+                uids = [u for u in uids if u >= start] or (
+                    [max(self.messages)] if self.messages else []
+                )
+        return "OK", [" ".join(map(str, uids)).encode()]
+
+    def _day(self, uid):
+        from datetime import datetime
+
+        parsed = BytesParser(policy=policy.default).parsebytes(self.messages[uid])
+        moment = datetime.strptime(str(parsed["Date"]), "%a, %d %b %Y %H:%M:%S %z")
+        return moment.strftime("%Y%m%d")
+
+
+def _news(uid, sender, day, *, folder="news"):
+    return _mail(
+        sender=sender,
+        message_id=f"<{folder}-{uid}@example.org>",
+        subject=f"{folder} {uid}",
+        date=f"{day} Sep 2026 09:00:00 +0000",
+    )
+
+
+@pytest.fixture
+def topics(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    monkeypatch.delenv("CORRESPOND_EMAIL_FOLDER", raising=False)
+    return FakeFolders(
+        {
+            "INBOX": {1: _news(1, "ada@example.org", "Fri, 11", folder="inbox")},
+            "Newsletters/AI": {
+                1: _news(1, "digest@example.org", "Tue, 01", folder="ai"),
+                2: _news(2, "digest@example.org", "Mon, 14", folder="ai"),
+            },
+            "&AMk-nergie": {  # Énergie, as the server names it
+                7: _news(7, "letters@example.net", "Tue, 15", folder="energy"),
+                8: _news(8, "eve@example.org.example.net", "Wed, 16", folder="energy"),
+                9: _news(9, "bada@example.org", "Wed, 16", folder="energy"),
+                10: _news(10, "ada@example.org", "Thu, 17", folder="energy"),
+            },
+        }
+    )
+
+
+def test_two_reads_in_one_process_read_two_folders_with_since(topics):
+    """The acceptance line of #39: no environment change between the two calls."""
+    from datetime import datetime, timezone
+
+    since = datetime(2026, 9, 10, tzinfo=timezone.utc)
+    registry = {"email": Email(imap=lambda: topics)}
+    ai = correspond.read("email:?folder=Newsletters/AI", since=since, registry=registry)
+    energy = correspond.read("email:?folder=%C3%89nergie", since=since, registry=registry)
+    assert [m.id for m in ai] == ["<ai-2@example.org>"], (
+        "the 1 September issue predates since"
+    )
+    assert [m.id for m in energy] == [
+        "<energy-7@example.org>",
+        "<energy-8@example.org>",
+        "<energy-9@example.org>",
+        "<energy-10@example.org>",
+    ]
+    assert {m.native["folder"] for m in ai} == {"Newsletters/AI"}
+    assert {m.native["folder"] for m in energy} == {"Énergie"}
+    selected = [c[1] for c in topics.commands if c[0] == "SELECT"]
+    assert selected == ['"Newsletters/AI"', '"&AMk-nergie"'], "modified UTF-7 on the wire"
+    assert any(c[0] == "SEARCH" and "SINCE" in c for c in topics.commands)
+
+
+def test_a_reference_without_a_folder_still_reads_the_configured_one(topics, monkeypatch):
+    registry = {"email": Email(imap=lambda: topics)}
+    assert [m.id for m in correspond.read("email:", registry=registry)] == [
+        "<inbox-1@example.org>"
+    ]
+    monkeypatch.setenv("CORRESPOND_EMAIL_FOLDER", "Newsletters/AI")
+    assert len(correspond.read("email:", registry=registry)) == 2
+
+
+def test_several_senders_and_a_domain_keep_exact_matches_only(topics):
+    registry = {"email": Email(imap=lambda: topics)}
+    ref = "email:?folder=%C3%89nergie&from=ada@example.org,@example.net"
+    messages = correspond.read(ref, registry=registry)
+    assert [m.author.handle for m in messages] == [
+        "letters@example.net",
+        "ada@example.org",
+    ], "bada@ only contains ada@; @example.net is that domain, not its subdomains"
+    searches = [c for c in topics.commands if c[0] == "SEARCH"]
+    assert [c[-1] for c in searches] == ['"@example.net"', '"ada@example.org"']
+
+
+def test_an_address_reference_with_a_folder_reads_only_that_address(topics):
+    registry = {"email": Email(imap=lambda: topics)}
+    messages = correspond.read(
+        "email:ada@example.org?folder=%C3%89nergie", registry=registry
+    )
+    assert [m.id for m in messages] == ["<energy-10@example.org>"]
+    assert messages[0].conversation.encoded == "email:ada@example.org"
+
+
+def test_listening_to_a_filtered_folder_never_stalls_on_mail_it_filters_out(topics):
+    ref = "email:?folder=%C3%89nergie&from=ada@example.org"
+    registry = {"email": Email(imap=lambda: topics)}
+    cursors = {}
+    key = Email().parse_ref(ref.removeprefix("email:")).encoded
+    cursors[key] = "42:7"
+    first = list(correspond.listen(ref, cursors=cursors, limit=1, registry=registry))
+    assert first == [], "9 (bada@) matches FROM as a substring only"
+    assert cursors[key] == "42:9", "the cursor still moves past what was looked at"
+    second = list(correspond.listen(ref, cursors=cursors, registry=registry))
+    assert [e.message.id for e in second] == ["<energy-10@example.org>"]
+    assert second[0].delivery_id == "email:Énergie:42:10"
+
+
+def test_reference_grammar_is_canonical_and_refuses_what_it_cannot_mean():
+    email = Email()
+    assert (
+        email.parse_ref("Ada@Example.org?folder=inbox").encoded
+        == "email:ada@example.org?folder=INBOX"
+    )
+    assert (
+        email.parse_ref("?folder=%5BGmail%5D/All%20Mail").encoded
+        == "email:?folder=[Gmail]/All%20Mail"
+    )
+    folder = email.parse_ref("?from=b@example.org,A@example.org&folder=News")
+    assert (folder.kind, folder.id) == (
+        "folder",
+        "?folder=News&from=a@example.org,b@example.org",
+    )
+    address = email.parse_ref("ada@example.org?folder=News")
+    assert (address.kind, address.parent.encoded) == ("address", "email:?folder=News")
+    assert email.parse_ref("").encoded == "email:"
+    for bad in (
+        "?folder=",
+        "?folder=News&folder=Other",
+        "?label=News",
+        "?folder",
+        "ada@example.org?from=b@example.org",
+        "?from=example.org",
+        "?from=ada@example.org,",
+        "?folder=a%0Ab",
+        "not-an-address?folder=News",
+    ):
+        with pytest.raises(correspond.InvalidRef):
+            email.parse_ref(bad)
+
+
+def test_a_send_to_an_address_with_a_folder_goes_to_the_address(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    smtp = FakeSmtp()
+    result = correspond.send(
+        "email:ada@example.org?folder=News", "hello", registry=_registry(smtp=smtp)
+    )
+    assert result.ok and smtp.sent[0]["To"] == "ada@example.org"
+    audience = correspond.audience(
+        "email:?folder=News&from=ada@example.org", registry=_registry()
+    )
+    assert "name an address" in audience.evidence[0], (
+        "a filtered folder is still no correspondence"
+    )
+
+
+def test_a_folder_named_either_way_is_one_reference_and_one_wire_name():
+    from correspond.channels.mail import _mailbox
+
+    email = Email()
+    assert (
+        email.parse_ref("?folder=%26AMk-nergie").encoded
+        == email.parse_ref("?folder=%C3%89nergie").encoded
+        == "email:?folder=%C3%89nergie"
+    )
+    literal = email.parse_ref("?folder=Q%26A-2024")
+    assert literal.encoded == "email:?folder=Q%26A-2024"
+    assert _mailbox("Q&A-2024") == "Q&-A-2024", "not mistaken for an encoded run"
+
+
+def test_a_limit_counts_mail_that_passes_the_exact_sender_check(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    imap = FakeFolders(
+        {
+            "INBOX": {
+                1: _news(1, "ada@example.org", "Tue, 01", folder="in"),
+                2: _news(2, "bada@example.org", "Wed, 02", folder="in"),
+                3: _news(3, "bada@example.org", "Thu, 03", folder="in"),
+                5: _news(5, "ADA@example.org", "Sat, 05", folder="in"),
+            }
+        }
+    )
+    messages = correspond.read(
+        "email:ada@example.org", limit=2, registry={"email": Email(imap=lambda: imap)}
+    )
+    assert [m.id for m in messages] == ["<in-1@example.org>", "<in-5@example.org>"]
+
+
+def test_any_from_address_in_scope_keeps_the_message(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    imap = FakeFolders(
+        {
+            "INBOX": {
+                1: _news(1, "Bob <bob@example.net>, Ada <ada@example.org>", "Tue, 01")
+            }
+        }
+    )
+    messages = correspond.read(
+        "email:ada@example.org", registry={"email": Email(imap=lambda: imap)}
+    )
+    assert [m.id for m in messages] == ["<news-1@example.org>"]
+
+
+def test_an_address_with_reserved_characters_is_written_escaped():
+    email = Email()
+    ref = email.parse_ref("a%3Fb@example.org?folder=News")
+    assert ref.encoded == "email:a%3Fb@example.org?folder=News"
+    assert email.parse_ref(ref.id).encoded == ref.encoded
+    for bad in ("?folder=%E9", "a%E9@example.org"):
+        with pytest.raises(correspond.InvalidRef):
+            email.parse_ref(bad)
