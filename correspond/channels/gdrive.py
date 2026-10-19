@@ -27,13 +27,19 @@ extra (pydrivedol), imported on first use, not when the channel is listed.
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 from collections.abc import Callable, Iterator
 from datetime import datetime, timezone
 from typing import Any
 
-from correspond.errors import ChannelError, InvalidRef, MissingRequirement
+from correspond.errors import (
+    ChannelError,
+    CorrespondError,
+    InvalidRef,
+    MissingRequirement,
+)
 from correspond.model import (
     Attachment,
     Audience,
@@ -61,14 +67,42 @@ FOLDER_URL_RE = re.compile(
 #: The only scope correspond asks for: it never writes to Drive.
 READONLY_SCOPE = "https://www.googleapis.com/auth/drive.readonly"
 FOLDER_MIME = "application/vnd.google-apps.folder"
+SHORTCUT_MIME = "application/vnd.google-apps.shortcut"
 #: Google-native files (Docs, Sheets, Slides...) have no bytes of their own to download.
 NATIVE_MIME_PREFIX = "application/vnd.google-apps."
 #: How deep ``read`` follows subfolders.
 MAX_DEPTH = 5
+#: The Drive API's HTTP codes, as correspond's error kinds.
+_ERROR_KINDS = {401: "auth", 403: "permission", 404: "not_found", 429: "rate_limited"}
 _PLATFORM = Authenticity(
     grade=Grade.PLATFORM,
     evidence={"attested_by": "the Google Drive API (the file's last modifying user)"},
 )
+
+
+def _error_kind(error: BaseException) -> str:
+    """The kind of a Drive API failure, from its HTTP code (PyDrive2's ``ApiRequestError.error``, or an ``HttpError``'s status)."""
+    detail = getattr(error, "error", None)
+    code = detail.get("code") if isinstance(detail, dict) else None
+    if code is None:
+        code = getattr(getattr(error, "resp", None), "status", None)
+    try:
+        code = int(code)
+    except (TypeError, ValueError):
+        return "unavailable"
+    return _ERROR_KINDS.get(code, "unavailable")
+
+
+def _time(item: Any, *keys: str) -> datetime:
+    """The first of ``keys`` that parses as a time, else the epoch: one odd date does not break a read."""
+    for key in keys:
+        try:
+            moment = parse_time(item.get(key))
+        except CorrespondError:
+            continue
+        if moment is not None:
+            return moment
+    return datetime.fromtimestamp(0, tz=timezone.utc)
 
 
 def _folder_id(id: str) -> str:
@@ -123,6 +157,13 @@ class GoogleDrive:
                     "pydrivedol is not installed",
                     fix="pip install 'correspond[gdrive]'",
                 ) from None
+            if not os.path.isfile(key_file):
+                raise MissingRequirement(
+                    NAME,
+                    f"no service-account key at {key_file}",
+                    fix="point CORRESPOND_GDRIVE_SERVICE_ACCOUNT_FILE at the key's JSON file",
+                    kind="validation",
+                )
             try:
                 self._drive = drive_from_service_account(
                     key_file, scopes=(READONLY_SCOPE,)
@@ -141,15 +182,24 @@ class GoogleDrive:
             channel=NAME,
             read=Support.FULL,
             audience=Support.PARTIAL,
-            history_depth=HistoryDepth.NONE,
+            history_depth=HistoryDepth.FULL,
             grades=(Grade.PLATFORM,),
-            native_fields=("path", "mime_type", "file_id", "md5", "google_native"),
+            native_fields=(
+                "path",
+                "path_parts",
+                "mime_type",
+                "file_id",
+                "md5",
+                "google_native",
+                "shortcut",
+            ),
             notes=(
-                "read lists the folder and its subfolders (up to 5 deep): one message per file, its text the path in the folder, sent_at its last modification, the file as its attachment",
+                f"read lists the folder and its subfolders (up to {self.max_depth} deep): one message per file, its text the path in the folder (native path_parts keeps a title holding /), sent_at its last modification, the file as its attachment; a file in several of these folders is listed once",
+                "a shortcut is read as the file it points to (native shortcut: true); a shortcut to a folder is followed like a subfolder",
                 "only what is in the folder now: a file deleted or moved out is gone, and a file's earlier versions are not read",
                 "a Google Docs, Sheets or Slides file has no bytes of its own: its attachment refuses to download (export is not supported)",
                 "read only: correspond asks for the drive.readonly scope and never writes to Drive",
-                "audience is the folder's sharing: anyone (with the link) is public, a domain is org, otherwise the people it is shared with; a group's members are not listed",
+                "audience is the folder's sharing: anyone (with the link) is public, a domain is org, otherwise the people it is shared with; never complete (a group's members and a shared drive's members are not listed, and Drive may cut the sharing list); an account that may not list the sharing gets public, defaulted",
             ),
         )
 
@@ -205,7 +255,7 @@ class GoogleDrive:
             ref=ref.encoded,
             scope=scope,
             readers=readers,
-            complete=not classes,
+            complete=False,
             classes=classes,
             external=True if scope is Scope.PUBLIC else None,
             durability=("archived_by_others",),
@@ -215,50 +265,83 @@ class GoogleDrive:
 
     # ------------------------------------------------------------------ reading
 
-    def _items(
-        self, folder_id: str, prefix: str = "", depth: int = 0
-    ) -> Iterator[tuple[str, Any]]:
-        """``(path in the folder, Drive file resource)`` for every file, depth first."""
+    def _list(self, folder_id: str, since: datetime | None) -> list[Any]:
         query = f"'{folder_id}' in parents and trashed=false"
+        if since is not None:
+            # Folders and shortcuts are listed whatever their date: what is inside them may be new.
+            stamp = since.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+            query += (
+                f" and (mimeType = '{FOLDER_MIME}' or mimeType = '{SHORTCUT_MIME}'"
+                f" or modifiedDate >= '{stamp}')"
+            )
         try:
-            items = self.drive.ListFile({"q": query}).GetList()
+            return list(self.drive.ListFile({"q": query}).GetList())
         except ChannelError:
             raise
         except Exception as error:  # pydrive2's ApiRequestError and friends
-            text = str(error)
-            kind = (
-                "not_found"
-                if "404" in text or "notFound" in text
-                else "permission"
-                if "403" in text
-                else "unavailable"
-            )
             raise ChannelError(
-                f"Google Drive could not list folder {folder_id}: {text}", kind=kind
+                f"Google Drive could not list folder {folder_id}: {error}",
+                kind=_error_kind(error),
             ) from None
-        for item in items:
-            path = f"{prefix}{item['title']}"
-            if item.get("mimeType") == FOLDER_MIME:
-                if depth < self.max_depth:
-                    yield from self._items(item["id"], f"{path}/", depth + 1)
+
+    def _items(
+        self,
+        folder_id: str,
+        *,
+        since: datetime | None = None,
+        parts: tuple[str, ...] = (),
+        depth: int = 0,
+        seen: set[str] | None = None,
+    ) -> Iterator[tuple[tuple[str, ...], Any]]:
+        """``(path parts in the folder, Drive file resource)`` for every file, depth first, each file once."""
+        seen = set() if seen is None else seen
+        for item in self._list(folder_id, since):
+            here = (*parts, str(item.get("title") or item["id"]))
+            mime = item.get("mimeType")
+            target = item.get("shortcutDetails") or {}
+            if mime == SHORTCUT_MIME and target.get("targetMimeType") == FOLDER_MIME:
+                mime, folder = FOLDER_MIME, target.get("targetId")
+            else:
+                folder = item["id"]
+            if mime == FOLDER_MIME:
+                if depth < self.max_depth and folder and folder not in seen:
+                    seen.add(folder)
+                    yield from self._items(
+                        folder, since=since, parts=here, depth=depth + 1, seen=seen
+                    )
                 continue
-            yield path, item
+            file_id = target.get("targetId") if mime == SHORTCUT_MIME else item["id"]
+            if not file_id or file_id in seen:
+                continue
+            seen.add(file_id)
+            yield here, item
 
     def _download(self, file_id: str) -> bytes:
-        from pydrivedol import get_bytes
-
+        """The file's bytes, through the drive's own download (what pydrivedol's ``get_bytes`` does with a drive)."""
         try:
-            return get_bytes(file_id, drive=self.drive)
+            buffer = self.drive.CreateFile({"id": file_id}).GetContentIOBuffer()
+            return b"".join(chunk for chunk in buffer if chunk)
+        except ChannelError:
+            raise
         except Exception as error:
             raise ChannelError(
-                f"Google Drive could not download {file_id}: {error}", kind="unavailable"
+                f"Google Drive could not download {file_id}: {error}",
+                kind=_error_kind(error),
             ) from None
 
-    def _message(self, conversation: ConversationRef, path: str, item: Any) -> Message:
-        file_id = str(item["id"])
-        mime = str(item.get("mimeType") or "application/octet-stream")
+    def _message(
+        self, conversation: ConversationRef, parts: tuple[str, ...], item: Any
+    ) -> Message:
+        path = "/".join(parts)
+        shortcut = item.get("mimeType") == SHORTCUT_MIME
+        target = item.get("shortcutDetails") or {}
+        file_id = str(target.get("targetId") if shortcut else item["id"])
+        mime = str(
+            (target.get("targetMimeType") if shortcut else item.get("mimeType"))
+            or "application/octet-stream"
+        )
         native = mime.startswith(NATIVE_MIME_PREFIX)
-        size = item.get("fileSize")
+        size = None if shortcut else item.get("fileSize")
 
         def load(file_id=file_id, native=native, path=path) -> bytes:
             if native:
@@ -269,9 +352,6 @@ class GoogleDrive:
             return self._download(file_id)
 
         user = item.get("lastModifyingUser") or {}
-        modified = parse_time(item.get("modifiedDate")) or parse_time(
-            item.get("createdDate")
-        )
         return Message(
             id=file_id,
             conversation=conversation,
@@ -285,7 +365,7 @@ class GoogleDrive:
                 is_self=bool(user.get("isAuthenticatedUser")),
             ),
             authenticity=_PLATFORM,
-            sent_at=modified or datetime.fromtimestamp(0, tz=timezone.utc),
+            sent_at=_time(item, "modifiedDate", "createdDate"),
             text=path,
             url=item.get("alternateLink"),
             attachments=(
@@ -299,10 +379,12 @@ class GoogleDrive:
             ),
             native={
                 "path": path,
+                "path_parts": list(parts),
                 "mime_type": mime,
                 "file_id": file_id,
-                "md5": item.get("md5Checksum"),
+                "md5": None if shortcut else item.get("md5Checksum"),
                 "google_native": native,
+                "shortcut": shortcut,
             },
         )
 
@@ -313,6 +395,9 @@ class GoogleDrive:
         since: datetime | None = None,
         limit: int | None = None,
     ) -> list[Message]:
-        """The folder's files, oldest modification first, one message each."""
-        messages = [self._message(ref, path, item) for path, item in self._items(ref.id)]
+        """The folder's files, oldest modification first, one message each; ``since`` is asked of Drive."""
+        messages = [
+            self._message(ref, parts, item)
+            for parts, item in self._items(ref.id, since=since)
+        ]
         return window(messages, since=since, limit=limit)

@@ -50,7 +50,7 @@ server = [
 ]
 # The Google Drive folder reader (read only) is optional.
 gdrive = [
-    "pydrivedol",
+    "pydrivedol>=0.0.7",
 ]
 # The Apprise channel (about 155 notification services, send only) is optional.
 apprise = [

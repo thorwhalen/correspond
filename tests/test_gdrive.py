@@ -30,6 +30,14 @@ def _file(file_id, title, modified, *, mime="application/pdf", size="8", user="A
     }
 
 
+class ApiError(IOError):
+    """PyDrive2's ApiRequestError shape: the API's error body in ``.error``."""
+
+    def __init__(self, code, message):
+        super().__init__(message)
+        self.error = {"code": code, "message": message}
+
+
 class FakeDrive:
     """The PyDrive2 calls the adapter makes: ListFile(...).GetList(), CreateFile(...).GetContentIOBuffer() / GetPermissions()."""
 
@@ -47,7 +55,7 @@ class FakeDrive:
         class Listing:
             def GetList(self):
                 if folder not in drive.folders:
-                    raise RuntimeError("HttpError 404 notFound")
+                    raise ApiError(404, f"File not found: {folder}403")
                 return list(drive.folders[folder])
 
         return Listing()
@@ -70,7 +78,11 @@ def _drive():
     return FakeDrive(
         {
             FOLDER: [
-                _file("1TuesdayExportFileId0001", "export-tuesday.pdf", "2026-09-15T10:00:00.000Z"),
+                _file(
+                    "1TuesdayExportFileId0001",
+                    "export-tuesday.pdf",
+                    "2026-09-15T10:00:00.000Z",
+                ),
                 {
                     "id": SUB,
                     "title": "raw",
@@ -86,10 +98,18 @@ def _drive():
                 ),
             ],
             SUB: [
-                _file("1RawCsvFileIdentifier002", "data.csv", "2026-09-16T08:00:00.000Z", mime="text/csv")
+                _file(
+                    "1RawCsvFileIdentifier002",
+                    "data.csv",
+                    "2026-09-16T08:00:00.000Z",
+                    mime="text/csv",
+                )
             ],
         },
-        contents={"1TuesdayExportFileId0001": b"%PDF-1.7", "1RawCsvFileIdentifier002": b"a,b\n1,2\n"},
+        contents={
+            "1TuesdayExportFileId0001": b"%PDF-1.7",
+            "1RawCsvFileIdentifier002": b"a,b\n1,2\n",
+        },
     )
 
 
@@ -118,7 +138,9 @@ def test_a_folder_reads_as_one_message_per_file_with_the_file_attached():
         "application/pdf",
     )
     assert drive.downloads == [], "nothing is downloaded until asked"
-    assert attachment.content() == b"%PDF-1.7" and drive.downloads == ["1TuesdayExportFileId0001"]
+    assert attachment.content() == b"%PDF-1.7" and drive.downloads == [
+        "1TuesdayExportFileId0001"
+    ]
     assert set(tuesday.native) <= set(GoogleDrive().capabilities.native_fields)
 
 
@@ -186,8 +208,8 @@ def test_without_a_drive_or_a_key_file_it_says_how_to_get_one(monkeypatch):
         GoogleDrive().drive
 
 
-def test_a_key_file_is_used_with_the_read_only_scope(monkeypatch):
-    import pydrivedol
+def test_a_key_file_is_used_with_the_read_only_scope(monkeypatch, tmp_path):
+    pydrivedol = pytest.importorskip("pydrivedol")
 
     calls = []
     monkeypatch.setattr(
@@ -195,9 +217,16 @@ def test_a_key_file_is_used_with_the_read_only_scope(monkeypatch):
         "drive_from_service_account",
         lambda key, *, scopes: calls.append((key, scopes)) or "drive",
     )
-    monkeypatch.setenv("CORRESPOND_GDRIVE_SERVICE_ACCOUNT_FILE", "/keys/example-sa.json")
+    key = tmp_path / "example-sa.json"
+    key.write_text("{}")
+    monkeypatch.setenv("CORRESPOND_GDRIVE_SERVICE_ACCOUNT_FILE", str(key))
     assert GoogleDrive().drive == "drive"
-    assert calls == [("/keys/example-sa.json", (READONLY_SCOPE,))]
+    assert calls == [(str(key), (READONLY_SCOPE,))]
+    monkeypatch.setenv(
+        "CORRESPOND_GDRIVE_SERVICE_ACCOUNT_FILE", str(tmp_path / "missing.json")
+    )
+    with pytest.raises(MissingRequirement, match="no service-account key"):
+        GoogleDrive().drive
 
 
 @pytest.mark.parametrize(
@@ -213,7 +242,7 @@ def test_a_key_file_is_used_with_the_read_only_scope(monkeypatch):
                 }
             ],
             "named",
-            True,
+            False,
         ),
         (
             [
@@ -234,3 +263,88 @@ def test_the_audience_is_the_folders_sharing(permissions, scope, complete):
         f"gdrive:{FOLDER}", registry={"gdrive": GoogleDrive(drive=drive)}
     )
     assert (audience.scope.value, audience.complete) == (scope, complete)
+
+
+def test_a_folder_id_holding_403_does_not_turn_a_404_into_a_refusal():
+    """The error kind comes from the API's code, not from the message, which names the folder."""
+    with pytest.raises(ChannelError) as caught:
+        _read(_drive(), ref="gdrive:0Folder403Id403xx")
+    assert caught.value.kind == "not_found"
+
+
+def test_a_shortcut_reads_as_its_target_and_a_folder_shortcut_is_followed():
+    drive = _drive()
+    drive.folders[FOLDER] += [
+        {
+            "id": "1ShortcutToTheCsv0000099",
+            "title": "csv (shortcut)",
+            "mimeType": "application/vnd.google-apps.shortcut",
+            "modifiedDate": "2026-09-17T08:00:00.000Z",
+            "shortcutDetails": {
+                "targetId": "1PdfTargetOfShortcut0007",
+                "targetMimeType": "application/pdf",
+            },
+        },
+        {
+            "id": "1ShortcutToSubFolder0098",
+            "title": "raw again",
+            "mimeType": "application/vnd.google-apps.shortcut",
+            "shortcutDetails": {
+                "targetId": SUB,
+                "targetMimeType": "application/vnd.google-apps.folder",
+            },
+        },
+    ]
+    drive.contents["1PdfTargetOfShortcut0007"] = b"%PDF-target"
+    messages = {m.text: m for m in _read(drive)}
+    shortcut = messages["csv (shortcut)"]
+    assert (
+        shortcut.native["shortcut"]
+        and shortcut.attachments[0].media_type == "application/pdf"
+    )
+    assert shortcut.attachments[0].content() == b"%PDF-target"
+    assert "raw again/data.csv" not in messages, "the subfolder is listed once, not twice"
+    assert "raw/data.csv" in messages
+
+
+def test_a_file_in_two_of_the_folders_is_listed_once_and_a_slash_in_a_title_is_kept_apart():
+    drive = _drive()
+    drive.folders[SUB].append(
+        _file(
+            "1TuesdayExportFileId0001", "export-tuesday.pdf", "2026-09-15T10:00:00.000Z"
+        )
+    )
+    drive.folders[FOLDER].append(
+        _file("1SlashInItsTitle00000005", "a/b.pdf", "2026-09-18T10:00:00.000Z")
+    )
+    messages = _read(drive)
+    assert [m.id for m in messages].count("1TuesdayExportFileId0001") == 1
+    slashed = next(m for m in messages if m.id == "1SlashInItsTitle00000005")
+    assert slashed.native["path_parts"] == ["a/b.pdf"]
+
+
+def test_an_odd_date_does_not_break_the_read():
+    drive = _drive()
+    drive.folders[FOLDER].append(
+        {
+            **_file("1OddDateFileIdentifier06", "odd.txt", "not a date"),
+            "createdDate": "2026-09-01T00:00:00.000Z",
+        }
+    )
+    odd = next(m for m in _read(drive) if m.text == "odd.txt")
+    assert odd.sent_at == datetime(2026, 9, 1, tzinfo=timezone.utc)
+
+
+def test_since_is_asked_of_drive_but_folders_are_always_listed():
+    drive = _drive()
+    _read(drive, since=datetime(2026, 9, 15, tzinfo=timezone.utc))
+    assert "modifiedDate >= '2026-09-15T00:00:00'" in drive.queries[0]
+    assert "mimeType = 'application/vnd.google-apps.folder'" in drive.queries[0]
+
+
+def test_a_download_needs_only_the_injected_drive(monkeypatch):
+    import sys
+
+    monkeypatch.setitem(sys.modules, "pydrivedol", None)  # importing it would fail
+    tuesday = next(m for m in _read(_drive()) if m.text == "export-tuesday.pdf")
+    assert tuesday.attachments[0].content() == b"%PDF-1.7"
