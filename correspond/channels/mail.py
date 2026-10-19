@@ -14,6 +14,10 @@ References:
   so is an address with one of those. A folder may be named as written (``Énergie``) or as
   the server lists it in modified UTF-7 (``&AMk-nergie``); both are one reference. On a
   command line, quote a reference with ``?`` or ``&``: ``correspond read 'email:?folder=News'``.
+- ``?gmail=<search>`` adds Gmail's own search syntax (``X-GM-RAW``) on a server that
+  advertises ``X-GM-EXT-1``, and is refused elsewhere:
+  ``email:?gmail=category:promotions%20newer_than:7d``. It narrows the other keys; it
+  replaces none of them, so ``?from=`` still checks each From exactly.
 
 A message's conversation is the correspondence with its sender (``email:<address>``), in
 whichever folder it was read; ``native["folder"]`` says which.
@@ -56,7 +60,7 @@ from html.parser import HTMLParser
 from typing import Any
 from urllib.parse import quote, unquote
 
-from correspond.errors import ChannelError, InvalidRef
+from correspond.errors import ChannelError, InvalidRef, NotSupported
 from correspond.model import (
     Account,
     Attachment,
@@ -89,12 +93,16 @@ DOMAIN_RE = re.compile(
     r"^@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$"
 )
 #: The keys a reference takes after ``?``, in their canonical order.
-REF_KEYS = ("folder", "from")
+REF_KEYS = ("folder", "from", "gmail")
+#: The IMAP capability of a server that takes Gmail's search syntax (``X-GM-RAW``).
+GMAIL_CAPABILITY = "X-GM-EXT-1"
 _MUTF7_RUN_RE = re.compile(r"&([A-Za-z0-9+,]*)-")
 #: Characters an address keeps unescaped in a canonical reference (``%``, ``?`` and ``&`` are escaped).
 _ADDRESS_SAFE = "!#$'*+-/=^_`{|}~.@"
 #: Characters a folder name keeps unescaped in a canonical reference.
 _FOLDER_SAFE = "/[]._-+:@!$'()*,;="
+#: Characters a Gmail search keeps unescaped in a canonical reference.
+_GMAIL_SAFE = ":/[]._-+@!$'()*,;\"<>{}|~^"
 #: Words that, as a part of an address's local part (``dev-team@``), mark it as a possible mailing list.
 LIST_LOCAL_PARTS = ("list", "all", "team", "dev", "announce", "info")
 _LOCAL_PART_SPLIT = re.compile(r"[-._+]")
@@ -184,6 +192,7 @@ class _Scope:
     address: str = ""
     folder: str | None = None
     senders: tuple[str, ...] = ()
+    gmail: str | None = None
 
     @property
     def encoded(self) -> str:
@@ -192,6 +201,8 @@ class _Scope:
             query.append(f"folder={quote(self.folder, safe=_FOLDER_SAFE)}")
         if self.senders:
             query.append(f"from={','.join(self.senders)}")
+        if self.gmail is not None:
+            query.append(f"gmail={quote(self.gmail, safe=_GMAIL_SAFE)}")
         address = quote(self.address, safe=_ADDRESS_SAFE)
         return address + ("?" + "&".join(query) if query else "")
 
@@ -213,7 +224,7 @@ def _scope(id: str) -> _Scope:
     """Parse an email reference's id; :class:`InvalidRef` says what is wrong.
 
     >>> _scope("ada@example.org?folder=inbox")
-    _Scope(address='ada@example.org', folder='INBOX', senders=())
+    _Scope(address='ada@example.org', folder='INBOX', senders=(), gmail=None)
     """
     raw_address, _, query = id.partition("?")
     try:
@@ -229,7 +240,7 @@ def _scope(id: str) -> _Scope:
         key, equals, raw = item.partition("=")
         if key not in REF_KEYS or not equals:
             raise InvalidRef(
-                f"an email reference takes ?folder=<name> and ?from=<senders>, not {item!r} (in email:{id})"
+                f"an email reference takes ?folder=<name>, ?from=<senders> and ?gmail=<search>, not {item!r} (in email:{id})"
             )
         if key in fields:
             raise InvalidRef(f"{key} is given twice in email:{id}")
@@ -260,7 +271,8 @@ def _scope(id: str) -> _Scope:
                 f"?from= takes addresses or domains (@example.org), not {', '.join(bad) or 'an empty name'}"
             )
         senders = tuple(sorted(set(names)))
-    return _Scope(address=address.lower(), folder=folder, senders=senders)
+    gmail = fields["gmail"].strip() if "gmail" in fields else None
+    return _Scope(address=address.lower(), folder=folder, senders=senders, gmail=gmail)
 
 
 def _imap_date(moment: datetime) -> str:
@@ -498,6 +510,7 @@ class Email:
                 "read and listen look at one folder: the reference's ?folder= (a Gmail label is a folder), else the configured one (INBOX by default); your own sent mail is in another",
                 "?from= on email: keeps the messages from any of several addresses or domains (@example.org, not its subdomains): one IMAP SEARCH per sender, then an exact check of the From addresses (any of them counts), since IMAP matches FROM as a substring of the header; email:<address> gets the same exact check, so a list's rewritten From (ada via group@) is not hers",
                 "a reference with ? or & must be quoted on a command line",
+                "?gmail=<search> adds Gmail's search syntax (X-GM-RAW) on a server advertising X-GM-EXT-1 (one CAPABILITY call to check), NotSupported elsewhere; it narrows ?folder= and ?from=, and the exact From check still applies",
                 "listen polls by UID; IMAP IDLE is not used",
                 "priority sets Importance and X-Priority, which mail clients may ignore",
                 "native html is the HTML part when plain text won as the body (an HTML body is in body only); list_id, list_unsubscribe and list_post are the List-* headers when present",
@@ -645,8 +658,20 @@ class Email:
         return validity, int(uidnext) if uidnext and uidnext.isdigit() else None
 
     @staticmethod
-    def _search(conn: Any, criteria: list[str]) -> list[int]:
-        typ, data = conn.uid("SEARCH", *criteria)
+    def _search(conn: Any, criteria: list[str], *, gmail: str | None = None) -> list[int]:
+        """``UID SEARCH`` on ``criteria``, plus Gmail's ``X-GM-RAW`` search when ``gmail`` is given.
+
+        A non-ASCII Gmail search goes as a UTF-8 literal, which IMAP sends last, under
+        ``CHARSET UTF-8``.
+        """
+        args = list(criteria)
+        if gmail is not None:
+            if gmail.isascii():
+                args += ["X-GM-RAW", _quote(gmail)]
+            else:
+                args = ["CHARSET", "UTF-8", *args, "X-GM-RAW"]
+                conn.literal = gmail.encode("utf-8")
+        typ, data = conn.uid("SEARCH", *(args or ["ALL"]))
         if typ != "OK":
             raise ChannelError(f"the IMAP search failed: {data!r}", kind="unavailable")
         return sorted(int(x) for x in ((data or [b""])[0] or b"").split())
@@ -762,14 +787,33 @@ class Email:
         )
 
     def _search_scope(self, conn: Any, scope: _Scope, criteria: list[str]) -> list[int]:
-        """UIDs matching ``criteria`` from the scope's senders: one ``SEARCH`` per sender, merged."""
+        """UIDs matching ``criteria`` in the scope: one ``SEARCH`` per sender, merged; the Gmail search in each."""
+        if scope.gmail is not None:
+            self._require_gmail(conn)
         senders = scope.senders or ((scope.address,) if scope.address else ())
         if not senders:
-            return self._search(conn, criteria or ["ALL"])
+            return self._search(conn, criteria, gmail=scope.gmail)
         found: set[int] = set()
         for sender in senders:
-            found.update(self._search(conn, [*criteria, "FROM", _quote(sender)]))
+            found.update(
+                self._search(conn, [*criteria, "FROM", _quote(sender)], gmail=scope.gmail)
+            )
         return sorted(found)
+
+    @staticmethod
+    def _require_gmail(conn: Any) -> None:
+        """Refuse ``?gmail=`` unless the server says, once logged in, that it takes ``X-GM-RAW``."""
+        typ, data = conn.capability()
+        words = b" ".join(d for d in (data or []) if isinstance(d, bytes)).upper().split()
+        if typ != "OK" or GMAIL_CAPABILITY.encode() not in words:
+            raise NotSupported(
+                "gmail search",
+                NAME,
+                alternatives=(
+                    f"this server does not advertise {GMAIL_CAPABILITY}: Gmail's search runs on Gmail only",
+                    "?folder= and ?from= work on every server",
+                ),
+            )
 
     def read(
         self,

@@ -677,3 +677,125 @@ def test_an_address_with_reserved_characters_is_written_escaped():
     for bad in ("?folder=%E9", "a%E9@example.org"):
         with pytest.raises(correspond.InvalidRef):
             email.parse_ref(bad)
+
+
+# ---------------------------------------------------------- Gmail search as a reference key (#55)
+
+
+class FakeGmail(FakeFolders):
+    """Advertises ``X-GM-EXT-1`` (or not); ``X-GM-RAW`` here keeps mail whose subject holds the search."""
+
+    def __init__(self, folders, *, gmail=True, **kwargs):
+        super().__init__(folders, **kwargs)
+        self.gmail = gmail
+        self.literal = None
+        self.literals = []
+
+    def capability(self):
+        words = b"IMAP4rev1 IDLE" + (b" X-GM-EXT-1" if self.gmail else b"")
+        return "OK", [words]
+
+    def uid(self, command, *args):
+        if command != "SEARCH" or "X-GM-RAW" not in args:
+            return super().uid(command, *args)
+        args = list(args)
+        at = args.index("X-GM-RAW")
+        if at == len(args) - 1:  # the search went as a literal
+            query, self.literal = self.literal.decode("utf-8"), None
+            self.literals.append(query)
+            rest = [a for a in args[:at] if a not in ("CHARSET", "UTF-8")]
+        else:
+            query, rest = args[at + 1].strip('"'), args[:at] + args[at + 2 :]
+        typ, data = super().uid(command, *rest)
+        self.commands[-1] = (command, *args)
+        uids = [int(u) for u in data[0].split()]
+        subjects = {
+            u: BytesParser(policy=policy.default).parsebytes(self.messages[u])["Subject"]
+            for u in uids
+        }
+        return typ, [" ".join(str(u) for u in uids if query in subjects[u]).encode()]
+
+
+def _gmail_box(**kwargs):
+    return FakeGmail(
+        {
+            "INBOX": {
+                1: _mail(
+                    sender="digest@example.org",
+                    subject="AI weekly",
+                    message_id="<g1@example.org>",
+                ),
+                2: _mail(
+                    sender="digest@example.org",
+                    subject="Énergie hebdo",
+                    message_id="<g2@example.org>",
+                ),
+                3: _mail(
+                    sender="other@example.org",
+                    subject="AI weekly",
+                    message_id="<g3@example.org>",
+                ),
+            }
+        },
+        **kwargs,
+    )
+
+
+def test_a_gmail_search_narrows_the_folder_and_the_senders(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    imap = _gmail_box()
+    registry = {"email": Email(imap=lambda: imap)}
+    messages = correspond.read(
+        "email:?from=digest@example.org&gmail=AI%20weekly", registry=registry
+    )
+    assert [m.id for m in messages] == ["<g1@example.org>"]
+    search = next(c for c in imap.commands if c[0] == "SEARCH")
+    assert search[1:] == ("FROM", '"digest@example.org"', "X-GM-RAW", '"AI weekly"')
+
+
+def test_a_non_ascii_gmail_search_goes_as_a_utf8_literal(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    imap = _gmail_box()
+    messages = correspond.read(
+        "email:?gmail=%C3%89nergie", registry={"email": Email(imap=lambda: imap)}
+    )
+    assert [m.id for m in messages] == ["<g2@example.org>"]
+    search = next(c for c in imap.commands if c[0] == "SEARCH")
+    assert search[1:3] == ("CHARSET", "UTF-8") and search[-1] == "X-GM-RAW"
+    assert imap.literals == ["Énergie"]
+
+
+def test_a_gmail_search_on_another_server_is_refused_by_name(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    imap = _gmail_box(gmail=False)
+    with pytest.raises(correspond.NotSupported, match="gmail search"):
+        correspond.read("email:?gmail=AI", registry={"email": Email(imap=lambda: imap)})
+    assert not any(c[0] == "SEARCH" for c in imap.commands)
+
+
+def test_listening_with_a_gmail_search(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    imap = _gmail_box()
+    cursors = {"email:?gmail=AI": "42:0"}
+    events = list(
+        correspond.listen(
+            "email:?gmail=AI",
+            cursors=cursors,
+            registry={"email": Email(imap=lambda: imap)},
+        )
+    )
+    assert [e.message.id for e in events] == ["<g1@example.org>", "<g3@example.org>"]
+    assert cursors["email:?gmail=AI"] == "42:3"
+
+
+def test_the_gmail_key_is_canonical_and_last():
+    email = Email()
+    ref = email.parse_ref("?gmail=%20from:digest%20newer_than:2d%20&folder=News")
+    assert ref.encoded == "email:?folder=News&gmail=from:digest%20newer_than:2d"
+    assert email.parse_ref(ref.id).encoded == ref.encoded
+    assert email.parse_ref("?folder=News&from=a@example.org").encoded == (
+        "email:?folder=News&from=a@example.org"
+    ), "references without the key keep their form"
+    for bad in ("?gmail=", "?gmail=%20", "?gmail=a&gmail=b"):
+        with pytest.raises(correspond.InvalidRef):
+            email.parse_ref(bad)
