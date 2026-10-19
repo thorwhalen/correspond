@@ -52,7 +52,7 @@ import time
 from collections.abc import Callable, Mapping
 from datetime import datetime, timezone
 from typing import Any
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 from correspond import settings as _settings
 from correspond.channels._http import retry_after_seconds, urllib_http
@@ -264,12 +264,34 @@ API_BASE = "https://slack.com/api"
 PAGE_SIZE = 200
 READ_DEFAULT = 50
 LISTEN_LOOKBACK_S = 24 * 3600
+#: How far behind the clock a quiet first poll sets its cursor (this clock may run ahead of Slack's).
+CLOCK_SKEW_S = 60
+#: How long a poll waits out a rate limit met partway through its pages, and how many times.
+RATE_WAIT_MAX_S = 60
+RATE_WAIT_TRIES = 3
+#: Hosts a file's link may name for the token to go with it.
+FILE_HOST_RE = re.compile(r"^(?:[a-z0-9-]+\.)*slack\.com$")
+#: Message subtypes that are someone writing (others, like channel_join, are Slack's own notices).
+MESSAGE_SUBTYPES = (None, "bot_message", "thread_broadcast", "file_share", "me_message")
 #: How old a signed request may be before :meth:`Slack.verify` calls it a replay.
 SIGNATURE_MAX_AGE_S = 300
 TS_RE = re.compile(r"^[0-9]{1,12}\.[0-9]{1,9}$")
 _PLATFORM = Authenticity(
     grade=Grade.PLATFORM, evidence={"attested_by": "the Slack Web API"}
 )
+
+
+def _posts_as(token: str) -> str:
+    """Whose name a token posts under, as far as its shape says (a real send asks Slack).
+
+    >>> _posts_as("xoxb-1"), _posts_as("xoxe.xoxb-1"), _posts_as("xoxp-1")
+    ('the app (a bot token)', 'the app (a bot token)', 'the person whose token it is (a user token)')
+    """
+    if "xoxb-" in token:
+        return "the app (a bot token)"
+    if "xoxp-" in token:
+        return "the person whose token it is (a user token)"
+    return "whoever the token belongs to (checked when sending)"
 
 
 def _ts_time(ts: str | None) -> datetime | None:
@@ -291,19 +313,22 @@ class Slack:
         keychain: Callable[[str], str] | None = None,
         run: Callable[..., Any] = subprocess.run,
         clock: Callable[[], float] = time.time,
+        sleep: Callable[[float], None] = time.sleep,
     ):
         self.http = http
         self.run = run
         self.clock = clock
+        self.sleep = sleep
         self._keychain = keychain
         self._channel_ids: dict[str, str] = {}
+        self._whoami: dict[str, Account] = {}
 
     @property
     def capabilities(self) -> Capabilities:
         """With a token: read, poll, post and reply in threads; with a webhook: post; with nothing: a draft."""
         return Capabilities(
             channel=NAME,
-            read=Support.FULL,
+            read=Support.PARTIAL,
             listen=Support.PARTIAL,
             send=Support.FULL,
             audience=Support.PARTIAL,
@@ -322,10 +347,13 @@ class Slack:
             ),
             notes=(
                 "a dry run renders the text as Slack mrkdwn (bold *x*, italic _x_, links <url|text>, no headings or tables) and needs nothing configured: it is the draft the operator can paste, a reply included (paste it in the thread)",
-                "with a token (CORRESPOND_SLACK_TOKEN: a bot token xoxb- acts as the app, a user token xoxp- as the person) read, listen and send use the Web API; send replies in a thread with reply_to = the message's ts",
-                "without a token, send posts through the channel's incoming webhook (CORRESPOND_SLACK_WEBHOOK_<CHANNEL>, or the Keychain), which cannot reply in a thread",
+                "with a token (CORRESPOND_SLACK_TOKEN) read, listen and send use the Web API, and send replies in a thread with reply_to = the message's ts; a bot token posts as the app, a user token as the person, and the plan says which",
+                "a channel with its own incoming webhook (CORRESPOND_SLACK_WEBHOOK_<CHANNEL>, or the Keychain) posts through it, a reply excepted (a webhook cannot thread); a channel without one posts with the token",
                 "the text cannot mention anyone: every < is escaped and only http, https and mailto targets become links, so <!channel>, <@U...> or [x](!here) arrive as text",
-                "read and listen see a channel's top-level messages (and thread parents), not replies inside threads; listen polls over the Web API and sees new messages, not edits",
+                "read and listen see a channel's top-level messages, thread parents and replies also sent to the channel, not the other replies inside threads; Slack's own notices (someone joined, the topic changed) are left out; listen polls over the Web API and sees new messages, not edits",
+                "push delivery (the Events API, Socket Mode) is not built: listen polls; verify is ready for a receiver of Slack's signed requests",
+                "install the app in your own workspace: a commercially distributed app outside Slack's Marketplace gets one history request a minute, which polling cannot keep up with; a rate limit met partway through a poll is waited out (up to a minute, three times)",
+                "a file is fetched with the token only from Slack's own hosts (the token needs files:read); a file hosted elsewhere is not fetched",
                 "a channel named rather than given by id is looked up with conversations.list (the token needs channels:read, and groups:read for a private one)",
                 "verify checks a request's X-Slack-Signature with the signing secret, and refuses one older than 5 minutes",
             ),
@@ -449,16 +477,27 @@ class Slack:
         found: list[dict] = []
         cursor = None
         while True:
-            data = self._api(
-                "conversations.history",
-                {
-                    "channel": channel,
-                    "oldest": oldest,
-                    "limit": min(PAGE_SIZE, limit) if limit else PAGE_SIZE,
-                    "cursor": cursor,
-                },
-                token=token,
-            )
+            params = {
+                "channel": channel,
+                "oldest": oldest,
+                "limit": min(PAGE_SIZE, limit) if limit else PAGE_SIZE,
+                "cursor": cursor,
+            }
+            for attempt in range(RATE_WAIT_TRIES + 1):
+                try:
+                    data = self._api("conversations.history", params, token=token)
+                    break
+                except ChannelError as error:
+                    # Pages already read would be lost: wait a rate limit out, a few times.
+                    wait = error.retry_after or RATE_WAIT_MAX_S
+                    if (
+                        error.kind != "rate_limited"
+                        or not found
+                        or attempt == RATE_WAIT_TRIES
+                        or wait > RATE_WAIT_MAX_S
+                    ):
+                        raise
+                    self.sleep(wait)
             found += list(data.get("messages") or ())
             cursor = (data.get("response_metadata") or {}).get("next_cursor")
             if not cursor or not data.get("has_more") or (limit and len(found) >= limit):
@@ -469,14 +508,28 @@ class Slack:
         thread = data.get("thread_ts")
         parent = thread if thread and thread != ts else None
 
-        def loader(url: str):
+        def loader(url: str, mime: str):
             def load() -> bytes:
+                parts = urlsplit(url)
+                if parts.scheme != "https" or not FILE_HOST_RE.match(
+                    parts.hostname or ""
+                ):
+                    raise ChannelError(
+                        f"this file is hosted outside Slack ({parts.hostname}); open its link: the token is never sent there",
+                        kind="permission",
+                    )
                 reply = self.http(
                     "GET", url, headers={"Authorization": f"Bearer {token}"}
                 )
                 if reply.status != 200:
                     raise ChannelError(
                         f"Slack answered {reply.status} for a file", kind="unavailable"
+                    )
+                kind = reply.headers.get("content-type", "")
+                if kind.startswith("text/html") and not mime.startswith("text/html"):
+                    raise ChannelError(
+                        "Slack answered with a sign-in page, not the file: the token needs the files:read scope",
+                        kind="permission",
                     )
                 return reply.body
 
@@ -506,7 +559,11 @@ class Slack:
                     media_type=f.get("mimetype") or "application/octet-stream",
                     name=f.get("name"),
                     size=f.get("size"),
-                    loader=loader(f["url_private"]) if f.get("url_private") else None,
+                    loader=loader(
+                        f["url_private"], f.get("mimetype") or "application/octet-stream"
+                    )
+                    if f.get("url_private")
+                    else None,
                 )
                 for f in data.get("files") or ()
             ),
@@ -535,7 +592,11 @@ class Slack:
         oldest = f"{since.timestamp():.6f}" if since is not None else None
         count = max(1, int(limit)) if limit else READ_DEFAULT
         found = self._history(channel, token, oldest=oldest, limit=count)
-        messages = [self._message(ref, data, token) for data in found]
+        messages = [
+            self._message(ref, data, token)
+            for data in found
+            if data.get("subtype") in MESSAGE_SUBTYPES
+        ]
         return window(messages, since=since, limit=count)
 
     def poll(
@@ -566,11 +627,13 @@ class Slack:
                 message=self._message(ref, data, token),
             )
             for data in found
+            if data.get("subtype") in MESSAGE_SUBTYPES
         ]
-        if events:
-            final = events[-1].cursor
+        if found:
+            final = str(found[-1]["ts"])  # past Slack's own notices too
         elif not cursor:
-            final = f"{now - 5:.6f}"  # a quiet first poll starts the next from now
+            # A quiet first poll starts the next from now, less this clock's lead on Slack's.
+            final = f"{now - CLOCK_SKEW_S:.6f}"
         else:
             final = None
         return with_final_cursor(events, final)
@@ -670,11 +733,13 @@ class Slack:
             )
         token = self._token(dry_run=dry_run)
         webhook_set = bool(os.environ.get(webhook_env(ref.id), "").strip())
+        # A channel's own webhook is the operator's explicit choice for it, a reply excepted.
+        via_webhook = webhook_set and not draft.reply_to
         plan: dict[str, Any] = {
-            "action": "post with the token (chat.postMessage)"
+            "action": "post through the channel's incoming webhook"
+            if via_webhook
+            else "post with the token (chat.postMessage)"
             if token
-            else "post through the channel's incoming webhook"
-            if webhook_set
             else "post with the token if one is found when sending, else through the channel's incoming webhook",
             "channel": ref.id,
             "format": "mrkdwn",
@@ -682,6 +747,8 @@ class Slack:
             "characters": len(text),
             "max_characters": MAX_TEXT_CHARS,
         }
+        if token and not via_webhook:
+            plan["posts_as"] = _posts_as(token)
         if draft.reply_to:
             plan["in_thread_of" if token else "paste_in_thread_of"] = draft.reply_to
         if not token and not webhook_set:
@@ -693,6 +760,10 @@ class Slack:
             return SendResult(
                 ok=True, channel=NAME, conversation=ref.encoded, dry_run=True, plan=plan
             )
+        if via_webhook:
+            return self._post_webhook(ref, text, plan)
+        if token is None and not draft.reply_to and self._webhook(ref.id):
+            return self._post_webhook(ref, text, plan)
         if token:
             return self._post(ref, text, draft.reply_to, token, plan)
         if draft.reply_to:
@@ -720,21 +791,28 @@ class Slack:
             token=token,
         )
         posted = data.get("message") or {}
-        who = str(posted.get("user") or posted.get("bot_id") or "")
         return SendResult(
             ok=True,
             channel=NAME,
             conversation=ref.encoded,
             message_id=str(data.get("ts") or posted.get("ts") or "") or None,
-            account=Account(
-                channel=NAME,
-                id=who or "the token's identity",
-                acts_as="bot" if token.startswith("xoxb-") else "user",
-            )
-            if who or token
-            else None,
+            account=self._account(token),
             plan={**plan, "channel_id": channel},
         )
+
+    def _account(self, token: str) -> Account | None:
+        """Whose name the token posts under, asked of Slack once (``auth.test``): a bot or a person."""
+        if token not in self._whoami:
+            try:
+                data = self._api("auth.test", {}, token=token)
+            except ChannelError:
+                return None
+            self._whoami[token] = Account(
+                channel=NAME,
+                id=str(data.get("user_id") or data.get("bot_id") or ""),
+                acts_as="bot" if data.get("bot_id") else "user",
+            )
+        return self._whoami[token]
 
     def _post_webhook(self, ref: ConversationRef, text: str, plan: dict) -> SendResult:
         url = self._webhook(ref.id)

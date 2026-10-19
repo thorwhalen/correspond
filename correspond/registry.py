@@ -380,7 +380,7 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 key="token",
                 env="CORRESPOND_SLACK_TOKEN",
                 what="a Slack token: a bot token (xoxb-) acts as the app, a user token (xoxp-) as the person",
-                where="api.slack.com/apps: create an app for your workspace (internal, not distributed), add the bot scopes channels:history, channels:read and chat:write (groups:history and groups:read for private channels), install it, copy the Bot User OAuth Token, and invite the app to each channel",
+                where="api.slack.com/apps: create an app for your workspace (internal, not distributed), add the bot scopes channels:history, channels:read, chat:write and files:read (groups:history and groups:read for private channels), install it, copy the Bot User OAuth Token, and invite the app to each channel",
                 secret=True,
             ),
             Setting(

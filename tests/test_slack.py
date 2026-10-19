@@ -363,6 +363,10 @@ class FakeSlackApi:
                     },
                 }
             )
+        if name == "auth.test":
+            return self._json(
+                {"ok": True, "user_id": "U0BOT", "bot_id": "B0BOT", "team": "Example"}
+            )
         if name == "chat.postMessage":
             return self._json(
                 {
@@ -481,7 +485,9 @@ def test_listen_polls_by_ts_and_sets_a_cursor_on_a_quiet_first_poll(token):
         )
         == []
     )
-    assert quiet == {f"slack:{CHANNEL}": "1760000035.000000"}
+    assert quiet == {f"slack:{CHANNEL}": "1759999980.000000"}, (
+        "a minute behind this clock"
+    )
 
 
 def test_listen_reads_every_page_and_a_limit_drains_over_polls(token):
@@ -529,7 +535,8 @@ def test_send_with_a_token_posts_and_replies_in_a_thread(token):
     )
     assert result.ok and result.message_id == "1760000100.000200"
     assert result.account.acts_as == "bot" and result.account.id == "U0BOT"
-    ((name, params),) = api.calls
+    (name, params), (who, _) = api.calls
+    assert who == "auth.test"
     assert (name, params["text"], params["thread_ts"], params["channel"]) == (
         "chat.postMessage",
         "*yes*",
@@ -623,3 +630,169 @@ def test_verify_checks_the_signature_and_refuses_a_replay(monkeypatch):
         registry=registry,
     )
     assert tampered.grade.value == "forged"
+
+
+def test_a_file_outside_slack_never_gets_the_token(token):
+    sent = []
+
+    def http(method, url, *, headers=None, body=None, timeout=None):
+        if "slack.com/api/" not in url:
+            sent.append((url, headers))
+            return Response(200, {}, b"x")
+        return FakeSlackApi(
+            [
+                _msg(
+                    "1760000030.000100",
+                    "x",
+                    files=[
+                        {
+                            "id": "F2",
+                            "name": "a.pdf",
+                            "mimetype": "application/pdf",
+                            "url_private": "https://docs.example.org/a.pdf",
+                        }
+                    ],
+                )
+            ]
+        )(method, url, headers=headers, body=body)
+
+    message = correspond.read(f"slack:{CHANNEL}", registry=_api_registry(http))[-1]
+    with pytest.raises(correspond.ChannelError, match="outside Slack"):
+        message.attachments[0].content()
+    assert sent == []
+
+
+def test_a_sign_in_page_is_not_handed_back_as_the_file(token):
+    def http(method, url, *, headers=None, body=None, timeout=None):
+        if url.startswith("https://files.slack.com/"):
+            return Response(
+                200, {"content-type": "text/html; charset=utf-8"}, b"<html>sign in</html>"
+            )
+        return FakeSlackApi(HISTORY)(method, url, headers=headers, body=body)
+
+    bot = correspond.read(f"slack:{CHANNEL}", limit=1, registry=_api_registry(http))[-1]
+    with pytest.raises(correspond.ChannelError, match="files:read"):
+        bot.attachments[0].content()
+
+
+def test_a_rate_limit_partway_through_a_poll_is_waited_out(token):
+    many = [_msg(f"17600001{i:02d}.000000", f"m{i}") for i in range(10)]
+    inner = FakeSlackApi(many)
+    state = {"limited": 0}
+    slept = []
+
+    def http(method, url, *, headers=None, body=None, timeout=None):
+        if (
+            "conversations.history" in url
+            and "cursor=" in (body or b"").decode()
+            and state["limited"] < 1
+        ):
+            state["limited"] += 1
+            return Response(429, {"retry-after": "2"}, b"")
+        return inner(method, url, headers=headers, body=body)
+
+    from correspond.channels import slack as module
+
+    original, module.PAGE_SIZE = module.PAGE_SIZE, 4
+    try:
+        registry = {
+            "slack": Slack(
+                http=http,
+                keychain=lambda s: "",
+                clock=lambda: 1760000040.0,
+                sleep=slept.append,
+            )
+        }
+        cursors = {f"slack:{CHANNEL}": "1760000000.000000"}
+        events = list(
+            correspond.listen(f"slack:{CHANNEL}", cursors=cursors, registry=registry)
+        )
+    finally:
+        module.PAGE_SIZE = original
+    assert [e.message.text for e in events] == [f"m{i}" for i in range(10)] and slept == [
+        2.0
+    ]
+
+
+def test_slacks_own_notices_are_not_messages_but_the_cursor_moves_past_them(token):
+    api = FakeSlackApi(
+        [
+            _msg("1760000011.000000", "joined", subtype="channel_join"),
+            _msg("1760000012.000000", "hi"),
+        ]
+    )
+    cursors = {f"slack:{CHANNEL}": "1760000010.000000"}
+    events = list(
+        correspond.listen(
+            f"slack:{CHANNEL}", cursors=cursors, registry=_api_registry(api)
+        )
+    )
+    assert [e.message.text for e in events] == ["hi"]
+    only_notice = FakeSlackApi(
+        [_msg("1760000013.000000", "left", subtype="channel_leave")]
+    )
+    cursors = {f"slack:{CHANNEL}": "1760000012.000000"}
+    assert (
+        list(
+            correspond.listen(
+                f"slack:{CHANNEL}", cursors=cursors, registry=_api_registry(only_notice)
+            )
+        )
+        == []
+    )
+    assert cursors[f"slack:{CHANNEL}"] == "1760000013.000000"
+    assert [
+        m.text for m in correspond.read(f"slack:{CHANNEL}", registry=_api_registry(api))
+    ] == ["hi"]
+
+
+def test_a_dry_run_says_whose_name_the_post_goes_out_under(monkeypatch):
+    for token, words in (
+        ("xoxb-fake", "the app"),
+        ("xoxp-fake", "the person"),
+        ("xoxe.xoxb-fake", "the app"),
+    ):
+        monkeypatch.setenv("CORRESPOND_SLACK_TOKEN", token)
+        planned = correspond.send(
+            f"slack:{CHANNEL}", "x", dry_run=True, registry=_api_registry(FakeSlackApi())
+        )
+        assert words in planned.plan["posts_as"]
+
+
+def test_a_user_token_is_reported_as_acting_as_the_person(monkeypatch):
+    class UserApi(FakeSlackApi):
+        def __call__(self, method, url, *, headers=None, body=None, timeout=None):
+            if url.endswith("auth.test"):
+                return self._json({"ok": True, "user_id": "U0ADA"})
+            return super().__call__(method, url, headers=headers, body=body)
+
+    monkeypatch.setenv("CORRESPOND_SLACK_TOKEN", TOKEN)
+    result = correspond.send(f"slack:{CHANNEL}", "x", registry=_api_registry(UserApi()))
+    assert (result.account.acts_as, result.account.id) == ("user", "U0ADA")
+
+
+def test_a_channels_own_webhook_wins_for_a_plain_post_and_the_token_threads(
+    token, monkeypatch
+):
+    monkeypatch.setenv(f"CORRESPOND_SLACK_WEBHOOK_{CHANNEL}", WEBHOOK)
+    hooked = []
+
+    def http(method, url, *, headers=None, body=None, timeout=None):
+        if url == WEBHOOK:
+            hooked.append(json.loads(body))
+            return Response(200, {}, b"ok")
+        return FakeSlackApi()(method, url, headers=headers, body=body)
+
+    registry = _api_registry(http)
+    assert (
+        correspond.send(f"slack:{CHANNEL}", "plain", registry=registry).plan["via"]
+        == "webhook"
+    )
+    threaded = correspond.send(
+        f"slack:{CHANNEL}", "reply", reply_to="1760000010.000100", registry=registry
+    )
+    assert (
+        threaded.ok
+        and threaded.message_id == "1760000100.000200"
+        and hooked == [{"text": "plain"}]
+    )
