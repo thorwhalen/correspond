@@ -28,10 +28,24 @@ TOOL_NAMES = [
     "unlabel",
     "close",
     "reopen",
+    "webhook_info",
+    "set_webhook",
+    "delete_webhook",
     "authored",
     "authored_thread",
 ]
-WRITES = {"send", "edit", "react", "upload", "label", "unlabel", "close", "reopen"}
+WRITES = {
+    "send",
+    "edit",
+    "react",
+    "upload",
+    "label",
+    "unlabel",
+    "close",
+    "reopen",
+    "set_webhook",
+    "delete_webhook",
+}
 SURFACE_LIBS = {
     "argh",
     "cw",
@@ -147,8 +161,8 @@ def test_results_are_json_ready_and_failures_are_results_with_a_kind(fake):
 
 def test_the_cli_offers_every_tool_with_help():
     help_text = _cli(["--help"], module="correspond").stdout
-    for name in TOOL_NAMES:
-        assert name in help_text
+    for name in TOOL_NAMES:  # the CLI spells an underscore as a hyphen
+        assert name in help_text or name.replace("_", "-") in help_text
     send_help = _cli(["send", "--help"], module="correspond").stdout
     assert "--dry-run" in send_help and "contact nothing" in send_help
 

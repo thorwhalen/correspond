@@ -37,6 +37,7 @@ Issues = "https://github.com/thorwhalen/correspond/issues"
 correspond = "correspond.__main__:main"
 correspond-mcp = "correspond.mcp:main"
 correspond-channel = "correspond.channel:main"
+correspond-telegram-webhook = "correspond.channels.telegram:serve_main"
 
 [project.optional-dependencies]
 # MCP over stdio (correspond-mcp) and the Claude Code channel (correspond-channel) are

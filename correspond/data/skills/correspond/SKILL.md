@@ -80,7 +80,7 @@ correspond listen github:owner/repo     # new issue and comment activity since t
 correspond listen email: --peek         # look without moving the cursor
 ```
 
-The first listen looks back a little (a day). An event can repeat after an interruption: skip any `delivery_id` you already handled. Telegram listens account-wide (`telegram:`); pick out one chat from the results. On a server set up for webhook delivery (`delivery = webhook`), `listen telegram:` reads what the webhook receiver stored; never switch a bot between polling and a webhook without the operator, since only one works at a time.
+The first listen looks back a little (a day). An event can repeat after an interruption: skip any `delivery_id` you already handled. Telegram listens account-wide (`telegram:`); pick out one chat from the results. On a server set up for webhook delivery (`delivery = webhook`), `listen telegram:` reads what the webhook receiver stored; never switch a bot between polling and a webhook without the operator, since only one works at a time (`correspond webhook-info telegram` says which it is; `set-webhook` and `delete-webhook` switch it, dry run first).
 
 ## Writing: the dry run first, every time
 

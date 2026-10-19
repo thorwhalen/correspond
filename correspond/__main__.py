@@ -99,6 +99,17 @@ HELP = {
         "ref": _REF,
         "dry_run": _DRY_RUN,
     },
+    "webhook-info": {"channel": {"help": "a channel name, e.g. telegram"}},
+    "set-webhook": {
+        "channel": {"help": "a channel name, e.g. telegram"},
+        "url": {"help": "the HTTPS address of your own webhook receiver"},
+        "dry_run": _DRY_RUN,
+    },
+    "delete-webhook": {
+        "channel": {"help": "a channel name, e.g. telegram"},
+        "drop_pending_updates": {"help": "discard the updates Telegram is holding"},
+        "dry_run": _DRY_RUN,
+    },
     "authored": {
         "text": {"help": "one email body as plain text, or - to read it from stdin"}
     },
