@@ -844,3 +844,55 @@ def test_a_search_gmail_refuses_is_a_validation_error(monkeypatch):
     with pytest.raises(ChannelError) as caught:
         correspond.read("email:?gmail=bad(", registry={"email": Email(imap=lambda: imap)})
     assert caught.value.kind == "validation"
+
+
+# ------------------------------------------------------------------------ uploads (#8)
+
+
+def test_an_upload_emails_the_file_as_an_attachment_named_in_the_subject(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    smtp = FakeSmtp()
+    result = correspond.upload(
+        "email:ada@example.org",
+        "report.pdf",
+        b"%PDF-1.7",
+        media_type="application/pdf",
+        registry=_registry(smtp=smtp),
+    )
+    assert result.ok and result.operation == "upload" and result.message_id
+    (sent,) = smtp.sent
+    assert sent["To"] == "ada@example.org" and sent["Subject"] == "report.pdf"
+    (part,) = list(sent.iter_attachments())
+    assert (
+        part.get_filename() == "report.pdf"
+        and part.get_content_type() == "application/pdf"
+    )
+    assert part.get_payload(decode=True) == b"%PDF-1.7"
+    assert result.plan["attachment"]["bytes"] == 8
+
+
+def test_an_upload_dry_run_sends_nothing_and_bad_input_is_refused(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    smtp = FakeSmtp()
+    planned = correspond.upload(
+        "email:ada@example.org",
+        "a.txt",
+        b"x",
+        media_type="text/plain",
+        dry_run=True,
+        registry=_registry(smtp=smtp),
+    )
+    assert (
+        planned.ok and planned.dry_run and planned.plan["attachment"]["name"] == "a.txt"
+    )
+    for kwargs in (
+        {"name": "dir/a.txt"},
+        {"name": "a.txt", "media_type": "plain"},
+        {"name": "a.txt", "ref": "email:"},
+    ):
+        ref = kwargs.pop("ref", "email:ada@example.org")
+        result = correspond.upload(
+            ref, data=b"x", registry=_registry(smtp=smtp), **kwargs
+        )
+        assert (result.ok, result.error_kind) == (False, "validation"), kwargs
+    assert smtp.sent == []

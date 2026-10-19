@@ -15,6 +15,8 @@ from __future__ import annotations
 
 import functools
 import json
+import mimetypes
+import os
 from collections.abc import Callable
 from datetime import timezone
 from typing import Any
@@ -60,6 +62,7 @@ __all__ = [
     "requirements",
     "send",
     "unlabel",
+    "upload",
 ]
 
 
@@ -488,6 +491,38 @@ def react(ref: str, message_id: str, reaction: str, *, dry_run: bool = False) ->
 
 
 @_as_result
+def upload(
+    ref: str,
+    path: str,
+    *,
+    name: str | None = None,
+    media_type: str | None = None,
+    dry_run: bool = False,
+) -> dict:
+    """Send the file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`). `name` is what recipients see (the file's own name by default); `media_type` is guessed from the name when not given. Run it with `dry_run` first: the plan shows the name, size and SHA-256. Only the name passes the before_send check, not the contents, so never upload a file the user did not ask to send."""
+    from correspond.model import ConversationRef
+
+    channel = ConversationRef.parse(ref).channel
+    limit = ops.capabilities(channel).max_upload_bytes
+    try:
+        size = os.path.getsize(path)
+        if limit and size > limit:
+            raise ChannelError(
+                f"{path} is {size} bytes; {channel} accepts at most {limit}",
+                kind="validation",
+            )
+        with open(path, "rb") as handle:
+            data = handle.read()
+    except OSError as error:
+        raise ChannelError(
+            f"could not read {path}: {error.strerror or error}", kind="not_found"
+        ) from None
+    shown = name or os.path.basename(path)
+    kind = media_type or mimetypes.guess_type(shown)[0] or "application/octet-stream"
+    return _write_result(ops.upload(ref, shown, data, media_type=kind, dry_run=dry_run))
+
+
+@_as_result
 def label(ref: str, labels: str, *, dry_run: bool = False) -> dict:
     """Add labels (comma-separated; a label name may not itself contain a comma) to a conversation (`capabilities` says whether a channel supports it). Run it with `dry_run` first. It passes the before_send check, as for `send`."""
     return _write_result(ops.label(ref, _addresses(labels), dry_run=dry_run))
@@ -609,6 +644,7 @@ TOOLS = [
     send,
     edit,
     react,
+    upload,
     label,
     unlabel,
     close,
@@ -631,6 +667,7 @@ SIDE_EFFECTS = {
     "send": "external",
     "edit": "external",
     "react": "external",
+    "upload": "external",
     "label": "external",
     "unlabel": "external",
     "close": "external",

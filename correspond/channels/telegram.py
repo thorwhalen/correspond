@@ -32,6 +32,7 @@ refused (409), and :meth:`Telegram.delete_webhook` returns the bot to polling.
 
 from __future__ import annotations
 
+import hashlib
 import hmac
 import ipaddress
 import json
@@ -44,7 +45,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from correspond.channels._asgi import TOO_LARGE, lifespan, read_body, respond
-from correspond.channels._http import urllib_http
+from correspond.channels._http import file_name, multipart, urllib_http
 from correspond.errors import ChannelError, InvalidRef, MissingRequirement, NotSupported
 from correspond.model import (
     Account,
@@ -77,6 +78,11 @@ __all__ = [
 NAME = "telegram"
 CHAT_RE = re.compile(r"^(?:-?[1-9][0-9]{0,19}|@[A-Za-z][A-Za-z0-9_]{3,31})$")
 MAX_TEXT_CHARS = 4096
+#: The Bot API's limits on a file a bot sends: any file, and a photo (shown inline).
+MAX_DOCUMENT_BYTES = 50_000_000
+MAX_PHOTO_BYTES = 10_000_000
+#: The image types ``sendPhoto`` shows inline; anything else goes as a document.
+PHOTO_TYPES = ("image/jpeg", "image/png", "image/webp")
 #: A public Telegram username, the only handle a bot's mention reaches.
 USERNAME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9_]{3,31}$")
 MAX_UPDATES = 100
@@ -338,6 +344,7 @@ class Telegram:
             send=Support.FULL,
             edit=Support.FULL,
             react=Support.FULL,
+            upload=Support.FULL,
             audience=Support.PARTIAL,
             verify=Support.FULL,
             initiate=Support.NONE,
@@ -348,6 +355,7 @@ class Telegram:
             native_fields=("chat_type", "chat_title", "message_thread_id", "media"),
             grades=(Grade.PLATFORM, Grade.FORGED),
             max_text_length=MAX_TEXT_CHARS,
+            max_upload_bytes=MAX_DOCUMENT_BYTES,
             reactions_per_message=1,
             formats=("plain",),
             rate_limits=(
@@ -360,6 +368,7 @@ class Telegram:
                 "a bot cannot start a conversation: someone must write to it first",
                 "notify mentions @username in the text: it reaches a member of the chat with a public username, not anyone outside it",
                 "a title is prepended to the text: Telegram messages have none",
+                "upload sends a JPEG, PNG or WebP image up to 10 MB as a photo (sendPhoto, shown inline) and anything else up to 50 MB as a document (sendDocument)",
                 "audience comes from getChat: a public username, the chat type, history visibility; members are never listed",
                 "delivery = webhook makes listen read what the webhook receiver (mk_webhook_app) stored instead of calling getUpdates; Telegram serves one or the other, so set_webhook stops getUpdates (409) until delete_webhook",
                 "the webhook receiver stores only requests carrying the secret token, in arrival order (set_webhook asks for one connection at a time); serve_webhook binds it to 127.0.0.1 unless webhook_allow_remote is set; verify grades one delivery by that header: platform when it matches (it proves Telegram sent it, not a signature over the body), forged otherwise",
@@ -383,15 +392,29 @@ class Telegram:
 
     # ------------------------------------------------------------------ plumbing
 
-    def _call(self, method: str, params: Mapping[str, Any]) -> Any:
+    def _call(
+        self,
+        method: str,
+        params: Mapping[str, Any],
+        *,
+        files: Mapping[str, tuple[str, bytes, str]] | None = None,
+    ) -> Any:
+        """One Bot API call: JSON, or ``multipart/form-data`` when it carries ``files``."""
         token = require(NAME, "token", run=self.run)
         base = (value(NAME, "api_url") or "https://api.telegram.org").rstrip("/")
+        if files:
+            fields = {
+                k: v if isinstance(v, str) else json.dumps(v) for k, v in params.items()
+            }
+            content_type, body = multipart(fields, files)
+        else:
+            content_type, body = "application/json", json.dumps(dict(params)).encode()
         try:
             response = self.http(
                 "POST",
                 f"{base}/bot{token}/{method}",
-                headers={"Content-Type": "application/json"},
-                body=json.dumps(dict(params)).encode("utf-8"),
+                headers={"Content-Type": content_type},
+                body=body,
             )
         except ChannelError as error:
             raise ChannelError(
@@ -871,6 +894,49 @@ class Telegram:
             ok=True,
             channel=NAME,
             conversation=ref.encoded,
+            message_id=message.id if message else None,
+            account=self._account(result),
+            plan=plan,
+        )
+
+    def upload(
+        self,
+        ref: ConversationRef,
+        name: str,
+        data: bytes,
+        *,
+        media_type: str = "application/octet-stream",
+        dry_run: bool = False,
+    ) -> SendResult:
+        """Send a file: ``sendPhoto`` for an inline image (:data:`PHOTO_TYPES`, 10 MB), else ``sendDocument`` (50 MB)."""
+        name = file_name(name)
+        params = self._target(ref)
+        photo = media_type in PHOTO_TYPES and len(data) <= MAX_PHOTO_BYTES
+        method, field = ("sendPhoto", "photo") if photo else ("sendDocument", "document")
+        plan = {
+            "action": method,
+            **params,
+            "name": name,
+            "media_type": media_type,
+            "bytes": len(data),
+            "sha256": hashlib.sha256(data).hexdigest(),
+        }
+        if dry_run:
+            return SendResult(
+                ok=True,
+                channel=NAME,
+                conversation=ref.encoded,
+                operation="upload",
+                dry_run=True,
+                plan=plan,
+            )
+        result = self._call(method, params, files={field: (name, data, media_type)})
+        message = self._remember(result)
+        return SendResult(
+            ok=True,
+            channel=NAME,
+            conversation=ref.encoded,
+            operation="upload",
             message_id=message.id if message else None,
             account=self._account(result),
             plan=plan,

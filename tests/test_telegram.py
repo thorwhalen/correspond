@@ -10,6 +10,7 @@ from correspond.channels.telegram import Telegram
 from correspond.errors import ChannelError, MissingRequirement, NotSupported
 
 TOKEN = "123456:example-token-for-tests"
+PNG = b"\x89PNG\r\n\x1a\nexample"
 BOT = {"id": 900, "is_bot": True, "first_name": "Example", "username": "example_bot"}
 ADA = {"id": 42, "is_bot": False, "first_name": "Ada", "username": "ada"}
 
@@ -574,3 +575,98 @@ def test_a_conflict_says_how_to_get_out_of_it(token):
     )
     with pytest.raises(ChannelError, match="delete_webhook"):
         list(correspond.listen("telegram:", cursors={}, registry=_registry(api)))
+
+
+# ------------------------------------------------------------------------ uploads (#8)
+
+
+class FakeUploadApi:
+    """Records multipart calls: the method, the form's text fields, and each file part."""
+
+    def __init__(self, result):
+        self.result = result
+        self.calls = []
+
+    def __call__(self, method, url, *, headers=None, body=None, timeout=None):
+        from email import message_from_bytes, policy as email_policy
+
+        kind = headers["Content-Type"]
+        assert kind.startswith("multipart/form-data; boundary=")
+        parsed = message_from_bytes(
+            b"Content-Type: " + kind.encode() + b"\r\n\r\n" + body,
+            policy=email_policy.default,
+        )
+        parts = {
+            p.get_param("name", header="content-disposition"): p
+            for p in parsed.iter_parts()
+        }
+        self.calls.append((url.rsplit("/", 1)[1], parts, body))
+        return Response(200, {}, json.dumps({"ok": True, "result": self.result}).encode())
+
+
+def _sent(message_id=77, chat=-4001, **extra):
+    return {**_message(message_id, chat=chat, sender=BOT, text=""), **extra}
+
+
+def test_an_image_goes_as_a_photo_and_anything_else_as_a_document(token):
+    api = FakeUploadApi(_sent())
+    log = {}
+    registry = {"telegram": Telegram(http=api, log=log)}
+    photo = correspond.upload(
+        "telegram:-4001/7", "screen.png", PNG, media_type="image/png", registry=registry
+    )
+    report = correspond.upload(
+        "telegram:-4001",
+        "Rapport été.pdf",
+        b"%PDF-1.7",
+        media_type="application/pdf",
+        registry=registry,
+    )
+    assert photo.ok and photo.operation == "upload" and photo.message_id == "77"
+    (method, parts, _), (method2, parts2, body2) = api.calls
+    assert method == "sendPhoto" and parts["photo"].get_content() == PNG
+    assert parts["chat_id"].get_content().strip() == "-4001"
+    assert parts["message_thread_id"].get_content().strip() == "7"
+    assert method2 == "sendDocument" and parts2["document"].get_content() == b"%PDF-1.7"
+    assert 'filename="Rapport été.pdf"'.encode() in body2
+    assert TOKEN.encode() not in body2
+    assert report.plan["bytes"] == 8 and len(report.plan["sha256"]) == 64
+    assert "-4001/77.json" in log, "what the bot sent is logged, as for send"
+
+
+def test_a_large_image_goes_as_a_document(token, monkeypatch):
+    from correspond.channels import telegram as module
+
+    monkeypatch.setattr(module, "MAX_PHOTO_BYTES", 4)
+    api = FakeUploadApi(_sent())
+    correspond.upload(
+        "telegram:-4001",
+        "big.png",
+        PNG,
+        media_type="image/png",
+        registry={"telegram": Telegram(http=api, log={})},
+    )
+    assert api.calls[0][0] == "sendDocument"
+
+
+def test_an_upload_dry_run_calls_nothing_and_a_bad_name_is_refused(token):
+    api = FakeUploadApi(_sent())
+    registry = {"telegram": Telegram(http=api, log={})}
+    planned = Telegram(http=api, log={}).upload(
+        Telegram().parse_ref("-4001"),
+        "a.txt",
+        b"x",
+        media_type="text/plain",
+        dry_run=True,
+    )
+    assert (
+        planned.dry_run and planned.plan["action"] == "sendDocument" and api.calls == []
+    )
+    for bad in ("", "../a.txt", "a/b.txt", "a\nb.txt"):
+        result = correspond.upload("telegram:-4001", bad, b"x", registry=registry)
+        assert (result.ok, result.error_kind) == (False, "validation")
+    too_big = correspond.upload(
+        "telegram:-4001", "a.bin", b"x" * 50_000_001, registry=registry
+    )
+    assert (too_big.ok, too_big.error_kind) == (False, "validation")
+    assert api.calls == []
