@@ -30,7 +30,7 @@ Add `--json` to any command for the full result. A result with `ok: false` exits
 | `macos:` | a banner on this Mac |
 | `telegram:` | the bot's update stream (listen); `telegram:<chat id>`, `telegram:@name` or `telegram:<chat id>/<topic id>` a chat |
 | `webinbox:<site>` | reports posted from a web page to the collector |
-| `slack:<name>` | a Slack channel: `send --dry-run` gives the draft in Slack's own formatting (mrkdwn: `*bold*`, `<url|text>`, no tables) to show the operator or paste; a real send posts through the name's incoming webhook when one is configured |
+| `slack:<channel>` | a Slack channel (its name, `#` optional, or its id): `send --dry-run` gives the draft in Slack's own formatting (mrkdwn: `*bold*`, `<url|text>`, no tables) to show the operator or paste; a real send posts through the name's incoming webhook when one is configured |
 | `discord:<channel id>` | a Discord channel or thread the bot can see: read, listen (new messages, polled), send; needs `correspond[discord]` and a bot token |
 | `gdrive:<folder id>` | a shared Google Drive folder, read only: one message per file (path, modification time, who modified it), the file as its attachment, downloaded only when asked; for files a conversation announces but does not attach; needs `correspond[gdrive]` |
 | `apprise:<alias>` | send only, to the Apprise service(s) behind an alias (never write an Apprise URL in a reference: it holds credentials); needs `correspond[apprise]` |

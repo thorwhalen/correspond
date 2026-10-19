@@ -145,6 +145,14 @@ def test_what_a_webhook_cannot_do_is_refused_by_name(monkeypatch):
     registry = _registry()
     with pytest.raises(NotSupported, match="reply"):
         correspond.send("slack:ops", "x", reply_to="1700000000.000100", registry=registry)
+    drafted = correspond.send(
+        "slack:ops",
+        "**yes**",
+        reply_to="1700000000.000100",
+        dry_run=True,
+        registry=registry,
+    )
+    assert drafted.ok and drafted.plan["paste_in_thread_of"] == "1700000000.000100"
     with pytest.raises(NotSupported, match="notify"):
         correspond.send("slack:ops", "x", notify=["ada"], registry=registry)
     with pytest.raises(NotSupported):
@@ -157,8 +165,11 @@ def test_what_a_webhook_cannot_do_is_refused_by_name(monkeypatch):
 
 def test_references_are_names_never_webhook_urls():
     slack = Slack()
-    assert slack.parse_ref("#Team.Updates_2").encoded == "slack:team.updates_2"
-    for bad in ("", "#", "a b", WEBHOOK, "x" * 81, "-lead"):
+    assert slack.parse_ref("#Team-Updates_2").encoded == "slack:team-updates_2"
+    assert slack.parse_ref("C024BE91L").encoded == "slack:C024BE91L", (
+        "an id keeps its case"
+    )
+    for bad in ("", "#", "a b", WEBHOOK, "x" * 81, "-lead", "a.b"):
         with pytest.raises(InvalidRef):
             slack.parse_ref(bad)
 
@@ -173,3 +184,120 @@ def test_requirements_explain_the_webhook():
 
     report = tools.requirements("slack")
     assert "Incoming Webhooks" in json.dumps(report)
+
+
+@pytest.mark.parametrize(
+    "markdown",
+    [
+        "[ping](!channel)",
+        "[x](@U123ABC)",
+        "[](!here)",
+        "[x](!subteam^S1)",
+        "[x](#C1)",
+        "[x](<!channel>)",
+        "<!everyone>",
+        "[mail](mailto:<!channel>)",
+    ],
+)
+def test_no_link_can_become_a_mention(markdown):
+    rendered = to_mrkdwn(markdown)
+    for live in ("<!", "<@", "<#"):
+        assert live not in rendered, rendered
+
+
+def test_a_title_cannot_carry_a_mention_either():
+    planned = correspond.send(
+        "slack:ops", "x", title="[t](!here)", dry_run=True, registry=_registry()
+    )
+    assert "<!" not in planned.plan["text"]
+
+
+@pytest.mark.parametrize(
+    "markdown", ["`\x000\x00`", "a \x000\x00 b", "`a` \x000\x00", "\x00\x00\x001\x00"]
+)
+def test_input_cannot_forge_the_renderers_placeholders(markdown):
+    rendered = to_mrkdwn(markdown.encode().decode("unicode_escape"))
+    assert "\x00" not in rendered
+
+
+@pytest.mark.parametrize(
+    "markdown", ["[" * 40_000, "[a](" * 10_000, "*_" * 20_000, "**" * 20_000]
+)
+def test_long_adversarial_input_renders_quickly(markdown):
+    import time
+
+    start = time.perf_counter()
+    to_mrkdwn(markdown)
+    assert time.perf_counter() - start < 2
+
+
+def test_a_table_inside_a_code_fence_stays_in_the_fence():
+    assert to_mrkdwn("```\n| a | b |\n|---|---|\n```\n**after**") == (
+        "```\n| a | b |\n|---|---|\n```\n*after*"
+    )
+
+
+def test_a_line_of_pipes_without_a_separator_is_not_a_table():
+    assert to_mrkdwn("|a|") == "|a|"
+
+
+@pytest.mark.parametrize(
+    "markdown, mrkdwn",
+    [
+        ("[wiki](https://example.org/Foo_(bar))", "<https://example.org/Foo_(bar)|wiki>"),
+        ("[q](https://example.org/a?x=1&y=2)", "<https://example.org/a?x=1&y=2|q>"),
+        ("[p](https://example.org/a|b)", "<https://example.org/a%7Cb|p>"),
+        ("# **Head** _x_", "*Head _x_*"),
+        ("***both***", "*_both_*"),
+        ("\\*not italic\\*", "*not italic*"),
+        ("- - -", "──────────"),
+        ("Tom &amp; Jerry", "Tom &amp; Jerry"),
+        (
+            "https://example.org/a_b_c and snake_case",
+            "https://example.org/a_b_c and snake_case",
+        ),
+    ],
+)
+def test_review_cases_render_as_slack_expects(markdown, mrkdwn):
+    assert to_mrkdwn(markdown) == mrkdwn
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://hooks.slack.com.evil.example/services/T/B/x",
+        "https://hooks.slack.com/services/T/B/with space",
+        "https://hooks.slack.com/services/T/B/x\ty",
+        "http://hooks.slack.com/services/T/B/x",
+    ],
+)
+def test_a_malformed_or_lookalike_webhook_is_refused_without_showing_it(monkeypatch, url):
+    monkeypatch.setenv(
+        "CORRESPOND_SLACK_WEBHOOK_OPS", url.encode().decode("unicode_escape")
+    )
+    hook = FakeWebhook()
+    result = correspond.send("slack:ops", "hi", registry=_registry(hook))
+    assert (result.ok, result.error_kind, hook.posts) == (False, "validation", [])
+    assert "services/T/B" not in result.error
+
+
+def test_govslack_webhooks_are_accepted(monkeypatch):
+    monkeypatch.setenv(
+        "CORRESPOND_SLACK_WEBHOOK_OPS", "https://hooks.slack-gov.com/services/T/B/x"
+    )
+    assert correspond.send("slack:ops", "hi", registry=_registry()).ok
+
+
+def test_names_that_differ_only_by_dash_or_underscore_use_different_webhooks():
+    from correspond.channels.slack import webhook_env
+
+    assert webhook_env("a-b") != webhook_env("a_b")
+
+
+def test_a_malformed_url_never_reaches_an_error_through_the_stdlib_transport():
+    from correspond.channels._http import urllib_http
+    from correspond.errors import ChannelError
+
+    with pytest.raises(ChannelError) as caught:
+        urllib_http("POST", "https://hooks.slack.com/services/T/B/sec ret", body=b"{}")
+    assert "sec ret" not in str(caught.value) and "services" not in str(caught.value)

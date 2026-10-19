@@ -1,11 +1,12 @@
 """Slack: messages formatted as Slack writes them, posted through an incoming webhook.
 
-Reference: ``slack:<name>``, a name for one Slack channel (``#`` optional, lower-cased;
-1-80 of ``a-z``, ``0-9``, ``-``, ``_`` and ``.``). What a name posts to is an **incoming
-webhook**, which Slack ties to one channel when it is created:
-``$CORRESPOND_SLACK_WEBHOOK_<NAME>`` (upper case, ``-`` and ``.`` as ``_``), else on macOS
-the Keychain item ``correspond-slack-webhook-<name>``. The webhook URL is a credential: it
-never appears in a reference, a plan or an error.
+Reference: ``slack:<channel>``, a Slack channel by its name (``#`` optional, lower-cased;
+1-80 of ``a-z``, ``0-9``, ``-`` and ``_``) or by its id (``C024BE91L``, kept as Slack
+writes it). A post goes through the channel's **incoming webhook**, which Slack ties to one
+channel when it is created: ``$CORRESPOND_SLACK_WEBHOOK_<CHANNEL>`` (upper case, ``-`` as
+``_`` and ``_`` as ``__``, so no two channels share a variable), else on macOS the Keychain
+item ``correspond-slack-webhook-<channel>``. The webhook URL is a credential: it never
+appears in a reference, a plan or an error.
 
 Two uses, one channel:
 
@@ -52,10 +53,14 @@ from correspond.model import (
 __all__ = ["MAX_TEXT_CHARS", "Slack", "to_mrkdwn", "webhook_env"]
 
 NAME = "slack"
-NAME_RE = re.compile(r"^[a-z0-9][a-z0-9._-]{0,79}$")
+#: A Slack channel name (lower case; Slack allows letters, digits, - and _).
+NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]{0,79}$")
+#: A Slack conversation id: a public (C), private (G) or direct (D) channel.
+CHANNEL_ID_RE = re.compile(r"^[CGD][A-Z0-9]{8,20}$")
 #: Slack truncates a message's text past this many characters.
 MAX_TEXT_CHARS = 40_000
-WEBHOOK_PREFIX = "https://hooks.slack.com/"
+#: An incoming webhook: Slack's host (or GovSlack's), then a path of letters, digits, / _ and -.
+WEBHOOK_RE = re.compile(r"^https://hooks\.slack(?:-gov)?\.com/[A-Za-z0-9/_-]{1,500}\Z")
 #: What Slack answers a webhook with, as correspond's error kinds.
 _WEBHOOK_ERRORS = {
     400: "validation",
@@ -66,89 +71,136 @@ _WEBHOOK_ERRORS = {
 }
 
 _FENCE_RE = re.compile(r"^(```|~~~)[^\n]*\n(.*?)^\1[ \t]*$", re.M | re.S)
-_CODE_RE = re.compile(r"`([^`\n]+)`")
-_IMAGE_OR_LINK_RE = re.compile(r"!?\[([^\]\n]*)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
-_AUTOLINK_RE = re.compile(r"<(https?://[^>\s]+)>")
-_HEADING_RE = re.compile(r"^#{1,6}[ \t]+(.+?)[ \t]*#*[ \t]*$", re.M)
-_BOLD_RE = re.compile(r"(\*\*|__)(?=\S)(.+?)(?<=\S)\1")
-_ITALIC_RE = re.compile(r"(?<![\w*])\*(?=\S)([^*\n]+?)(?<=\S)\*(?![\w*])")
-_STRIKE_RE = re.compile(r"~~(?=\S)(.+?)(?<=\S)~~")
+_CODE_RE = re.compile(r"`([^`\n]{1,2000})`")
+#: Link text has no brackets, so a run of ``[`` is scanned once; a URL may hold one level of parentheses.
+_IMAGE_OR_LINK_RE = re.compile(
+    r"!?\[([^\[\]\n]{0,1000})\]\(([^()\s<>]{1,2000}(?:\([^()\s<>]{0,200}\)[^()\s<>]{0,2000})*)(?:\s+\"[^\"\n]{0,200}\")?\)"
+)
+_AUTOLINK_RE = re.compile(r"<((?:https?://|mailto:)[^<>\s]{1,2000})>")
+#: Link targets Slack is given as links; anything else (``!channel``, ``@U123``, ``#C1``) stays text.
+_LINK_SCHEME_RE = re.compile(r"^(?:https?://|mailto:)", re.I)
+_BACKSLASH_RE = re.compile(r"\\([\\`*_{}\[\]()#+\-.!~|>])")
+_HEADING_RE = re.compile(r"^#{1,6}[ \t]+([^\n]{1,1000}?)[ \t]*#*[ \t]*$", re.M)
+_BOLD_ITALIC_RE = re.compile(r"\*\*\*(?=\S)([^*\n]{1,1000}?)(?<=\S)\*\*\*")
+_BOLD_RE = re.compile(r"(\*\*|__)(?=\S)([^\n]{1,1000}?)(?<=\S)\1")
+_ITALIC_RE = re.compile(r"(?<![\w*])\*(?=\S)([^*\n]{1,1000}?)(?<=\S)\*(?![\w*])")
+_STRIKE_RE = re.compile(r"~~(?=\S)([^\n]{1,1000}?)(?<=\S)~~")
+_RULE_RE = re.compile(
+    r"^[ \t]*(?:(?:-[ \t]*){3,}|(?:\*[ \t]*){3,}|(?:_[ \t]*){3,})$", re.M
+)
 _BULLET_RE = re.compile(r"^([ \t]*)[-*+][ \t]+", re.M)
-_RULE_RE = re.compile(r"^[ \t]*(?:-{3,}|\*{3,}|_{3,})[ \t]*$", re.M)
 _TABLE_ROW_RE = re.compile(r"^[ \t]*\|.*\|[ \t]*$")
-_SLOT = "\x00{}\x00"
+_TABLE_SEPARATOR_RE = re.compile(
+    r"^[ \t]*\|?[ \t]*:?-{3,}:?[ \t]*(?:\|[ \t]*:?-{3,}:?[ \t]*)*\|?[ \t]*$"
+)
 _SLOT_RE = re.compile("\x00(\\d+)\x00")
 
 
 def _escape(text: str) -> str:
+    """Slack's three control characters escaped; an entity already written (``&amp;``) is read as its character first."""
+    text = text.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
     return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def _tables_as_code(text: str) -> str:
-    """Wrap each run of Markdown table rows in a code block: Slack has no tables."""
-    out, table = [], []
-
-    def flush():
-        if table:
-            out.extend(["```", *table, "```"])
-            table.clear()
-
-    for line in text.split("\n"):
-        if _TABLE_ROW_RE.match(line):
-            table.append(line)
-        else:
-            flush()
-            out.append(line)
-    flush()
-    return "\n".join(out)
+def _url(url: str) -> str:
+    """A link target safe inside ``<...|...>``: ``<``, ``>``, ``|`` and spaces percent-encoded."""
+    return (
+        url.replace("|", "%7C")
+        .replace("<", "%3C")
+        .replace(">", "%3E")
+        .replace(" ", "%20")
+    )
 
 
 def to_mrkdwn(markdown: str) -> str:
     """Common Markdown as Slack ``mrkdwn``: bold, italic, strike, links, headings, lists, code, quotes, tables as code.
 
+    Only ``http``, ``https`` and ``mailto`` targets become links: a Markdown link to
+    ``!channel`` or ``@U123`` stays text, so no draft can notify a channel or a person.
+
     >>> to_mrkdwn("# Release\\n- **new**: _faster_ export\\n- ~~old~~ gone")
     '*Release*\\n• *new*: _faster_ export\\n• ~old~ gone'
     >>> to_mrkdwn("> quoted <b> & `a < b`")
     '> quoted &lt;b&gt; &amp; `a &lt; b`'
+    >>> to_mrkdwn("[ping](!channel)")
+    'ping (!channel)'
     """
     slots: list[str] = []
 
     def keep(text: str) -> str:
         slots.append(text)
-        return _SLOT.format(len(slots) - 1)
+        return f"\x00{len(slots) - 1}\x00"
 
-    text = _tables_as_code(markdown.replace("\r\n", "\n"))
+    def resolve(text: str) -> str:
+        # A slot refers only to slots made before it, so this ends.
+        for _ in range(len(slots) + 1):
+            if "\x00" not in text:
+                return text
+            text = _SLOT_RE.sub(lambda m: slots[int(m.group(1))], text)
+        return text.replace("\x00", "")
+
+    def link(m: re.Match) -> str:
+        label, target = m.group(1), m.group(2)
+        if not _LINK_SCHEME_RE.match(target):
+            return keep(_escape(f"{label} ({target})" if label else target))
+        return keep(
+            f"<{_url(target)}|{_escape(label)}>" if label else f"<{_url(target)}>"
+        )
+
+    def table(lines: list[str]) -> str:
+        return keep("```\n" + _escape("\n".join(lines)) + "\n```")
+
+    text = markdown.replace("\x00", "").replace("\r\n", "\n").replace("\r", "\n")
     text = _FENCE_RE.sub(lambda m: keep(f"```\n{_escape(m.group(2))}```"), text)
+    lines, out, i = text.split("\n"), [], 0
+    while i < len(lines):  # a table is a header row, a separator row, then rows
+        if (
+            i + 1 < len(lines)
+            and _TABLE_ROW_RE.match(lines[i])
+            and _TABLE_SEPARATOR_RE.match(lines[i + 1])
+        ):
+            j = i + 2
+            while j < len(lines) and _TABLE_ROW_RE.match(lines[j]):
+                j += 1
+            out.append(table(lines[i:j]))
+            i = j
+        else:
+            out.append(lines[i])
+            i += 1
+    text = "\n".join(out)
     text = _CODE_RE.sub(lambda m: keep(f"`{_escape(m.group(1))}`"), text)
-    text = _AUTOLINK_RE.sub(lambda m: keep(f"<{m.group(1)}>"), text)
-    text = _IMAGE_OR_LINK_RE.sub(
-        lambda m: keep(
-            f"<{m.group(2)}|{_escape(m.group(1))}>" if m.group(1) else f"<{m.group(2)}>"
-        ),
-        text,
-    )
-    quotes = re.findall(r"^[ \t]*>", text, re.M)  # Slack quotes a line starting with ">"
+    text = _BACKSLASH_RE.sub(lambda m: keep(_escape(m.group(1))), text)
+    text = _AUTOLINK_RE.sub(lambda m: keep(f"<{_url(m.group(1))}>"), text)
+    text = _IMAGE_OR_LINK_RE.sub(link, text)
+    quoted = bool(
+        re.search(r"^[ \t]*>", text, re.M)
+    )  # Slack quotes a line starting with ">"
     text = _escape(text)
-    if quotes:
+    if quoted:
         text = re.sub(r"^([ \t]*)&gt;", r"\1>", text, flags=re.M)
-    text = _RULE_RE.sub("──────────", text)
-    text = _HEADING_RE.sub(lambda m: keep(f"*{m.group(1).strip('*_ ')}*"), text)
+    text = _RULE_RE.sub(lambda m: keep("──────────"), text)
+
+    def heading(m: re.Match) -> str:
+        inner = _BOLD_RE.sub(lambda b: b.group(2), m.group(1))
+        inner = _ITALIC_RE.sub(lambda it: f"_{it.group(1)}_", inner)
+        return keep(f"*{inner}*")
+
+    text = _HEADING_RE.sub(heading, text)
+    text = _BOLD_ITALIC_RE.sub(lambda m: keep(f"*_{m.group(1)}_*"), text)
     text = _BOLD_RE.sub(lambda m: keep(f"*{m.group(2)}*"), text)
     text = _STRIKE_RE.sub(lambda m: keep(f"~{m.group(1)}~"), text)
     text = _ITALIC_RE.sub(lambda m: f"_{m.group(1)}_", text)
     text = _BULLET_RE.sub(r"\1• ", text)
-    while _SLOT_RE.search(text):
-        text = _SLOT_RE.sub(lambda m: slots[int(m.group(1))], text)
-    return text
+    return resolve(text)
 
 
 def webhook_env(name: str) -> str:
     """The environment variable holding one name's webhook URL.
 
-    >>> webhook_env("team-alerts")
-    'CORRESPOND_SLACK_WEBHOOK_TEAM_ALERTS'
+    >>> webhook_env("team-alerts"), webhook_env("team_alerts")
+    ('CORRESPOND_SLACK_WEBHOOK_TEAM_ALERTS', 'CORRESPOND_SLACK_WEBHOOK_TEAM__ALERTS')
     """
-    return "CORRESPOND_SLACK_WEBHOOK_" + re.sub(r"[-.]", "_", name.upper())
+    return "CORRESPOND_SLACK_WEBHOOK_" + name.upper().replace("_", "__").replace("-", "_")
 
 
 def webhook_keychain_service(name: str) -> str:
@@ -182,25 +234,29 @@ class Slack:
             send=Support.PARTIAL,
             audience=Support.PARTIAL,
             initiate=Support.FULL,
-            reply=Support.NONE,
+            reply=Support.PARTIAL,
             max_text_length=MAX_TEXT_CHARS,
             formats=("mrkdwn",),
             rate_limits=("about one message per second per webhook",),
             notes=(
-                "a dry run renders the text as Slack mrkdwn (bold *x*, italic _x_, links <url|text>, no headings or tables) and needs nothing configured: it is the draft the operator can paste",
+                "a dry run renders the text as Slack mrkdwn (bold *x*, italic _x_, links <url|text>, no headings or tables) and needs nothing configured: it is the draft the operator can paste, a reply included (paste it in the thread)",
                 "a real send posts through the incoming webhook configured for the name (CORRESPOND_SLACK_WEBHOOK_<NAME>, or the Keychain); a webhook posts to the one channel it was made for, as the app that owns it",
-                "the text cannot mention anyone: every < is escaped, so <!channel> or <@U...> arrive as text",
-                "a title is prepended as a bold line; threads and replies are not supported",
+                "the text cannot mention anyone: every < is escaped and only http, https and mailto targets become links, so <!channel>, <@U...> or [x](!here) arrive as text",
+                "a title is prepended as a bold line; a webhook cannot post in a thread",
                 "read and listen need a Slack app token (slack-sdk) and are not built",
             ),
         )
 
     def parse_ref(self, id: str) -> ConversationRef:
-        """A channel's name, ``#`` optional, lower-cased."""
-        name = (id or "").strip().lstrip("#").lower()
+        """A channel's id as Slack writes it, or its name, ``#`` optional, lower-cased."""
+        text = (id or "").strip()
+        if CHANNEL_ID_RE.match(text):
+            return ConversationRef(channel=NAME, id=text, kind="channel")
+        name = text[1:] if text.startswith("#") else text
+        name = name.lower()
         if not NAME_RE.match(name):
             raise InvalidRef(
-                f"slack references are slack:<name> (1-80 of a-z, 0-9, -, _ and .), never a webhook URL, not slack:{id}"
+                f"slack references are slack:<channel name> (1-80 of a-z, 0-9, - and _) or slack:<channel id>, never a webhook URL, not slack:{id}"
             )
         return ConversationRef(channel=NAME, id=name, kind="channel")
 
@@ -210,9 +266,9 @@ class Slack:
             url = (self._keychain or _settings.keychain_get)(
                 webhook_keychain_service(name)
             ).strip()
-        if url and not url.startswith(WEBHOOK_PREFIX):
+        if url and not WEBHOOK_RE.match(url):
             raise ChannelError(
-                f"the webhook for slack:{name} is not a Slack incoming webhook (it must start with {WEBHOOK_PREFIX})",
+                f"the webhook for slack:{name} is not a Slack incoming webhook (https://hooks.slack.com/ then its path)",
                 kind="validation",
             )
         return url or None
@@ -237,13 +293,17 @@ class Slack:
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
     ) -> SendResult:
-        """Render ``draft`` as mrkdwn; post it through the name's webhook unless ``dry_run``."""
-        if draft.reply_to:
+        """Render ``draft`` as mrkdwn; post it through the channel's webhook unless ``dry_run``.
+
+        A reply (``draft.reply_to``, the message's ``ts``) renders in a dry run, for the
+        operator to paste in that thread; a webhook cannot post one.
+        """
+        if draft.reply_to and not dry_run:
             raise NotSupported(
                 "reply",
                 NAME,
                 alternatives=(
-                    "a webhook cannot thread: post and quote the message you answer",
+                    "a webhook cannot thread: the dry run gives the text to paste in the thread",
                 ),
             )
         if draft.notify:
@@ -253,6 +313,11 @@ class Slack:
                 alternatives=(
                     "a webhook's text cannot mention anyone; name them in the text",
                 ),
+            )
+        if len(draft.text) > MAX_TEXT_CHARS:
+            raise ChannelError(
+                f"the text is {len(draft.text)} characters; Slack keeps {MAX_TEXT_CHARS}",
+                kind="validation",
             )
         body = to_mrkdwn(draft.text)
         text = (
@@ -273,6 +338,7 @@ class Slack:
             "text": text,
             "characters": len(text),
             "max_characters": MAX_TEXT_CHARS,
+            **({"paste_in_thread_of": draft.reply_to} if draft.reply_to else {}),
             "webhook": "configured (environment)"
             if configured
             else f"looked up when sending: {webhook_env(ref.id)}, else the Keychain item {webhook_keychain_service(ref.id)}",
@@ -293,12 +359,19 @@ class Slack:
                 ),
                 kind="validation",
             )
-        reply = self.http(
-            "POST",
-            url,
-            headers={"Content-Type": "application/json"},
-            body=json.dumps({"text": text}).encode("utf-8"),
-        )
+        try:
+            reply = self.http(
+                "POST",
+                url,
+                headers={"Content-Type": "application/json"},
+                body=json.dumps({"text": text}).encode("utf-8"),
+            )
+        except ChannelError as error:  # the transport's message names only the host
+            raise ChannelError(
+                f"could not post to slack:{ref.id}: {error}",
+                kind=error.kind,
+                retryable=error.retryable,
+            ) from None
         if reply.status != 200:
             answer = reply.body.decode("utf-8", "replace").strip()[:200]
             kind = _WEBHOOK_ERRORS.get(
