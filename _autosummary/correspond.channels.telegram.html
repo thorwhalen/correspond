@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=8bafd125"></script>
+    <script src="../_static/documentation_options.js?v=2fd7553c"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.18" />
+  <meta name="docsearch:version" content="0.0.19" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -428,22 +428,64 @@ with <code class="docutils literal notranslate"><span class="pre">getChat</span>
 at once, which is why listening is account-wide: narrow to one chat when routing.</p>
 <p>Senders are <code class="docutils literal notranslate"><span class="pre">platform</span></code>: Telegram authenticated the account, and correspond pulled the
 update from the Bot API itself. The bot token never appears in an error or a plan.</p>
+<p><strong>Webhook delivery</strong>, for a server: <a class="reference internal" href="#correspond.channels.telegram.Telegram.set_webhook" title="correspond.channels.telegram.Telegram.set_webhook"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Telegram.set_webhook()</span></code></a> asks Telegram to POST
+every update, one at a time, to an HTTPS address, carrying the configured
+<code class="docutils literal notranslate"><span class="pre">webhook_secret</span></code> in the <code class="docutils literal notranslate"><span class="pre">X-Telegram-Bot-Api-Secret-Token</span></code> header.
+<a class="reference internal" href="#correspond.channels.telegram.mk_webhook_app" title="correspond.channels.telegram.mk_webhook_app"><code class="xref py py-func docutils literal notranslate"><span class="pre">mk_webhook_app()</span></code></a> is the receiver, an ASGI app that stores each update carrying that
+secret under the data root (<code class="docutils literal notranslate"><span class="pre">telegram-webhook/</span></code>), in the order it arrives; the secret is
+the gate, and nothing without it is stored. <a class="reference internal" href="#correspond.channels.telegram.serve_webhook" title="correspond.channels.telegram.serve_webhook"><code class="xref py py-func docutils literal notranslate"><span class="pre">serve_webhook()</span></code></a> runs it (with uvicorn,
+the <code class="docutils literal notranslate"><span class="pre">server</span></code> extra) on <code class="docutils literal notranslate"><span class="pre">127.0.0.1</span></code> behind your own HTTPS reverse proxy, and refuses
+any other address unless <code class="docutils literal notranslate"><span class="pre">webhook_allow_remote</span></code> is set. With <code class="docutils literal notranslate"><span class="pre">delivery</span> <span class="pre">=</span> <span class="pre">&quot;webhook&quot;</span></code> in
+the config, <code class="docutils literal notranslate"><span class="pre">listen</span></code> reads what the receiver stored instead of calling <code class="docutils literal notranslate"><span class="pre">getUpdates</span></code>:
+Telegram serves one or the other, never both, so while a webhook is set <code class="docutils literal notranslate"><span class="pre">getUpdates</span></code> is
+refused (409), and <a class="reference internal" href="#correspond.channels.telegram.Telegram.delete_webhook" title="correspond.channels.telegram.Telegram.delete_webhook"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Telegram.delete_webhook()</span></code></a> returns the bot to polling.
+<a class="reference internal" href="#correspond.channels.telegram.Telegram.verify" title="correspond.channels.telegram.Telegram.verify"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Telegram.verify()</span></code></a> grades one delivery by the same header.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Telegram</span><span class="p">()</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="s2">"-4001/7"</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">encoded</span>
 <span class="go">'telegram:-4001'</span>
 </pre></div>
 </div>
+<p class="rubric">Module Attributes</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.telegram.SECRET_HEADER" title="correspond.channels.telegram.SECRET_HEADER"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SECRET_HEADER</span></code></a></p></td>
+<td><p>The header Telegram puts the webhook's secret token in.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p class="rubric">Functions</p>
+<div class="pst-scrollable-table-container"><table class="autosummary longtable table">
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.telegram.mk_webhook_app" title="correspond.channels.telegram.mk_webhook_app"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mk_webhook_app</span></code></a>(*, secret[, updates, ...])</p></td>
+<td><p>The webhook receiver as an ASGI app: Telegram POSTs updates, the app stores them in <code class="docutils literal notranslate"><span class="pre">updates</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channels.telegram.serve_webhook" title="correspond.channels.telegram.serve_webhook"><code class="xref py py-obj docutils literal notranslate"><span class="pre">serve_webhook</span></code></a>(*[, host, port, allow_remote, ...])</p></td>
+<td><p>Run the receiver (with uvicorn) on <code class="docutils literal notranslate"><span class="pre">host</span></code>, this machine unless <code class="docutils literal notranslate"><span class="pre">allow_remote</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.telegram.webhook_app_from_env" title="correspond.channels.telegram.webhook_app_from_env"><code class="xref py py-obj docutils literal notranslate"><span class="pre">webhook_app_from_env</span></code></a>()</p></td>
+<td><p><a class="reference internal" href="#correspond.channels.telegram.mk_webhook_app" title="correspond.channels.telegram.mk_webhook_app"><code class="xref py py-func docutils literal notranslate"><span class="pre">mk_webhook_app()</span></code></a> configured from the settings, for <code class="docutils literal notranslate"><span class="pre">uvicorn</span> <span class="pre">--factory</span></code>.</p></td>
+</tr>
+</tbody>
+</table>
+</div>
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.telegram.Telegram" title="correspond.channels.telegram.Telegram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Telegram</span></code></a>(*[, http, log, run])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.telegram.Telegram" title="correspond.channels.telegram.Telegram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Telegram</span></code></a>(*[, http, log, updates, run, clock])</p></td>
 <td><p>A Telegram bot: listen, read the local log, send, edit, react.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<dl class="py data">
+<dt class="sig sig-object py" id="correspond.channels.telegram.SECRET_HEADER">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.telegram.</span></span><span class="sig-name descname"><span class="pre">SECRET_HEADER</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'x-telegram-bot-api-secret-token'</span></span><a class="headerlink" href="#correspond.channels.telegram.SECRET_HEADER" title="Link to this definition">#</a></dt>
+<dd><p>The header Telegram puts the webhook’s secret token in.</p>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="correspond.channels.telegram.Telegram">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.telegram.</span></span><span class="sig-name descname"><span class="pre">Telegram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">http</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">urllib_http&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#Telegram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.Telegram" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.telegram.</span></span><span class="sig-name descname"><span class="pre">Telegram</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">http</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">urllib_http&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">log</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">time_ns&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#Telegram"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.Telegram" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>A Telegram bot: listen, read the local log, send, edit, react.</p>
 <dl class="field-list simple">
@@ -479,6 +521,17 @@ raises, so the audience resolves to public, defaulted.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.telegram.Telegram.delete_webhook">
+<span class="sig-name descname"><span class="pre">delete_webhook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">drop_pending_updates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#Telegram.delete_webhook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.Telegram.delete_webhook" title="Link to this definition">#</a></dt>
+<dd><p>Stop webhook delivery, so <code class="docutils literal notranslate"><span class="pre">getUpdates</span></code> works again; pending updates are kept unless <code class="docutils literal notranslate"><span class="pre">drop_pending_updates</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.telegram.Telegram.edit">
 <span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#Telegram.edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.Telegram.edit" title="Link to this definition">#</a></dt>
 <dd><p><code class="docutils literal notranslate"><span class="pre">editMessageText</span></code> on one of the bot’s messages.</p>
@@ -509,7 +562,10 @@ raises, so the audience resolves to public, defaulted.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.telegram.Telegram.poll">
 <span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#Telegram.poll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.Telegram.poll" title="Link to this definition">#</a></dt>
-<dd><p>Updates since <code class="docutils literal notranslate"><span class="pre">cursor</span></code> (an update offset), every one logged before it is handed over.</p>
+<dd><p>Updates since <code class="docutils literal notranslate"><span class="pre">cursor</span></code>, every one logged before it is handed over.</p>
+<p>They come from <code class="docutils literal notranslate"><span class="pre">getUpdates</span></code> (the cursor is an update offset), or, with <code class="docutils literal notranslate"><span class="pre">delivery</span>
+<span class="pre">=</span> <span class="pre">&quot;webhook&quot;</span></code> in the config, from what the webhook receiver stored
+(<code class="xref py py-meth docutils literal notranslate"><span class="pre">_poll_received()</span></code>).</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
@@ -558,6 +614,95 @@ raises, so the audience resolves to public, defaulted.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.telegram.Telegram.set_webhook">
+<span class="sig-name descname"><span class="pre">set_webhook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#Telegram.set_webhook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.Telegram.set_webhook" title="Link to this definition">#</a></dt>
+<dd><p>Have Telegram POST this bot’s updates to <code class="docutils literal notranslate"><span class="pre">url</span></code> (HTTPS), with the configured <code class="docutils literal notranslate"><span class="pre">webhook_secret</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">getUpdates</span></code> stops working until <a class="reference internal" href="#correspond.channels.telegram.Telegram.delete_webhook" title="correspond.channels.telegram.Telegram.delete_webhook"><code class="xref py py-meth docutils literal notranslate"><span class="pre">delete_webhook()</span></code></a>; set <code class="docutils literal notranslate"><span class="pre">delivery</span> <span class="pre">=</span>
+<span class="pre">&quot;webhook&quot;</span></code> so <code class="docutils literal notranslate"><span class="pre">listen</span></code> reads what the receiver stores. The plan reads the
+webhook back with <code class="docutils literal notranslate"><span class="pre">getWebhookInfo</span></code>. A dry run calls nothing and reads no secret.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="correspond.channels.telegram.Telegram.updates">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">updates</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping" title="(in Python v3.15)"><span class="pre">MutableMapping</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#correspond.channels.telegram.Telegram.updates" title="Link to this definition">#</a></dt>
+<dd><p>What the webhook receiver stored, keyed by zero-padded update id (<code class="docutils literal notranslate"><span class="pre">listen</span></code> reads it when <code class="docutils literal notranslate"><span class="pre">delivery</span></code> is <code class="docutils literal notranslate"><span class="pre">webhook</span></code>).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.telegram.Telegram.verify">
+<span class="sig-name descname"><span class="pre">verify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">headers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#Telegram.verify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.Telegram.verify" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">platform</span></code> when the delivery carries the configured <code class="docutils literal notranslate"><span class="pre">webhook_secret</span></code>, <code class="docutils literal notranslate"><span class="pre">forged</span></code> otherwise.</p>
+<p>The secret token proves Telegram sent the request (only Telegram and this machine
+know it); it signs nothing, so the grade is Telegram’s own, not <code class="docutils literal notranslate"><span class="pre">crypto</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.Authenticity" title="correspond.model.Authenticity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Authenticity</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.telegram.Telegram.webhook_info">
+<span class="sig-name descname"><span class="pre">webhook_info</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#Telegram.webhook_info"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.Telegram.webhook_info" title="Link to this definition">#</a></dt>
+<dd><p>Where Telegram delivers this bot’s updates now (<code class="docutils literal notranslate"><span class="pre">getWebhookInfo</span></code>): an empty <code class="docutils literal notranslate"><span class="pre">url</span></code> means polling.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#dict" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.telegram.mk_webhook_app">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.telegram.</span></span><span class="sig-name descname"><span class="pre">mk_webhook_app</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">secret</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_body_bytes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">time_ns&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#mk_webhook_app"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.mk_webhook_app" title="Link to this definition">#</a></dt>
+<dd><p>The webhook receiver as an ASGI app: Telegram POSTs updates, the app stores them in <code class="docutils literal notranslate"><span class="pre">updates</span></code>.</p>
+<p>A request without <code class="docutils literal notranslate"><span class="pre">secret</span></code> in <code class="docutils literal notranslate"><span class="pre">X-Telegram-Bot-Api-Secret-Token</span></code> is refused (401)
+and nothing is stored: the secret is the only gate, since behind a reverse proxy every
+connection comes from this machine. Each update is stored under
+<code class="docutils literal notranslate"><span class="pre">&lt;arrival</span> <span class="pre">time</span> <span class="pre">in</span> <span class="pre">ns&gt;-&lt;update</span> <span class="pre">id&gt;.json</span></code>, so <code class="docutils literal notranslate"><span class="pre">listen</span></code> takes them in the order they
+came, whatever their ids (Telegram restarts them at random after a week without
+updates). One receiver process per bot keeps that order: <a class="reference internal" href="#correspond.channels.telegram.Telegram.set_webhook" title="correspond.channels.telegram.Telegram.set_webhook"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Telegram.set_webhook()</span></code></a>
+asks Telegram for one connection at a time. <code class="docutils literal notranslate"><span class="pre">updates</span></code> defaults to files under the
+data root (<code class="docutils literal notranslate"><span class="pre">telegram-webhook/</span></code>), which <code class="docutils literal notranslate"><span class="pre">listen</span></code> reads when <code class="docutils literal notranslate"><span class="pre">delivery</span></code> is
+<code class="docutils literal notranslate"><span class="pre">webhook</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code></a>[<span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span>]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.telegram.serve_webhook">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.telegram.</span></span><span class="sig-name descname"><span class="pre">serve_webhook</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">host</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'127.0.0.1'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">port</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8081</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_remote</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">app</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#serve_webhook"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.serve_webhook" title="Link to this definition">#</a></dt>
+<dd><p>Run the receiver (with uvicorn) on <code class="docutils literal notranslate"><span class="pre">host</span></code>, this machine unless <code class="docutils literal notranslate"><span class="pre">allow_remote</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">allow_remote</span></code> defaults to the <code class="docutils literal notranslate"><span class="pre">webhook_allow_remote</span></code> setting. Put your HTTPS
+reverse proxy in front: Telegram reaches only public HTTPS addresses. Proxy headers are
+ignored, since the receiver needs no client address, and one worker keeps the order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.channels.telegram.webhook_app_from_env">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.telegram.</span></span><span class="sig-name descname"><span class="pre">webhook_app_from_env</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/telegram.html#webhook_app_from_env"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.telegram.webhook_app_from_env" title="Link to this definition">#</a></dt>
+<dd><p><a class="reference internal" href="#correspond.channels.telegram.mk_webhook_app" title="correspond.channels.telegram.mk_webhook_app"><code class="xref py py-func docutils literal notranslate"><span class="pre">mk_webhook_app()</span></code></a> configured from the settings, for <code class="docutils literal notranslate"><span class="pre">uvicorn</span> <span class="pre">--factory</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/constants.html#Ellipsis" title="(in Python v3.15)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Awaitable</span></code></a>[<span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span>]]</span></p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -609,9 +754,11 @@ raises, so the audience resolves to public, defaulted.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.SECRET_HEADER"><code class="docutils literal notranslate"><span class="pre">SECRET_HEADER</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram"><code class="docutils literal notranslate"><span class="pre">Telegram</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.audience"><code class="docutils literal notranslate"><span class="pre">Telegram.audience()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.capabilities"><code class="docutils literal notranslate"><span class="pre">Telegram.capabilities</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.delete_webhook"><code class="docutils literal notranslate"><span class="pre">Telegram.delete_webhook()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.edit"><code class="docutils literal notranslate"><span class="pre">Telegram.edit()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.log"><code class="docutils literal notranslate"><span class="pre">Telegram.log</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.parse_ref"><code class="docutils literal notranslate"><span class="pre">Telegram.parse_ref()</span></code></a></li>
@@ -620,8 +767,15 @@ raises, so the audience resolves to public, defaulted.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.react"><code class="docutils literal notranslate"><span class="pre">Telegram.react()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.read"><code class="docutils literal notranslate"><span class="pre">Telegram.read()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.send"><code class="docutils literal notranslate"><span class="pre">Telegram.send()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.set_webhook"><code class="docutils literal notranslate"><span class="pre">Telegram.set_webhook()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.updates"><code class="docutils literal notranslate"><span class="pre">Telegram.updates</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.verify"><code class="docutils literal notranslate"><span class="pre">Telegram.verify()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.Telegram.webhook_info"><code class="docutils literal notranslate"><span class="pre">Telegram.webhook_info()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.mk_webhook_app"><code class="docutils literal notranslate"><span class="pre">mk_webhook_app()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.serve_webhook"><code class="docutils literal notranslate"><span class="pre">serve_webhook()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.telegram.webhook_app_from_env"><code class="docutils literal notranslate"><span class="pre">webhook_app_from_env()</span></code></a></li>
 </ul>
   </nav></div>
 

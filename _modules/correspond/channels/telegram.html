@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=8bafd125"></script>
+    <script src="../../../_static/documentation_options.js?v=2fd7553c"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.18" />
+  <meta name="docsearch:version" content="0.0.19" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -727,22 +727,39 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">Senders are ``platform``: Telegram authenticated the account, and correspond pulled the</span>
 <span class="sd">update from the Bot API itself. The bot token never appears in an error or a plan.</span>
 
+<span class="sd">**Webhook delivery**, for a server: :meth:`Telegram.set_webhook` asks Telegram to POST</span>
+<span class="sd">every update, one at a time, to an HTTPS address, carrying the configured</span>
+<span class="sd">``webhook_secret`` in the ``X-Telegram-Bot-Api-Secret-Token`` header.</span>
+<span class="sd">:func:`mk_webhook_app` is the receiver, an ASGI app that stores each update carrying that</span>
+<span class="sd">secret under the data root (``telegram-webhook/``), in the order it arrives; the secret is</span>
+<span class="sd">the gate, and nothing without it is stored. :func:`serve_webhook` runs it (with uvicorn,</span>
+<span class="sd">the ``server`` extra) on ``127.0.0.1`` behind your own HTTPS reverse proxy, and refuses</span>
+<span class="sd">any other address unless ``webhook_allow_remote`` is set. With ``delivery = "webhook"`` in</span>
+<span class="sd">the config, ``listen`` reads what the receiver stored instead of calling ``getUpdates``:</span>
+<span class="sd">Telegram serves one or the other, never both, so while a webhook is set ``getUpdates`` is</span>
+<span class="sd">refused (409), and :meth:`Telegram.delete_webhook` returns the bot to polling.</span>
+<span class="sd">:meth:`Telegram.verify` grades one delivery by the same header.</span>
+
 <span class="sd">&gt;&gt;&gt; Telegram().parse_ref("-4001/7").parent.encoded</span>
 <span class="sd">'telegram:-4001'</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">hmac</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">ipaddress</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.channels._asgi</span><span class="w"> </span><span class="kn">import</span> <span class="n">TOO_LARGE</span><span class="p">,</span> <span class="n">lifespan</span><span class="p">,</span> <span class="n">read_body</span><span class="p">,</span> <span class="n">respond</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.channels._http</span><span class="w"> </span><span class="kn">import</span> <span class="n">urllib_http</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span><span class="p">,</span> <span class="n">NotSupported</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span><span class="p">,</span> <span class="n">MissingRequirement</span><span class="p">,</span> <span class="n">NotSupported</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Account</span><span class="p">,</span>
     <span class="n">Audience</span><span class="p">,</span>
@@ -763,7 +780,13 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">with_final_cursor</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">require</span><span class="p">,</span> <span class="n">value</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Telegram"</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"SECRET_HEADER"</span><span class="p">,</span>
+    <span class="s2">"Telegram"</span><span class="p">,</span>
+    <span class="s2">"mk_webhook_app"</span><span class="p">,</span>
+    <span class="s2">"serve_webhook"</span><span class="p">,</span>
+    <span class="s2">"webhook_app_from_env"</span><span class="p">,</span>
+<span class="p">]</span>
 
 <span class="n">NAME</span> <span class="o">=</span> <span class="s2">"telegram"</span>
 <span class="n">CHAT_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^(?:-?[1-9][0-9]{0,19}|@[A-Za-z][A-Za-z0-9_]{3,31})$"</span><span class="p">)</span>
@@ -776,6 +799,182 @@ window.runMermaid = runMermaid;</script>
 <span class="n">_PLATFORM</span> <span class="o">=</span> <span class="n">Authenticity</span><span class="p">(</span>
     <span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span> <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"attested_by"</span><span class="p">:</span> <span class="s2">"the Telegram Bot API (getUpdates)"</span><span class="p">}</span>
 <span class="p">)</span>
+<span class="n">_WEBHOOK</span> <span class="o">=</span> <span class="n">Authenticity</span><span class="p">(</span>
+    <span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span>
+    <span class="n">evidence</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"attested_by"</span><span class="p">:</span> <span class="s2">"the Telegram Bot API (a webhook delivery carrying the secret token)"</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+<span class="c1">#: The header Telegram puts the webhook's secret token in.</span>
+<span class="n">SECRET_HEADER</span> <span class="o">=</span> <span class="s2">"x-telegram-bot-api-secret-token"</span>
+<span class="c1">#: The alphabet and length Telegram accepts for a webhook secret token.</span>
+<span class="n">SECRET_TOKEN_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^[A-Za-z0-9_-]{1,256}$"</span><span class="p">)</span>
+<span class="c1">#: Where ``listen`` takes updates from: ``getUpdates``, or what the webhook receiver stored.</span>
+<span class="n">DELIVERIES</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"poll"</span><span class="p">,</span> <span class="s2">"webhook"</span><span class="p">)</span>
+<span class="c1">#: The data-root folder the webhook receiver stores updates in.</span>
+<span class="n">WEBHOOK_KIND</span> <span class="o">=</span> <span class="s2">"telegram-webhook"</span>
+<span class="n">MAX_WEBHOOK_BODY_BYTES</span> <span class="o">=</span> <span class="mi">1_000_000</span>
+<span class="c1">#: Telegram's update ids are signed 64-bit integers.</span>
+<span class="n">MAX_UPDATE_ID</span> <span class="o">=</span> <span class="mi">2</span><span class="o">**</span><span class="mi">63</span> <span class="o">-</span> <span class="mi">1</span>
+<span class="c1">#: How far back a first webhook listen looks, as getUpdates' buffer does.</span>
+<span class="n">WEBHOOK_LOOKBACK_NS</span> <span class="o">=</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">3600</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span>
+<span class="c1">#: How long the receiver's updates are kept once a listen has passed them.</span>
+<span class="n">WEBHOOK_RETENTION_NS</span> <span class="o">=</span> <span class="mi">7</span> <span class="o">*</span> <span class="mi">24</span> <span class="o">*</span> <span class="mi">3600</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span>
+<span class="n">WEBHOOK_HOST</span> <span class="o">=</span> <span class="s2">"127.0.0.1"</span>
+<span class="n">WEBHOOK_PORT</span> <span class="o">=</span> <span class="mi">8081</span>
+<span class="c1">#: The prefix of a webhook listen cursor (a getUpdates cursor is a bare offset).</span>
+<span class="n">_WEBHOOK_CURSOR</span> <span class="o">=</span> <span class="s2">"w"</span>
+<span class="n">_RECEIVED_KEY_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^(?P&lt;stamp&gt;[0-9]</span><span class="si">{20}</span><span class="s2">)-(?P&lt;update&gt;[0-9]{1,19})\.json$"</span><span class="p">)</span>
+<span class="n">_TRUE</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"1"</span><span class="p">,</span> <span class="s2">"true"</span><span class="p">,</span> <span class="s2">"yes"</span><span class="p">,</span> <span class="s2">"on"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_secret_matches</span><span class="p">(</span><span class="n">received</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">secret</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="nb">bool</span><span class="p">(</span><span class="n">received</span><span class="p">)</span>
+        <span class="ow">and</span> <span class="n">received</span><span class="o">.</span><span class="n">isascii</span><span class="p">()</span>
+        <span class="ow">and</span> <span class="n">hmac</span><span class="o">.</span><span class="n">compare_digest</span><span class="p">(</span><span class="n">received</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">),</span> <span class="n">secret</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">))</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_check_secret</span><span class="p">(</span><span class="n">secret</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">secret</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">SECRET_TOKEN_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">secret</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">"the webhook secret is 1 to 256 characters of A-Z, a-z, 0-9, _ and - (Telegram's rule for secret_token)"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">secret</span>
+
+
+<div class="viewcode-block" id="mk_webhook_app">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.telegram.html#correspond.channels.telegram.mk_webhook_app">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mk_webhook_app</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">secret</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">updates</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">max_body_bytes</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">MAX_WEBHOOK_BODY_BYTES</span><span class="p">,</span>
+    <span class="n">clock</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time_ns</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">"""The webhook receiver as an ASGI app: Telegram POSTs updates, the app stores them in ``updates``.</span>
+
+<span class="sd">    A request without ``secret`` in ``X-Telegram-Bot-Api-Secret-Token`` is refused (401)</span>
+<span class="sd">    and nothing is stored: the secret is the only gate, since behind a reverse proxy every</span>
+<span class="sd">    connection comes from this machine. Each update is stored under</span>
+<span class="sd">    ``&lt;arrival time in ns&gt;-&lt;update id&gt;.json``, so ``listen`` takes them in the order they</span>
+<span class="sd">    came, whatever their ids (Telegram restarts them at random after a week without</span>
+<span class="sd">    updates). One receiver process per bot keeps that order: :meth:`Telegram.set_webhook`</span>
+<span class="sd">    asks Telegram for one connection at a time. ``updates`` defaults to files under the</span>
+<span class="sd">    data root (``telegram-webhook/``), which ``listen`` reads when ``delivery`` is</span>
+<span class="sd">    ``webhook``.</span>
+<span class="sd">    """</span>
+    <span class="n">_check_secret</span><span class="p">(</span><span class="n">secret</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">updates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">json_store</span>
+
+        <span class="n">updates</span> <span class="o">=</span> <span class="n">json_store</span><span class="p">(</span><span class="n">WEBHOOK_KIND</span><span class="p">)</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">app</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">receive</span><span class="p">,</span> <span class="n">send</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">scope</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"lifespan"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">lifespan</span><span class="p">(</span><span class="n">receive</span><span class="p">,</span> <span class="n">send</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">scope</span><span class="p">[</span><span class="s2">"type"</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">"http"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"method"</span><span class="p">,</span> <span class="s2">"GET"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"POST"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="mi">405</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"use POST"</span><span class="p">},</span> <span class="p">{</span><span class="s2">"allow"</span><span class="p">:</span> <span class="s2">"POST"</span><span class="p">})</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"latin-1"</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="n">text</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"latin-1"</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">scope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"headers"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">_secret_matches</span><span class="p">(</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">SECRET_HEADER</span><span class="p">,</span> <span class="s2">""</span><span class="p">),</span> <span class="n">secret</span><span class="p">):</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="mi">401</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"wrong or missing secret token"</span><span class="p">})</span>
+        <span class="n">declared</span> <span class="o">=</span> <span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"content-length"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">declared</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">declared</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">max_body_bytes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="mi">413</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"the update is too large"</span><span class="p">})</span>
+        <span class="n">body</span> <span class="o">=</span> <span class="k">await</span> <span class="n">read_body</span><span class="p">(</span><span class="n">receive</span><span class="p">,</span> <span class="n">max_body_bytes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">body</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">body</span> <span class="ow">is</span> <span class="n">TOO_LARGE</span><span class="p">:</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="mi">413</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"the update is too large"</span><span class="p">})</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">update</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">body</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>  <span class="c1"># not JSON, not UTF-8, or an integer too long to read</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="mi">400</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"the body is not JSON"</span><span class="p">})</span>
+        <span class="n">update_id</span> <span class="o">=</span> <span class="n">update</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"update_id"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">update</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">update_id</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">update_id</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="n">update_id</span> <span class="o">&lt;=</span> <span class="n">MAX_UPDATE_ID</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="k">await</span> <span class="n">respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="mi">400</span><span class="p">,</span> <span class="p">{</span><span class="s2">"error"</span><span class="p">:</span> <span class="s2">"an update carries an update_id"</span><span class="p">})</span>
+        <span class="n">last</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="n">clock</span><span class="p">(),</span> <span class="n">last</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="p">)</span>  <span class="c1"># strictly increasing, whatever the clock does</span>
+        <span class="n">updates</span><span class="p">[</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">last</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">020d</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">update_id</span><span class="si">}</span><span class="s2">.json"</span><span class="p">]</span> <span class="o">=</span> <span class="n">update</span>
+        <span class="k">return</span> <span class="k">await</span> <span class="n">respond</span><span class="p">(</span><span class="n">send</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">app</span></div>
+
+
+
+<div class="viewcode-block" id="webhook_app_from_env">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.telegram.html#correspond.channels.telegram.webhook_app_from_env">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">webhook_app_from_env</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">""":func:`mk_webhook_app` configured from the settings, for ``uvicorn --factory``."""</span>
+    <span class="k">return</span> <span class="n">mk_webhook_app</span><span class="p">(</span><span class="n">secret</span><span class="o">=</span><span class="n">require</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"webhook_secret"</span><span class="p">))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_loopback</span><span class="p">(</span><span class="n">host</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">host</span> <span class="o">==</span> <span class="s2">"localhost"</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ipaddress</span><span class="o">.</span><span class="n">ip_address</span><span class="p">(</span><span class="n">host</span><span class="p">)</span><span class="o">.</span><span class="n">is_loopback</span>
+    <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="serve_webhook">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.telegram.html#correspond.channels.telegram.serve_webhook">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">serve_webhook</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">WEBHOOK_HOST</span><span class="p">,</span>
+    <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">WEBHOOK_PORT</span><span class="p">,</span>
+    <span class="n">allow_remote</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">app</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Awaitable</span><span class="p">[</span><span class="kc">None</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">run</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Run the receiver (with uvicorn) on ``host``, this machine unless ``allow_remote``.</span>
+
+<span class="sd">    ``allow_remote`` defaults to the ``webhook_allow_remote`` setting. Put your HTTPS</span>
+<span class="sd">    reverse proxy in front: Telegram reaches only public HTTPS addresses. Proxy headers are</span>
+<span class="sd">    ignored, since the receiver needs no client address, and one worker keeps the order.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">allow_remote</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">allow_remote</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"webhook_allow_remote"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">in</span> <span class="n">_TRUE</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">allow_remote</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">_is_loopback</span><span class="p">(</span><span class="n">host</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"the webhook receiver binds to this machine only (</span><span class="si">{</span><span class="n">WEBHOOK_HOST</span><span class="si">}</span><span class="s2">), not </span><span class="si">{</span><span class="n">host</span><span class="si">!r}</span><span class="s2">, "</span>
+            <span class="s2">"unless webhook_allow_remote is set"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">run</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+        <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">MissingRequirement</span><span class="p">(</span>
+                <span class="n">NAME</span><span class="p">,</span>
+                <span class="s2">"uvicorn, to serve the webhook receiver"</span><span class="p">,</span>
+                <span class="n">fix</span><span class="o">=</span><span class="s2">"pip install 'correspond[server]'"</span><span class="p">,</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+        <span class="n">run</span> <span class="o">=</span> <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span>
+    <span class="n">run</span><span class="p">(</span>
+        <span class="n">app</span> <span class="ow">or</span> <span class="n">webhook_app_from_env</span><span class="p">(),</span>
+        <span class="n">host</span><span class="o">=</span><span class="n">host</span><span class="p">,</span>
+        <span class="n">port</span><span class="o">=</span><span class="n">port</span><span class="p">,</span>
+        <span class="n">workers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">proxy_headers</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_log_key</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -803,7 +1002,8 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"not_found"</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">code</span> <span class="o">==</span> <span class="mi">409</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">ChannelError</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2"> (another getUpdates consumer or a webhook is active for this bot)"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">message</span><span class="si">}</span><span class="s2"> (another getUpdates consumer or a webhook is active for this bot: "</span>
+            <span class="s2">"delete_webhook returns it to polling, or set delivery = webhook to listen to what the receiver stores)"</span><span class="p">,</span>
             <span class="n">kind</span><span class="o">=</span><span class="s2">"unavailable"</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="n">code</span> <span class="o">&gt;=</span> <span class="mi">500</span><span class="p">:</span>
@@ -825,11 +1025,15 @@ window.runMermaid = runMermaid;</script>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">http</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">urllib_http</span><span class="p">,</span>
         <span class="n">log</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">updates</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">run</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">,</span>
+        <span class="n">clock</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time_ns</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">http</span> <span class="o">=</span> <span class="n">http</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">run</span> <span class="o">=</span> <span class="n">run</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clock</span> <span class="o">=</span> <span class="n">clock</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="o">=</span> <span class="n">log</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_updates</span> <span class="o">=</span> <span class="n">updates</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
@@ -839,6 +1043,15 @@ window.runMermaid = runMermaid;</script>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="o">=</span> <span class="n">json_store</span><span class="p">(</span><span class="n">NAME</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">updates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""What the webhook receiver stored, keyed by zero-padded update id (``listen`` reads it when ``delivery`` is ``webhook``)."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_updates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">json_store</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_updates</span> <span class="o">=</span> <span class="n">json_store</span><span class="p">(</span><span class="n">WEBHOOK_KIND</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_updates</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Capabilities</span><span class="p">:</span>
@@ -851,13 +1064,14 @@ window.runMermaid = runMermaid;</script>
             <span class="n">edit</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">react</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">audience</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
+            <span class="n">verify</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">initiate</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">NONE</span><span class="p">,</span>
             <span class="n">reply</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">notify</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
             <span class="n">history_depth</span><span class="o">=</span><span class="n">HistoryDepth</span><span class="o">.</span><span class="n">BUFFER_24H</span><span class="p">,</span>
-            <span class="n">listen_modes</span><span class="o">=</span><span class="p">(</span><span class="s2">"poll"</span><span class="p">,),</span>
+            <span class="n">listen_modes</span><span class="o">=</span><span class="n">DELIVERIES</span><span class="p">,</span>
             <span class="n">native_fields</span><span class="o">=</span><span class="p">(</span><span class="s2">"chat_type"</span><span class="p">,</span> <span class="s2">"chat_title"</span><span class="p">,</span> <span class="s2">"message_thread_id"</span><span class="p">,</span> <span class="s2">"media"</span><span class="p">),</span>
-            <span class="n">grades</span><span class="o">=</span><span class="p">(</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,),</span>
+            <span class="n">grades</span><span class="o">=</span><span class="p">(</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span> <span class="n">Grade</span><span class="o">.</span><span class="n">FORGED</span><span class="p">),</span>
             <span class="n">max_text_length</span><span class="o">=</span><span class="n">MAX_TEXT_CHARS</span><span class="p">,</span>
             <span class="n">reactions_per_message</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
             <span class="n">formats</span><span class="o">=</span><span class="p">(</span><span class="s2">"plain"</span><span class="p">,),</span>
@@ -872,6 +1086,9 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"notify mentions @username in the text: it reaches a member of the chat with a public username, not anyone outside it"</span><span class="p">,</span>
                 <span class="s2">"a title is prepended to the text: Telegram messages have none"</span><span class="p">,</span>
                 <span class="s2">"audience comes from getChat: a public username, the chat type, history visibility; members are never listed"</span><span class="p">,</span>
+                <span class="s2">"delivery = webhook makes listen read what the webhook receiver (mk_webhook_app) stored instead of calling getUpdates; Telegram serves one or the other, so set_webhook stops getUpdates (409) until delete_webhook"</span><span class="p">,</span>
+                <span class="s2">"the webhook receiver stores only requests carrying the secret token, in arrival order (set_webhook asks for one connection at a time); serve_webhook binds it to 127.0.0.1 unless webhook_allow_remote is set; verify grades one delivery by that header: platform when it matches (it proves Telegram sent it, not a signature over the body), forged otherwise"</span><span class="p">,</span>
+                <span class="s2">"listen in webhook mode looks back a day on its first poll, deletes what it passed once a week old, and, when nothing is new, asks getWebhookInfo whether a webhook is set at all; a delivery Telegram repeats arrives twice, with one delivery_id"</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span>
 
@@ -922,7 +1139,13 @@ window.runMermaid = runMermaid;</script>
         <span class="n">retry_after</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"parameters"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"retry_after"</span><span class="p">)</span>
         <span class="k">raise</span> <span class="n">_error</span><span class="p">(</span><span class="n">code</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">retry_after</span><span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">is_self</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_message</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">is_self</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">authenticity</span><span class="p">:</span> <span class="n">Authenticity</span> <span class="o">=</span> <span class="n">_PLATFORM</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
         <span class="n">chat</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"chat"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
         <span class="n">chat_id</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">chat</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
         <span class="n">thread</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message_thread_id"</span><span class="p">)</span> <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"is_topic_message"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
@@ -944,7 +1167,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">is_bot</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">sender</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"is_bot"</span><span class="p">)),</span>
                 <span class="n">is_self</span><span class="o">=</span><span class="n">is_self</span><span class="p">,</span>
             <span class="p">),</span>
-            <span class="n">authenticity</span><span class="o">=</span><span class="n">_PLATFORM</span><span class="p">,</span>
+            <span class="n">authenticity</span><span class="o">=</span><span class="n">authenticity</span><span class="p">,</span>
             <span class="n">sent_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"date"</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">),</span> <span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">),</span>
             <span class="n">edited_at</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"edit_date"</span><span class="p">]),</span> <span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"edit_date"</span><span class="p">)</span>
@@ -1005,31 +1228,95 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">poll</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Updates since ``cursor`` (an update offset), every one logged before it is handed over."""</span>
+<span class="w">        </span><span class="sd">"""Updates since ``cursor``, every one logged before it is handed over.</span>
+
+<span class="sd">        They come from ``getUpdates`` (the cursor is an update offset), or, with ``delivery</span>
+<span class="sd">        = "webhook"`` in the config, from what the webhook receiver stored</span>
+<span class="sd">        (:meth:`_poll_received`).</span>
+<span class="sd">        """</span>
         <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
                 <span class="s2">"listen to one chat"</span><span class="p">,</span>
                 <span class="n">NAME</span><span class="p">,</span>
                 <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"listen to telegram: and route by conversation"</span><span class="p">,),</span>
             <span class="p">)</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">MAX_UPDATES</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">limit</span><span class="p">)))</span> <span class="k">if</span> <span class="n">limit</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delivery</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"webhook"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_poll_received</span><span class="p">(</span><span class="n">cursor</span><span class="p">,</span> <span class="n">count</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cursor</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"a Telegram cursor is an update offset, not </span><span class="si">{</span><span class="n">cursor</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"timeout"</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="s2">"allowed_updates"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">UPDATE_TYPES</span><span class="p">)}</span>
         <span class="k">if</span> <span class="n">cursor</span><span class="p">:</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
-                <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">"a Telegram cursor is an update offset, not </span><span class="si">{</span><span class="n">cursor</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
-                    <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
-                <span class="p">)</span>
             <span class="n">params</span><span class="p">[</span><span class="s2">"offset"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">limit</span><span class="p">:</span>
-            <span class="n">params</span><span class="p">[</span><span class="s2">"limit"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">MAX_UPDATES</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">limit</span><span class="p">)))</span>
-        <span class="n">updates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"getUpdates"</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">count</span><span class="p">:</span>
+            <span class="n">params</span><span class="p">[</span><span class="s2">"limit"</span><span class="p">]</span> <span class="o">=</span> <span class="n">count</span>
+        <span class="n">updates</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"getUpdates"</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[])[:</span> <span class="n">count</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="n">pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="n">u</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">u</span><span class="p">[</span><span class="s2">"update_id"</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="n">updates</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">with_final_cursor</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span> <span class="n">_PLATFORM</span><span class="p">),</span> <span class="n">pairs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">pairs</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_poll_received</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">count</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""What the webhook receiver stored after ``cursor`` (``w&lt;arrival ns&gt;``), in arrival order.</span>
+
+<span class="sd">        A first listen, or one whose cursor is a ``getUpdates`` offset from before the</span>
+<span class="sd">        switch, looks back a day. Updates a listen has passed are deleted once they are a</span>
+<span class="sd">        week old. When nothing is new, ``getWebhookInfo`` is asked whether a webhook is set</span>
+<span class="sd">        at all, so a bot left polling is not mistaken for a quiet one.</span>
+<span class="sd">        """</span>
+        <span class="n">now</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">cursor</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">text</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">_WEBHOOK_CURSOR</span><span class="p">)</span> <span class="ow">and</span> <span class="n">text</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="n">after</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">text</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">text</span> <span class="ow">or</span> <span class="n">text</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+            <span class="n">after</span> <span class="o">=</span> <span class="n">now</span> <span class="o">-</span> <span class="n">WEBHOOK_LOOKBACK_NS</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"a Telegram webhook cursor is </span><span class="si">{</span><span class="n">_WEBHOOK_CURSOR</span><span class="si">}</span><span class="s2">&lt;arrival ns&gt;, not </span><span class="si">{</span><span class="n">cursor</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">received</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="p">[</span><span class="s2">"stamp"</span><span class="p">]),</span> <span class="n">key</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">updates</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">match</span> <span class="o">:=</span> <span class="n">_RECEIVED_KEY_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">stamp</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">received</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">stamp</span> <span class="o">&lt;=</span> <span class="n">after</span> <span class="ow">and</span> <span class="n">stamp</span> <span class="o">&lt;</span> <span class="n">now</span> <span class="o">-</span> <span class="n">WEBHOOK_RETENTION_NS</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">updates</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">pending</span> <span class="o">=</span> <span class="p">[(</span><span class="n">stamp</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">stamp</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">received</span> <span class="k">if</span> <span class="n">stamp</span> <span class="o">&gt;</span> <span class="n">after</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">count</span><span class="p">:</span>
+            <span class="n">pending</span> <span class="o">=</span> <span class="n">pending</span><span class="p">[:</span><span class="n">count</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pending</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_require_webhook</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">with_final_cursor</span><span class="p">([],</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">pairs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">updates</span><span class="p">[</span><span class="n">key</span><span class="p">],</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">_WEBHOOK_CURSOR</span><span class="si">}{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span> <span class="k">for</span> <span class="n">stamp</span><span class="p">,</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">pending</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">with_final_cursor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">(</span><span class="n">pairs</span><span class="p">,</span> <span class="n">_WEBHOOK</span><span class="p">),</span> <span class="n">pairs</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">1</span><span class="p">])</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_require_webhook</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_webhook_state</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"url"</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="s2">"delivery is webhook, but no webhook is set for this bot: "</span>
+                <span class="s2">"run Telegram().set_webhook('https://...'), or set delivery = poll"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_events</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">pairs</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">str</span><span class="p">]],</span> <span class="n">authenticity</span><span class="p">:</span> <span class="n">Authenticity</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""One event per update of a type listen takes, each with the cursor that follows it; every message logged."""</span>
         <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">update</span> <span class="ow">in</span> <span class="n">updates</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">update</span><span class="p">,</span> <span class="n">after</span> <span class="ow">in</span> <span class="n">pairs</span><span class="p">:</span>
             <span class="n">update_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">update</span><span class="p">[</span><span class="s2">"update_id"</span><span class="p">])</span>
             <span class="n">kind</span> <span class="o">=</span> <span class="nb">next</span><span class="p">((</span><span class="n">k</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">UPDATE_TYPES</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">update</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">kind</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="k">continue</span>
-            <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">update</span><span class="p">[</span><span class="n">kind</span><span class="p">])</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">update</span><span class="p">[</span><span class="n">kind</span><span class="p">],</span> <span class="n">authenticity</span><span class="o">=</span><span class="n">authenticity</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">[</span><span class="n">_log_key</span><span class="p">(</span><span class="n">message</span><span class="p">)]</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
             <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                 <span class="n">Event</span><span class="p">(</span>
@@ -1038,14 +1325,130 @@ window.runMermaid = runMermaid;</script>
                     <span class="k">else</span> <span class="s2">"message.created"</span><span class="p">,</span>
                     <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
                     <span class="n">delivery_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"telegram:update-</span><span class="si">{</span><span class="n">update_id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                    <span class="n">cursor</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">update_id</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span>
+                    <span class="n">cursor</span><span class="o">=</span><span class="n">after</span><span class="p">,</span>
                     <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span>
                     <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">"update_id"</span><span class="p">:</span> <span class="n">update_id</span><span class="p">,</span> <span class="s2">"type"</span><span class="p">:</span> <span class="n">kind</span><span class="p">},</span>
                 <span class="p">)</span>
             <span class="p">)</span>
-        <span class="n">final</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">updates</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">"update_id"</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">updates</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="k">return</span> <span class="n">with_final_cursor</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">final</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">events</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_delivery</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">delivery</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"delivery"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"poll"</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">delivery</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">DELIVERIES</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"telegram delivery is one of </span><span class="si">{</span><span class="n">DELIVERIES</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="n">delivery</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">delivery</span>
+
+    <span class="c1"># ------------------------------------------------------------------ webhooks</span>
+
+<div class="viewcode-block" id="Telegram.verify">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.telegram.html#correspond.channels.telegram.Telegram.verify">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">verify</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">headers</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">body</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Authenticity</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``platform`` when the delivery carries the configured ``webhook_secret``, ``forged`` otherwise.</span>
+
+<span class="sd">        The secret token proves Telegram sent the request (only Telegram and this machine</span>
+<span class="sd">        know it); it signs nothing, so the grade is Telegram's own, not ``crypto``.</span>
+<span class="sd">        """</span>
+        <span class="n">secret</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"webhook_secret"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+        <span class="n">lowered</span> <span class="o">=</span> <span class="p">{</span><span class="nb">str</span><span class="p">(</span><span class="n">k</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">():</span> <span class="nb">str</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">headers</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+        <span class="n">received</span> <span class="o">=</span> <span class="n">lowered</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">SECRET_HEADER</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">_secret_matches</span><span class="p">(</span><span class="n">received</span><span class="p">,</span> <span class="n">secret</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Authenticity</span><span class="p">(</span>
+                <span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span>
+                <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">_WEBHOOK</span><span class="o">.</span><span class="n">evidence</span><span class="p">,</span> <span class="s2">"secret_token"</span><span class="p">:</span> <span class="s2">"valid"</span><span class="p">},</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Authenticity</span><span class="p">(</span>
+            <span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">FORGED</span><span class="p">,</span>
+            <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"secret_token"</span><span class="p">:</span> <span class="s2">"mismatch"</span> <span class="k">if</span> <span class="n">received</span> <span class="k">else</span> <span class="s2">"missing"</span><span class="p">},</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_bot_change</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">operation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">plan</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">NAME</span><span class="si">}</span><span class="s2">:"</span><span class="p">,</span>
+            <span class="n">operation</span><span class="o">=</span><span class="n">operation</span><span class="p">,</span>
+            <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">,</span>
+            <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="Telegram.set_webhook">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.telegram.html#correspond.channels.telegram.Telegram.set_webhook">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">set_webhook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Have Telegram POST this bot's updates to ``url`` (HTTPS), with the configured ``webhook_secret``.</span>
+
+<span class="sd">        ``getUpdates`` stops working until :meth:`delete_webhook`; set ``delivery =</span>
+<span class="sd">        "webhook"`` so ``listen`` reads what the receiver stores. The plan reads the</span>
+<span class="sd">        webhook back with ``getWebhookInfo``. A dry run calls nothing and reads no secret.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"https://"</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Telegram delivers webhooks over HTTPS only, not to </span><span class="si">{</span><span class="n">url</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">plan</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"deliver this bot's updates to a webhook"</span><span class="p">,</span>
+            <span class="s2">"request"</span><span class="p">:</span> <span class="s2">"setWebhook"</span><span class="p">,</span>
+            <span class="s2">"url"</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
+            <span class="s2">"allowed_updates"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">UPDATE_TYPES</span><span class="p">),</span>
+            <span class="s2">"max_connections"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="s2">"secret_token"</span><span class="p">:</span> <span class="s2">"the configured webhook_secret"</span><span class="p">,</span>
+            <span class="s2">"consequence"</span><span class="p">:</span> <span class="s2">"getUpdates is refused until delete_webhook; listen needs delivery = webhook"</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot_change</span><span class="p">(</span><span class="s2">"set_webhook"</span><span class="p">,</span> <span class="n">plan</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">secret</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"webhook_secret"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">SECRET_TOKEN_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">secret</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="s2">"webhook_secret must be 1 to 256 characters of A-Z, a-z, 0-9, _ and -"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span>
+            <span class="s2">"setWebhook"</span><span class="p">,</span>
+            <span class="p">{</span>
+                <span class="s2">"url"</span><span class="p">:</span> <span class="n">url</span><span class="p">,</span>
+                <span class="s2">"secret_token"</span><span class="p">:</span> <span class="n">secret</span><span class="p">,</span>
+                <span class="s2">"allowed_updates"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">UPDATE_TYPES</span><span class="p">),</span>
+                <span class="s2">"max_connections"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="p">},</span>
+        <span class="p">)</span>
+        <span class="n">plan</span><span class="p">[</span><span class="s2">"now"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_webhook_state</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot_change</span><span class="p">(</span><span class="s2">"set_webhook"</span><span class="p">,</span> <span class="n">plan</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Telegram.delete_webhook">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.telegram.html#correspond.channels.telegram.Telegram.delete_webhook">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">delete_webhook</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">drop_pending_updates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Stop webhook delivery, so ``getUpdates`` works again; pending updates are kept unless ``drop_pending_updates``."""</span>
+        <span class="n">plan</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"stop delivering this bot's updates to a webhook"</span><span class="p">,</span>
+            <span class="s2">"request"</span><span class="p">:</span> <span class="s2">"deleteWebhook"</span><span class="p">,</span>
+            <span class="s2">"drop_pending_updates"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">drop_pending_updates</span><span class="p">),</span>
+            <span class="s2">"consequence"</span><span class="p">:</span> <span class="s2">"listen needs delivery = poll again"</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot_change</span><span class="p">(</span><span class="s2">"delete_webhook"</span><span class="p">,</span> <span class="n">plan</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"deleteWebhook"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"drop_pending_updates"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">drop_pending_updates</span><span class="p">)})</span>
+        <span class="n">plan</span><span class="p">[</span><span class="s2">"now"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_webhook_state</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bot_change</span><span class="p">(</span><span class="s2">"delete_webhook"</span><span class="p">,</span> <span class="n">plan</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Telegram.webhook_info">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.telegram.html#correspond.channels.telegram.Telegram.webhook_info">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">webhook_info</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Where Telegram delivers this bot's updates now (``getWebhookInfo``): an empty ``url`` means polling."""</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_webhook_state</span><span class="p">()</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_webhook_state</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"getWebhookInfo"</span><span class="p">,</span> <span class="p">{})</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">keep</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"url"</span><span class="p">,</span> <span class="s2">"pending_update_count"</span><span class="p">,</span> <span class="s2">"last_error_date"</span><span class="p">,</span> <span class="s2">"last_error_message"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">info</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keep</span> <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">info</span><span class="p">}</span>
 
 <div class="viewcode-block" id="Telegram.read">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.telegram.html#correspond.channels.telegram.Telegram.read">[docs]</a>

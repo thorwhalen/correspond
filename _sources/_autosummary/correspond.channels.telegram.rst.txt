@@ -4,6 +4,20 @@ correspond.channels.telegram
 .. automodule:: correspond.channels.telegram
 
    
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      SECRET_HEADER
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      mk_webhook_app
+      serve_webhook
+      webhook_app_from_env
+   
    .. rubric:: Classes
 
    .. autosummary::

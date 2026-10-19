@@ -5,17 +5,19 @@ orphan: true
 
 # About this build
 
-This documentation was built on **2026-10-19 11:11 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/654b56195e2680f355e0ddce4d946a00e257d45a"><code>654b561</code></a> on branch <code>main</code>, for **correspond 0.0.18** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-19 11:29 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/d5a67cc55700d92c873fc08310cc6e54b1d1f949"><code>d5a67cc</code></a> on branch <code>main</code>, for **correspond 0.0.19** (from <code>pyproject.toml</code>).
 
-:::{note}
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+:::{warning}
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.19) is behind the latest release on PyPI (0.0.20): `pip install correspond` gives newer code than these docs describe.
 :::
 
 ## Source
 
 | | |
 |---|---|
-| Commit | <a href="https://github.com/thorwhalen/correspond/commit/654b56195e2680f355e0ddce4d946a00e257d45a"><code>654b56195e2680f355e0ddce4d946a00e257d45a</code></a> |
+| Commit | <a href="https://github.com/thorwhalen/correspond/commit/d5a67cc55700d92c873fc08310cc6e54b1d1f949"><code>d5a67cc55700d92c873fc08310cc6e54b1d1f949</code></a> |
 | Branch | <code>main</code> |
 | Tags at this commit | none |
 | Working tree | clean |
@@ -26,15 +28,15 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 | | |
 |---|---|
 | Repository | <code>thorwhalen/correspond</code> |
-| Run | <a href="https://github.com/thorwhalen/correspond/actions/runs/39242679328">39242679328</a> |
+| Run | <a href="https://github.com/thorwhalen/correspond/actions/runs/39244795151">39244795151</a> |
 | Ref | <code>refs/heads/main</code> |
-| Event commit | <code>654b56195e2680f355e0ddce4d946a00e257d45a</code> (in the history of the built commit) |
+| Event commit | <code>d5a67cc55700d92c873fc08310cc6e54b1d1f949</code> (in the history of the built commit) |
 
 ## Tools
 
 | | |
 |---|---|
-| epythet | 0.2.17 |
+| epythet | 0.2.18 |
 | Sphinx | 9.1.0 |
 | docutils | 0.22.4 |
 | Python | 3.12.15 |
@@ -53,14 +55,14 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.18/">0.0.18</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.20/">0.0.20</a>, newer than the documented version (0.0.19).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 654b56195e2680f355e0ddce4d946a00e257d45a
-pip install "epythet==0.2.17"
+git checkout d5a67cc55700d92c873fc08310cc6e54b1d1f949
+pip install "epythet==0.2.18"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 

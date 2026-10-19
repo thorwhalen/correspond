@@ -1,4 +1,4 @@
-> built 2026-10-19 11:11 UTC from 654b561 (main) · correspond 0.0.18. Details: build_info.json
+> built 2026-10-19 11:29 UTC from d5a67cc (main) · correspond 0.0.19. Details: build_info.json
 
 # index.html.md
 
@@ -29,7 +29,7 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 | `email`    | `email:` (the folder), `email:someone@example.org`; either takes `?folder=<name>` (a Gmail label is a folder), and `email:` takes `?from=<address or domain>,...` (a domain as `@example.org`); on Gmail, `?gmail=<search>` adds Gmail’s search syntax; quote such a reference in a shell: `'email:?folder=News'` | read, listen, send (with cc and bcc), audience                                                                                                                                                                                                                        | `imaplib`, `smtplib`                                                            |
 | `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                                                                                                                                                                                                                                                       | send, audience                                                                                                                                                                                                                                                        | `urllib`                                                                        |
 | `macos`    | `macos:`                                                                                                                                                                                                                                                                                                          | send, audience                                                                                                                                                                                                                                                        | `terminal-notifier` or `osascript`                                              |
-| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>`                                                                                                                                                                                                                              | listen, read (what listening logged), send, edit, react, audience                                                                                                                                                                                                     | the Bot API over `urllib`                                                       |
+| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>`                                                                                                                                                                                                                              | listen (`getUpdates`, or a webhook on a server), read (what listening logged), send, edit, react, audience, verify (webhook deliveries)                                                                                                                               | the Bot API over `urllib`                                                       |
 | `webinbox` | `webinbox:<site>`                                                                                                                                                                                                                                                                                                 | read, listen, audience                                                                                                                                                                                                                                                | the ASGI collector below, and `dol` stores                                      |
 | `apprise`  | `apprise:<alias>`                                                                                                                                                                                                                                                                                                 | send, audience                                                                                                                                                                                                                                                        | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`) |
 
@@ -101,7 +101,7 @@ correspond listen github:owner/repo    # issue, comment, review comment and disc
 correspond listen email: --peek        # look without moving the cursor
 ```
 
-Cursors live under the data root, one per reference. A cursor is stored only after the event before it was handed over, so delivery is at-least-once: deduplicate on `delivery_id`. The first listen looks back a day. Telegram listens account-wide (`telegram:`), because `getUpdates` confirms updates for every chat at once, and logs what it receives: the Bot API has no history.
+Cursors live under the data root, one per reference. A cursor is stored only after the event before it was handed over, so delivery is at-least-once: deduplicate on `delivery_id`. The first listen looks back a day. Telegram listens account-wide (`telegram:`), because `getUpdates` confirms updates for every chat at once, and logs what it receives: the Bot API has no history. On a server, Telegram can push instead: install `correspond[server]` and run `serve_webhook()` from `correspond.channels.telegram` behind your HTTPS reverse proxy. It binds `127.0.0.1` (another address only with `webhook_allow_remote`), and the receiver stores nothing that lacks the `webhook_secret`, in arrival order. Call `Telegram().set_webhook("https://...")` (one connection at a time) and set `delivery = "webhook"`, and `listen telegram:` reads what the receiver stored. Telegram serves `getUpdates` or a webhook, never both: `Telegram().delete_webhook()` returns to polling.
 
 ## Configuration
 
@@ -1330,17 +1330,46 @@ at once, which is why listening is account-wide: narrow to one chat when routing
 Senders are `platform`: Telegram authenticated the account, and correspond pulled the
 update from the Bot API itself. The bot token never appears in an error or a plan.
 
+**Webhook delivery**, for a server: [`Telegram.set_webhook()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.Telegram.set_webhook) asks Telegram to POST
+every update, one at a time, to an HTTPS address, carrying the configured
+`webhook_secret` in the `X-Telegram-Bot-Api-Secret-Token` header.
+[`mk_webhook_app()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.mk_webhook_app) is the receiver, an ASGI app that stores each update carrying that
+secret under the data root (`telegram-webhook/`), in the order it arrives; the secret is
+the gate, and nothing without it is stored. [`serve_webhook()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.serve_webhook) runs it (with uvicorn,
+the `server` extra) on `127.0.0.1` behind your own HTTPS reverse proxy, and refuses
+any other address unless `webhook_allow_remote` is set. With `delivery = "webhook"` in
+the config, `listen` reads what the receiver stored instead of calling `getUpdates`:
+Telegram serves one or the other, never both, so while a webhook is set `getUpdates` is
+refused (409), and [`Telegram.delete_webhook()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.Telegram.delete_webhook) returns the bot to polling.
+[`Telegram.verify()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.Telegram.verify) grades one delivery by the same header.
+
 ```pycon
 >>> Telegram().parse_ref("-4001/7").parent.encoded
 'telegram:-4001'
 ```
 
+### Module Attributes
+
+| [`SECRET_HEADER`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.SECRET_HEADER)   | The header Telegram puts the webhook's secret token in.   |
+|------------------------------------------------------------------|-----------------------------------------------------------|
+
+### Functions
+
+| [`mk_webhook_app`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.mk_webhook_app)(\*, secret[, updates, ...])         | The webhook receiver as an ASGI app: Telegram POSTs updates, the app stores them in `updates`.                           |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------|
+| [`serve_webhook`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.serve_webhook)(\*[, host, port, allow_remote, ...]) | Run the receiver (with uvicorn) on `host`, this machine unless `allow_remote`.                                           |
+| [`webhook_app_from_env`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.webhook_app_from_env)()                             | [`mk_webhook_app()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.mk_webhook_app) configured from the settings, for `uvicorn --factory`. |
+
 ### Classes
 
-| [`Telegram`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.Telegram)(\*[, http, log, run])   | A Telegram bot: listen, read the local log, send, edit, react.   |
-|-----------------------------------------------------------------------------------|------------------------------------------------------------------|
+| [`Telegram`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.Telegram)(\*[, http, log, updates, run, clock])   | A Telegram bot: listen, read the local log, send, edit, react.   |
+|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
 
-### *class* correspond.channels.telegram.Telegram(\*, http=<function urllib_http>, log=None, run=<function run>)
+### correspond.channels.telegram.SECRET_HEADER *= 'x-telegram-bot-api-secret-token'*
+
+The header Telegram puts the webhook’s secret token in.
+
+### *class* correspond.channels.telegram.Telegram(\*, http=<function urllib_http>, log=None, updates=None, run=<function run>, clock=<built-in function time_ns>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -1370,6 +1399,13 @@ raises, so the audience resolves to public, defaulted.
 
 A bot’s view of Telegram.
 
+#### delete_webhook(, drop_pending_updates=False, dry_run=False)
+
+Stop webhook delivery, so `getUpdates` works again; pending updates are kept unless `drop_pending_updates`.
+
+* **Return type:**
+  [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
+
 #### edit(ref, message_id, draft, , dry_run=False)
 
 `editMessageText` on one of the bot’s messages.
@@ -1390,7 +1426,11 @@ Every message this bot has received or sent, as JSON, keyed `<chat id>/<message 
 
 #### poll(ref, , cursor=None, limit=None)
 
-Updates since `cursor` (an update offset), every one logged before it is handed over.
+Updates since `cursor`, every one logged before it is handed over.
+
+They come from `getUpdates` (the cursor is an update offset), or, with `delivery
+= "webhook"` in the config, from what the webhook receiver stored
+(`_poll_received()`).
 
 #### prepare(ref, draft)
 
@@ -1419,6 +1459,73 @@ What the log holds for a chat or topic, oldest first.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
+
+#### set_webhook(url, , dry_run=False)
+
+Have Telegram POST this bot’s updates to `url` (HTTPS), with the configured `webhook_secret`.
+
+`getUpdates` stops working until [`delete_webhook()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.Telegram.delete_webhook); set `delivery =
+"webhook"` so `listen` reads what the receiver stores. The plan reads the
+webhook back with `getWebhookInfo`. A dry run calls nothing and reads no secret.
+
+* **Return type:**
+  [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
+
+#### *property* updates *: [MutableMapping](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Any](https://docs.python.org/3/library/typing.html#typing.Any)]*
+
+What the webhook receiver stored, keyed by zero-padded update id (`listen` reads it when `delivery` is `webhook`).
+
+#### verify(headers, body)
+
+`platform` when the delivery carries the configured `webhook_secret`, `forged` otherwise.
+
+The secret token proves Telegram sent the request (only Telegram and this machine
+know it); it signs nothing, so the grade is Telegram’s own, not `crypto`.
+
+* **Return type:**
+  [`Authenticity`](_autosummary/correspond.model.html.md#correspond.model.Authenticity)
+
+#### webhook_info()
+
+Where Telegram delivers this bot’s updates now (`getWebhookInfo`): an empty `url` means polling.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
+
+### correspond.channels.telegram.mk_webhook_app(\*, secret, updates=None, max_body_bytes=1000000, clock=<built-in function time_ns>)
+
+The webhook receiver as an ASGI app: Telegram POSTs updates, the app stores them in `updates`.
+
+A request without `secret` in `X-Telegram-Bot-Api-Secret-Token` is refused (401)
+and nothing is stored: the secret is the only gate, since behind a reverse proxy every
+connection comes from this machine. Each update is stored under
+`<arrival time in ns>-<update id>.json`, so `listen` takes them in the order they
+came, whatever their ids (Telegram restarts them at random after a week without
+updates). One receiver process per bot keeps that order: [`Telegram.set_webhook()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.Telegram.set_webhook)
+asks Telegram for one connection at a time. `updates` defaults to files under the
+data root (`telegram-webhook/`), which `listen` reads when `delivery` is
+`webhook`.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`Awaitable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable)[[`None`](https://docs.python.org/3/builtins/constants.html#None)]]
+
+### correspond.channels.telegram.serve_webhook(, host='127.0.0.1', port=8081, allow_remote=None, app=None, run=None)
+
+Run the receiver (with uvicorn) on `host`, this machine unless `allow_remote`.
+
+`allow_remote` defaults to the `webhook_allow_remote` setting. Put your HTTPS
+reverse proxy in front: Telegram reaches only public HTTPS addresses. Proxy headers are
+ignored, since the receiver needs no client address, and one worker keeps the order.
+
+* **Return type:**
+  [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
+### correspond.channels.telegram.webhook_app_from_env()
+
+[`mk_webhook_app()`](_autosummary/correspond.channels.telegram.html.md#correspond.channels.telegram.mk_webhook_app) configured from the settings, for `uvicorn --factory`.
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`Awaitable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable)[[`None`](https://docs.python.org/3/builtins/constants.html#None)]]
 
 
 # _autosummary/correspond.channels.webinbox.html.md
@@ -3991,7 +4098,7 @@ One value a channel reads: its config key, its environment variable, what it is 
 A `secret` is never read from the config file: it comes from `env`, else (on macOS)
 the Keychain.
 
-### correspond.registry.build_registry(infos=(ChannelInfo(name='github', summary="GitHub issues, pull request conversations and discussions, through the gh CLI (the machine's gh login; correspond holds no token)", factory='correspond.channels.github:GitHub', modules=(), extra=None, binaries=(('gh',),), platforms=(), settings=(Setting(key='webhook_secret', env='GITHUB_WEBHOOK_SECRET', what='the webhook secret, used only to verify deliveries', where='the secret set on the repository or organization webhook (Settings, Webhooks)', secret=True, required=False, default=None),), notes=('log in once with \`gh auth login\` (https://cli.github.com/); check with \`gh auth status\`',), check='', planned=None), ChannelInfo(name='email', summary='Email: IMAP to read and listen, SMTP to send, with the standard library', factory='correspond.channels.mail:Email', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='imap_host', env='CORRESPOND_EMAIL_IMAP_HOST', what='the IMAP server', where="your mail provider's IMAP settings", secret=False, required=True, default=None), Setting(key='imap_port', env='CORRESPOND_EMAIL_IMAP_PORT', what='the IMAP port (TLS)', where='', secret=False, required=False, default='993'), Setting(key='smtp_host', env='CORRESPOND_EMAIL_SMTP_HOST', what='the SMTP server', where="your mail provider's SMTP settings", secret=False, required=True, default=None), Setting(key='smtp_port', env='CORRESPOND_EMAIL_SMTP_PORT', what='the SMTP port: 465 for TLS, 587 for STARTTLS', where='', secret=False, required=False, default='465'), Setting(key='user', env='CORRESPOND_EMAIL_USER', what='the mailbox login, usually its address', where='', secret=False, required=True, default=None), Setting(key='password', env='CORRESPOND_EMAIL_PASSWORD', what='the mailbox password, preferably an app password', where="your mail provider's app-password page (for Gmail: https://myaccount.google.com/apppasswords)", secret=True, required=True, default=None), Setting(key='from_address', env='CORRESPOND_EMAIL_FROM', what='the From address of sends (default: the login)', where='', secret=False, required=False, default=None), Setting(key='folder', env='CORRESPOND_EMAIL_FOLDER', what='the folder read and listened to when a reference names none (?folder=)', where='', secret=False, required=False, default='INBOX'), Setting(key='trusted_authserv_ids', env='CORRESPOND_EMAIL_TRUSTED_AUTHSERV_IDS', what='comma-separated authserv-ids of your own receiving server; only their Authentication-Results can make a sender \`domain\`', where='the topmost Authentication-Results header of a message your provider delivered (for Gmail: mx.google.com)', secret=False, required=False, default=None), Setting(key='own_domains', env='CORRESPOND_EMAIL_OWN_DOMAINS', what="comma-separated mail domains that are your own (and their subdomains); a recipient anywhere else makes an email's audience external", where='', secret=False, required=False, default=None), Setting(key='lists', env='CORRESPOND_EMAIL_LISTS', what='comma-separated mailing-list addresses, or @domain for a whole list server; local parts such as list, all, team, dev, announce and info count as lists anyway', where='', secret=False, required=False, default=None)), notes=(), check='', planned=None), ChannelInfo(name='ntfy', summary='Push notifications through an ntfy server (send only)', factory='correspond.channels.ntfy:Ntfy', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='url', env='NTFY_URL', what='the ntfy server', where='', secret=False, required=False, default='https://ntfy.sh'), Setting(key='topic', env='NTFY_TOPIC', what='the default topic, used by \`ntfy:\` with no topic', where='any long, hard-to-guess string; subscribe to it in the ntfy app (https://ntfy.sh)', secret=True, required=False, default=None), Setting(key='token', env='NTFY_TOKEN', what='an access token, for a server that requires one', where="your ntfy server's account page", secret=True, required=False, default=None), Setting(key='topic_remote', env='CORRESPOND_NTFY_TOPIC_REMOTE', what='an ssh host asked for the default topic when neither the environment nor the Keychain has it', where='', secret=False, required=False, default=None), Setting(key='topic_remote_file', env='CORRESPOND_NTFY_TOPIC_REMOTE_FILE', what='the file on that host holding a NTFY_TOPIC=... line', where='', secret=False, required=False, default=None), Setting(key='denies_anonymous_read', env='CORRESPOND_NTFY_DENIES_ANONYMOUS_READ', what='true when the server denies anonymous reads (its auth-default-access), so only the accounts it grants can read a topic; unset, anyone who knows a topic can', where='', secret=False, required=False, default=None), Setting(key='cache_duration', env='CORRESPOND_NTFY_CACHE_DURATION', what='how long the server keeps a message for subscribers who connect later (its cache-duration)', where='', secret=False, required=False, default='12h')), notes=('anyone who knows an unauthenticated topic can publish to it and read it: treat it as a secret',), check='', planned=None), ChannelInfo(name='macos', summary='Notification Centre banners on this Mac (send only)', factory='correspond.channels.macos:MacOS', modules=(), extra=None, binaries=(('terminal-notifier', 'osascript'),), platforms=('darwin',), settings=(), notes=('terminal-notifier (\`brew install terminal-notifier\`) keeps bodies intact; osascript is the fallback',), check='', planned=None), ChannelInfo(name='telegram', summary='A Telegram bot over the Bot API: listen with getUpdates, read what was logged, send, edit, react', factory='correspond.channels.telegram:Telegram', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='token', env='TELEGRAM_BOT_TOKEN', what='the bot token', where='create a bot with BotFather in Telegram (https://core.telegram.org/bots/tutorial)', secret=True, required=True, default=None), Setting(key='api_url', env='CORRESPOND_TELEGRAM_API_URL', what='the Bot API server', where='', secret=False, required=False, default='https://api.telegram.org')), notes=('a bot can write only to chats that wrote to it first, or groups it was added to', 'privacy mode (on by default) hides group messages that do not address the bot'), check='', planned=None), ChannelInfo(name='webinbox', summary="Reports posted from web pages to correspond's ASGI collector, and a reader over what it stored", factory='correspond.channels.webinbox:WebInbox', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='sites', env='CORRESPOND_WEBINBOX_SITES', what='comma-separated site names the collector accepts', where='', secret=False, required=False, default=None), Setting(key='origins', env='CORRESPOND_WEBINBOX_ORIGINS', what='comma-separated page origins allowed to post, e.g. https://app.example.org', where='', secret=False, required=False, default=None), Setting(key='secret', env='CORRESPOND_WEBINBOX_SECRET', what="the HMAC key shared with the host application's server, which signs its logged-in user (a single site; several sites need CORRESPOND_WEBINBOX_SECRET_<SITE> each)", where='generate one with: python -c "import secrets; print(secrets.token_hex(32))"', secret=True, required=False, default=None), Setting(key='max_age_s', env='CORRESPOND_WEBINBOX_MAX_AGE_S', what='how long a signed identity stays valid, in seconds', where='', secret=False, required=False, default='86400'), Setting(key='rate_per_minute', env='CORRESPOND_WEBINBOX_RATE_PER_MINUTE', what='reports accepted per client per minute, per site', where='', secret=False, required=False, default='10'), Setting(key='burst', env='CORRESPOND_WEBINBOX_BURST', what='reports a client may send in a burst', where='', secret=False, required=False, default='5'), Setting(key='max_body_bytes', env='CORRESPOND_WEBINBOX_MAX_BODY_BYTES', what='the largest request accepted, attachments included', where='', secret=False, required=False, default='5000000'), Setting(key='trusted_proxies', env='CORRESPOND_WEBINBOX_TRUSTED_PROXIES', what='how many reverse proxies of yours stand in front of the collector; the address rate-limited is read that many hops from the right of X-Forwarded-For (0: the connecting address)', where='', secret=False, required=False, default='0')), notes=('serve the collector on localhost behind your own server, e.g. \`uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1\`', 'for a reverse proxy on another host set CORRESPOND_WEBINBOX_TRUSTED_PROXIES (1 for one proxy), or every visitor shares one rate limit; uvicorn already resolves a proxy on 127.0.0.1', "several sites on one collector need a secret each, CORRESPOND_WEBINBOX_SECRET_<SITE> (upper case, - as \_) or the Keychain item correspond-webinbox-secret-<site>, so no site's server can sign for another"), check='correspond.channels.webinbox:requirements_problems', planned=None), ChannelInfo(name='discord', summary='Discord: read and post over REST, listen on the gateway', factory='', modules=(), extra='discord', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/2'), ChannelInfo(name='slack', summary='Slack: Socket Mode or the Events API', factory='', modules=(), extra='slack', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/3'), ChannelInfo(name='signal', summary='Signal through signal-cli-rest-api', factory='', modules=(), extra='signal', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/4'), ChannelInfo(name='apprise', summary='Apprise: send-only notifications to about 155 services, each named by an alias (send only)', factory='correspond.channels.apprise:Apprise', modules=('apprise',), extra='apprise', binaries=(), platforms=(), settings=(Setting(key='config', env='CORRESPOND_APPRISE_CONFIG', what='an Apprise config file (YAML or TEXT); an alias with no URL of its own is used as a tag in it', where='https://pypi.org/project/apprise/ (its configuration-file documentation)', secret=False, required=False, default=None),), notes=('apprise:<alias> sends to the URL in CORRESPOND_APPRISE_URL_<ALIAS> (or the Keychain item correspond-apprise-url-<alias>), else to the URLs tagged <alias> in the config file', "a reference never holds an Apprise URL: the URL carries the service's credentials"), check='', planned=None)), , name='correspond channels')
+### correspond.registry.build_registry(infos=(ChannelInfo(name='github', summary="GitHub issues, pull request conversations and discussions, through the gh CLI (the machine's gh login; correspond holds no token)", factory='correspond.channels.github:GitHub', modules=(), extra=None, binaries=(('gh',),), platforms=(), settings=(Setting(key='webhook_secret', env='GITHUB_WEBHOOK_SECRET', what='the webhook secret, used only to verify deliveries', where='the secret set on the repository or organization webhook (Settings, Webhooks)', secret=True, required=False, default=None),), notes=('log in once with \`gh auth login\` (https://cli.github.com/); check with \`gh auth status\`',), check='', planned=None), ChannelInfo(name='email', summary='Email: IMAP to read and listen, SMTP to send, with the standard library', factory='correspond.channels.mail:Email', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='imap_host', env='CORRESPOND_EMAIL_IMAP_HOST', what='the IMAP server', where="your mail provider's IMAP settings", secret=False, required=True, default=None), Setting(key='imap_port', env='CORRESPOND_EMAIL_IMAP_PORT', what='the IMAP port (TLS)', where='', secret=False, required=False, default='993'), Setting(key='smtp_host', env='CORRESPOND_EMAIL_SMTP_HOST', what='the SMTP server', where="your mail provider's SMTP settings", secret=False, required=True, default=None), Setting(key='smtp_port', env='CORRESPOND_EMAIL_SMTP_PORT', what='the SMTP port: 465 for TLS, 587 for STARTTLS', where='', secret=False, required=False, default='465'), Setting(key='user', env='CORRESPOND_EMAIL_USER', what='the mailbox login, usually its address', where='', secret=False, required=True, default=None), Setting(key='password', env='CORRESPOND_EMAIL_PASSWORD', what='the mailbox password, preferably an app password', where="your mail provider's app-password page (for Gmail: https://myaccount.google.com/apppasswords)", secret=True, required=True, default=None), Setting(key='from_address', env='CORRESPOND_EMAIL_FROM', what='the From address of sends (default: the login)', where='', secret=False, required=False, default=None), Setting(key='folder', env='CORRESPOND_EMAIL_FOLDER', what='the folder read and listened to when a reference names none (?folder=)', where='', secret=False, required=False, default='INBOX'), Setting(key='trusted_authserv_ids', env='CORRESPOND_EMAIL_TRUSTED_AUTHSERV_IDS', what='comma-separated authserv-ids of your own receiving server; only their Authentication-Results can make a sender \`domain\`', where='the topmost Authentication-Results header of a message your provider delivered (for Gmail: mx.google.com)', secret=False, required=False, default=None), Setting(key='own_domains', env='CORRESPOND_EMAIL_OWN_DOMAINS', what="comma-separated mail domains that are your own (and their subdomains); a recipient anywhere else makes an email's audience external", where='', secret=False, required=False, default=None), Setting(key='lists', env='CORRESPOND_EMAIL_LISTS', what='comma-separated mailing-list addresses, or @domain for a whole list server; local parts such as list, all, team, dev, announce and info count as lists anyway', where='', secret=False, required=False, default=None)), notes=(), check='', planned=None), ChannelInfo(name='ntfy', summary='Push notifications through an ntfy server (send only)', factory='correspond.channels.ntfy:Ntfy', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='url', env='NTFY_URL', what='the ntfy server', where='', secret=False, required=False, default='https://ntfy.sh'), Setting(key='topic', env='NTFY_TOPIC', what='the default topic, used by \`ntfy:\` with no topic', where='any long, hard-to-guess string; subscribe to it in the ntfy app (https://ntfy.sh)', secret=True, required=False, default=None), Setting(key='token', env='NTFY_TOKEN', what='an access token, for a server that requires one', where="your ntfy server's account page", secret=True, required=False, default=None), Setting(key='topic_remote', env='CORRESPOND_NTFY_TOPIC_REMOTE', what='an ssh host asked for the default topic when neither the environment nor the Keychain has it', where='', secret=False, required=False, default=None), Setting(key='topic_remote_file', env='CORRESPOND_NTFY_TOPIC_REMOTE_FILE', what='the file on that host holding a NTFY_TOPIC=... line', where='', secret=False, required=False, default=None), Setting(key='denies_anonymous_read', env='CORRESPOND_NTFY_DENIES_ANONYMOUS_READ', what='true when the server denies anonymous reads (its auth-default-access), so only the accounts it grants can read a topic; unset, anyone who knows a topic can', where='', secret=False, required=False, default=None), Setting(key='cache_duration', env='CORRESPOND_NTFY_CACHE_DURATION', what='how long the server keeps a message for subscribers who connect later (its cache-duration)', where='', secret=False, required=False, default='12h')), notes=('anyone who knows an unauthenticated topic can publish to it and read it: treat it as a secret',), check='', planned=None), ChannelInfo(name='macos', summary='Notification Centre banners on this Mac (send only)', factory='correspond.channels.macos:MacOS', modules=(), extra=None, binaries=(('terminal-notifier', 'osascript'),), platforms=('darwin',), settings=(), notes=('terminal-notifier (\`brew install terminal-notifier\`) keeps bodies intact; osascript is the fallback',), check='', planned=None), ChannelInfo(name='telegram', summary='A Telegram bot over the Bot API: listen with getUpdates or a webhook, read what was logged, send, edit, react', factory='correspond.channels.telegram:Telegram', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='token', env='TELEGRAM_BOT_TOKEN', what='the bot token', where='create a bot with BotFather in Telegram (https://core.telegram.org/bots/tutorial)', secret=True, required=True, default=None), Setting(key='api_url', env='CORRESPOND_TELEGRAM_API_URL', what='the Bot API server', where='', secret=False, required=False, default='https://api.telegram.org'), Setting(key='delivery', env='CORRESPOND_TELEGRAM_DELIVERY', what='where listen takes updates from: poll (getUpdates) or webhook (what the webhook receiver stored); Telegram serves one or the other', where='', secret=False, required=False, default='poll'), Setting(key='webhook_secret', env='CORRESPOND_TELEGRAM_WEBHOOK_SECRET', what='the secret token Telegram sends with every webhook delivery (1-256 of A-Z, a-z, 0-9, \_ and -)', where='generate one with: python -c "import secrets; print(secrets.token_urlsafe(32))"', secret=True, required=False, default=None), Setting(key='webhook_allow_remote', env='CORRESPOND_TELEGRAM_WEBHOOK_ALLOW_REMOTE', what='true to let serve_webhook bind the webhook receiver to an address other machines reach (it binds 127.0.0.1 otherwise; put your HTTPS reverse proxy in front)', where='', secret=False, required=False, default='false')), notes=('a bot can write only to chats that wrote to it first, or groups it was added to', 'privacy mode (on by default) hides group messages that do not address the bot', "webhook delivery on a server: install correspond[server], run serve_webhook() from correspond.channels.telegram (127.0.0.1:8081, one worker) behind your HTTPS reverse proxy, call Telegram().set_webhook('https://...'), and set delivery = webhook"), check='', planned=None), ChannelInfo(name='webinbox', summary="Reports posted from web pages to correspond's ASGI collector, and a reader over what it stored", factory='correspond.channels.webinbox:WebInbox', modules=(), extra=None, binaries=(), platforms=(), settings=(Setting(key='sites', env='CORRESPOND_WEBINBOX_SITES', what='comma-separated site names the collector accepts', where='', secret=False, required=False, default=None), Setting(key='origins', env='CORRESPOND_WEBINBOX_ORIGINS', what='comma-separated page origins allowed to post, e.g. https://app.example.org', where='', secret=False, required=False, default=None), Setting(key='secret', env='CORRESPOND_WEBINBOX_SECRET', what="the HMAC key shared with the host application's server, which signs its logged-in user (a single site; several sites need CORRESPOND_WEBINBOX_SECRET_<SITE> each)", where='generate one with: python -c "import secrets; print(secrets.token_hex(32))"', secret=True, required=False, default=None), Setting(key='max_age_s', env='CORRESPOND_WEBINBOX_MAX_AGE_S', what='how long a signed identity stays valid, in seconds', where='', secret=False, required=False, default='86400'), Setting(key='rate_per_minute', env='CORRESPOND_WEBINBOX_RATE_PER_MINUTE', what='reports accepted per client per minute, per site', where='', secret=False, required=False, default='10'), Setting(key='burst', env='CORRESPOND_WEBINBOX_BURST', what='reports a client may send in a burst', where='', secret=False, required=False, default='5'), Setting(key='max_body_bytes', env='CORRESPOND_WEBINBOX_MAX_BODY_BYTES', what='the largest request accepted, attachments included', where='', secret=False, required=False, default='5000000'), Setting(key='trusted_proxies', env='CORRESPOND_WEBINBOX_TRUSTED_PROXIES', what='how many reverse proxies of yours stand in front of the collector; the address rate-limited is read that many hops from the right of X-Forwarded-For (0: the connecting address)', where='', secret=False, required=False, default='0')), notes=('serve the collector on localhost behind your own server, e.g. \`uvicorn --factory correspond.channels.webinbox:app_from_env --host 127.0.0.1\`', 'for a reverse proxy on another host set CORRESPOND_WEBINBOX_TRUSTED_PROXIES (1 for one proxy), or every visitor shares one rate limit; uvicorn already resolves a proxy on 127.0.0.1', "several sites on one collector need a secret each, CORRESPOND_WEBINBOX_SECRET_<SITE> (upper case, - as \_) or the Keychain item correspond-webinbox-secret-<site>, so no site's server can sign for another"), check='correspond.channels.webinbox:requirements_problems', planned=None), ChannelInfo(name='discord', summary='Discord: read and post over REST, listen on the gateway', factory='', modules=(), extra='discord', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/2'), ChannelInfo(name='slack', summary='Slack: Socket Mode or the Events API', factory='', modules=(), extra='slack', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/3'), ChannelInfo(name='signal', summary='Signal through signal-cli-rest-api', factory='', modules=(), extra='signal', binaries=(), platforms=(), settings=(), notes=(), check='', planned='https://github.com/thorwhalen/correspond/issues/4'), ChannelInfo(name='apprise', summary='Apprise: send-only notifications to about 155 services, each named by an alias (send only)', factory='correspond.channels.apprise:Apprise', modules=('apprise',), extra='apprise', binaries=(), platforms=(), settings=(Setting(key='config', env='CORRESPOND_APPRISE_CONFIG', what='an Apprise config file (YAML or TEXT); an alias with no URL of its own is used as a tag in it', where='https://pypi.org/project/apprise/ (its configuration-file documentation)', secret=False, required=False, default=None),), notes=('apprise:<alias> sends to the URL in CORRESPOND_APPRISE_URL_<ALIAS> (or the Keychain item correspond-apprise-url-<alias>), else to the URLs tagged <alias> in the config file', "a reference never holds an Apprise URL: the URL carries the service's credentials"), check='', planned=None)), , name='correspond channels')
 
 A fresh `xdol.Registry` with a lazy entry for every built channel whose optional modules import.
 
@@ -4748,16 +4855,18 @@ Remove labels (comma-separated; a label name may not itself contain a comma) fro
 
 # About this build
 
-This documentation was built on **2026-10-19 11:11 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/654b56195e2680f355e0ddce4d946a00e257d45a"><code>654b561</code></a> on branch <code>main</code>, for **correspond 0.0.18** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-19 11:29 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/d5a67cc55700d92c873fc08310cc6e54b1d1f949"><code>d5a67cc</code></a> on branch <code>main</code>, for **correspond 0.0.19** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.19) is behind the latest release on PyPI (0.0.20): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/654b56195e2680f355e0ddce4d946a00e257d45a"><code>654b56195e2680f355e0ddce4d946a00e257d45a</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/d5a67cc55700d92c873fc08310cc6e54b1d1f949"><code>d5a67cc55700d92c873fc08310cc6e54b1d1f949</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -4768,15 +4877,15 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39242679328">39242679328</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39244795151">39244795151</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>654b56195e2680f355e0ddce4d946a00e257d45a</code> (in the history of the built commit)  |
+| Event commit | <code>d5a67cc55700d92c873fc08310cc6e54b1d1f949</code> (in the history of the built commit)  |
 
 ## Tools
 
 |          |         |
 |----------|---------|
-| epythet  | 0.2.17  |
+| epythet  | 0.2.18  |
 | Sphinx   | 9.1.0   |
 | docutils | 0.22.4  |
 | Python   | 3.12.15 |
@@ -4795,14 +4904,14 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.18/">0.0.18</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.20/">0.0.20</a>, newer than the documented version (0.0.19).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 654b56195e2680f355e0ddce4d946a00e257d45a
-pip install "epythet==0.2.17"
+git checkout d5a67cc55700d92c873fc08310cc6e54b1d1f949
+pip install "epythet==0.2.18"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 
