@@ -5,6 +5,12 @@ References:
 - ``email:``: the whole folder (``INBOX`` unless configured), which is what ``listen`` watches.
 - ``email:<address>``: the correspondence with one address: its messages in the folder,
   and sends to it.
+- ``?folder=<name>`` after either picks the folder for this reference alone, so one process
+  reads several (Gmail serves labels as folders: ``email:?folder=Newsletters/AI``).
+  ``?from=<sender>,<sender>`` on ``email:`` keeps the messages from any of several senders,
+  each an address or a whole domain (``@example.org``). Both together:
+  ``email:?folder=News&from=ada@example.org,@example.net``. A value is percent-encoded
+  where it has a space, ``&``, ``?`` or ``%`` (``email:?folder=%5BGmail%5D/All%20Mail``).
 
 Message ids are ``Message-ID`` headers, angle brackets included. A draft's ``reply_to`` is
 one, and the send carries ``In-Reply-To`` and ``References``. Reading never marks a message
@@ -19,10 +25,13 @@ sender (not every server strips those), so a result recorded lower down fails sa
 
 >>> Email().parse_ref("Ada@Example.org").encoded
 'email:ada@example.org'
+>>> Email().parse_ref("?from=@Example.NET,ada@example.org&folder=News/AI").encoded
+'email:?folder=News/AI&from=@example.net,ada@example.org'
 """
 
 from __future__ import annotations
 
+import base64
 import hashlib
 import imaplib
 import re
@@ -31,7 +40,7 @@ import ssl
 import subprocess
 from collections.abc import Callable, Iterable, Iterator
 from contextlib import contextmanager
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 from email import policy
 from email.message import EmailMessage
@@ -39,6 +48,7 @@ from email.parser import BytesParser
 from email.utils import formatdate, getaddresses, make_msgid, parsedate_to_datetime
 from html.parser import HTMLParser
 from typing import Any
+from urllib.parse import quote, unquote
 
 from correspond.errors import ChannelError, InvalidRef
 from correspond.model import (
@@ -69,6 +79,15 @@ ADDRESS_RE = re.compile(
     r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$"
 )
 MESSAGE_ID_RE = re.compile(r"^<[^<>\s]+@[^<>\s]+>$")
+DOMAIN_RE = re.compile(
+    r"^@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$"
+)
+#: The keys a reference takes after ``?``, in their canonical order.
+REF_KEYS = ("folder", "from")
+#: A mailbox name already in modified UTF-7: printable ASCII, every ``&`` opening ``&-`` or a base64 run.
+_ENCODED_MAILBOX_RE = re.compile(r"^(?:[\x20-\x25\x27-\x7e]|&-|&[A-Za-z0-9+,]+-)*$")
+#: Characters a folder name keeps unescaped in a canonical reference.
+_FOLDER_SAFE = "/[]._-+:@!$'()*,;="
 #: Words that, as a part of an address's local part (``dev-team@``), mark it as a possible mailing list.
 LIST_LOCAL_PARTS = ("list", "all", "team", "dev", "announce", "info")
 _LOCAL_PART_SPLIT = re.compile(r"[-._+]")
@@ -95,6 +114,108 @@ _MONTHS = (
 
 def _quote(text: str) -> str:
     return '"' + text.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def _mailbox(name: str) -> str:
+    """``name`` as IMAP says it on the wire: modified UTF-7 (RFC 3501 5.1.3).
+
+    A name already in that form (ASCII, each ``&`` opening a ``&...-`` run) is kept, so a
+    folder configured the way the server lists it still works.
+
+    >>> _mailbox("News/AI"), _mailbox("Énergie"), _mailbox("R&D"), _mailbox("&AMk-nergie")
+    ('News/AI', '&AMk-nergie', 'R&-D', '&AMk-nergie')
+    """
+    if _ENCODED_MAILBOX_RE.match(name):
+        return name
+    out, pending = [], []
+
+    def flush():
+        if pending:
+            raw = "".join(pending).encode("utf-16-be")
+            out.append(
+                "&"
+                + base64.b64encode(raw).decode("ascii").rstrip("=").replace("/", ",")
+                + "-"
+            )
+            pending.clear()
+
+    for char in name:
+        if "\x20" <= char <= "\x7e":
+            flush()
+            out.append("&-" if char == "&" else char)
+        else:
+            pending.append(char)
+    flush()
+    return "".join(out)
+
+
+@dataclass(frozen=True)
+class _Scope:
+    """What an email reference selects: an address (or none, the folder), a folder, senders."""
+
+    address: str = ""
+    folder: str | None = None
+    senders: tuple[str, ...] = ()
+
+    @property
+    def encoded(self) -> str:
+        query = []
+        if self.folder is not None:
+            query.append(f"folder={quote(self.folder, safe=_FOLDER_SAFE)}")
+        if self.senders:
+            query.append(f"from={','.join(self.senders)}")
+        return self.address + ("?" + "&".join(query) if query else "")
+
+    def keeps(self, sender: str) -> bool:
+        """Whether a message from ``sender`` is in scope (IMAP's ``FROM`` is a substring match)."""
+        wanted = self.senders or ((self.address,) if self.address else ())
+        sender = sender.lower()
+        return not wanted or any(
+            sender.endswith(w) if w.startswith("@") else sender == w for w in wanted
+        )
+
+
+def _scope(id: str) -> _Scope:
+    """Parse an email reference's id; :class:`InvalidRef` says what is wrong.
+
+    >>> _scope("ada@example.org?folder=inbox")
+    _Scope(address='ada@example.org', folder='INBOX', senders=())
+    """
+    address, _, query = id.partition("?")
+    if address and not ADDRESS_RE.match(address):
+        raise InvalidRef(
+            f"email references are email: (the folder) or email:<address>, not email:{id}"
+        )
+    fields: dict[str, str] = {}
+    for item in query.split("&") if query else ():
+        key, equals, raw = item.partition("=")
+        if key not in REF_KEYS or not equals:
+            raise InvalidRef(
+                f"an email reference takes ?folder=<name> and ?from=<senders>, not {item!r} (in email:{id})"
+            )
+        if key in fields:
+            raise InvalidRef(f"{key} is given twice in email:{id}")
+        text = unquote(raw)
+        if not text.strip() or any(ord(c) < 0x20 or c == "\x7f" for c in text):
+            raise InvalidRef(f"{key} is empty or holds a control character in email:{id}")
+        fields[key] = text
+    folder = fields.get("folder")
+    if folder is not None and folder.upper() == "INBOX":
+        folder = "INBOX"  # the one case-insensitive name (RFC 3501)
+    senders: tuple[str, ...] = ()
+    if "from" in fields:
+        if address:
+            raise InvalidRef(
+                f"email:{address} already names the sender; ?from= goes on email: (in email:{id})"
+            )
+        names = [part.strip().lower() for part in fields["from"].split(",")]
+        bad = [n for n in names if not (ADDRESS_RE.match(n) or DOMAIN_RE.match(n))]
+        if bad:
+            raise InvalidRef(
+                f"?from= takes addresses or domains (@example.org), not {', '.join(bad) or 'an empty name'}"
+            )
+        senders = tuple(sorted(set(names)))
+    return _Scope(address=address.lower(), folder=folder, senders=senders)
 
 
 def _imap_date(moment: datetime) -> str:
@@ -294,7 +415,7 @@ class Email:
 
     @property
     def capabilities(self) -> Capabilities:
-        """Read and listen to one folder; send with threading headers."""
+        """Read and listen to a folder per reference; send with threading headers."""
         return Capabilities(
             channel=NAME,
             read=Support.FULL,
@@ -323,7 +444,8 @@ class Email:
                 "list_post",
             ),
             notes=(
-                "read and listen look at one folder (INBOX by default); your own sent mail is in another",
+                "read and listen look at one folder: the reference's ?folder= (a Gmail label is a folder), else the configured one (INBOX by default); your own sent mail is in another",
+                "?from= on email: keeps the messages from any of several addresses or domains (@example.org): one IMAP SEARCH per sender, then an exact check of each From, since IMAP matches FROM as a substring (so a limit can return fewer)",
                 "listen polls by UID; IMAP IDLE is not used",
                 "priority sets Importance and X-Priority, which mail clients may ignore",
                 "native html is the HTML part when plain text won as the body (an HTML body is in body only); list_id, list_unsubscribe and list_post are the List-* headers when present",
@@ -332,15 +454,16 @@ class Email:
         )
 
     def parse_ref(self, id: str) -> ConversationRef:
-        """``""`` for the folder, or an address."""
-        folder = ConversationRef(channel=NAME, id="", kind="folder")
-        if id == "":
-            return folder
-        if not ADDRESS_RE.match(id):
-            raise InvalidRef(
-                f"email references are email: (the folder) or email:<address>, not email:{id}"
-            )
-        return ConversationRef(channel=NAME, id=id.lower(), kind="address", parent=folder)
+        """``""`` for the folder, or an address; either may add ``?folder=`` (and the folder ``?from=``)."""
+        scope = _scope(id or "")
+        folder = ConversationRef(
+            channel=NAME, id=replace(scope, address="", senders=()).encoded, kind="folder"
+        )
+        if not scope.address:
+            return replace(folder, id=scope.encoded)
+        return ConversationRef(
+            channel=NAME, id=scope.encoded, kind="address", parent=folder
+        )
 
     # ---------------------------------------------------------------- connections
 
@@ -460,7 +583,7 @@ class Email:
 
     @staticmethod
     def _select(conn: Any, folder: str) -> tuple[str, int | None]:
-        typ, data = conn.select(_quote(folder), readonly=True)
+        typ, data = conn.select(_quote(_mailbox(folder)), readonly=True)
         if typ != "OK":
             raise ChannelError(
                 f"the folder {folder!r} could not be opened: {data!r}", kind="not_found"
@@ -577,13 +700,24 @@ class Email:
             },
         )
 
-    def _context(self) -> tuple[str, str, set[str]]:
+    def _context(self, scope: _Scope) -> tuple[str, str, set[str]]:
+        """``(folder, user, trusted authserv-ids)``: the reference's folder, else the configured one."""
         user = value(NAME, "user") or ""
         return (
-            value(NAME, "folder") or "INBOX",
+            scope.folder or value(NAME, "folder") or "INBOX",
             user,
             _csv(value(NAME, "trusted_authserv_ids")),
         )
+
+    def _search_scope(self, conn: Any, scope: _Scope, criteria: list[str]) -> list[int]:
+        """UIDs matching ``criteria`` from the scope's senders: one ``SEARCH`` per sender, merged."""
+        senders = scope.senders or ((scope.address,) if scope.address else ())
+        if not senders:
+            return self._search(conn, criteria or ["ALL"])
+        found: set[int] = set()
+        for sender in senders:
+            found.update(self._search(conn, [*criteria, "FROM", _quote(sender)]))
+        return sorted(found)
 
     def read(
         self,
@@ -592,26 +726,29 @@ class Email:
         since: datetime | None = None,
         limit: int | None = None,
     ) -> list[Message]:
-        """Messages in the folder (from ``ref``'s address, if it has one), oldest first; never marked seen."""
-        folder, user, trusted = self._context()
-        criteria = ["FROM", _quote(ref.id)] if ref.id else ["ALL"]
-        if since is not None:
-            criteria += ["SINCE", _imap_date(since)]
+        """Messages in the reference's folder (from its address or senders, if it names any), oldest first; never marked seen."""
+        scope = _scope(ref.id)
+        folder, user, trusted = self._context(scope)
+        criteria = ["SINCE", _imap_date(since)] if since is not None else []
         with self._imap() as conn:
             self._select(conn, folder)
-            uids = self._search(conn, criteria)[-(limit or DEFAULT_READ_LIMIT) :]
+            uids = self._search_scope(conn, scope, criteria)[
+                -(limit or DEFAULT_READ_LIMIT) :
+            ]
             fetched = self._fetch(conn, uids)
         messages = [
             self._message(uid, raw, folder=folder, user=user, trusted=trusted)
             for uid, raw in fetched
         ]
-        return window(messages, since=since, limit=limit)
+        kept = [m for m in messages if scope.keeps(m.author.native_id)]
+        return window(kept, since=since, limit=limit)
 
     def poll(
         self, ref: ConversationRef, *, cursor: str | None = None, limit: int | None = None
     ):
         """New messages since ``cursor`` (``<uidvalidity>:<uid>``); a first poll, or a changed UIDVALIDITY, looks back a day."""
-        folder, user, trusted = self._context()
+        scope = _scope(ref.id)
+        folder, user, trusted = self._context(scope)
         seen_validity, _, seen_uid = (cursor or "").partition(":")
         with self._imap() as conn:
             validity, uidnext = self._select(conn, folder)
@@ -623,35 +760,38 @@ class Email:
                     "SINCE",
                     _imap_date(datetime.now(timezone.utc) - LISTEN_LOOKBACK),
                 ]
-            if ref.id:
-                criteria += ["FROM", _quote(ref.id)]
             # "n:*" always includes the highest UID, even when it is below n.
             uids = [
-                u for u in self._search(conn, criteria) if not resume or u > int(seen_uid)
+                u
+                for u in self._search_scope(conn, scope, criteria)
+                if not resume or u > int(seen_uid)
             ]
             truncated = bool(limit) and len(uids) > limit
             if limit:
                 uids = uids[:limit]
             fetched = self._fetch(conn, uids)
-        events = [
-            Event(
-                kind="message.created",
-                channel=NAME,
-                delivery_id=f"email:{folder}:{validity}:{uid}",
-                cursor=f"{validity}:{uid}",
-                message=self._message(
-                    uid, raw, folder=folder, user=user, trusted=trusted
-                ),
-                payload={"folder": folder, "uid": uid},
+        events = []
+        for uid, raw in fetched:
+            message = self._message(uid, raw, folder=folder, user=user, trusted=trusted)
+            if not scope.keeps(message.author.native_id):
+                continue  # FROM matched a substring of another sender
+            events.append(
+                Event(
+                    kind="message.created",
+                    channel=NAME,
+                    delivery_id=f"email:{folder}:{validity}:{uid}",
+                    cursor=f"{validity}:{uid}",
+                    message=message,
+                    payload={"folder": folder, "uid": uid},
+                )
             )
-            for uid, raw in fetched
-        ]
+        # Every UID up to the last one fetched has been looked at, delivered or not, so a
+        # cut list resumes after it, and a sender filtered out cannot stall the cursor.
         final = None
-        if not truncated:
-            if uids:
-                final = f"{validity}:{uids[-1]}"
-            elif not resume and uidnext:
-                final = f"{validity}:{uidnext - 1}"
+        if uids:
+            final = f"{validity}:{uids[-1]}"
+        elif not resume and uidnext:
+            final = f"{validity}:{uidnext - 1}"
         return with_final_cursor(events, final)
 
     def audience(self, ref: ConversationRef, *, draft: Draft | None = None) -> Audience:
@@ -666,12 +806,13 @@ class Email:
         class of its own, so moving it to Cc changes the hash. Every email is pushed to its
         recipients, can be forwarded, and cannot be recalled.
         """
-        if not ref.id:
+        to = _scope(ref.id).address
+        if not to:
             return Audience.unknown(
                 ref.encoded, "email: is the folder, not a correspondence: name an address"
             )
         if draft is not None and draft.notify:
-            draft, _ = _with_notify(ref.id, draft)  # the Cc a send will really carry
+            draft, _ = _with_notify(to, draft)  # the Cc a send will really carry
         copies = {"cc": draft.cc if draft else (), "bcc": draft.bcc if draft else ()}
         malformed = [
             a for a in (*copies["cc"], *copies["bcc"]) if not ADDRESS_RE.match(a)
@@ -681,11 +822,10 @@ class Email:
                 ref.encoded, f"not an email address: {', '.join(malformed)}"
             )
         # Exact addresses: a local part may be case-sensitive, and SMTP receives each as given.
-        recipients = list(dict.fromkeys((ref.id, *copies["cc"], *copies["bcc"])))
+        recipients = list(dict.fromkeys((to, *copies["cc"], *copies["bcc"])))
         own, lists = _csv(value(NAME, "own_domains")), _csv(value(NAME, "lists"))
         evidence = [
-            f"to {ref.id}"
-            + "".join(f"; {k} {', '.join(v)}" for k, v in copies.items() if v)
+            f"to {to}" + "".join(f"; {k} {', '.join(v)}" for k, v in copies.items() if v)
         ]
         evidence.append(
             f"own domains: {', '.join(sorted(own))}"
@@ -737,7 +877,7 @@ class Email:
                 f"notify on email takes addresses, not: {', '.join(malformed)}",
                 kind="validation",
             )
-        return _with_notify(ref.id or "", draft)[0]
+        return _with_notify(_scope(ref.id).address, draft)[0]
 
     def send(
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
@@ -748,7 +888,8 @@ class Email:
         added to Cc (and so leaves Bcc, which would hide it); the plan lists it under
         ``cc_added``.
         """
-        if not ref.id:
+        to = _scope(ref.id).address
+        if not to:
             raise ChannelError("send to an address: email:<address>", kind="validation")
         cc_before = draft.cc
         draft = self.prepare(ref, draft)
@@ -768,7 +909,7 @@ class Email:
         message = EmailMessage()
         try:
             message["From"] = sender
-            message["To"] = ref.id
+            message["To"] = to
             if draft.cc:
                 message["Cc"] = ", ".join(draft.cc)
             if draft.title:
@@ -790,7 +931,7 @@ class Email:
         plan = {
             "action": "send an email",
             "from": sender,
-            "to": ref.id,
+            "to": to,
             "cc": ", ".join(draft.cc) or None,
             "bcc": ", ".join(draft.bcc) or None,
             "subject": draft.title,
@@ -807,7 +948,7 @@ class Email:
             )
         with self._smtp() as server:
             if draft.bcc:  # never in a header: only the envelope names them
-                server.send_message(message, to_addrs=[ref.id, *draft.cc, *draft.bcc])
+                server.send_message(message, to_addrs=[to, *draft.cc, *draft.bcc])
             else:
                 server.send_message(message)
         return SendResult(
