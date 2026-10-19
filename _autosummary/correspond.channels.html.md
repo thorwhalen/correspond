@@ -10,6 +10,7 @@ that channel.
 
 | [`apprise`](correspond.channels.apprise.html.md#module-correspond.channels.apprise)   | Apprise: send-only notifications to the long tail of services (about 155), each named by an alias.   |
 |-----------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------|
+| [`discord`](correspond.channels.discord.html.md#module-correspond.channels.discord)   | Discord: a bot reading and posting in channels over REST, through discorddol.                        |
 | [`gdrive`](correspond.channels.gdrive.html.md#module-correspond.channels.gdrive)     | Google Drive: a shared folder, read only, where files that a conversation announces arrive.          |
 | [`github`](correspond.channels.github.html.md#module-correspond.channels.github)     | GitHub: issues, pull request conversations and discussions, through the `gh` CLI.                    |
 | [`macos`](correspond.channels.macos.html.md#module-correspond.channels.macos)       | macOS Notification Centre: a banner on this Mac (send only).                                         |

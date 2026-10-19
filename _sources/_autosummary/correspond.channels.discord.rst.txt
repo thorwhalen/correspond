@@ -1,0 +1,12 @@
+correspond.channels.discord
+===========================
+
+.. automodule:: correspond.channels.discord
+
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Discord
+   

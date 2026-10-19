@@ -11,6 +11,7 @@ correspond.channels
    :recursive:
 
    apprise
+   discord
    gdrive
    github
    macos

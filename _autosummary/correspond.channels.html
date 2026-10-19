@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=a11416ff"></script>
+    <script src="../_static/documentation_options.js?v=96ec9c95"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.21" />
+  <meta name="docsearch:version" content="0.0.22" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -324,6 +324,7 @@
 <li class="toctree-l2"><a class="reference internal" href="correspond.channel.html">correspond.channel</a></li>
 <li class="toctree-l2 current active has-children"><a aria-current="page" class="current reference internal" href="#">correspond.channels</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
 <li class="toctree-l3"><a class="reference internal" href="correspond.channels.apprise.html">correspond.channels.apprise</a></li>
+<li class="toctree-l3"><a class="reference internal" href="correspond.channels.discord.html">correspond.channels.discord</a></li>
 <li class="toctree-l3"><a class="reference internal" href="correspond.channels.gdrive.html">correspond.channels.gdrive</a></li>
 <li class="toctree-l3"><a class="reference internal" href="correspond.channels.github.html">correspond.channels.github</a></li>
 <li class="toctree-l3"><a class="reference internal" href="correspond.channels.macos.html">correspond.channels.macos</a></li>
@@ -424,25 +425,28 @@ that channel.</p>
 <tr class="row-odd"><td><p><a class="reference internal" href="correspond.channels.apprise.html#module-correspond.channels.apprise" title="correspond.channels.apprise"><code class="xref py py-obj docutils literal notranslate"><span class="pre">apprise</span></code></a></p></td>
 <td><p>Apprise: send-only notifications to the long tail of services (about 155), each named by an alias.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="correspond.channels.gdrive.html#module-correspond.channels.gdrive" title="correspond.channels.gdrive"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gdrive</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="correspond.channels.discord.html#module-correspond.channels.discord" title="correspond.channels.discord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">discord</span></code></a></p></td>
+<td><p>Discord: a bot reading and posting in channels over REST, through discorddol.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="correspond.channels.gdrive.html#module-correspond.channels.gdrive" title="correspond.channels.gdrive"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gdrive</span></code></a></p></td>
 <td><p>Google Drive: a shared folder, read only, where files that a conversation announces arrive.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="correspond.channels.github.html#module-correspond.channels.github" title="correspond.channels.github"><code class="xref py py-obj docutils literal notranslate"><span class="pre">github</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="correspond.channels.github.html#module-correspond.channels.github" title="correspond.channels.github"><code class="xref py py-obj docutils literal notranslate"><span class="pre">github</span></code></a></p></td>
 <td><p>GitHub: issues, pull request conversations and discussions, through the <code class="docutils literal notranslate"><span class="pre">gh</span></code> CLI.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="correspond.channels.macos.html#module-correspond.channels.macos" title="correspond.channels.macos"><code class="xref py py-obj docutils literal notranslate"><span class="pre">macos</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="correspond.channels.macos.html#module-correspond.channels.macos" title="correspond.channels.macos"><code class="xref py py-obj docutils literal notranslate"><span class="pre">macos</span></code></a></p></td>
 <td><p>macOS Notification Centre: a banner on this Mac (send only).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="correspond.channels.mail.html#module-correspond.channels.mail" title="correspond.channels.mail"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mail</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="correspond.channels.mail.html#module-correspond.channels.mail" title="correspond.channels.mail"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mail</span></code></a></p></td>
 <td><p>Email: IMAP to read and listen, SMTP to send, with the standard library.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="correspond.channels.ntfy.html#module-correspond.channels.ntfy" title="correspond.channels.ntfy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ntfy</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="correspond.channels.ntfy.html#module-correspond.channels.ntfy" title="correspond.channels.ntfy"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ntfy</span></code></a></p></td>
 <td><p>ntfy: push notifications to a phone or a desktop through an ntfy server (send only).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="correspond.channels.telegram.html#module-correspond.channels.telegram" title="correspond.channels.telegram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">telegram</span></code></a></p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="correspond.channels.telegram.html#module-correspond.channels.telegram" title="correspond.channels.telegram"><code class="xref py py-obj docutils literal notranslate"><span class="pre">telegram</span></code></a></p></td>
 <td><p>Telegram: a bot over the Bot API, with the standard library.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="correspond.channels.webinbox.html#module-correspond.channels.webinbox" title="correspond.channels.webinbox"><code class="xref py py-obj docutils literal notranslate"><span class="pre">webinbox</span></code></a></p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="correspond.channels.webinbox.html#module-correspond.channels.webinbox" title="correspond.channels.webinbox"><code class="xref py py-obj docutils literal notranslate"><span class="pre">webinbox</span></code></a></p></td>
 <td><p>The web inbox: a small ASGI collector web pages post reports to, and the channel that reads them.</p></td>
 </tr>
 </tbody>

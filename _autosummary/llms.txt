@@ -10,6 +10,7 @@
 - [correspond.channel](correspond.channel.html.md): Serve listeners as a Claude Code channel: new messages pushed into a running session, replies throug...
 - [correspond.channels](correspond.channels.html.md): The built-in channel adapters, one module each.
 - [correspond.channels.apprise](correspond.channels.apprise.html.md): Apprise: send-only notifications to the long tail of services (about 155), each named by an alias.
+- [correspond.channels.discord](correspond.channels.discord.html.md): Discord: a bot reading and posting in channels over REST, through discorddol.
 - [correspond.channels.gdrive](correspond.channels.gdrive.html.md): Google Drive: a shared folder, read only, where files that a conversation announces arrive.
 - [correspond.channels.github](correspond.channels.github.html.md): GitHub: issues, pull request conversations and discussions, through the &#96;gh&#96; CLI.
 - [correspond.channels.macos](correspond.channels.macos.html.md): macOS Notification Centre: a banner on this Mac (send only).
