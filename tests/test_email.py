@@ -790,8 +790,12 @@ def test_listening_with_a_gmail_search(monkeypatch):
 
 def test_the_gmail_key_is_canonical_and_last():
     email = Email()
-    ref = email.parse_ref("?gmail=%20from:digest%20newer_than:2d%20&folder=News")
-    assert ref.encoded == "email:?folder=News&gmail=from:digest%20newer_than:2d"
+    ref = email.parse_ref("?gmail=%20from:digest%20%20newer_than:2d+&folder=News")
+    assert ref.encoded == "email:?folder=News&gmail=from:digest+newer_than:2d"
+    plus = email.parse_ref("?gmail=%2Bunicorn+it's")
+    assert plus.encoded == "email:?gmail=%2Bunicorn+it%27s", (
+        "a plus kept, a quote escaped"
+    )
     assert email.parse_ref(ref.id).encoded == ref.encoded
     assert email.parse_ref("?folder=News&from=a@example.org").encoded == (
         "email:?folder=News&from=a@example.org"
@@ -799,3 +803,44 @@ def test_the_gmail_key_is_canonical_and_last():
     for bad in ("?gmail=", "?gmail=%20", "?gmail=a&gmail=b"):
         with pytest.raises(correspond.InvalidRef):
             email.parse_ref(bad)
+
+
+def test_a_gmail_search_with_quotes_and_backslashes_is_escaped_on_the_wire(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    imap = _gmail_box()
+    correspond.read(
+        'email:?gmail="AI+weekly"%5Cx', registry={"email": Email(imap=lambda: imap)}
+    )
+    search = next(c for c in imap.commands if c[0] == "SEARCH")
+    assert search[1:] == ("X-GM-RAW", '"\\"AI weekly\\"\\\\x"')
+
+
+@pytest.mark.parametrize(
+    "reply, supported",
+    [(("OK", [b"imap4rev1 x-gm-ext-1"]), True), (("NO", [b"X-GM-EXT-1"]), False)],
+)
+def test_the_gmail_capability_is_read_without_case_and_only_from_an_ok_reply(
+    monkeypatch, reply, supported
+):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    imap = _gmail_box()
+    imap.capability = lambda: reply
+    registry = {"email": Email(imap=lambda: imap)}
+    if supported:
+        assert correspond.read("email:?gmail=AI", registry=registry)
+    else:
+        with pytest.raises(correspond.NotSupported):
+            correspond.read("email:?gmail=AI", registry=registry)
+
+
+def test_a_search_gmail_refuses_is_a_validation_error(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    imap = _gmail_box()
+
+    def refuse(command, *args):
+        raise imaplib.IMAP4.error("UID SEARCH command error: BAD [b'Invalid Arguments']")
+
+    imap.uid = refuse
+    with pytest.raises(ChannelError) as caught:
+        correspond.read("email:?gmail=bad(", registry={"email": Email(imap=lambda: imap)})
+    assert caught.value.kind == "validation"
