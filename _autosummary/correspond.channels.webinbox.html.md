@@ -173,13 +173,13 @@ What a host application’s server gives its page for the logged-in user; the pa
 
 The environment variable holding one site’s own secret.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> site_secret_env("example-site")
 'CORRESPOND_WEBINBOX_SECRET_EXAMPLE_SITE'
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### correspond.channels.webinbox.verify_identity(identity, , site, now)
 

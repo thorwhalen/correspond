@@ -118,7 +118,7 @@ JSON-ready (without the loader).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* correspond.model.Audience(\*, ref, scope, readers=(), complete=False, classes=(), external=None, retractable=False, durability=(), widening=(), as_of=<factory>, evidence=(), defaulted=False)
+### *class* correspond.model.Audience(, ref, scope, readers=(), complete=False, classes=(), external=None, retractable=False, durability=(), widening=(), as_of=\_now(), evidence=(), defaulted=False)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -185,7 +185,7 @@ The audience nobody could compute: public, incomplete, every durability and wide
 * **Return type:**
   [`Audience`](#correspond.model.Audience)
 
-### *class* correspond.model.Authenticity(\*, grade, evidence=<factory>)
+### *class* correspond.model.Authenticity(, grade, evidence=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -353,7 +353,7 @@ readers (email notifications), an edit history anyone who reads can see.
 * **Type:**
   What a send leaves behind
 
-### *class* correspond.model.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>, notify=())
+### *class* correspond.model.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=dict(), notify=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -400,7 +400,7 @@ existed – it always had.
 
 What an [`Event`](#correspond.model.Event) reports.
 
-### *class* correspond.model.Event(\*, kind, channel, delivery_id, cursor=None, message=None, payload=<factory>)
+### *class* correspond.model.Event(, kind, channel, delivery_id, cursor=None, message=None, payload=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -449,7 +449,7 @@ Bases: [`StrEnum`](https://docs.python.org/3/library/enum.html#enum.StrEnum)
 
 How far back `read` sees: all history, a 24-hour buffer, only what correspond has seen since it was linked or started listening, or nothing.
 
-### *class* correspond.model.Message(\*, id, conversation, author, authenticity, sent_at, text, body=None, body_format='plain', attachments=(), reply_to=None, thread_root=None, edited_at=None, url=None, native=<factory>, raw=None)
+### *class* correspond.model.Message(, id, conversation, author, authenticity, sent_at, text, body=None, body_format='plain', attachments=(), reply_to=None, thread_root=None, edited_at=None, url=None, native=dict(), raw=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -489,7 +489,7 @@ The widest class of reader a conversation can reach.
 - `org`: an organisation or workspace (a private organisation repository).
 - `public`: anyone. What an unknown audience resolves to.
 
-### *class* correspond.model.SendResult(\*, ok, channel, conversation, operation='send', dry_run=False, message_id=None, url=None, account=None, plan=<factory>, error=None, error_kind=None, retryable=False, retry_after=None)
+### *class* correspond.model.SendResult(, ok, channel, conversation, operation='send', dry_run=False, message_id=None, url=None, account=None, plan=dict(), error=None, error_kind=None, retryable=False, retry_after=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -530,22 +530,22 @@ How a readership can grow after a send.
 
 ISO 8601 in UTC with a `Z` suffix; a naive datetime is taken to be UTC.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
-
 ```pycon
 >>> format_time(datetime(2026, 9, 11, 12, 30, tzinfo=timezone.utc))
 '2026-09-11T12:30:00Z'
 ```
 
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 ### correspond.model.parse_time(value)
 
 The inverse of [`format_time()`](#correspond.model.format_time); also accepts offsets and datetimes. Naive means UTC.
-
-* **Return type:**
-  [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ```pycon
 >>> parse_time("2026-09-11T12:30:00Z") == datetime(2026, 9, 11, 12, 30, tzinfo=timezone.utc)
 True
 ```
+
+* **Return type:**
+  [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime) | [`None`](https://docs.python.org/3/builtins/constants.html#None)

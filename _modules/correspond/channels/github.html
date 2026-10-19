@@ -31,6 +31,7 @@
 <link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../../_static/epythet.css?v=c6155191" />
   
@@ -40,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=f0357c94"></script>
+    <script src="../../../_static/documentation_options.js?v=c7cdf6fe"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.15" />
+  <meta name="docsearch:version" content="0.0.16" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -721,10 +722,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">References:</span>
 
 <span class="sd">- ``github:owner/repo``: the repository. ``read`` lists recent open issues and pull</span>
-<span class="sd">  requests, ``listen`` polls its issue and comment activity, ``send`` opens an issue (a</span>
-<span class="sd">  title is required).</span>
+<span class="sd">  requests, ``listen`` polls its issue, comment, review comment and discussion activity,</span>
+<span class="sd">  ``send`` opens an issue (a title is required), or a discussion when ``Draft.native``</span>
+<span class="sd">  names a ``category``.</span>
 <span class="sd">- ``github:owner/repo#N``: an issue, a pull request, or a discussion. GitHub numbers the</span>
-<span class="sd">  three in one sequence; correspond asks which. ``label`` and ``unlabel`` work on an issue</span>
+<span class="sd">  three in one sequence; correspond asks which. Reading or listening to a pull request</span>
+<span class="sd">  includes its review comments on the diff, each threaded under the comment that opened</span>
+<span class="sd">  its thread (``reply_to``), and a reply to one of them joins that thread.</span>
+<span class="sd">  ``label`` and ``unlabel`` work on an issue</span>
 <span class="sd">  or pull request only: GitHub discussions have categories, not labels. ``close`` and</span>
 <span class="sd">  ``reopen`` work on all three: an issue or pull request through ``PATCH .../issues/N``,</span>
 <span class="sd">  a discussion through GraphQL ``closeDiscussion`` / ``reopenDiscussion``. Each kind</span>
@@ -735,10 +740,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">Opening an issue takes ``Draft.native`` keys ``labels``, ``assignees`` and ``milestone``,</span>
 <span class="sd">set in the creating request so watchers are notified once. GitHub silently drops an</span>
 <span class="sd">assignee who cannot be assigned, so the plan reports what the created issue actually</span>
-<span class="sd">carries (``landed``) and what did not stick (``not_applied``).</span>
+<span class="sd">carries (``landed``) and what did not stick (``not_applied``). ``Draft.native``</span>
+<span class="sd">``category`` (a discussion category's name or slug) opens a discussion instead, through</span>
+<span class="sd">GraphQL ``createDiscussion``; it takes none of the issue fields.</span>
 
 <span class="sd">Message ids match the anchors in GitHub's own URLs: ``issue-N`` (the opening post of issue</span>
-<span class="sd">or pull request N), ``issuecomment-ID``, ``discussion-N``, ``discussioncomment-ID``.</span>
+<span class="sd">or pull request N), ``issuecomment-ID``, ``discussion_rID`` (a review comment on a pull</span>
+<span class="sd">request's diff), ``discussion-N``, ``discussioncomment-ID``.</span>
 
 <span class="sd">Messages read through the API are ``platform`` (GitHub authenticated the account), with the</span>
 <span class="sd">author's ``author_association`` (``OWNER``, ``MEMBER``, ``CONTRIBUTOR``, ``NONE``, …) as</span>
@@ -760,6 +768,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">hmac</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">itertools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
@@ -816,7 +825,8 @@ window.runMermaid = runMermaid;</script>
     <span class="sa">r</span><span class="s2">"^(?P&lt;owner&gt;[A-Za-z0-9][A-Za-z0-9-]{0,38})/(?P&lt;repo&gt;[A-Za-z0-9._-]{1,100})(?:#(?P&lt;number&gt;[1-9][0-9]{0,9}))?$"</span>
 <span class="p">)</span>
 <span class="n">MESSAGE_ID_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
-    <span class="sa">r</span><span class="s2">"^(?P&lt;kind&gt;issue|issuecomment|discussion|discussioncomment)-(?P&lt;id&gt;[1-9][0-9]{0,19})$"</span>
+    <span class="sa">r</span><span class="s2">"^(?:(?P&lt;kind&gt;issue|issuecomment|discussion|discussioncomment)-|(?P&lt;review&gt;discussion_r))"</span>
+    <span class="sa">r</span><span class="s2">"(?P&lt;id&gt;[1-9][0-9]{0,19})$"</span>
 <span class="p">)</span>
 <span class="n">NODE_ID_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^(?P&lt;kind&gt;D|DC)_[A-Za-z0-9_-]{4,}$"</span><span class="p">)</span>
 <span class="n">REACTIONS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"+1"</span><span class="p">,</span> <span class="s2">"-1"</span><span class="p">,</span> <span class="s2">"laugh"</span><span class="p">,</span> <span class="s2">"confused"</span><span class="p">,</span> <span class="s2">"heart"</span><span class="p">,</span> <span class="s2">"hooray"</span><span class="p">,</span> <span class="s2">"rocket"</span><span class="p">,</span> <span class="s2">"eyes"</span><span class="p">)</span>
@@ -842,7 +852,10 @@ window.runMermaid = runMermaid;</script>
 <span class="p">)</span>
 <span class="n">MAX_TITLE_CHARS</span> <span class="o">=</span> <span class="mi">256</span>
 <span class="c1">#: The ``Draft.native`` keys opening an issue takes (``POST /repos/{owner}/{repo}/issues``).</span>
-<span class="n">DRAFT_FIELDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"labels"</span><span class="p">,</span> <span class="s2">"assignees"</span><span class="p">,</span> <span class="s2">"milestone"</span><span class="p">)</span>
+<span class="n">ISSUE_FIELDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"labels"</span><span class="p">,</span> <span class="s2">"assignees"</span><span class="p">,</span> <span class="s2">"milestone"</span><span class="p">)</span>
+<span class="c1">#: The ``Draft.native`` key that opens a discussion instead: its category's name or slug.</span>
+<span class="n">DISCUSSION_FIELD</span> <span class="o">=</span> <span class="s2">"category"</span>
+<span class="n">DRAFT_FIELDS</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">ISSUE_FIELDS</span><span class="p">,</span> <span class="n">DISCUSSION_FIELD</span><span class="p">)</span>
 <span class="c1">#: An issue's ``state_reason`` when closing it.</span>
 <span class="n">CLOSE_REASONS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"completed"</span><span class="p">,</span> <span class="s2">"not_planned"</span><span class="p">,</span> <span class="s2">"duplicate"</span><span class="p">)</span>
 <span class="c1">#: A discussion's close reasons (GraphQL ``DiscussionCloseReason``, lower-cased here).</span>
@@ -869,9 +882,24 @@ window.runMermaid = runMermaid;</script>
     <span class="o">+</span> <span class="n">_ACTOR</span>
     <span class="o">+</span> <span class="s2">" comments(first:100,after:$after){pageInfo{hasNextPage endCursor} nodes{"</span>
     <span class="o">+</span> <span class="n">_POST</span>
-    <span class="o">+</span> <span class="s2">" replies(first:100){totalCount nodes{"</span>
+    <span class="o">+</span> <span class="s2">" replies(last:100){totalCount nodes{"</span>
     <span class="o">+</span> <span class="n">_POST</span>
     <span class="o">+</span> <span class="s2">"}}}}}}}"</span>
+<span class="p">)</span>
+<span class="c1">#: Discussions by latest activity, newest first: GitHub has no ``since`` for discussions.</span>
+<span class="n">DISCUSSION_ACTIVITY_QUERY</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"query($owner:String!,$name:String!,$after:String){"</span>
+    <span class="s2">"repository(owner:$owner,name:$name){discussions(first:100,after:$after,"</span>
+    <span class="s2">"orderBy:{field:UPDATED_AT,direction:DESC}){pageInfo{hasNextPage endCursor} nodes{number updatedAt}}}}"</span>
+<span class="p">)</span>
+<span class="n">DISCUSSION_CATEGORIES_QUERY</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"query($owner:String!,$name:String!){repository(owner:$owner,name:$name){"</span>
+    <span class="s2">"id hasDiscussionsEnabled discussionCategories(first:100){nodes{id name slug}}}}"</span>
+<span class="p">)</span>
+<span class="n">CREATE_DISCUSSION</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"mutation($repositoryId:ID!,$categoryId:ID!,$title:String!,$body:String!){"</span>
+    <span class="s2">"createDiscussion(input:{repositoryId:$repositoryId,categoryId:$categoryId,title:$title,body:$body})"</span>
+    <span class="s2">"{discussion{number url category</span><span class="si">{name}</span><span class="s2">}}}"</span>
 <span class="p">)</span>
 <span class="n">DISCUSSION_ID_QUERY</span> <span class="o">=</span> <span class="p">(</span>
     <span class="s2">"query($owner:String!,$name:String!,$number:Int!){"</span>
@@ -930,6 +958,7 @@ window.runMermaid = runMermaid;</script>
 <span class="n">PUBLIC_WIDENING</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"forks"</span><span class="p">,</span> <span class="s2">"visibility_flip"</span><span class="p">)</span>
 <span class="n">PRIVATE_WIDENING</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"joiners_read_history"</span><span class="p">,</span> <span class="s2">"forks"</span><span class="p">,</span> <span class="s2">"visibility_flip"</span><span class="p">)</span>
 <span class="n">_REFUSED_LISTING</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"permission"</span><span class="p">,</span> <span class="s2">"not_found"</span><span class="p">)</span>
+<span class="n">_log</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="signature">
@@ -1201,21 +1230,31 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"node_id"</span><span class="p">,</span>
                 <span class="s2">"minimized"</span><span class="p">,</span>
                 <span class="s2">"replies_truncated"</span><span class="p">,</span>
+                <span class="s2">"path"</span><span class="p">,</span>
+                <span class="s2">"line"</span><span class="p">,</span>
+                <span class="s2">"original_line"</span><span class="p">,</span>
+                <span class="s2">"review_id"</span><span class="p">,</span>
+                <span class="s2">"diff_hunk"</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">rate_limits</span><span class="o">=</span><span class="p">(</span>
                 <span class="s2">"80 content-creating requests per minute and 500 per hour (secondary limits)"</span><span class="p">,</span>
                 <span class="s2">"5,000 API requests per hour for a user token"</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
-                <span class="s2">"listen polls issue and comment activity of a repository or of one issue; discussions are read but not listened to"</span><span class="p">,</span>
-                <span class="s2">"reply_to works in discussions only; issue and pull request comments are flat"</span><span class="p">,</span>
+                <span class="s2">"listen polls the issue, comment, pull request review comment and discussion activity of a repository, or of one issue, pull request or discussion"</span><span class="p">,</span>
+                <span class="s2">"listen is partial on a repository's discussions: GitHub has no since filter for them, so listen walks them by GitHub's latest-activity order and reads each one active since the cursor (one extra call each); a post GitHub does not count as activity on its discussion (seen on some replies) is not delivered there, and only a comment's latest 100 replies are seen; listening to one discussion reads it whole on every poll and misses none of its posts"</span><span class="p">,</span>
+                <span class="s2">"a gh token that may not read discussions listens to a repository's issues, comments and review comments only (logged as a warning)"</span><span class="p">,</span>
+                <span class="s2">"GitHub moves a review comment's updated_at when its review is submitted and when a push outdates it, so listen reports those as message.updated with the text unchanged, and a review comment carries no edited_at"</span><span class="p">,</span>
+                <span class="s2">"reply_to works in discussions and in pull request review threads (a reply to a reply joins its thread); issue and pull request conversation comments are flat"</span><span class="p">,</span>
+                <span class="s2">"reading or listening to a pull request includes its review comments on the diff (message ids discussion_rID, with path, line, original_line, review_id and diff_hunk in native); reviews' own summary bodies are not read"</span><span class="p">,</span>
+                <span class="s2">"a discussion comment's replies are its latest 100 (native replies_truncated when there are more)"</span><span class="p">,</span>
                 <span class="s2">"notify mentions each handle the text lacks; GitHub notifies a mentioned user or team who can see the repository, so on a private one a non-member is not reached"</span><span class="p">,</span>
-                <span class="s2">"pull request review comments on diffs are not read"</span><span class="p">,</span>
                 <span class="s2">"listen can miss a change only when more than 2,000 issues or comments change within the same second"</span><span class="p">,</span>
                 <span class="s2">"audience is the repository's readership and never complete (installed apps, webhooks and security managers cannot be listed); a 404 or 403 resolves to public"</span><span class="p">,</span>
                 <span class="s2">"label and unlabel apply to issues and pull requests, not discussions (GitHub discussions have categories, not labels); listen does not yet surface who applied a label"</span><span class="p">,</span>
                 <span class="s2">"label and unlabel each cost one extra read (confirming the issue exists, to tell a label the issue never had apart from a missing issue) before their writes"</span><span class="p">,</span>
                 <span class="s2">"native draft fields (labels, assignees, milestone) apply when opening an issue; on a comment they are refused"</span><span class="p">,</span>
+                <span class="s2">"native category (a discussion category's name or slug) on github:owner/repo opens a discussion instead of an issue; it takes no other native field, and a dry run does not check that the category exists"</span><span class="p">,</span>
                 <span class="s2">"close and reopen apply to issues, pull requests and discussions; close reasons are per kind: an issue takes completed, not_planned or duplicate, a discussion resolved, outdated or duplicate (completed is accepted as resolved), a pull request none"</span><span class="p">,</span>
                 <span class="s2">"a dry run of close or reopen reads nothing, so it plans for whichever kind the number turns out to be, and a reason the kind does not take is refused only by the real call"</span><span class="p">,</span>
             <span class="p">),</span>
@@ -1461,10 +1500,53 @@ window.runMermaid = runMermaid;</script>
         <span class="k">if</span> <span class="n">since</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">path</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"?since=</span><span class="si">{</span><span class="n">format_time</span><span class="p">(</span><span class="n">since</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
         <span class="n">comments</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-        <span class="k">return</span> <span class="p">[</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_opening</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">issue</span><span class="p">),</span>
             <span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_comment</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">comments</span><span class="p">),</span>
         <span class="p">]</span>
+        <span class="k">if</span> <span class="n">issue</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pull_request"</span><span class="p">):</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments"</span>
+            <span class="k">if</span> <span class="n">since</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">path</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"?since=</span><span class="si">{</span><span class="n">format_time</span><span class="p">(</span><span class="n">since</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+            <span class="n">reviews</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">messages</span> <span class="o">+=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_review_comment</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">reviews</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">messages</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_review_comment</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">conversation</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A comment on a pull request's diff; a reply names its thread's first comment.</span>
+
+<span class="sd">        GitHub threads review comments one level deep: every reply's ``in_reply_to_id``</span>
+<span class="sd">        is the comment that opened the thread, so it is both ``reply_to`` and</span>
+<span class="sd">        ``thread_root``. ``edited_at`` stays unset: GitHub moves a review comment's</span>
+<span class="sd">        ``updated_at`` when its review is submitted and when a push outdates it, so it does</span>
+<span class="sd">        not say the text changed. ``line`` is ``None`` once a push outdates the comment;</span>
+<span class="sd">        ``original_line`` is where it was written.</span>
+<span class="sd">        """</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"in_reply_to_id"</span><span class="p">)</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"discussion_r</span><span class="si">{</span><span class="n">parent</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">parent</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">Message</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"discussion_r</span><span class="si">{</span><span class="n">comment</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">conversation</span><span class="p">,</span>
+            <span class="n">author</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_identity</span><span class="p">(</span><span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">),</span> <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"author_association"</span><span class="p">)),</span>
+            <span class="n">authenticity</span><span class="o">=</span><span class="n">_PLATFORM</span><span class="p">,</span>
+            <span class="n">sent_at</span><span class="o">=</span><span class="n">parse_time</span><span class="p">(</span><span class="n">comment</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]),</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"body"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+            <span class="n">body</span><span class="o">=</span><span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"body"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+            <span class="n">body_format</span><span class="o">=</span><span class="s2">"markdown"</span><span class="p">,</span>
+            <span class="n">url</span><span class="o">=</span><span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"html_url"</span><span class="p">),</span>
+            <span class="n">reply_to</span><span class="o">=</span><span class="n">root</span><span class="p">,</span>
+            <span class="n">thread_root</span><span class="o">=</span><span class="n">root</span><span class="p">,</span>
+            <span class="n">native</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"path"</span><span class="p">:</span> <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"path"</span><span class="p">),</span>
+                <span class="s2">"line"</span><span class="p">:</span> <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"line"</span><span class="p">),</span>
+                <span class="s2">"original_line"</span><span class="p">:</span> <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"original_line"</span><span class="p">),</span>
+                <span class="s2">"review_id"</span><span class="p">:</span> <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pull_request_review_id"</span><span class="p">),</span>
+                <span class="s2">"diff_hunk"</span><span class="p">:</span> <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"diff_hunk"</span><span class="p">),</span>
+            <span class="p">},</span>
+            <span class="n">raw</span><span class="o">=</span><span class="n">comment</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_read_repository</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">since</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
@@ -1776,7 +1858,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">poll</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Issue and comment activity since ``cursor``; a first poll looks back a day.</span>
+<span class="w">        </span><span class="sd">"""Issue, comment, review comment and discussion activity since ``cursor``; a first poll looks back a day.</span>
 
 <span class="sd">        The cursor is opaque JSON: the update time the next poll starts from (``t``; GitHub's</span>
 <span class="sd">        ``since`` includes it), the creation time from which an issue still counts as new</span>
@@ -1785,6 +1867,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        within one second can make a poll repeat itself, and a list cut short (more than</span>
 <span class="sd">        ``MAX_PAGES`` pages changed) is resumed from where it was cut. A bare ISO time is also</span>
 <span class="sd">        accepted as a cursor.</span>
+
+<span class="sd">        Discussions have no ``since`` filter, so a repository's are walked newest activity</span>
+<span class="sd">        first until a page reaches one older than the cursor (:meth:`_active_discussions`),</span>
+<span class="sd">        and each active one is read whole; one discussion is read whole on every poll. A</span>
+<span class="sd">        discussion counts as new when it was created at or after the cursor, and a</span>
+<span class="sd">        discussion comment is ``message.updated`` when it was created before it.</span>
 <span class="sd">        """</span>
         <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parts</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
         <span class="n">position</span><span class="p">,</span> <span class="n">openings_from</span><span class="p">,</span> <span class="n">seen</span> <span class="o">=</span> <span class="n">_decode_cursor</span><span class="p">(</span>
@@ -1795,31 +1883,53 @@ window.runMermaid = runMermaid;</script>
         <span class="n">repository</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="p">(</span>
             <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"repository"</span>
         <span class="p">)</span>
+        <span class="n">reviews</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">reviews_cut</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">discussions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># The server's Date on each list read: every list is complete up to its own, so the</span>
+        <span class="c1"># earliest is how far this poll can vouch for, whatever is read after it.</span>
+        <span class="n">dates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">if</span> <span class="n">number</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">comments</span><span class="p">,</span> <span class="n">comments_cut</span><span class="p">,</span> <span class="n">date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/comments?sort=updated&amp;direction=asc&amp;since=</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
-            <span class="n">issues</span><span class="p">,</span> <span class="n">issues_cut</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
+            <span class="n">issues</span><span class="p">,</span> <span class="n">issues_cut</span><span class="p">,</span> <span class="n">issues_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues?state=all&amp;sort=updated&amp;direction=asc&amp;since=</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
+            <span class="n">reviews</span><span class="p">,</span> <span class="n">reviews_cut</span><span class="p">,</span> <span class="n">reviews_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/comments?sort=updated&amp;direction=asc&amp;since=</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+            <span class="n">dates</span> <span class="o">+=</span> <span class="p">[</span><span class="n">date</span><span class="p">,</span> <span class="n">issues_date</span><span class="p">,</span> <span class="n">reviews_date</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">discussions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_discussions</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_REFUSED_LISTING</span><span class="p">:</span>
+                    <span class="k">raise</span>
+                <span class="c1"># A token that may not read discussions still listens to everything else.</span>
+                <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"listen </span><span class="si">%s</span><span class="s2">: discussions skipped: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">probe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">allow</span><span class="o">=</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="mi">410</span><span class="p">))</span>
-            <span class="k">if</span> <span class="n">probe</span><span class="o">.</span><span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">400</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">_discussion_id</span><span class="p">(</span>
-                    <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span>
-                <span class="p">)</span>  <span class="c1"># raises not_found when it is not one</span>
-                <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
-                    <span class="s2">"listen to a discussion"</span><span class="p">,</span>
-                    <span class="n">NAME</span><span class="p">,</span>
-                    <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="sa">f</span><span class="s2">"read github:</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2"> again later"</span><span class="p">,),</span>
-                <span class="p">)</span>
-            <span class="c1"># One issue's comments come ordered by id, not by update, so a cut list would not be</span>
-            <span class="c1"># complete up to any time: read every page (an issue holds a bounded number).</span>
-            <span class="n">comments</span><span class="p">,</span> <span class="n">comments_cut</span><span class="p">,</span> <span class="n">date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments?since=</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="p">)</span>
             <span class="n">issues</span><span class="p">,</span> <span class="n">issues_cut</span> <span class="o">=</span> <span class="p">[],</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="n">probe</span><span class="o">.</span><span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">400</span><span class="p">:</span>
+                <span class="c1"># Not an issue: read as a discussion, which raises not_found when it is not one.</span>
+                <span class="n">comments</span><span class="p">,</span> <span class="n">comments_cut</span> <span class="o">=</span> <span class="p">[],</span> <span class="kc">False</span>
+                <span class="n">dates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">probe</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"date"</span><span class="p">))</span>
+                <span class="n">discussions</span> <span class="o">=</span> <span class="p">[</span><span class="n">number</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># One issue's comments come ordered by id, not by update, so a cut list would</span>
+                <span class="c1"># not be complete up to any time: read every page (an issue holds a bounded</span>
+                <span class="c1"># number), and the same for a pull request's review comments.</span>
+                <span class="n">comments</span><span class="p">,</span> <span class="n">comments_cut</span><span class="p">,</span> <span class="n">date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments?since=</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">dates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">probe</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pull_request"</span><span class="p">):</span>
+                    <span class="n">reviews</span><span class="p">,</span> <span class="n">reviews_cut</span><span class="p">,</span> <span class="n">reviews_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments?since=</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                        <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="n">dates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reviews_date</span><span class="p">)</span>
 
         <span class="n">candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Message</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">comment</span> <span class="ow">in</span> <span class="n">comments</span><span class="p">:</span>
@@ -1839,6 +1949,26 @@ window.runMermaid = runMermaid;</script>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_comment</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">comment</span><span class="p">),</span>
                 <span class="p">)</span>
             <span class="p">)</span>
+        <span class="k">for</span> <span class="n">comment</span> <span class="ow">in</span> <span class="n">reviews</span><span class="p">:</span>
+            <span class="n">pull_number</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="nb">str</span><span class="p">(</span><span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pull_request_url"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="p">)</span>
+            <span class="n">conversation</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="p">(</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">pull_number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"pull_request"</span><span class="p">,</span>
+                <span class="n">parent</span><span class="o">=</span><span class="n">repository</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">changed</span> <span class="o">=</span> <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"updated_at"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">comment</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]</span>
+            <span class="n">is_new</span> <span class="o">=</span> <span class="n">parse_time</span><span class="p">(</span><span class="n">comment</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="n">openings_from</span>
+            <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="n">parse_time</span><span class="p">(</span><span class="n">changed</span><span class="p">),</span>
+                    <span class="sa">f</span><span class="s2">"discussion_r</span><span class="si">{</span><span class="n">comment</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">changed</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="s2">"message.created"</span> <span class="k">if</span> <span class="n">is_new</span> <span class="k">else</span> <span class="s2">"message.updated"</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_review_comment</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">comment</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
         <span class="k">for</span> <span class="n">issue</span> <span class="ow">in</span> <span class="n">issues</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">parse_time</span><span class="p">(</span><span class="n">issue</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">openings_from</span><span class="p">:</span>
                 <span class="k">continue</span>  <span class="c1"># an older issue that changed: its comments arrive as their own events</span>
@@ -1850,14 +1980,32 @@ window.runMermaid = runMermaid;</script>
                     <span class="bp">self</span><span class="o">.</span><span class="n">_opening</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_issue_conversation</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">issue</span><span class="p">),</span> <span class="n">issue</span><span class="p">),</span>
                 <span class="p">)</span>
             <span class="p">)</span>
+        <span class="k">for</span> <span class="n">discussion_number</span> <span class="ow">in</span> <span class="n">discussions</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">candidates</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_discussion_activity</span><span class="p">(</span>
+                    <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">discussion_number</span><span class="p">,</span> <span class="n">position</span>
+                <span class="p">)</span>
+            <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">number</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">error</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s2">"not_found"</span><span class="p">:</span>
+                    <span class="k">raise</span>
+                <span class="k">continue</span>  <span class="c1"># deleted between the walk and the read: nothing left to deliver</span>
         <span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">candidates</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">position</span> <span class="ow">and</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">)]</span>
         <span class="c1"># A list cut short is complete only up to its last item: later events wait for the</span>
         <span class="c1"># next poll, which starts from there.</span>
         <span class="n">horizons</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">parse_time</span><span class="p">(</span><span class="n">items</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"updated_at"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">items</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">"created_at"</span><span class="p">])</span>
-            <span class="k">for</span> <span class="n">items</span><span class="p">,</span> <span class="n">cut</span> <span class="ow">in</span> <span class="p">((</span><span class="n">comments</span><span class="p">,</span> <span class="n">comments_cut</span><span class="p">),</span> <span class="p">(</span><span class="n">issues</span><span class="p">,</span> <span class="n">issues_cut</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">items</span><span class="p">,</span> <span class="n">cut</span> <span class="ow">in</span> <span class="p">(</span>
+                <span class="p">(</span><span class="n">comments</span><span class="p">,</span> <span class="n">comments_cut</span><span class="p">),</span>
+                <span class="p">(</span><span class="n">issues</span><span class="p">,</span> <span class="n">issues_cut</span><span class="p">),</span>
+                <span class="p">(</span><span class="n">reviews</span><span class="p">,</span> <span class="n">reviews_cut</span><span class="p">),</span>
+            <span class="p">)</span>
             <span class="k">if</span> <span class="n">cut</span> <span class="ow">and</span> <span class="n">items</span>
         <span class="p">]</span>
+        <span class="c1"># Nothing after the earliest list's server time (less the clock skew) is vouched for:</span>
+        <span class="c1"># a later event would move the cursor past what that list could not yet hold.</span>
+        <span class="n">server_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">map</span><span class="p">(</span><span class="n">_http_date</span><span class="p">,</span> <span class="n">dates</span><span class="p">)</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">server_times</span><span class="p">:</span>
+            <span class="n">horizons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">min</span><span class="p">(</span><span class="n">server_times</span><span class="p">)</span> <span class="o">-</span> <span class="n">CLOCK_SKEW</span><span class="p">)</span>
         <span class="n">horizon</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">horizons</span><span class="p">)</span> <span class="k">if</span> <span class="n">horizons</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">horizon</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">candidates</span> <span class="k">if</span> <span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">horizon</span><span class="p">]</span>
@@ -1891,12 +2039,55 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">position</span><span class="p">,</span> <span class="n">openings_from</span> <span class="k">if</span> <span class="n">issues_cut</span> <span class="k">else</span> <span class="n">position</span><span class="p">,</span> <span class="n">delivered</span>
             <span class="p">)</span>
         <span class="k">elif</span> <span class="ow">not</span> <span class="n">limited</span><span class="p">:</span>
-            <span class="n">server_now</span> <span class="o">=</span> <span class="n">_http_date</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">server_now</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">server_now</span> <span class="o">-</span> <span class="n">CLOCK_SKEW</span> <span class="o">&gt;</span> <span class="n">position</span><span class="p">:</span>
-                <span class="n">position</span><span class="p">,</span> <span class="n">delivered</span> <span class="o">=</span> <span class="n">server_now</span> <span class="o">-</span> <span class="n">CLOCK_SKEW</span><span class="p">,</span> <span class="nb">set</span><span class="p">()</span>
             <span class="n">final</span> <span class="o">=</span> <span class="n">_encode_cursor</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">delivered</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">with_final_cursor</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">final</span><span class="p">)</span></div>
 
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_active_discussions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">since</span><span class="p">:</span> <span class="n">datetime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The numbers of the repository's discussions active at or after ``since``.</span>
+
+<span class="sd">        GitHub orders discussions by latest activity (a new comment or reply moves one to</span>
+<span class="sd">        the front) but has no ``since`` filter, so pages are read newest first until one</span>
+<span class="sd">        holds a discussion last updated before ``since``. The order is by activity while</span>
+<span class="sd">        ``updatedAt`` also moves on other changes (a label or category set in bulk), so a</span>
+<span class="sd">        page is read whole rather than cut at its first older entry.</span>
+<span class="sd">        """</span>
+        <span class="n">numbers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">after</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graphql</span><span class="p">(</span>
+                <span class="n">DISCUSSION_ACTIVITY_QUERY</span><span class="p">,</span> <span class="p">{</span><span class="s2">"owner"</span><span class="p">:</span> <span class="n">owner</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="n">repo</span><span class="p">,</span> <span class="s2">"after"</span><span class="p">:</span> <span class="n">after</span><span class="p">}</span>
+            <span class="p">)</span>
+            <span class="n">page</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"repository"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"discussions"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+            <span class="n">nodes</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"nodes"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+            <span class="n">active</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">nodes</span> <span class="k">if</span> <span class="n">parse_time</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="s2">"updatedAt"</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="n">since</span><span class="p">]</span>
+            <span class="n">numbers</span> <span class="o">+=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="p">[</span><span class="s2">"number"</span><span class="p">])</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">active</span><span class="p">]</span>
+            <span class="n">page_info</span> <span class="o">=</span> <span class="n">page</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pageInfo"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">active</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">nodes</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">page_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"hasNextPage"</span><span class="p">):</span>
+                <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">numbers</span><span class="p">))</span>
+            <span class="n">after</span> <span class="o">=</span> <span class="n">page_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"endCursor"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_discussion_activity</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">number</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">since</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Message</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""Poll candidates from discussion ``number``: its opening if it is new, posts written or edited since."""</span>
+        <span class="n">candidates</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_discussion_messages</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span><span class="p">):</span>
+            <span class="n">changed</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">sent_at</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">edited_at</span> <span class="ow">or</span> <span class="n">message</span><span class="o">.</span><span class="n">sent_at</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">changed</span> <span class="o">&lt;</span> <span class="n">since</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">is_new</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">sent_at</span> <span class="o">&gt;=</span> <span class="n">since</span>
+            <span class="k">if</span> <span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"discussion-"</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_new</span><span class="p">:</span>
+                <span class="k">continue</span>  <span class="c1"># an older discussion edited: like an issue, its posts are the events</span>
+            <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="n">changed</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">format_time</span><span class="p">(</span><span class="n">changed</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="s2">"message.created"</span> <span class="k">if</span> <span class="n">is_new</span> <span class="k">else</span> <span class="s2">"message.updated"</span><span class="p">,</span>
+                    <span class="n">message</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">candidates</span>
 
     <span class="c1"># ------------------------------------------------------------------- writing</span>
 
@@ -1934,7 +2125,10 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Comment on an issue, pull request or discussion; on a repository, open an issue (``title`` required).</span>
+<span class="w">        </span><span class="sd">"""Comment on an issue, pull request or discussion; on a repository, open an issue (``title`` required), or a discussion with native ``category``.</span>
+
+<span class="sd">        ``draft.reply_to`` answers a discussion comment, or a review comment on a pull</span>
+<span class="sd">        request's diff (``discussion_rID``), joining its thread.</span>
 
 <span class="sd">        ``draft.notify`` handles (``octocat``, ``org/team``) the text does not @mention yet</span>
 <span class="sd">        are mentioned on a closing ``cc`` line, which GitHub notifies; the plan lists them</span>
@@ -1944,7 +2138,10 @@ window.runMermaid = runMermaid;</script>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
         <span class="n">added</span> <span class="o">=</span> <span class="n">missing_mentions</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">),</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
-        <span class="n">notified</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"notify"</span><span class="p">:</span> <span class="p">[</span><span class="n">handle</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">],</span> <span class="s2">"mentions_added"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">added</span><span class="p">)}</span>
+        <span class="n">notified</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"notify"</span><span class="p">:</span> <span class="p">[</span><span class="n">handle</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">],</span>
+            <span class="s2">"mentions_added"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">added</span><span class="p">),</span>
+        <span class="p">}</span>
         <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">result</span><span class="o">.</span><span class="n">plan</span><span class="p">,</span> <span class="o">**</span><span class="n">notified</span><span class="p">})</span></div>
 
 
@@ -1977,6 +2174,8 @@ window.runMermaid = runMermaid;</script>
                     <span class="n">NAME</span><span class="p">,</span>
                     <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"comment on the issue: github:owner/repo#N"</span><span class="p">,),</span>
                 <span class="p">)</span>
+            <span class="k">if</span> <span class="n">DISCUSSION_FIELD</span> <span class="ow">in</span> <span class="n">draft</span><span class="o">.</span><span class="n">native</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_open_discussion</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
             <span class="n">fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_creation_fields</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">native</span><span class="p">)</span>
             <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"open an issue"</span><span class="p">,</span>
@@ -2012,14 +2211,21 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="n">target</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">reply_kind</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message_kind</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span> <span class="k">else</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="n">request</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"POST repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments/</span><span class="se">{{</span><span class="s2">thread</span><span class="se">}}</span><span class="s2">/replies, "</span>
+                <span class="sa">f</span><span class="s2">"in the review thread </span><span class="si">{</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="si">}</span><span class="s2"> belongs to (checked when sending)"</span>
+                <span class="k">if</span> <span class="n">reply_kind</span> <span class="o">==</span> <span class="s2">"reviewcomment"</span>
+                <span class="k">else</span> <span class="sa">f</span><span class="s2">"POST repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments, or GraphQL addDiscussionComment if #</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2"> is a discussion (checked when sending)"</span>
+            <span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_planned</span><span class="p">(</span>
                 <span class="n">ref</span><span class="p">,</span>
                 <span class="s2">"send"</span><span class="p">,</span>
                 <span class="p">{</span>
                     <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"comment"</span><span class="p">,</span>
                     <span class="s2">"target"</span><span class="p">:</span> <span class="n">target</span><span class="p">,</span>
-                    <span class="s2">"request"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"POST repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments, or GraphQL addDiscussionComment if #</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2"> is a discussion (checked when sending)"</span><span class="p">,</span>
+                    <span class="s2">"request"</span><span class="p">:</span> <span class="n">request</span><span class="p">,</span>
                     <span class="s2">"reply_to"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
                     <span class="s2">"body"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
                 <span class="p">},</span>
@@ -2027,11 +2233,16 @@ window.runMermaid = runMermaid;</script>
         <span class="n">probe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">allow</span><span class="o">=</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="mi">410</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">probe</span><span class="o">.</span><span class="n">status</span> <span class="o">&lt;</span> <span class="mi">400</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">reply_kind</span> <span class="o">==</span> <span class="s2">"reviewcomment"</span> <span class="ow">and</span> <span class="p">(</span><span class="n">probe</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                    <span class="s2">"pull_request"</span>
+                <span class="p">):</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reply_in_review_thread</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span>
                 <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
                     <span class="s2">"reply"</span><span class="p">,</span>
                     <span class="n">NAME</span><span class="p">,</span>
                     <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span>
-                        <span class="s2">"issue and pull request comments are flat: quote the message you answer"</span><span class="p">,</span>
+                        <span class="s2">"issue and pull request conversation comments are flat: quote the message you answer"</span><span class="p">,</span>
+                        <span class="s2">"on a pull request, reply to a review comment on its diff (discussion_rID) to join that thread"</span><span class="p">,</span>
                     <span class="p">),</span>
                 <span class="p">)</span>
             <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
@@ -2081,6 +2292,129 @@ window.runMermaid = runMermaid;</script>
             <span class="n">plan</span><span class="p">,</span>
         <span class="p">)</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reply_in_review_thread</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Reply in the review thread of ``draft.reply_to``, a review comment on pull request ``ref``.</span>
+
+<span class="sd">        GitHub threads review comments one level deep, so a reply to a reply goes to the</span>
+<span class="sd">        comment that opened its thread, which the plan names as ``thread_root``.</span>
+<span class="sd">        """</span>
+        <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parts</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">ident</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message_kind</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">)</span>
+        <span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/comments/</span><span class="si">{</span><span class="n">ident</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">on</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">parent</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pull_request_url"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">on</span> <span class="o">!=</span> <span class="nb">str</span><span class="p">(</span><span class="n">number</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="si">}</span><span class="s2"> is not a review comment on pull request #</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">root</span> <span class="o">=</span> <span class="n">parent</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"in_reply_to_id"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">ident</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments/</span><span class="si">{</span><span class="n">root</span><span class="si">}</span><span class="s2">/replies"</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"reply in a review thread"</span><span class="p">,</span>
+            <span class="s2">"target"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="s2">"request"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"POST </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="s2">"reply_to"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+            <span class="s2">"thread_root"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"discussion_r</span><span class="si">{</span><span class="n">root</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="s2">"body"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">"POST"</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">"body"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">})</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span><span class="p">(</span>
+            <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="s2">"send"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"discussion_r</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'id'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"html_url"</span><span class="p">),</span>
+            <span class="n">plan</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_open_discussion</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Open a discussion in the category ``draft.native["category"]`` names (GraphQL ``createDiscussion``)."""</span>
+        <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parts</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+        <span class="n">category</span> <span class="o">=</span> <span class="n">draft</span><span class="o">.</span><span class="n">native</span><span class="p">[</span><span class="n">DISCUSSION_FIELD</span><span class="p">]</span>
+        <span class="n">others</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">native</span><span class="p">)</span> <span class="o">-</span> <span class="p">{</span><span class="n">DISCUSSION_FIELD</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">others</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"native </span><span class="si">{</span><span class="n">others</span><span class="si">}</span><span class="s2"> apply when opening an issue; a discussion takes only "</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">DISCUSSION_FIELD</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">category</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">category</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"native </span><span class="si">{</span><span class="n">DISCUSSION_FIELD</span><span class="si">}</span><span class="s2"> is a discussion category's name or slug, not </span><span class="si">{</span><span class="n">category</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">category</span> <span class="o">=</span> <span class="n">category</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">plan</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"open a discussion"</span><span class="p">,</span>
+            <span class="s2">"request"</span><span class="p">:</span> <span class="s2">"GraphQL createDiscussion"</span><span class="p">,</span>
+            <span class="s2">"title"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+            <span class="s2">"body"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+            <span class="n">DISCUSSION_FIELD</span><span class="p">:</span> <span class="n">category</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_planned</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="n">plan</span><span class="p">)</span>
+        <span class="n">repository</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_graphql</span><span class="p">(</span>
+                <span class="n">DISCUSSION_CATEGORIES_QUERY</span><span class="p">,</span> <span class="p">{</span><span class="s2">"owner"</span><span class="p">:</span> <span class="n">owner</span><span class="p">,</span> <span class="s2">"name"</span><span class="p">:</span> <span class="n">repo</span><span class="p">}</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"repository"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="p">{}</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">repository</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"hasDiscussionsEnabled"</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
+                <span class="s2">"open a discussion"</span><span class="p">,</span>
+                <span class="n">NAME</span><span class="p">,</span>
+                <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"enable discussions in </span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">'s settings"</span><span class="p">,</span>
+                    <span class="sa">f</span><span class="s2">"open an issue: leave out native </span><span class="si">{</span><span class="n">DISCUSSION_FIELD</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="n">categories</span> <span class="o">=</span> <span class="p">(</span><span class="n">repository</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"discussionCategories"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"nodes"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]</span>
+        <span class="n">wanted</span> <span class="o">=</span> <span class="n">category</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">c</span>
+                <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">categories</span>
+                <span class="k">if</span> <span class="n">wanted</span> <span class="ow">in</span> <span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">))</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"slug"</span><span class="p">))</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+            <span class="p">),</span>
+            <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">found</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">categories</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"none"</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2"> has no discussion category </span><span class="si">{</span><span class="n">category</span><span class="si">!r}</span><span class="s2">; it has: </span><span class="si">{</span><span class="n">names</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">created</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_graphql</span><span class="p">(</span>
+                <span class="n">CREATE_DISCUSSION</span><span class="p">,</span>
+                <span class="p">{</span>
+                    <span class="s2">"repositoryId"</span><span class="p">:</span> <span class="n">repository</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span>
+                    <span class="s2">"categoryId"</span><span class="p">:</span> <span class="n">found</span><span class="p">[</span><span class="s2">"id"</span><span class="p">],</span>
+                    <span class="s2">"title"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
+                    <span class="s2">"body"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
+                <span class="p">},</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"createDiscussion"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="p">{}</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"discussion"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">created</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"number"</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"GitHub answered createDiscussion without the discussion; it may have been "</span>
+                <span class="sa">f</span><span class="s2">"opened: read github:</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2"> before trying again"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"unavailable"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">plan</span><span class="p">[</span><span class="s2">"landed"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">DISCUSSION_FIELD</span><span class="p">:</span> <span class="p">(</span><span class="n">created</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"category"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">found</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"name"</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"github:</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">created</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'number'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="s2">"send"</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"discussion-</span><span class="si">{</span><span class="n">created</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'number'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">created</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"url"</span><span class="p">),</span>
+            <span class="n">plan</span><span class="p">,</span>
+        <span class="p">)</span>
+
     <span class="k">def</span><span class="w"> </span><span class="nf">_discussion_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">number</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_graphql</span><span class="p">(</span>
@@ -2105,10 +2439,10 @@ window.runMermaid = runMermaid;</script>
         <span class="n">match</span> <span class="o">=</span> <span class="n">MESSAGE_ID_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">message_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"GitHub message ids look like issue-12, issuecomment-345, discussion-6 or discussioncomment-789, not </span><span class="si">{</span><span class="n">message_id</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"GitHub message ids look like issue-12, issuecomment-345, discussion_r678 (a review comment), discussion-6 or discussioncomment-789, not </span><span class="si">{</span><span class="n">message_id</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
                 <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">return</span> <span class="n">match</span><span class="p">[</span><span class="s2">"kind"</span><span class="p">],</span> <span class="n">match</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">match</span><span class="p">[</span><span class="s2">"kind"</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">"reviewcomment"</span><span class="p">,</span> <span class="n">match</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_node_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">kind</span><span class="p">,</span> <span class="n">ident</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message_kind</span><span class="p">(</span><span class="n">message_id</span><span class="p">)</span>
@@ -2148,12 +2482,13 @@ window.runMermaid = runMermaid;</script>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Replace the body of an issue, a comment, a discussion or a discussion comment."""</span>
+<span class="w">        </span><span class="sd">"""Replace the body of an issue, a comment, a review comment, a discussion or a discussion comment."""</span>
         <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parts</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
         <span class="n">kind</span><span class="p">,</span> <span class="n">ident</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message_kind</span><span class="p">(</span><span class="n">message_id</span><span class="p">)</span>
         <span class="n">rest</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"issue"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">ident</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
             <span class="s2">"issuecomment"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/comments/</span><span class="si">{</span><span class="n">ident</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="s2">"reviewcomment"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/comments/</span><span class="si">{</span><span class="n">ident</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
         <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span>
         <span class="n">mutation</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">UPDATE_DISCUSSION</span>
@@ -2199,12 +2534,13 @@ window.runMermaid = runMermaid;</script>
         <span class="o">*</span><span class="p">,</span>
         <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Add one of :data:`REACTIONS` to an issue, a comment, a discussion or a discussion comment."""</span>
+<span class="w">        </span><span class="sd">"""Add one of :data:`REACTIONS` to an issue, a comment, a review comment, a discussion or a discussion comment."""</span>
         <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parts</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
         <span class="n">kind</span><span class="p">,</span> <span class="n">ident</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message_kind</span><span class="p">(</span><span class="n">message_id</span><span class="p">)</span>
         <span class="n">rest</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"issue"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">ident</span><span class="si">}</span><span class="s2">/reactions"</span><span class="p">,</span>
             <span class="s2">"issuecomment"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/comments/</span><span class="si">{</span><span class="n">ident</span><span class="si">}</span><span class="s2">/reactions"</span><span class="p">,</span>
+            <span class="s2">"reviewcomment"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/comments/</span><span class="si">{</span><span class="n">ident</span><span class="si">}</span><span class="s2">/reactions"</span><span class="p">,</span>
         <span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">kind</span><span class="p">)</span>
         <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"react"</span><span class="p">,</span>

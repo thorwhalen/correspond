@@ -142,7 +142,7 @@ JSON-ready (without the loader).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* correspond.Audience(\*, ref, scope, readers=(), complete=False, classes=(), external=None, retractable=False, durability=(), widening=(), as_of=<factory>, evidence=(), defaulted=False)
+### *class* correspond.Audience(, ref, scope, readers=(), complete=False, classes=(), external=None, retractable=False, durability=(), widening=(), as_of=\_now(), evidence=(), defaulted=False)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -215,7 +215,7 @@ Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protoco
 
 Who can read a conversation, now and plausibly later, asked of the platform at the time of the call.
 
-### *class* correspond.Authenticity(\*, grade, evidence=<factory>)
+### *class* correspond.Authenticity(, grade, evidence=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -388,7 +388,7 @@ Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exceptio
 
 An expected failure, with a message meant for the person or agent that asked.
 
-### *class* correspond.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>, notify=())
+### *class* correspond.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=dict(), notify=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -437,7 +437,7 @@ Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protoco
 
 Replace the text of a message correspond’s account wrote.
 
-### *class* correspond.Event(\*, kind, channel, delivery_id, cursor=None, message=None, payload=<factory>)
+### *class* correspond.Event(, kind, channel, delivery_id, cursor=None, message=None, payload=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -504,7 +504,7 @@ Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protoco
 
 Events since `cursor`, oldest first, each carrying the cursor to resume after it.
 
-### *class* correspond.Message(\*, id, conversation, author, authenticity, sent_at, text, body=None, body_format='plain', attachments=(), reply_to=None, thread_root=None, edited_at=None, url=None, native=<factory>, raw=None)
+### *class* correspond.Message(, id, conversation, author, authenticity, sent_at, text, body=None, body_format='plain', attachments=(), reply_to=None, thread_root=None, edited_at=None, url=None, native=dict(), raw=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -591,7 +591,7 @@ The widest class of reader a conversation can reach.
 - `org`: an organisation or workspace (a private organisation repository).
 - `public`: anyone. What an unknown audience resolves to.
 
-### *class* correspond.SendResult(\*, ok, channel, conversation, operation='send', dry_run=False, message_id=None, url=None, account=None, plan=<factory>, error=None, error_kind=None, retryable=False, retry_after=None)
+### *class* correspond.SendResult(, ok, channel, conversation, operation='send', dry_run=False, message_id=None, url=None, account=None, plan=dict(), error=None, error_kind=None, retryable=False, retry_after=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -703,9 +703,6 @@ declare its fields (`native_fields` is `None`), is not checked for fields. A ref
 with wildcards, or one the channel’s own parser rejects outright, is not checked for
 canonical form – a malformed ref is a different problem than a mis-cased one.
 
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
 ```pycon
 >>> from correspond.channels.github import GitHub
 >>> check_binding("github:example/app?labels=bug", registry={"github": GitHub()})
@@ -715,6 +712,9 @@ canonical form – a malformed ref is a different problem than a mis-cased one.
 >>> check_binding("github:Example/App", registry={"github": GitHub()})
 ["github:Example/App is not in canonical form: github references are normalised to 'github:example/app'; binding_matches compares refs literally, so this pattern will not match github:example/app"]
 ```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### correspond.check_requirements(channel, \*, registry=None, config=None, run=<function run>)
 
@@ -765,15 +765,15 @@ early `break`: deduplicate on `delivery_id`.
 
 A rule sending messages to `target` when every `field=glob` condition holds.
 
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Message`](correspond.model.html.md#correspond.model.Message)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
-
 ```pycon
 >>> from correspond.testing import demo_message
 >>> rule = metadata_rule("urgent-queue", labels="priority:high")
 >>> rule(demo_message(labels=["priority:high"])), rule(demo_message())
 ('urgent-queue', None)
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Message`](correspond.model.html.md#correspond.model.Message)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
 ### correspond.parse_ref(ref, , registry=None)
 

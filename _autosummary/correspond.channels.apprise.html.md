@@ -80,10 +80,10 @@ Notify every service behind the alias with `draft.text` (and its title).
 
 The environment variable holding one alias’s Apprise URL.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> alias_env("team-alerts")
 'CORRESPOND_APPRISE_URL_TEAM_ALERTS'
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)

@@ -31,6 +31,7 @@
 <link href="../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../../_static/epythet.css?v=c6155191" />
   
@@ -40,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=f0357c94"></script>
+    <script src="../../_static/documentation_options.js?v=c7cdf6fe"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -410,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.15" />
+  <meta name="docsearch:version" content="0.0.16" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -915,7 +916,13 @@ window.runMermaid = runMermaid;</script>
     <span class="n">lines</span> <span class="o">=</span> <span class="p">[</span>
         <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">name</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="s1">':'</span><span class="si">:</span><span class="s2">&lt;10</span><span class="si">}{</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">(</span>
-            <span class="o">*</span><span class="n">OPERATIONS</span><span class="p">,</span> <span class="s2">"initiate"</span><span class="p">,</span> <span class="s2">"reply"</span><span class="p">,</span> <span class="s2">"priority"</span><span class="p">,</span> <span class="s2">"cc"</span><span class="p">,</span> <span class="s2">"notify"</span><span class="p">,</span> <span class="s2">"history_depth"</span>
+            <span class="o">*</span><span class="n">OPERATIONS</span><span class="p">,</span>
+            <span class="s2">"initiate"</span><span class="p">,</span>
+            <span class="s2">"reply"</span><span class="p">,</span>
+            <span class="s2">"priority"</span><span class="p">,</span>
+            <span class="s2">"cc"</span><span class="p">,</span>
+            <span class="s2">"notify"</span><span class="p">,</span>
+            <span class="s2">"history_depth"</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="p">]</span>
     <span class="k">if</span> <span class="n">caps</span><span class="o">.</span><span class="n">grades</span><span class="p">:</span>
@@ -1187,7 +1194,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">idempotency_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens; the plan reports which of them stuck). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""</span>
+<span class="w">    </span><span class="sd">"""Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens, the plan reporting which of them stuck; or `{"category": "&lt;name or slug&gt;"}` to open a discussion instead). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""</span>
     <span class="k">return</span> <span class="n">_write_result</span><span class="p">(</span>
         <span class="n">ops</span><span class="o">.</span><span class="n">send</span><span class="p">(</span>
             <span class="n">ref</span><span class="p">,</span>

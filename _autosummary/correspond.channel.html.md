@@ -136,9 +136,6 @@ identifiers only.
 
 The `notifications/claude/channel` message for one event that carries a message.
 
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
 ```pycon
 >>> from correspond.testing import demo_message
 >>> note = channel_notification(Event(kind="message.created", channel="fake", delivery_id="d1",
@@ -148,6 +145,9 @@ The `notifications/claude/channel` message for one event that carries a message.
 >>> note["params"]["meta"]
 {'channel': 'fake', 'conversation': 'fake:example/demo', 'message_id': 'm1', 'sender': 'fake:ada', 'grade': 'platform'}
 ```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### correspond.channel.main(argv=None)
 
@@ -172,20 +172,17 @@ logged and skipped; the others are still polled.
 
 `("allow" | "deny", request_id)` for a reply like `yes abcde`, else `None`.
 
-* **Return type:**
-  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)
-
 ```pycon
 >>> parse_verdict("Yes ABCDE"), parse_verdict("no qwxyz"), parse_verdict("yes"), parse_verdict("yes hello")
 (('allow', 'abcde'), ('deny', 'qwxyz'), None, None)
 ```
 
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 ### correspond.channel.permission_prompt(params)
 
 The text sent to the relay conversation for one permission request.
-
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ```pycon
 >>> print(permission_prompt({"request_id": "abcde", "tool_name": "Bash",
@@ -195,6 +192,9 @@ Claude wants to run Bash: List files
 
 Reply "yes abcde" or "no abcde"
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### correspond.channel.serve(\*\*kwargs)
 

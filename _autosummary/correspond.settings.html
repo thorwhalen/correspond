@@ -34,6 +34,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=c6155191" />
   
@@ -43,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=f0357c94"></script>
+    <script src="../_static/documentation_options.js?v=c7cdf6fe"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.15" />
+  <meta name="docsearch:version" content="0.0.16" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -490,15 +491,15 @@ its environment variable, else (on macOS) a Keychain item whose service name is
 <dd><p>The data root: the argument, else <code class="docutils literal notranslate"><span class="pre">$CORRESPOND_DATA_DIR</span></code>, else <code class="docutils literal notranslate"><span class="pre">data_dir</span></code> in the config, else <code class="docutils literal notranslate"><span class="pre">~/.local/share/correspond</span></code>.</p>
 <p>The environment variable and the config value must be absolute paths: a relative one
 would put state wherever the current directory happens to be (a repository, say).</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data_dir</span><span class="p">(</span><span class="s2">"state"</span><span class="p">)</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">()</span>
+<span class="go">True</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a></span></p>
 </dd>
 </dl>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">data_dir</span><span class="p">(</span><span class="s2">"state"</span><span class="p">)</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">()</span>
-<span class="go">True</span>
-</pre></div>
-</div>
 </dd></dl>
 
 <dl class="py function">
@@ -527,15 +528,15 @@ would put state wherever the current directory happens to be (a repository, say)
 <dt class="sig sig-object py" id="correspond.settings.keychain_service">
 <span class="sig-prename descclassname"><span class="pre">correspond.settings.</span></span><span class="sig-name descname"><span class="pre">keychain_service</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">config</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/settings.html#keychain_service"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.settings.keychain_service" title="Link to this definition">#</a></dt>
 <dd><p>The macOS Keychain service a secret is looked up under.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">keychain_service</span><span class="p">(</span><span class="s2">"telegram"</span><span class="p">,</span> <span class="s2">"token"</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="p">{})</span>
+<span class="go">'correspond-telegram-token'</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
 </dd>
 </dl>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">keychain_service</span><span class="p">(</span><span class="s2">"telegram"</span><span class="p">,</span> <span class="s2">"token"</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="p">{})</span>
-<span class="go">'correspond-telegram-token'</span>
-</pre></div>
-</div>
 </dd></dl>
 
 <dl class="py function">
@@ -553,15 +554,15 @@ would put state wherever the current directory happens to be (a repository, say)
 <dt class="sig sig-object py" id="correspond.settings.mask">
 <span class="sig-prename descclassname"><span class="pre">correspond.settings.</span></span><span class="sig-name descname"><span class="pre">mask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/settings.html#mask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.settings.mask" title="Link to this definition">#</a></dt>
 <dd><p>Enough of a secret to recognise it, never enough to use it.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mask</span><span class="p">(</span><span class="s2">"example-topic-3f9a"</span><span class="p">),</span> <span class="n">mask</span><span class="p">(</span><span class="s2">"short"</span><span class="p">),</span> <span class="n">mask</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+<span class="go">('ex…9a', '…', '(not set)')</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#str" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></a></span></p>
 </dd>
 </dl>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">mask</span><span class="p">(</span><span class="s2">"example-topic-3f9a"</span><span class="p">),</span> <span class="n">mask</span><span class="p">(</span><span class="s2">"short"</span><span class="p">),</span> <span class="n">mask</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
-<span class="go">('ex…9a', '…', '(not set)')</span>
-</pre></div>
-</div>
 </dd></dl>
 
 </section>

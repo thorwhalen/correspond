@@ -53,13 +53,13 @@ The data root: the argument, else `$CORRESPOND_DATA_DIR`, else `data_dir` in the
 The environment variable and the config value must be absolute paths: a relative one
 would put state wherever the current directory happens to be (a repository, say).
 
-* **Return type:**
-  [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
-
 ```pycon
 >>> data_dir("state").is_absolute()
 True
 ```
+
+* **Return type:**
+  [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
 
 ### correspond.settings.keychain_available()
 
@@ -79,13 +79,13 @@ A generic password from the macOS Keychain, or `""` when absent, not on macOS, o
 
 The macOS Keychain service a secret is looked up under.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> keychain_service("telegram", "token", config={})
 'correspond-telegram-token'
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### correspond.settings.load_config(path=None)
 
@@ -98,10 +98,10 @@ The parsed config file, or `{}` when there is none. A broken file raises, naming
 
 Enough of a secret to recognise it, never enough to use it.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> mask("example-topic-3f9a"), mask("short"), mask(None)
 ('ex…9a', '…', '(not set)')
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)

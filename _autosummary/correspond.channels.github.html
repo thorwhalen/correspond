@@ -34,6 +34,7 @@
 <link href="../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
 
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
     <link rel="stylesheet" type="text/css" href="../_static/epythet.css?v=c6155191" />
   
@@ -43,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=f0357c94"></script>
+    <script src="../_static/documentation_options.js?v=c7cdf6fe"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.15" />
+  <meta name="docsearch:version" content="0.0.16" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -423,10 +424,14 @@ limit and never shows in the process table.</p>
 <p class="rubric">References</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo</span></code>: the repository. <code class="docutils literal notranslate"><span class="pre">read</span></code> lists recent open issues and pull
-requests, <code class="docutils literal notranslate"><span class="pre">listen</span></code> polls its issue and comment activity, <code class="docutils literal notranslate"><span class="pre">send</span></code> opens an issue (a
-title is required).</p></li>
+requests, <code class="docutils literal notranslate"><span class="pre">listen</span></code> polls its issue, comment, review comment and discussion activity,
+<code class="docutils literal notranslate"><span class="pre">send</span></code> opens an issue (a title is required), or a discussion when <code class="docutils literal notranslate"><span class="pre">Draft.native</span></code>
+names a <code class="docutils literal notranslate"><span class="pre">category</span></code>.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo#N</span></code>: an issue, a pull request, or a discussion. GitHub numbers the
-three in one sequence; correspond asks which. <code class="docutils literal notranslate"><span class="pre">label</span></code> and <code class="docutils literal notranslate"><span class="pre">unlabel</span></code> work on an issue
+three in one sequence; correspond asks which. Reading or listening to a pull request
+includes its review comments on the diff, each threaded under the comment that opened
+its thread (<code class="docutils literal notranslate"><span class="pre">reply_to</span></code>), and a reply to one of them joins that thread.
+<code class="docutils literal notranslate"><span class="pre">label</span></code> and <code class="docutils literal notranslate"><span class="pre">unlabel</span></code> work on an issue
 or pull request only: GitHub discussions have categories, not labels. <code class="docutils literal notranslate"><span class="pre">close</span></code> and
 <code class="docutils literal notranslate"><span class="pre">reopen</span></code> work on all three: an issue or pull request through <code class="docutils literal notranslate"><span class="pre">PATCH</span> <span class="pre">.../issues/N</span></code>,
 a discussion through GraphQL <code class="docutils literal notranslate"><span class="pre">closeDiscussion</span></code> / <code class="docutils literal notranslate"><span class="pre">reopenDiscussion</span></code>. Each kind
@@ -437,9 +442,12 @@ discussion: <code class="docutils literal notranslate"><span class="pre">resolve
 <p>Opening an issue takes <code class="docutils literal notranslate"><span class="pre">Draft.native</span></code> keys <code class="docutils literal notranslate"><span class="pre">labels</span></code>, <code class="docutils literal notranslate"><span class="pre">assignees</span></code> and <code class="docutils literal notranslate"><span class="pre">milestone</span></code>,
 set in the creating request so watchers are notified once. GitHub silently drops an
 assignee who cannot be assigned, so the plan reports what the created issue actually
-carries (<code class="docutils literal notranslate"><span class="pre">landed</span></code>) and what did not stick (<code class="docutils literal notranslate"><span class="pre">not_applied</span></code>).</p>
+carries (<code class="docutils literal notranslate"><span class="pre">landed</span></code>) and what did not stick (<code class="docutils literal notranslate"><span class="pre">not_applied</span></code>). <code class="docutils literal notranslate"><span class="pre">Draft.native</span></code>
+<code class="docutils literal notranslate"><span class="pre">category</span></code> (a discussion category’s name or slug) opens a discussion instead, through
+GraphQL <code class="docutils literal notranslate"><span class="pre">createDiscussion</span></code>; it takes none of the issue fields.</p>
 <p>Message ids match the anchors in GitHub’s own URLs: <code class="docutils literal notranslate"><span class="pre">issue-N</span></code> (the opening post of issue
-or pull request N), <code class="docutils literal notranslate"><span class="pre">issuecomment-ID</span></code>, <code class="docutils literal notranslate"><span class="pre">discussion-N</span></code>, <code class="docutils literal notranslate"><span class="pre">discussioncomment-ID</span></code>.</p>
+or pull request N), <code class="docutils literal notranslate"><span class="pre">issuecomment-ID</span></code>, <code class="docutils literal notranslate"><span class="pre">discussion_rID</span></code> (a review comment on a pull
+request’s diff), <code class="docutils literal notranslate"><span class="pre">discussion-N</span></code>, <code class="docutils literal notranslate"><span class="pre">discussioncomment-ID</span></code>.</p>
 <p>Messages read through the API are <code class="docutils literal notranslate"><span class="pre">platform</span></code> (GitHub authenticated the account), with the
 author’s <code class="docutils literal notranslate"><span class="pre">author_association</span></code> (<code class="docutils literal notranslate"><span class="pre">OWNER</span></code>, <code class="docutils literal notranslate"><span class="pre">MEMBER</span></code>, <code class="docutils literal notranslate"><span class="pre">CONTRIBUTOR</span></code>, <code class="docutils literal notranslate"><span class="pre">NONE</span></code>, …) as
 <code class="docutils literal notranslate"><span class="pre">authority</span></code>. A webhook delivery is graded by <a class="reference internal" href="#correspond.channels.github.GitHub.verify" title="correspond.channels.github.GitHub.verify"><code class="xref py py-meth docutils literal notranslate"><span class="pre">GitHub.verify()</span></code></a>: <code class="docutils literal notranslate"><span class="pre">crypto</span></code> when its
@@ -545,7 +553,7 @@ conversation is visible as such.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.github.GitHub.edit">
 <span class="sig-name descname"><span class="pre">edit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.edit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.edit" title="Link to this definition">#</a></dt>
-<dd><p>Replace the body of an issue, a comment, a discussion or a discussion comment.</p>
+<dd><p>Replace the body of an issue, a comment, a review comment, a discussion or a discussion comment.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
@@ -585,7 +593,7 @@ mentioned, so <code class="docutils literal notranslate"><span class="pre">lande
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.github.GitHub.poll">
 <span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.poll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.poll" title="Link to this definition">#</a></dt>
-<dd><p>Issue and comment activity since <code class="docutils literal notranslate"><span class="pre">cursor</span></code>; a first poll looks back a day.</p>
+<dd><p>Issue, comment, review comment and discussion activity since <code class="docutils literal notranslate"><span class="pre">cursor</span></code>; a first poll looks back a day.</p>
 <p>The cursor is opaque JSON: the update time the next poll starts from (<code class="docutils literal notranslate"><span class="pre">t</span></code>; GitHub’s
 <code class="docutils literal notranslate"><span class="pre">since</span></code> includes it), the creation time from which an issue still counts as new
 (<code class="docutils literal notranslate"><span class="pre">l</span></code>, which stays behind while the issues list is being read in parts), and the
@@ -593,6 +601,11 @@ events already delivered at <code class="docutils literal notranslate"><span cla
 within one second can make a poll repeat itself, and a list cut short (more than
 <code class="docutils literal notranslate"><span class="pre">MAX_PAGES</span></code> pages changed) is resumed from where it was cut. A bare ISO time is also
 accepted as a cursor.</p>
+<p>Discussions have no <code class="docutils literal notranslate"><span class="pre">since</span></code> filter, so a repository’s are walked newest activity
+first until a page reaches one older than the cursor (<code class="xref py py-meth docutils literal notranslate"><span class="pre">_active_discussions()</span></code>),
+and each active one is read whole; one discussion is read whole on every poll. A
+discussion counts as new when it was created at or after the cursor, and a
+discussion comment is <code class="docutils literal notranslate"><span class="pre">message.updated</span></code> when it was created before it.</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>
@@ -611,7 +624,7 @@ accepted as a cursor.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.github.GitHub.react">
 <span class="sig-name descname"><span class="pre">react</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">message_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reaction</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.react"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.react" title="Link to this definition">#</a></dt>
-<dd><p>Add one of <code class="xref py py-data docutils literal notranslate"><span class="pre">REACTIONS</span></code> to an issue, a comment, a discussion or a discussion comment.</p>
+<dd><p>Add one of <code class="xref py py-data docutils literal notranslate"><span class="pre">REACTIONS</span></code> to an issue, a comment, a review comment, a discussion or a discussion comment.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
@@ -644,7 +657,9 @@ accepted as a cursor.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.github.GitHub.send">
 <span class="sig-name descname"><span class="pre">send</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">draft</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.send"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.send" title="Link to this definition">#</a></dt>
-<dd><p>Comment on an issue, pull request or discussion; on a repository, open an issue (<code class="docutils literal notranslate"><span class="pre">title</span></code> required).</p>
+<dd><p>Comment on an issue, pull request or discussion; on a repository, open an issue (<code class="docutils literal notranslate"><span class="pre">title</span></code> required), or a discussion with native <code class="docutils literal notranslate"><span class="pre">category</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">draft.reply_to</span></code> answers a discussion comment, or a review comment on a pull
+request’s diff (<code class="docutils literal notranslate"><span class="pre">discussion_rID</span></code>), joining its thread.</p>
 <p><code class="docutils literal notranslate"><span class="pre">draft.notify</span></code> handles (<code class="docutils literal notranslate"><span class="pre">octocat</span></code>, <code class="docutils literal notranslate"><span class="pre">org/team</span></code>) the text does not &#64;mention yet
 are mentioned on a closing <code class="docutils literal notranslate"><span class="pre">cc</span></code> line, which GitHub notifies; the plan lists them
 under <code class="docutils literal notranslate"><span class="pre">mentions_added</span></code>.</p>

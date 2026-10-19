@@ -96,13 +96,13 @@ When `record`’s key was claimed.
 
 `key` stripped, or `ValueError` for one that is not a non-blank string of at most [`MAX_KEY_LENGTH`](#correspond.idempotency.MAX_KEY_LENGTH) characters.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> check_key(" case-12/reply-3 ")
 'case-12/reply-3'
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### correspond.idempotency.claimed(key, conversation, , fingerprint, at)
 

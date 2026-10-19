@@ -40,13 +40,13 @@ The line that carries the mentions a text lacked, before the handles.
 
 A handle without its leading `@`.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> handle("@octocat"), handle("octocat")
 ('octocat', 'octocat')
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### correspond.notify.is_mentioned(text, name)
 
@@ -54,9 +54,6 @@ Is `@name` in `text` as a whole mention that notifies? Case-insensitive.
 
 Not inside an address or a longer handle, and not inside code or an HTML comment,
 where platforms render it without notifying anyone.
-
-* **Return type:**
-  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ```pycon
 >>> is_mentioned("ping @octocat.", "octocat")
@@ -69,6 +66,9 @@ False
 False
 ```
 
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
 ### correspond.notify.missing_mentions(text, names)
 
 The handles in `names` that `text` does not mention yet, in order, each once.
@@ -80,13 +80,13 @@ The handles in `names` that `text` does not mention yet, in order, each once.
 
 `cc` plus every address in `names` that is neither `to` nor already copied (case-insensitive).
 
-* **Return type:**
-  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
-
 ```pycon
 >>> with_copies("a@example.org", ["b@example.org"], ["A@example.org", "c@example.org"])
 ('b@example.org', 'c@example.org')
 ```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
 
 ### correspond.notify.with_mentions(text, names, , lead='cc')
 

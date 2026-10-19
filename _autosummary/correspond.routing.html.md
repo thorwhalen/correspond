@@ -93,9 +93,6 @@ declare its fields (`native_fields` is `None`), is not checked for fields. A ref
 with wildcards, or one the channel’s own parser rejects outright, is not checked for
 canonical form – a malformed ref is a different problem than a mis-cased one.
 
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
 ```pycon
 >>> from correspond.channels.github import GitHub
 >>> check_binding("github:example/app?labels=bug", registry={"github": GitHub()})
@@ -106,12 +103,12 @@ canonical form – a malformed ref is a different problem than a mis-cased one.
 ["github:Example/App is not in canonical form: github references are normalised to 'github:example/app'; binding_matches compares refs literally, so this pattern will not match github:example/app"]
 ```
 
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### correspond.routing.metadata_rule(target, , name=None, \*\*conditions)
 
 A rule sending messages to `target` when every `field=glob` condition holds.
-
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Message`](correspond.model.html.md#correspond.model.Message)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
 ```pycon
 >>> from correspond.testing import demo_message
@@ -119,6 +116,9 @@ A rule sending messages to `target` when every `field=glob` condition holds.
 >>> rule(demo_message(labels=["priority:high"])), rule(demo_message())
 ('urgent-queue', None)
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Message`](correspond.model.html.md#correspond.model.Message)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
 ### correspond.routing.route(message, , bindings=None, threads=None, rules=(), classifier=None)
 

@@ -1,4 +1,4 @@
-> built 2026-10-14 06:02 UTC from a8605e3 (main) · correspond 0.0.15. Details: build_info.json
+> built 2026-10-19 10:45 UTC from dca82c2 (main) · correspond 0.0.16. Details: build_info.json
 
 # index.html.md
 
@@ -23,15 +23,15 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 
 ## Channels
 
-| Channel    | References                                                                           | Operations                                                                                                                                                                       | Built on                                                                        |
-|------------|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| `github`   | `github:owner/repo`, `github:owner/repo#12`                                          | read, listen (issues and comments), send (opening an issue takes `native` labels, assignees, milestone), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token                           |
-| `email`    | `email:` (the folder), `email:someone@example.org`                                   | read, listen, send (with cc and bcc), audience                                                                                                                                   | `imaplib`, `smtplib`                                                            |
-| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                          | send, audience                                                                                                                                                                   | `urllib`                                                                        |
-| `macos`    | `macos:`                                                                             | send, audience                                                                                                                                                                   | `terminal-notifier` or `osascript`                                              |
-| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience                                                                                                                | the Bot API over `urllib`                                                       |
-| `webinbox` | `webinbox:<site>`                                                                    | read, listen, audience                                                                                                                                                           | the ASGI collector below, and `dol` stores                                      |
-| `apprise`  | `apprise:<alias>`                                                                    | send, audience                                                                                                                                                                   | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`) |
+| Channel    | References                                                                           | Operations                                                                                                                                                                                                                                                            | Built on                                                                        |
+|------------|--------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| `github`   | `github:owner/repo`, `github:owner/repo#12`                                          | read, listen (issues, comments, pull request review threads, discussions), send (opening an issue takes `native` labels, assignees, milestone; `native` category opens a discussion instead), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token                           |
+| `email`    | `email:` (the folder), `email:someone@example.org`                                   | read, listen, send (with cc and bcc), audience                                                                                                                                                                                                                        | `imaplib`, `smtplib`                                                            |
+| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                          | send, audience                                                                                                                                                                                                                                                        | `urllib`                                                                        |
+| `macos`    | `macos:`                                                                             | send, audience                                                                                                                                                                                                                                                        | `terminal-notifier` or `osascript`                                              |
+| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience                                                                                                                                                                                                     | the Bot API over `urllib`                                                       |
+| `webinbox` | `webinbox:<site>`                                                                    | read, listen, audience                                                                                                                                                                                                                                                | the ASGI collector below, and `dol` stores                                      |
+| `apprise`  | `apprise:<alias>`                                                                    | send, audience                                                                                                                                                                                                                                                        | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`) |
 
 Every v0.1 adapter uses the Python standard library; Apprise is the first extra, and registers only when it is installed. Discord ([#2](https://github.com/thorwhalen/correspond/issues/2)), Slack ([#3](https://github.com/thorwhalen/correspond/issues/3)) and Signal ([#4](https://github.com/thorwhalen/correspond/issues/4)) are planned as extras; `correspond channels` lists them with their issues.
 
@@ -97,7 +97,7 @@ scope: public
 ## Listening
 
 ```bash
-correspond listen github:owner/repo    # issue and comment activity since the last listen
+correspond listen github:owner/repo    # issue, comment, review comment and discussion activity since the last listen
 correspond listen email: --peek        # look without moving the cursor
 ```
 
@@ -322,7 +322,7 @@ Dutch clients. Prior art: `email-reply-parser` (top-posting, English) and
 
 | [`Authored`](_autosummary/correspond.authored.html.md#correspond.authored.Authored)(text[, quoted, signature, ...])   | One email body split into what its sender wrote and everything else.   |
 |---------------------------------------------------------------------------------------------|------------------------------------------------------------------------|
-| [`Markers`](_autosummary/correspond.authored.html.md#correspond.authored.Markers)([reply_headers, header_window])    | The patterns that recognise reply headers, forwards and footers.       |
+| [`Markers`](_autosummary/correspond.authored.html.md#correspond.authored.Markers)([reply_headers, disclaimers, ...]) | The patterns that recognise reply headers, forwards and footers.       |
 
 ### *class* correspond.authored.Authored(text, quoted='', signature='', disclaimer='', inline=(), forwarded=False, inline_announced=False, notes=())
 
@@ -344,7 +344,7 @@ JSON-ready.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* correspond.authored.Markers(reply_headers=(re.compile('^on\\\\\\\\b.{0, 300}\\\\\\\\bwrote\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^le\\\\\\\\b.{0, 300}\\\\\\\\ba [ée]crit\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^am\\\\\\\\b.{0, 300}\\\\\\\\bschrieb\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^(den|on)\\\\\\\\b.{0, 300}\\\\\\\\bskrev\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^el\\\\\\\\b.{0, 300}\\\\\\\\bescribi[óo]\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^il\\\\\\\\b.{0, 300}\\\\\\\\bha scritto\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^op\\\\\\\\b.{0, 300}\\\\\\\\bschreef\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^\\\\\\\\d{4}[/-]\\\\\\\\d{1, 2}[/-]\\\\\\\\d{1, 2}\\\\\\\\b.{0, 200}<[^>\\\\\\\\s]+@[^>\\\\\\\\s]+\\\\\\\\s\*>\\\\\\\\s\*: $', re.IGNORECASE), re.compile("^-{2, }\\\\\\\\s\*(original message|message d'origine|ursprüngliche nachricht|ursprungligt meddelande|mensaje original|messaggio originale|oorspronkelijk bericht)\\\\\\\\s\*-{2, }$", re.IGNORECASE)), quote_leads=(re.compile('^.{1, 200}\\\\\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^.{0, 200}<[^>\\\\\\\\s]+@[^>\\\\\\\\s]+>\\\\\\\\s\*: $', re.IGNORECASE)), reply_header_tails=(re.compile('^.{0, 120}\\\\\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\\\\\s\*: $', re.IGNORECASE), ), forward_headers=(re.compile('^-{2, }\\\\\\\\s\*(forwarded message|message transf[ée]r[ée]|weitergeleitete nachricht|vidarebefordrat meddelande|mensaje reenviado|messaggio inoltrato|doorgestuurd bericht)\\\\\\\\s\*-{2, }$', re.IGNORECASE), re.compile('^begin forwarded message\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^d[ée]but du message r[ée]exp[ée]di[ée]\\\\\\\\s\*: $', re.IGNORECASE)), header_from=(re.compile('^\\\\\\\\\*\*(from|de|från|von|van|da|fra)\\\\\\\\s\*:\\\\\\\\\*\*\\\\\\\\s\*\\\\\\\\S.\*$', re.IGNORECASE), ), header_field=(re.compile('^\\\\\\\\\*\*(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|cc|bcc|cci|kopia|reply-to|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\\\\\s\*:\\\\\\\\\*\*(\\\\\\\\s|$), re.IGNORECASE), ), separators=(re.compile('^_{10, }$', re.IGNORECASE), re.compile('^-{20, }$', re.IGNORECASE)), signature_starts=(re.compile('^--\\\\\\\\s\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf) (my|mon|ma|min|mein|meinem|mi|il mio|mijn)\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^von meinem \\\\\\\\S+ gesendet$', re.IGNORECASE), re.compile('^get outlook for\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf|med|with|avec) (outlook|mail|gmail|yahoo|samsung|blackberry|android|ios|iphone|ipad)\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^\\\\\\\\((from|sent from|envoy[ée] (de|depuis)) (my )?(handheld|mobile|phone|iphone|portable)\\\\\\\\)$', re.IGNORECASE), re.compile('^(obtenir|télécharger) outlook pour\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^h[äa]mta outlook f[öo]r\\\\\\\\b.\*$', re.IGNORECASE)), sign_offs=(re.compile('^/\\\\\\\\s?\\\\\\\\w[\\\\\\\\w .-]{0, 30}$', re.IGNORECASE), re.compile('^(best|best regards|kind regards|warm regards|regards|cheers|thanks|thank you|many thanks|all the best|br|brgds|rgds|cordialement|bien cordialement|bien à (vous|toi)|amitiés|bonne journée|merci|mvh|m, re.IGNORECASE)), contact=(re.compile('(\\\\\\\\+|00)\\\\\\\\d[\\\\\\\\d ().-]{6, }\\\\\\\\d', re.IGNORECASE), re.compile('\\\\\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\\\\\b\\\\\\\\.?\\\\\\\\s\*: ?', re.IGNORECASE), re.compile('https?: //|\\\\\\\\bwww\\\\\\\\.', re.IGNORECASE), re.compile('[\\\\\\\\w.+-]+@[\\\\\\\\w-]+\\\\\\\\.[\\\\\\\\w.]+', re.IGNORECASE)), debris=(re.compile('^\\\\\\\\[(image|cid|inline image)[^\\\\\\\\]]\*\\\\\\\\]$', re.IGNORECASE), re.compile('^<?(https?|mailto|tel): \\\\\\\\S+>?$', re.IGNORECASE), re.compile("^[\\\\\\\\w .'-]{0, 40}: ?\\\\\\\\s\*<?(tel:)?(\\\\\\\\+|00)?\\\\\\\\d[\\\\\\\\d ().-]{6, }\\\\\\\\d>?$", re.IGNORECASE), re.compile('^[\\\\\\\\w ., \\\\'\\\\\\\\"-]{0, 80}<[^>\\\\\\\\s]+@[^>\\\\\\\\s]+>, \\\\\\\\s\*)+[\\\\'\\\\\\\\"\\\\\\\\w .-]{0, 40}$', re.IGNORECASE), re.compile('^(e-?mail|e|t|m|tel|tél|mob|mobile|phone|fax|web)\\\\\\\\s\*: \\\\\\\\s\*\\\\\\\\S+', re.IGNORECASE)), disclaimers=(re.compile('\\\\\\\\b(this|the) (e-?mail|message)( and any (attachments?|files?))?.{0, 80}\\\\\\\\b(confidential|privileged|intended (solely |only )?for)\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bconfidentiality notice\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bce (message|courriel|mail)( et (toutes )?(les|ses) pi[èe]ces jointes)?.{0, 80}\\\\\\\\b(confidentiel|destin[ée] exclusivement)', re.IGNORECASE), re.compile('\\\\\\\\bdetta (e-?post|meddelande).{0, 80}\\\\\\\\bkonfidentiell', re.IGNORECASE), re.compile('\\\\\\\\bplease consider the environment before printing\\\\\\\\b', re.IGNORECASE), re.compile("\\\\\\\\bpensez à l'environnement avant d'imprimer\\\\\\\\b", re.IGNORECASE)), inline_announcements=(re.compile('\\\\\\\\b(see )?(my )?(answers?|responses?|replies|comments?|notes?) (are )?(below|inline|in (red|blue|bold|green))\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(see|cf\\\\\\\\.?) below\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(réponses?|commentaires?) (ci-dessous|en (rouge|bleu|gras)|dans le texte)\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bvoir ci-dessous\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(svar|kommentarer) (nedan|i texten|med (rött|blått))\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(antworten|kommentare) (unten|im text|in rot)\\\\\\\\b', re.IGNORECASE)), header_window=4)
+### *class* correspond.authored.Markers(reply_headers=(re.compile('^on\\\\b.{0, 300}\\\\bwrote\\\\s\*: $', re.IGNORECASE), re.compile('^le\\\\b.{0, 300}\\\\ba [ée]crit\\\\s\*: $', re.IGNORECASE), re.compile('^am\\\\b.{0, 300}\\\\bschrieb\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^(den|on)\\\\b.{0, 300}\\\\bskrev\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^el\\\\b.{0, 300}\\\\bescribi[óo]\\\\s\*: $', re.IGNORECASE), re.compile('^il\\\\b.{0, 300}\\\\bha scritto\\\\s\*: $', re.IGNORECASE), re.compile('^op\\\\b.{0, 300}\\\\bschreef\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^\\\\d{4}[/-]\\\\d{1, 2}[/-]\\\\d{1, 2}\\\\b.{0, 200}<[^>\\\\s]+@[^>\\\\s]+\\\\s\*>\\\\s\*: $', re.IGNORECASE), re.compile("^-{2, }\\\\s\*(original message|message d'origine|ursprüngliche nachricht|ursprungligt meddelande|mensaje original|messaggio originale|oorspronkelijk bericht)\\\\s\*-{2, }$", re.IGNORECASE)), quote_leads=(re.compile('^.{1, 200}\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\s\*: $', re.IGNORECASE), re.compile('^.{0, 200}<[^>\\\\s]+@[^>\\\\s]+>\\\\s\*: $', re.IGNORECASE)), reply_header_tails=(re.compile('^.{0, 120}\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\s\*: $', re.IGNORECASE), ), forward_headers=(re.compile('^-{2, }\\\\s\*(forwarded message|message transf[ée]r[ée]|weitergeleitete nachricht|vidarebefordrat meddelande|mensaje reenviado|messaggio inoltrato|doorgestuurd bericht)\\\\s\*-{2, }$', re.IGNORECASE), re.compile('^begin forwarded message\\\\s\*: $', re.IGNORECASE), re.compile('^d[ée]but du message r[ée]exp[ée]di[ée]\\\\s\*: $', re.IGNORECASE)), header_from=(re.compile('^\\\\\*\*(from|de|från|von|van|da|fra)\\\\s\*:\\\\\*\*\\\\s\*\\\\S.\*$', re.IGNORECASE), ), header_field=(re.compile('^\\\\\*\*(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|cc|bcc|cci|kopia|reply-to|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\s\*:\\\\\*\*(\\\\s|$), re.IGNORECASE), ), separators=(re.compile('^_{10, }$', re.IGNORECASE), re.compile('^-{20, }$', re.IGNORECASE)), signature_starts=(re.compile('^--\\\\s\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf) (my|mon|ma|min|mein|meinem|mi|il mio|mijn)\\\\b.\*$', re.IGNORECASE), re.compile('^von meinem \\\\S+ gesendet$', re.IGNORECASE), re.compile('^get outlook for\\\\b.\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf|med|with|avec) (outlook|mail|gmail|yahoo|samsung|blackberry|android|ios|iphone|ipad)\\\\b.\*$', re.IGNORECASE), re.compile('^\\\\((from|sent from|envoy[ée] (de|depuis)) (my )?(handheld|mobile|phone|iphone|portable)\\\\)$', re.IGNORECASE), re.compile('^(obtenir|télécharger) outlook pour\\\\b.\*$', re.IGNORECASE), re.compile('^h[äa]mta outlook f[öo]r\\\\b.\*$', re.IGNORECASE)), sign_offs=(re.compile('^/\\\\s?\\\\w[\\\\w .-]{0, 30}$', re.IGNORECASE), re.compile('^(best|best regards|kind regards|warm regards|regards|cheers|thanks|thank you|many thanks|all the best|br|brgds|rgds|cordialement|bien cordialement|bien à (vous|toi)|amitiés|bonne journée|merci|mvh|m, re.IGNORECASE)), contact=(re.compile('(\\\\+|00)\\\\d[\\\\d ().-]{6, }\\\\d', re.IGNORECASE), re.compile('\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\b\\\\.?\\\\s\*: ?', re.IGNORECASE), re.compile('https?: //|\\\\bwww\\\\.', re.IGNORECASE), re.compile('[\\\\w.+-]+@[\\\\w-]+\\\\.[\\\\w.]+', re.IGNORECASE)), debris=(re.compile('^\\\\[(image|cid|inline image)[^\\\\]]\*\\\\]$', re.IGNORECASE), re.compile('^<?(https?|mailto|tel): \\\\S+>?$', re.IGNORECASE), re.compile("^[\\\\w .'-]{0, 40}: ?\\\\s\*<?(tel:)?(\\\\+|00)?\\\\d[\\\\d ().-]{6, }\\\\d>?$", re.IGNORECASE), re.compile('^[\\\\w ., \\'\\\\"-]{0, 80}<[^>\\\\s]+@[^>\\\\s]+>, \\\\s\*)+[\\'\\\\"\\\\w .-]{0, 40}$', re.IGNORECASE), re.compile('^(e-?mail|e|t|m|tel|tél|mob|mobile|phone|fax|web)\\\\s\*: \\\\s\*\\\\S+', re.IGNORECASE)), disclaimers=(re.compile('\\\\b(this|the) (e-?mail|message)( and any (attachments?|files?))?.{0, 80}\\\\b(confidential|privileged|intended (solely |only )?for)\\\\b', re.IGNORECASE), re.compile('\\\\bconfidentiality notice\\\\b', re.IGNORECASE), re.compile('\\\\bce (message|courriel|mail)( et (toutes )?(les|ses) pi[èe]ces jointes)?.{0, 80}\\\\b(confidentiel|destin[ée] exclusivement)', re.IGNORECASE), re.compile('\\\\bdetta (e-?post|meddelande).{0, 80}\\\\bkonfidentiell', re.IGNORECASE), re.compile('\\\\bplease consider the environment before printing\\\\b', re.IGNORECASE), re.compile("\\\\bpensez à l'environnement avant d'imprimer\\\\b", re.IGNORECASE)), inline_announcements=(re.compile('\\\\b(see )?(my )?(answers?|responses?|replies|comments?|notes?) (are )?(below|inline|in (red|blue|bold|green))\\\\b', re.IGNORECASE), re.compile('\\\\b(see|cf\\\\.?) below\\\\b', re.IGNORECASE), re.compile('\\\\b(réponses?|commentaires?) (ci-dessous|en (rouge|bleu|gras)|dans le texte)\\\\b', re.IGNORECASE), re.compile('\\\\bvoir ci-dessous\\\\b', re.IGNORECASE), re.compile('\\\\b(svar|kommentarer) (nedan|i texten|med (rött|blått))\\\\b', re.IGNORECASE), re.compile('\\\\b(antworten|kommentare) (unten|im text|in rot)\\\\b', re.IGNORECASE)), header_window=4)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -423,7 +423,7 @@ what is after it, in a trailing block of short lines, is a signature.
 
 A line that starts a signature on its own (”– “, a mobile footer).
 
-### correspond.authored.authored(text, \*, earlier=(), markers=Markers(reply_headers=(re.compile('^on\\\\\\\\b.{0, 300}\\\\\\\\bwrote\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^le\\\\\\\\b.{0, 300}\\\\\\\\ba [ée]crit\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^am\\\\\\\\b.{0, 300}\\\\\\\\bschrieb\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^(den|on)\\\\\\\\b.{0, 300}\\\\\\\\bskrev\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^el\\\\\\\\b.{0, 300}\\\\\\\\bescribi[óo]\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^il\\\\\\\\b.{0, 300}\\\\\\\\bha scritto\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^op\\\\\\\\b.{0, 300}\\\\\\\\bschreef\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^\\\\\\\\d{4}[/-]\\\\\\\\d{1, 2}[/-]\\\\\\\\d{1, 2}\\\\\\\\b.{0, 200}<[^>\\\\\\\\s]+@[^>\\\\\\\\s]+\\\\\\\\s\*>\\\\\\\\s\*: $', re.IGNORECASE), re.compile("^-{2, }\\\\\\\\s\*(original message|message d'origine|ursprüngliche nachricht|ursprungligt meddelande|mensaje original|messaggio originale|oorspronkelijk bericht)\\\\\\\\s\*-{2, }$", re.IGNORECASE)), quote_leads=(re.compile('^.{1, 200}\\\\\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^.{0, 200}<[^>\\\\\\\\s]+@[^>\\\\\\\\s]+>\\\\\\\\s\*: $', re.IGNORECASE)), reply_header_tails=(re.compile('^.{0, 120}\\\\\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\\\\\s\*: $', re.IGNORECASE), ), forward_headers=(re.compile('^-{2, }\\\\\\\\s\*(forwarded message|message transf[ée]r[ée]|weitergeleitete nachricht|vidarebefordrat meddelande|mensaje reenviado|messaggio inoltrato|doorgestuurd bericht)\\\\\\\\s\*-{2, }$', re.IGNORECASE), re.compile('^begin forwarded message\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^d[ée]but du message r[ée]exp[ée]di[ée]\\\\\\\\s\*: $', re.IGNORECASE)), header_from=(re.compile('^\\\\\\\\\*\*(from|de|från|von|van|da|fra)\\\\\\\\s\*:\\\\\\\\\*\*\\\\\\\\s\*\\\\\\\\S.\*$', re.IGNORECASE), ), header_field=(re.compile('^\\\\\\\\\*\*(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|cc|bcc|cci|kopia|reply-to|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\\\\\s\*:\\\\\\\\\*\*(\\\\\\\\s|$), re.IGNORECASE), ), separators=(re.compile('^_{10, }$', re.IGNORECASE), re.compile('^-{20, }$', re.IGNORECASE)), signature_starts=(re.compile('^--\\\\\\\\s\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf) (my|mon|ma|min|mein|meinem|mi|il mio|mijn)\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^von meinem \\\\\\\\S+ gesendet$', re.IGNORECASE), re.compile('^get outlook for\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf|med|with|avec) (outlook|mail|gmail|yahoo|samsung|blackberry|android|ios|iphone|ipad)\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^\\\\\\\\((from|sent from|envoy[ée] (de|depuis)) (my )?(handheld|mobile|phone|iphone|portable)\\\\\\\\)$', re.IGNORECASE), re.compile('^(obtenir|télécharger) outlook pour\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^h[äa]mta outlook f[öo]r\\\\\\\\b.\*$', re.IGNORECASE)), sign_offs=(re.compile('^/\\\\\\\\s?\\\\\\\\w[\\\\\\\\w .-]{0, 30}$', re.IGNORECASE), re.compile('^(best|best regards|kind regards|warm regards|regards|cheers|thanks|thank you|many thanks|all the best|br|brgds|rgds|cordialement|bien cordialement|bien à (vous|toi)|amitiés|bonne journée|merci|mvh|m, re.IGNORECASE)), contact=(re.compile('(\\\\\\\\+|00)\\\\\\\\d[\\\\\\\\d ().-]{6, }\\\\\\\\d', re.IGNORECASE), re.compile('\\\\\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\\\\\b\\\\\\\\.?\\\\\\\\s\*: ?', re.IGNORECASE), re.compile('https?: //|\\\\\\\\bwww\\\\\\\\.', re.IGNORECASE), re.compile('[\\\\\\\\w.+-]+@[\\\\\\\\w-]+\\\\\\\\.[\\\\\\\\w.]+', re.IGNORECASE)), debris=(re.compile('^\\\\\\\\[(image|cid|inline image)[^\\\\\\\\]]\*\\\\\\\\]$', re.IGNORECASE), re.compile('^<?(https?|mailto|tel): \\\\\\\\S+>?$', re.IGNORECASE), re.compile("^[\\\\\\\\w .'-]{0, 40}: ?\\\\\\\\s\*<?(tel:)?(\\\\\\\\+|00)?\\\\\\\\d[\\\\\\\\d ().-]{6, }\\\\\\\\d>?$", re.IGNORECASE), re.compile('^[\\\\\\\\w ., \\\\'\\\\\\\\"-]{0, 80}<[^>\\\\\\\\s]+@[^>\\\\\\\\s]+>, \\\\\\\\s\*)+[\\\\'\\\\\\\\"\\\\\\\\w .-]{0, 40}$', re.IGNORECASE), re.compile('^(e-?mail|e|t|m|tel|tél|mob|mobile|phone|fax|web)\\\\\\\\s\*: \\\\\\\\s\*\\\\\\\\S+', re.IGNORECASE)), disclaimers=(re.compile('\\\\\\\\b(this|the) (e-?mail|message)( and any (attachments?|files?))?.{0, 80}\\\\\\\\b(confidential|privileged|intended (solely |only )?for)\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bconfidentiality notice\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bce (message|courriel|mail)( et (toutes )?(les|ses) pi[èe]ces jointes)?.{0, 80}\\\\\\\\b(confidentiel|destin[ée] exclusivement)', re.IGNORECASE), re.compile('\\\\\\\\bdetta (e-?post|meddelande).{0, 80}\\\\\\\\bkonfidentiell', re.IGNORECASE), re.compile('\\\\\\\\bplease consider the environment before printing\\\\\\\\b', re.IGNORECASE), re.compile("\\\\\\\\bpensez à l'environnement avant d'imprimer\\\\\\\\b", re.IGNORECASE)), inline_announcements=(re.compile('\\\\\\\\b(see )?(my )?(answers?|responses?|replies|comments?|notes?) (are )?(below|inline|in (red|blue|bold|green))\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(see|cf\\\\\\\\.?) below\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(réponses?|commentaires?) (ci-dessous|en (rouge|bleu|gras)|dans le texte)\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bvoir ci-dessous\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(svar|kommentarer) (nedan|i texten|med (rött|blått))\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(antworten|kommentare) (unten|im text|in rot)\\\\\\\\b', re.IGNORECASE)), header_window=4), min_coverage=0.6)
+### correspond.authored.authored(text, \*, earlier=(), markers=Markers(reply_headers=(re.compile('^on\\\\b.{0, 300}\\\\bwrote\\\\s\*: $', re.IGNORECASE), re.compile('^le\\\\b.{0, 300}\\\\ba [ée]crit\\\\s\*: $', re.IGNORECASE), re.compile('^am\\\\b.{0, 300}\\\\bschrieb\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^(den|on)\\\\b.{0, 300}\\\\bskrev\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^el\\\\b.{0, 300}\\\\bescribi[óo]\\\\s\*: $', re.IGNORECASE), re.compile('^il\\\\b.{0, 300}\\\\bha scritto\\\\s\*: $', re.IGNORECASE), re.compile('^op\\\\b.{0, 300}\\\\bschreef\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^\\\\d{4}[/-]\\\\d{1, 2}[/-]\\\\d{1, 2}\\\\b.{0, 200}<[^>\\\\s]+@[^>\\\\s]+\\\\s\*>\\\\s\*: $', re.IGNORECASE), re.compile("^-{2, }\\\\s\*(original message|message d'origine|ursprüngliche nachricht|ursprungligt meddelande|mensaje original|messaggio originale|oorspronkelijk bericht)\\\\s\*-{2, }$", re.IGNORECASE)), quote_leads=(re.compile('^.{1, 200}\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\s\*: $', re.IGNORECASE), re.compile('^.{0, 200}<[^>\\\\s]+@[^>\\\\s]+>\\\\s\*: $', re.IGNORECASE)), reply_header_tails=(re.compile('^.{0, 120}\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\s\*: $', re.IGNORECASE), ), forward_headers=(re.compile('^-{2, }\\\\s\*(forwarded message|message transf[ée]r[ée]|weitergeleitete nachricht|vidarebefordrat meddelande|mensaje reenviado|messaggio inoltrato|doorgestuurd bericht)\\\\s\*-{2, }$', re.IGNORECASE), re.compile('^begin forwarded message\\\\s\*: $', re.IGNORECASE), re.compile('^d[ée]but du message r[ée]exp[ée]di[ée]\\\\s\*: $', re.IGNORECASE)), header_from=(re.compile('^\\\\\*\*(from|de|från|von|van|da|fra)\\\\s\*:\\\\\*\*\\\\s\*\\\\S.\*$', re.IGNORECASE), ), header_field=(re.compile('^\\\\\*\*(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|cc|bcc|cci|kopia|reply-to|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\s\*:\\\\\*\*(\\\\s|$), re.IGNORECASE), ), separators=(re.compile('^_{10, }$', re.IGNORECASE), re.compile('^-{20, }$', re.IGNORECASE)), signature_starts=(re.compile('^--\\\\s\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf) (my|mon|ma|min|mein|meinem|mi|il mio|mijn)\\\\b.\*$', re.IGNORECASE), re.compile('^von meinem \\\\S+ gesendet$', re.IGNORECASE), re.compile('^get outlook for\\\\b.\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf|med|with|avec) (outlook|mail|gmail|yahoo|samsung|blackberry|android|ios|iphone|ipad)\\\\b.\*$', re.IGNORECASE), re.compile('^\\\\((from|sent from|envoy[ée] (de|depuis)) (my )?(handheld|mobile|phone|iphone|portable)\\\\)$', re.IGNORECASE), re.compile('^(obtenir|télécharger) outlook pour\\\\b.\*$', re.IGNORECASE), re.compile('^h[äa]mta outlook f[öo]r\\\\b.\*$', re.IGNORECASE)), sign_offs=(re.compile('^/\\\\s?\\\\w[\\\\w .-]{0, 30}$', re.IGNORECASE), re.compile('^(best|best regards|kind regards|warm regards|regards|cheers|thanks|thank you|many thanks|all the best|br|brgds|rgds|cordialement|bien cordialement|bien à (vous|toi)|amitiés|bonne journée|merci|mvh|m, re.IGNORECASE)), contact=(re.compile('(\\\\+|00)\\\\d[\\\\d ().-]{6, }\\\\d', re.IGNORECASE), re.compile('\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\b\\\\.?\\\\s\*: ?', re.IGNORECASE), re.compile('https?: //|\\\\bwww\\\\.', re.IGNORECASE), re.compile('[\\\\w.+-]+@[\\\\w-]+\\\\.[\\\\w.]+', re.IGNORECASE)), debris=(re.compile('^\\\\[(image|cid|inline image)[^\\\\]]\*\\\\]$', re.IGNORECASE), re.compile('^<?(https?|mailto|tel): \\\\S+>?$', re.IGNORECASE), re.compile("^[\\\\w .'-]{0, 40}: ?\\\\s\*<?(tel:)?(\\\\+|00)?\\\\d[\\\\d ().-]{6, }\\\\d>?$", re.IGNORECASE), re.compile('^[\\\\w ., \\'\\\\"-]{0, 80}<[^>\\\\s]+@[^>\\\\s]+>, \\\\s\*)+[\\'\\\\"\\\\w .-]{0, 40}$', re.IGNORECASE), re.compile('^(e-?mail|e|t|m|tel|tél|mob|mobile|phone|fax|web)\\\\s\*: \\\\s\*\\\\S+', re.IGNORECASE)), disclaimers=(re.compile('\\\\b(this|the) (e-?mail|message)( and any (attachments?|files?))?.{0, 80}\\\\b(confidential|privileged|intended (solely |only )?for)\\\\b', re.IGNORECASE), re.compile('\\\\bconfidentiality notice\\\\b', re.IGNORECASE), re.compile('\\\\bce (message|courriel|mail)( et (toutes )?(les|ses) pi[èe]ces jointes)?.{0, 80}\\\\b(confidentiel|destin[ée] exclusivement)', re.IGNORECASE), re.compile('\\\\bdetta (e-?post|meddelande).{0, 80}\\\\bkonfidentiell', re.IGNORECASE), re.compile('\\\\bplease consider the environment before printing\\\\b', re.IGNORECASE), re.compile("\\\\bpensez à l'environnement avant d'imprimer\\\\b", re.IGNORECASE)), inline_announcements=(re.compile('\\\\b(see )?(my )?(answers?|responses?|replies|comments?|notes?) (are )?(below|inline|in (red|blue|bold|green))\\\\b', re.IGNORECASE), re.compile('\\\\b(see|cf\\\\.?) below\\\\b', re.IGNORECASE), re.compile('\\\\b(réponses?|commentaires?) (ci-dessous|en (rouge|bleu|gras)|dans le texte)\\\\b', re.IGNORECASE), re.compile('\\\\bvoir ci-dessous\\\\b', re.IGNORECASE), re.compile('\\\\b(svar|kommentarer) (nedan|i texten|med (rött|blått))\\\\b', re.IGNORECASE), re.compile('\\\\b(antworten|kommentare) (unten|im text|in rot)\\\\b', re.IGNORECASE)), header_window=4), min_coverage=0.6)
 
 Split one email body (plain text) into what its sender wrote and everything else.
 
@@ -434,20 +434,17 @@ can hold them, and only when one earlier message is found in that copy (at least
 `min_coverage` of its own lines), since a thread missing its earlier messages would make
 every quoted line look new. Earlier text pasted back with no header counts as quoted.
 
-* **Return type:**
-  [`Authored`](_autosummary/correspond.authored.html.md#correspond.authored.Authored)
-
 ```pycon
 >>> authored("Thanks!\n\n-- \nAda Lovelace\nAnalytical Engines Ltd").signature
 '--\nAda Lovelace\nAnalytical Engines Ltd'
 ```
 
-### correspond.authored.authored_thread(bodies, \*, markers=Markers(reply_headers=(re.compile('^on\\\\\\\\b.{0, 300}\\\\\\\\bwrote\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^le\\\\\\\\b.{0, 300}\\\\\\\\ba [ée]crit\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^am\\\\\\\\b.{0, 300}\\\\\\\\bschrieb\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^(den|on)\\\\\\\\b.{0, 300}\\\\\\\\bskrev\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^el\\\\\\\\b.{0, 300}\\\\\\\\bescribi[óo]\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^il\\\\\\\\b.{0, 300}\\\\\\\\bha scritto\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^op\\\\\\\\b.{0, 300}\\\\\\\\bschreef\\\\\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^\\\\\\\\d{4}[/-]\\\\\\\\d{1, 2}[/-]\\\\\\\\d{1, 2}\\\\\\\\b.{0, 200}<[^>\\\\\\\\s]+@[^>\\\\\\\\s]+\\\\\\\\s\*>\\\\\\\\s\*: $', re.IGNORECASE), re.compile("^-{2, }\\\\\\\\s\*(original message|message d'origine|ursprüngliche nachricht|ursprungligt meddelande|mensaje original|messaggio originale|oorspronkelijk bericht)\\\\\\\\s\*-{2, }$", re.IGNORECASE)), quote_leads=(re.compile('^.{1, 200}\\\\\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^.{0, 200}<[^>\\\\\\\\s]+@[^>\\\\\\\\s]+>\\\\\\\\s\*: $', re.IGNORECASE)), reply_header_tails=(re.compile('^.{0, 120}\\\\\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\\\\\s\*: $', re.IGNORECASE), ), forward_headers=(re.compile('^-{2, }\\\\\\\\s\*(forwarded message|message transf[ée]r[ée]|weitergeleitete nachricht|vidarebefordrat meddelande|mensaje reenviado|messaggio inoltrato|doorgestuurd bericht)\\\\\\\\s\*-{2, }$', re.IGNORECASE), re.compile('^begin forwarded message\\\\\\\\s\*: $', re.IGNORECASE), re.compile('^d[ée]but du message r[ée]exp[ée]di[ée]\\\\\\\\s\*: $', re.IGNORECASE)), header_from=(re.compile('^\\\\\\\\\*\*(from|de|från|von|van|da|fra)\\\\\\\\s\*:\\\\\\\\\*\*\\\\\\\\s\*\\\\\\\\S.\*$', re.IGNORECASE), ), header_field=(re.compile('^\\\\\\\\\*\*(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|cc|bcc|cci|kopia|reply-to|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\\\\\s\*:\\\\\\\\\*\*(\\\\\\\\s|$), re.IGNORECASE), ), separators=(re.compile('^_{10, }$', re.IGNORECASE), re.compile('^-{20, }$', re.IGNORECASE)), signature_starts=(re.compile('^--\\\\\\\\s\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf) (my|mon|ma|min|mein|meinem|mi|il mio|mijn)\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^von meinem \\\\\\\\S+ gesendet$', re.IGNORECASE), re.compile('^get outlook for\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf|med|with|avec) (outlook|mail|gmail|yahoo|samsung|blackberry|android|ios|iphone|ipad)\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^\\\\\\\\((from|sent from|envoy[ée] (de|depuis)) (my )?(handheld|mobile|phone|iphone|portable)\\\\\\\\)$', re.IGNORECASE), re.compile('^(obtenir|télécharger) outlook pour\\\\\\\\b.\*$', re.IGNORECASE), re.compile('^h[äa]mta outlook f[öo]r\\\\\\\\b.\*$', re.IGNORECASE)), sign_offs=(re.compile('^/\\\\\\\\s?\\\\\\\\w[\\\\\\\\w .-]{0, 30}$', re.IGNORECASE), re.compile('^(best|best regards|kind regards|warm regards|regards|cheers|thanks|thank you|many thanks|all the best|br|brgds|rgds|cordialement|bien cordialement|bien à (vous|toi)|amitiés|bonne journée|merci|mvh|m, re.IGNORECASE)), contact=(re.compile('(\\\\\\\\+|00)\\\\\\\\d[\\\\\\\\d ().-]{6, }\\\\\\\\d', re.IGNORECASE), re.compile('\\\\\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\\\\\b\\\\\\\\.?\\\\\\\\s\*: ?', re.IGNORECASE), re.compile('https?: //|\\\\\\\\bwww\\\\\\\\.', re.IGNORECASE), re.compile('[\\\\\\\\w.+-]+@[\\\\\\\\w-]+\\\\\\\\.[\\\\\\\\w.]+', re.IGNORECASE)), debris=(re.compile('^\\\\\\\\[(image|cid|inline image)[^\\\\\\\\]]\*\\\\\\\\]$', re.IGNORECASE), re.compile('^<?(https?|mailto|tel): \\\\\\\\S+>?$', re.IGNORECASE), re.compile("^[\\\\\\\\w .'-]{0, 40}: ?\\\\\\\\s\*<?(tel:)?(\\\\\\\\+|00)?\\\\\\\\d[\\\\\\\\d ().-]{6, }\\\\\\\\d>?$", re.IGNORECASE), re.compile('^[\\\\\\\\w ., \\\\'\\\\\\\\"-]{0, 80}<[^>\\\\\\\\s]+@[^>\\\\\\\\s]+>, \\\\\\\\s\*)+[\\\\'\\\\\\\\"\\\\\\\\w .-]{0, 40}$', re.IGNORECASE), re.compile('^(e-?mail|e|t|m|tel|tél|mob|mobile|phone|fax|web)\\\\\\\\s\*: \\\\\\\\s\*\\\\\\\\S+', re.IGNORECASE)), disclaimers=(re.compile('\\\\\\\\b(this|the) (e-?mail|message)( and any (attachments?|files?))?.{0, 80}\\\\\\\\b(confidential|privileged|intended (solely |only )?for)\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bconfidentiality notice\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bce (message|courriel|mail)( et (toutes )?(les|ses) pi[èe]ces jointes)?.{0, 80}\\\\\\\\b(confidentiel|destin[ée] exclusivement)', re.IGNORECASE), re.compile('\\\\\\\\bdetta (e-?post|meddelande).{0, 80}\\\\\\\\bkonfidentiell', re.IGNORECASE), re.compile('\\\\\\\\bplease consider the environment before printing\\\\\\\\b', re.IGNORECASE), re.compile("\\\\\\\\bpensez à l'environnement avant d'imprimer\\\\\\\\b", re.IGNORECASE)), inline_announcements=(re.compile('\\\\\\\\b(see )?(my )?(answers?|responses?|replies|comments?|notes?) (are )?(below|inline|in (red|blue|bold|green))\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(see|cf\\\\\\\\.?) below\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(réponses?|commentaires?) (ci-dessous|en (rouge|bleu|gras)|dans le texte)\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\bvoir ci-dessous\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(svar|kommentarer) (nedan|i texten|med (rött|blått))\\\\\\\\b', re.IGNORECASE), re.compile('\\\\\\\\b(antworten|kommentare) (unten|im text|in rot)\\\\\\\\b', re.IGNORECASE)), header_window=4), min_coverage=0.6)
+* **Return type:**
+  [`Authored`](_autosummary/correspond.authored.html.md#correspond.authored.Authored)
+
+### correspond.authored.authored_thread(bodies, \*, markers=Markers(reply_headers=(re.compile('^on\\\\b.{0, 300}\\\\bwrote\\\\s\*: $', re.IGNORECASE), re.compile('^le\\\\b.{0, 300}\\\\ba [ée]crit\\\\s\*: $', re.IGNORECASE), re.compile('^am\\\\b.{0, 300}\\\\bschrieb\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^(den|on)\\\\b.{0, 300}\\\\bskrev\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^el\\\\b.{0, 300}\\\\bescribi[óo]\\\\s\*: $', re.IGNORECASE), re.compile('^il\\\\b.{0, 300}\\\\bha scritto\\\\s\*: $', re.IGNORECASE), re.compile('^op\\\\b.{0, 300}\\\\bschreef\\\\b.{0, 300}: $', re.IGNORECASE), re.compile('^\\\\d{4}[/-]\\\\d{1, 2}[/-]\\\\d{1, 2}\\\\b.{0, 200}<[^>\\\\s]+@[^>\\\\s]+\\\\s\*>\\\\s\*: $', re.IGNORECASE), re.compile("^-{2, }\\\\s\*(original message|message d'origine|ursprüngliche nachricht|ursprungligt meddelande|mensaje original|messaggio originale|oorspronkelijk bericht)\\\\s\*-{2, }$", re.IGNORECASE)), quote_leads=(re.compile('^.{1, 200}\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\s\*: $', re.IGNORECASE), re.compile('^.{0, 200}<[^>\\\\s]+@[^>\\\\s]+>\\\\s\*: $', re.IGNORECASE)), reply_header_tails=(re.compile('^.{0, 120}\\\\b(wrote|a [ée]crit|schrieb|skrev|escribi[óo]|ha scritto|schreef)\\\\s\*: $', re.IGNORECASE), ), forward_headers=(re.compile('^-{2, }\\\\s\*(forwarded message|message transf[ée]r[ée]|weitergeleitete nachricht|vidarebefordrat meddelande|mensaje reenviado|messaggio inoltrato|doorgestuurd bericht)\\\\s\*-{2, }$', re.IGNORECASE), re.compile('^begin forwarded message\\\\s\*: $', re.IGNORECASE), re.compile('^d[ée]but du message r[ée]exp[ée]di[ée]\\\\s\*: $', re.IGNORECASE)), header_from=(re.compile('^\\\\\*\*(from|de|från|von|van|da|fra)\\\\s\*:\\\\\*\*\\\\s\*\\\\S.\*$', re.IGNORECASE), ), header_field=(re.compile('^\\\\\*\*(sent|date|envoy[ée]|skickat|datum|gesendet|verzonden|inviato|enviado|fecha|to|à|till|an|aan|a|para|cc|bcc|cci|kopia|reply-to|subject|objet|ämne|betreff|onderwerp|oggetto|asunto)\\\\s\*:\\\\\*\*(\\\\s|$), re.IGNORECASE), ), separators=(re.compile('^_{10, }$', re.IGNORECASE), re.compile('^-{20, }$', re.IGNORECASE)), signature_starts=(re.compile('^--\\\\s\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf) (my|mon|ma|min|mein|meinem|mi|il mio|mijn)\\\\b.\*$', re.IGNORECASE), re.compile('^von meinem \\\\S+ gesendet$', re.IGNORECASE), re.compile('^get outlook for\\\\b.\*$', re.IGNORECASE), re.compile('^(sent|envoy[ée]|skickat|gesendet|enviado|inviato|verzonden) (from|de|depuis|från|von|desde|da|vanaf|med|with|avec) (outlook|mail|gmail|yahoo|samsung|blackberry|android|ios|iphone|ipad)\\\\b.\*$', re.IGNORECASE), re.compile('^\\\\((from|sent from|envoy[ée] (de|depuis)) (my )?(handheld|mobile|phone|iphone|portable)\\\\)$', re.IGNORECASE), re.compile('^(obtenir|télécharger) outlook pour\\\\b.\*$', re.IGNORECASE), re.compile('^h[äa]mta outlook f[öo]r\\\\b.\*$', re.IGNORECASE)), sign_offs=(re.compile('^/\\\\s?\\\\w[\\\\w .-]{0, 30}$', re.IGNORECASE), re.compile('^(best|best regards|kind regards|warm regards|regards|cheers|thanks|thank you|many thanks|all the best|br|brgds|rgds|cordialement|bien cordialement|bien à (vous|toi)|amitiés|bonne journée|merci|mvh|m, re.IGNORECASE)), contact=(re.compile('(\\\\+|00)\\\\d[\\\\d ().-]{6, }\\\\d', re.IGNORECASE), re.compile('\\\\b(tel|tél|phone|mobile|mob|portable|cell|fax)\\\\b\\\\.?\\\\s\*: ?', re.IGNORECASE), re.compile('https?: //|\\\\bwww\\\\.', re.IGNORECASE), re.compile('[\\\\w.+-]+@[\\\\w-]+\\\\.[\\\\w.]+', re.IGNORECASE)), debris=(re.compile('^\\\\[(image|cid|inline image)[^\\\\]]\*\\\\]$', re.IGNORECASE), re.compile('^<?(https?|mailto|tel): \\\\S+>?$', re.IGNORECASE), re.compile("^[\\\\w .'-]{0, 40}: ?\\\\s\*<?(tel:)?(\\\\+|00)?\\\\d[\\\\d ().-]{6, }\\\\d>?$", re.IGNORECASE), re.compile('^[\\\\w ., \\'\\\\"-]{0, 80}<[^>\\\\s]+@[^>\\\\s]+>, \\\\s\*)+[\\'\\\\"\\\\w .-]{0, 40}$', re.IGNORECASE), re.compile('^(e-?mail|e|t|m|tel|tél|mob|mobile|phone|fax|web)\\\\s\*: \\\\s\*\\\\S+', re.IGNORECASE)), disclaimers=(re.compile('\\\\b(this|the) (e-?mail|message)( and any (attachments?|files?))?.{0, 80}\\\\b(confidential|privileged|intended (solely |only )?for)\\\\b', re.IGNORECASE), re.compile('\\\\bconfidentiality notice\\\\b', re.IGNORECASE), re.compile('\\\\bce (message|courriel|mail)( et (toutes )?(les|ses) pi[èe]ces jointes)?.{0, 80}\\\\b(confidentiel|destin[ée] exclusivement)', re.IGNORECASE), re.compile('\\\\bdetta (e-?post|meddelande).{0, 80}\\\\bkonfidentiell', re.IGNORECASE), re.compile('\\\\bplease consider the environment before printing\\\\b', re.IGNORECASE), re.compile("\\\\bpensez à l'environnement avant d'imprimer\\\\b", re.IGNORECASE)), inline_announcements=(re.compile('\\\\b(see )?(my )?(answers?|responses?|replies|comments?|notes?) (are )?(below|inline|in (red|blue|bold|green))\\\\b', re.IGNORECASE), re.compile('\\\\b(see|cf\\\\.?) below\\\\b', re.IGNORECASE), re.compile('\\\\b(réponses?|commentaires?) (ci-dessous|en (rouge|bleu|gras)|dans le texte)\\\\b', re.IGNORECASE), re.compile('\\\\bvoir ci-dessous\\\\b', re.IGNORECASE), re.compile('\\\\b(svar|kommentarer) (nedan|i texten|med (rött|blått))\\\\b', re.IGNORECASE), re.compile('\\\\b(antworten|kommentare) (unten|im text|in rot)\\\\b', re.IGNORECASE)), header_window=4), min_coverage=0.6)
 
 [`authored()`](_autosummary/correspond.authored.html.md#correspond.authored.authored) for each body of a thread, oldest first, each given every earlier body as `earlier`.
-
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Authored`](_autosummary/correspond.authored.html.md#correspond.authored.Authored)]
 
 ```pycon
 >>> first, second = authored_thread([
@@ -458,6 +455,9 @@ every quoted line look new. Earlier text pasted back with no header counts as qu
 >>> second.inline
 ('Yes, Friday works.', 'Grace does.')
 ```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Authored`](_autosummary/correspond.authored.html.md#correspond.authored.Authored)]
 
 
 # _autosummary/correspond.channel.html.md
@@ -600,9 +600,6 @@ identifiers only.
 
 The `notifications/claude/channel` message for one event that carries a message.
 
-* **Return type:**
-  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
-
 ```pycon
 >>> from correspond.testing import demo_message
 >>> note = channel_notification(Event(kind="message.created", channel="fake", delivery_id="d1",
@@ -612,6 +609,9 @@ The `notifications/claude/channel` message for one event that carries a message.
 >>> note["params"]["meta"]
 {'channel': 'fake', 'conversation': 'fake:example/demo', 'message_id': 'm1', 'sender': 'fake:ada', 'grade': 'platform'}
 ```
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
 ### correspond.channel.main(argv=None)
 
@@ -636,20 +636,17 @@ logged and skipped; the others are still polled.
 
 `("allow" | "deny", request_id)` for a reply like `yes abcde`, else `None`.
 
-* **Return type:**
-  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)
-
 ```pycon
 >>> parse_verdict("Yes ABCDE"), parse_verdict("no qwxyz"), parse_verdict("yes"), parse_verdict("yes hello")
 (('allow', 'abcde'), ('deny', 'qwxyz'), None, None)
 ```
 
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 ### correspond.channel.permission_prompt(params)
 
 The text sent to the relay conversation for one permission request.
-
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ```pycon
 >>> print(permission_prompt({"request_id": "abcde", "tool_name": "Bash",
@@ -659,6 +656,9 @@ Claude wants to run Bash: List files
 
 Reply "yes abcde" or "no abcde"
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### correspond.channel.serve(\*\*kwargs)
 
@@ -769,13 +769,13 @@ Notify every service behind the alias with `draft.text` (and its title).
 
 The environment variable holding one alias’s Apprise URL.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> alias_env("team-alerts")
 'CORRESPOND_APPRISE_URL_TEAM_ALERTS'
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 
 # _autosummary/correspond.channels.github.html.md
@@ -792,10 +792,14 @@ limit and never shows in the process table.
 ### References
 
 - `github:owner/repo`: the repository. `read` lists recent open issues and pull
-  requests, `listen` polls its issue and comment activity, `send` opens an issue (a
-  title is required).
+  requests, `listen` polls its issue, comment, review comment and discussion activity,
+  `send` opens an issue (a title is required), or a discussion when `Draft.native`
+  names a `category`.
 - `github:owner/repo#N`: an issue, a pull request, or a discussion. GitHub numbers the
-  three in one sequence; correspond asks which. `label` and `unlabel` work on an issue
+  three in one sequence; correspond asks which. Reading or listening to a pull request
+  includes its review comments on the diff, each threaded under the comment that opened
+  its thread (`reply_to`), and a reply to one of them joins that thread.
+  `label` and `unlabel` work on an issue
   or pull request only: GitHub discussions have categories, not labels. `close` and
   `reopen` work on all three: an issue or pull request through `PATCH .../issues/N`,
   a discussion through GraphQL `closeDiscussion` / `reopenDiscussion`. Each kind
@@ -806,10 +810,13 @@ limit and never shows in the process table.
 Opening an issue takes `Draft.native` keys `labels`, `assignees` and `milestone`,
 set in the creating request so watchers are notified once. GitHub silently drops an
 assignee who cannot be assigned, so the plan reports what the created issue actually
-carries (`landed`) and what did not stick (`not_applied`).
+carries (`landed`) and what did not stick (`not_applied`). `Draft.native`
+`category` (a discussion category’s name or slug) opens a discussion instead, through
+GraphQL `createDiscussion`; it takes none of the issue fields.
 
 Message ids match the anchors in GitHub’s own URLs: `issue-N` (the opening post of issue
-or pull request N), `issuecomment-ID`, `discussion-N`, `discussioncomment-ID`.
+or pull request N), `issuecomment-ID`, `discussion_rID` (a review comment on a pull
+request’s diff), `discussion-N`, `discussioncomment-ID`.
 
 Messages read through the API are `platform` (GitHub authenticated the account), with the
 author’s `author_association` (`OWNER`, `MEMBER`, `CONTRIBUTOR`, `NONE`, …) as
@@ -897,7 +904,7 @@ conversation is visible as such.
 
 #### edit(ref, message_id, draft, , dry_run=False)
 
-Replace the body of an issue, a comment, a discussion or a discussion comment.
+Replace the body of an issue, a comment, a review comment, a discussion or a discussion comment.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -926,7 +933,7 @@ mentioned, so `landed` is filtered to the requested names, not the full list.
 
 #### poll(ref, , cursor=None, limit=None)
 
-Issue and comment activity since `cursor`; a first poll looks back a day.
+Issue, comment, review comment and discussion activity since `cursor`; a first poll looks back a day.
 
 The cursor is opaque JSON: the update time the next poll starts from (`t`; GitHub’s
 `since` includes it), the creation time from which an issue still counts as new
@@ -935,6 +942,12 @@ events already delivered at `t` (`seen`). So neither `limit` nor several changes
 within one second can make a poll repeat itself, and a list cut short (more than
 `MAX_PAGES` pages changed) is resumed from where it was cut. A bare ISO time is also
 accepted as a cursor.
+
+Discussions have no `since` filter, so a repository’s are walked newest activity
+first until a page reaches one older than the cursor (`_active_discussions()`),
+and each active one is read whole; one discussion is read whole on every poll. A
+discussion counts as new when it was created at or after the cursor, and a
+discussion comment is `message.updated` when it was created before it.
 
 #### prepare(ref, draft)
 
@@ -945,7 +958,7 @@ The draft as it will post: `notify` handles checked, the missing mentions added.
 
 #### react(ref, message_id, reaction, , dry_run=False)
 
-Add one of `REACTIONS` to an issue, a comment, a discussion or a discussion comment.
+Add one of `REACTIONS` to an issue, a comment, a review comment, a discussion or a discussion comment.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
@@ -966,7 +979,10 @@ Reopen a closed issue, pull request or discussion; the plan reads the state back
 
 #### send(ref, draft, , dry_run=False)
 
-Comment on an issue, pull request or discussion; on a repository, open an issue (`title` required).
+Comment on an issue, pull request or discussion; on a repository, open an issue (`title` required), or a discussion with native `category`.
+
+`draft.reply_to` answers a discussion comment, or a review comment on a pull
+request’s diff (`discussion_rID`), joining its thread.
 
 `draft.notify` handles (`octocat`, `org/team`) the text does not @mention yet
 are mentioned on a closing `cc` line, which GitHub notifies; the plan lists them
@@ -1560,13 +1576,13 @@ What a host application’s server gives its page for the logged-in user; the pa
 
 The environment variable holding one site’s own secret.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> site_secret_env("example-site")
 'CORRESPOND_WEBINBOX_SECRET_EXAMPLE_SITE'
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### correspond.channels.webinbox.verify_identity(identity, , site, now)
 
@@ -1852,7 +1868,7 @@ JSON-ready (without the loader).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* correspond.Audience(\*, ref, scope, readers=(), complete=False, classes=(), external=None, retractable=False, durability=(), widening=(), as_of=<factory>, evidence=(), defaulted=False)
+### *class* correspond.Audience(, ref, scope, readers=(), complete=False, classes=(), external=None, retractable=False, durability=(), widening=(), as_of=\_now(), evidence=(), defaulted=False)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -1925,7 +1941,7 @@ Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protoco
 
 Who can read a conversation, now and plausibly later, asked of the platform at the time of the call.
 
-### *class* correspond.Authenticity(\*, grade, evidence=<factory>)
+### *class* correspond.Authenticity(, grade, evidence=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2098,7 +2114,7 @@ Bases: [`Exception`](https://docs.python.org/3/builtins/exceptions.html#Exceptio
 
 An expected failure, with a message meant for the person or agent that asked.
 
-### *class* correspond.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>, notify=())
+### *class* correspond.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=dict(), notify=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2147,7 +2163,7 @@ Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protoco
 
 Replace the text of a message correspond’s account wrote.
 
-### *class* correspond.Event(\*, kind, channel, delivery_id, cursor=None, message=None, payload=<factory>)
+### *class* correspond.Event(, kind, channel, delivery_id, cursor=None, message=None, payload=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2214,7 +2230,7 @@ Bases: [`Protocol`](https://docs.python.org/3/library/typing.html#typing.Protoco
 
 Events since `cursor`, oldest first, each carrying the cursor to resume after it.
 
-### *class* correspond.Message(\*, id, conversation, author, authenticity, sent_at, text, body=None, body_format='plain', attachments=(), reply_to=None, thread_root=None, edited_at=None, url=None, native=<factory>, raw=None)
+### *class* correspond.Message(, id, conversation, author, authenticity, sent_at, text, body=None, body_format='plain', attachments=(), reply_to=None, thread_root=None, edited_at=None, url=None, native=dict(), raw=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2301,7 +2317,7 @@ The widest class of reader a conversation can reach.
 - `org`: an organisation or workspace (a private organisation repository).
 - `public`: anyone. What an unknown audience resolves to.
 
-### *class* correspond.SendResult(\*, ok, channel, conversation, operation='send', dry_run=False, message_id=None, url=None, account=None, plan=<factory>, error=None, error_kind=None, retryable=False, retry_after=None)
+### *class* correspond.SendResult(, ok, channel, conversation, operation='send', dry_run=False, message_id=None, url=None, account=None, plan=dict(), error=None, error_kind=None, retryable=False, retry_after=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2413,9 +2429,6 @@ declare its fields (`native_fields` is `None`), is not checked for fields. A ref
 with wildcards, or one the channel’s own parser rejects outright, is not checked for
 canonical form – a malformed ref is a different problem than a mis-cased one.
 
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
 ```pycon
 >>> from correspond.channels.github import GitHub
 >>> check_binding("github:example/app?labels=bug", registry={"github": GitHub()})
@@ -2425,6 +2438,9 @@ canonical form – a malformed ref is a different problem than a mis-cased one.
 >>> check_binding("github:Example/App", registry={"github": GitHub()})
 ["github:Example/App is not in canonical form: github references are normalised to 'github:example/app'; binding_matches compares refs literally, so this pattern will not match github:example/app"]
 ```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 ### correspond.check_requirements(channel, \*, registry=None, config=None, run=<function run>)
 
@@ -2475,15 +2491,15 @@ early `break`: deduplicate on `delivery_id`.
 
 A rule sending messages to `target` when every `field=glob` condition holds.
 
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Message`](_autosummary/correspond.model.html.md#correspond.model.Message)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
-
 ```pycon
 >>> from correspond.testing import demo_message
 >>> rule = metadata_rule("urgent-queue", labels="priority:high")
 >>> rule(demo_message(labels=["priority:high"])), rule(demo_message())
 ('urgent-queue', None)
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Message`](_autosummary/correspond.model.html.md#correspond.model.Message)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
 ### correspond.parse_ref(ref, , registry=None)
 
@@ -2702,13 +2718,13 @@ When `record`’s key was claimed.
 
 `key` stripped, or `ValueError` for one that is not a non-blank string of at most [`MAX_KEY_LENGTH`](_autosummary/correspond.idempotency.html.md#correspond.idempotency.MAX_KEY_LENGTH) characters.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> check_key(" case-12/reply-3 ")
 'case-12/reply-3'
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### correspond.idempotency.claimed(key, conversation, , fingerprint, at)
 
@@ -2794,13 +2810,13 @@ A FastMCP server over the exposed tools, with `data_dir` hidden (not started).
 
 `correspond.tools:<name>` references for the tools the server exposes.
 
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
 ```pycon
 >>> "correspond.tools:read" in refs(), "correspond.tools:send" in refs(), "correspond.tools:send" in refs(allow_send=True)
 (True, False, True)
 ```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
 
 # _autosummary/correspond.model.html.md
@@ -2925,7 +2941,7 @@ JSON-ready (without the loader).
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### *class* correspond.model.Audience(\*, ref, scope, readers=(), complete=False, classes=(), external=None, retractable=False, durability=(), widening=(), as_of=<factory>, evidence=(), defaulted=False)
+### *class* correspond.model.Audience(, ref, scope, readers=(), complete=False, classes=(), external=None, retractable=False, durability=(), widening=(), as_of=\_now(), evidence=(), defaulted=False)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -2992,7 +3008,7 @@ The audience nobody could compute: public, incomplete, every durability and wide
 * **Return type:**
   [`Audience`](_autosummary/correspond.model.html.md#correspond.model.Audience)
 
-### *class* correspond.model.Authenticity(\*, grade, evidence=<factory>)
+### *class* correspond.model.Authenticity(, grade, evidence=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -3160,7 +3176,7 @@ readers (email notifications), an edit history anyone who reads can see.
 * **Type:**
   What a send leaves behind
 
-### *class* correspond.model.Draft(\*, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=<factory>, notify=())
+### *class* correspond.model.Draft(, text, title=None, reply_to=None, priority=None, cc=(), bcc=(), native=dict(), notify=())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -3207,7 +3223,7 @@ existed – it always had.
 
 What an [`Event`](_autosummary/correspond.model.html.md#correspond.model.Event) reports.
 
-### *class* correspond.model.Event(\*, kind, channel, delivery_id, cursor=None, message=None, payload=<factory>)
+### *class* correspond.model.Event(, kind, channel, delivery_id, cursor=None, message=None, payload=dict())
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -3256,7 +3272,7 @@ Bases: [`StrEnum`](https://docs.python.org/3/library/enum.html#enum.StrEnum)
 
 How far back `read` sees: all history, a 24-hour buffer, only what correspond has seen since it was linked or started listening, or nothing.
 
-### *class* correspond.model.Message(\*, id, conversation, author, authenticity, sent_at, text, body=None, body_format='plain', attachments=(), reply_to=None, thread_root=None, edited_at=None, url=None, native=<factory>, raw=None)
+### *class* correspond.model.Message(, id, conversation, author, authenticity, sent_at, text, body=None, body_format='plain', attachments=(), reply_to=None, thread_root=None, edited_at=None, url=None, native=dict(), raw=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -3296,7 +3312,7 @@ The widest class of reader a conversation can reach.
 - `org`: an organisation or workspace (a private organisation repository).
 - `public`: anyone. What an unknown audience resolves to.
 
-### *class* correspond.model.SendResult(\*, ok, channel, conversation, operation='send', dry_run=False, message_id=None, url=None, account=None, plan=<factory>, error=None, error_kind=None, retryable=False, retry_after=None)
+### *class* correspond.model.SendResult(, ok, channel, conversation, operation='send', dry_run=False, message_id=None, url=None, account=None, plan=dict(), error=None, error_kind=None, retryable=False, retry_after=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -3337,25 +3353,25 @@ How a readership can grow after a send.
 
 ISO 8601 in UTC with a `Z` suffix; a naive datetime is taken to be UTC.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
-
 ```pycon
 >>> format_time(datetime(2026, 9, 11, 12, 30, tzinfo=timezone.utc))
 '2026-09-11T12:30:00Z'
 ```
 
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 ### correspond.model.parse_time(value)
 
 The inverse of [`format_time()`](_autosummary/correspond.model.html.md#correspond.model.format_time); also accepts offsets and datetimes. Naive means UTC.
-
-* **Return type:**
-  [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ```pycon
 >>> parse_time("2026-09-11T12:30:00Z") == datetime(2026, 9, 11, 12, 30, tzinfo=timezone.utc)
 True
 ```
+
+* **Return type:**
+  [`datetime`](https://docs.python.org/3/library/datetime.html#datetime.datetime) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 
 # _autosummary/correspond.notify.html.md
@@ -3402,13 +3418,13 @@ The line that carries the mentions a text lacked, before the handles.
 
 A handle without its leading `@`.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> handle("@octocat"), handle("octocat")
 ('octocat', 'octocat')
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### correspond.notify.is_mentioned(text, name)
 
@@ -3416,9 +3432,6 @@ Is `@name` in `text` as a whole mention that notifies? Case-insensitive.
 
 Not inside an address or a longer handle, and not inside code or an HTML comment,
 where platforms render it without notifying anyone.
-
-* **Return type:**
-  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ```pycon
 >>> is_mentioned("ping @octocat.", "octocat")
@@ -3431,6 +3444,9 @@ False
 False
 ```
 
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
+
 ### correspond.notify.missing_mentions(text, names)
 
 The handles in `names` that `text` does not mention yet, in order, each once.
@@ -3442,13 +3458,13 @@ The handles in `names` that `text` does not mention yet, in order, each once.
 
 `cc` plus every address in `names` that is neither `to` nor already copied (case-insensitive).
 
-* **Return type:**
-  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
-
 ```pycon
 >>> with_copies("a@example.org", ["b@example.org"], ["A@example.org", "c@example.org"])
 ('b@example.org', 'c@example.org')
 ```
+
+* **Return type:**
+  [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
 
 ### correspond.notify.with_mentions(text, names, , lead='cc')
 
@@ -4153,9 +4169,6 @@ declare its fields (`native_fields` is `None`), is not checked for fields. A ref
 with wildcards, or one the channel’s own parser rejects outright, is not checked for
 canonical form – a malformed ref is a different problem than a mis-cased one.
 
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
 ```pycon
 >>> from correspond.channels.github import GitHub
 >>> check_binding("github:example/app?labels=bug", registry={"github": GitHub()})
@@ -4166,12 +4179,12 @@ canonical form – a malformed ref is a different problem than a mis-cased one.
 ["github:Example/App is not in canonical form: github references are normalised to 'github:example/app'; binding_matches compares refs literally, so this pattern will not match github:example/app"]
 ```
 
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### correspond.routing.metadata_rule(target, , name=None, \*\*conditions)
 
 A rule sending messages to `target` when every `field=glob` condition holds.
-
-* **Return type:**
-  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Message`](_autosummary/correspond.model.html.md#correspond.model.Message)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
 ```pycon
 >>> from correspond.testing import demo_message
@@ -4179,6 +4192,9 @@ A rule sending messages to `target` when every `field=glob` condition holds.
 >>> rule(demo_message(labels=["priority:high"])), rule(demo_message())
 ('urgent-queue', None)
 ```
+
+* **Return type:**
+  [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Message`](_autosummary/correspond.model.html.md#correspond.model.Message)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
 
 ### correspond.routing.route(message, , bindings=None, threads=None, rules=(), classifier=None)
 
@@ -4245,13 +4261,13 @@ The data root: the argument, else `$CORRESPOND_DATA_DIR`, else `data_dir` in the
 The environment variable and the config value must be absolute paths: a relative one
 would put state wherever the current directory happens to be (a repository, say).
 
-* **Return type:**
-  [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
-
 ```pycon
 >>> data_dir("state").is_absolute()
 True
 ```
+
+* **Return type:**
+  [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
 
 ### correspond.settings.keychain_available()
 
@@ -4271,13 +4287,13 @@ A generic password from the macOS Keychain, or `""` when absent, not on macOS, o
 
 The macOS Keychain service a secret is looked up under.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> keychain_service("telegram", "token", config={})
 'correspond-telegram-token'
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### correspond.settings.load_config(path=None)
 
@@ -4290,13 +4306,13 @@ The parsed config file, or `{}` when there is none. A broken file raises, naming
 
 Enough of a secret to recognise it, never enough to use it.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> mask("example-topic-3f9a"), mask("short"), mask(None)
 ('ex…9a', '…', '(not set)')
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 
 # _autosummary/correspond.stores.html.md
@@ -4691,7 +4707,7 @@ What a channel needs (install command, binaries, platform, each setting and wher
 
 ### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, native=None, notify=None, idempotency_key=None, dry_run=False)
 
-Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens; the plan reports which of them stuck). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
+Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens, the plan reporting which of them stuck; or `{"category": "<name or slug>"}` to open a discussion instead). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
@@ -4710,18 +4726,16 @@ Remove labels (comma-separated; a label name may not itself contain a comma) fro
 
 # About this build
 
-This documentation was built on **2026-10-14 06:02 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/a8605e38c71b5bc41c5c3a0733df005f0c83ce0f"><code>a8605e3</code></a> on branch <code>main</code>, for **correspond 0.0.15** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-19 10:45 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/dca82c28cdd12cfee87646d73e909f3c1bc1a85d"><code>dca82c2</code></a> on branch <code>main</code>, for **correspond 0.0.16** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.15) is behind the latest release on PyPI (0.0.16): `pip install correspond` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/a8605e38c71b5bc41c5c3a0733df005f0c83ce0f"><code>a8605e38c71b5bc41c5c3a0733df005f0c83ce0f</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/dca82c28cdd12cfee87646d73e909f3c1bc1a85d"><code>dca82c28cdd12cfee87646d73e909f3c1bc1a85d</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -4732,9 +4746,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/38519758000">38519758000</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39239573889">39239573889</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>a8605e38c71b5bc41c5c3a0733df005f0c83ce0f</code> (in the history of the built commit)  |
+| Event commit | <code>dca82c28cdd12cfee87646d73e909f3c1bc1a85d</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -4759,13 +4773,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.16/">0.0.16</a>, newer than the documented version (0.0.15).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.16/">0.0.16</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout a8605e38c71b5bc41c5c3a0733df005f0c83ce0f
+git checkout dca82c28cdd12cfee87646d73e909f3c1bc1a85d
 pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

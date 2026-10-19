@@ -10,10 +10,14 @@ limit and never shows in the process table.
 ### References
 
 - `github:owner/repo`: the repository. `read` lists recent open issues and pull
-  requests, `listen` polls its issue and comment activity, `send` opens an issue (a
-  title is required).
+  requests, `listen` polls its issue, comment, review comment and discussion activity,
+  `send` opens an issue (a title is required), or a discussion when `Draft.native`
+  names a `category`.
 - `github:owner/repo#N`: an issue, a pull request, or a discussion. GitHub numbers the
-  three in one sequence; correspond asks which. `label` and `unlabel` work on an issue
+  three in one sequence; correspond asks which. Reading or listening to a pull request
+  includes its review comments on the diff, each threaded under the comment that opened
+  its thread (`reply_to`), and a reply to one of them joins that thread.
+  `label` and `unlabel` work on an issue
   or pull request only: GitHub discussions have categories, not labels. `close` and
   `reopen` work on all three: an issue or pull request through `PATCH .../issues/N`,
   a discussion through GraphQL `closeDiscussion` / `reopenDiscussion`. Each kind
@@ -24,10 +28,13 @@ limit and never shows in the process table.
 Opening an issue takes `Draft.native` keys `labels`, `assignees` and `milestone`,
 set in the creating request so watchers are notified once. GitHub silently drops an
 assignee who cannot be assigned, so the plan reports what the created issue actually
-carries (`landed`) and what did not stick (`not_applied`).
+carries (`landed`) and what did not stick (`not_applied`). `Draft.native`
+`category` (a discussion category’s name or slug) opens a discussion instead, through
+GraphQL `createDiscussion`; it takes none of the issue fields.
 
 Message ids match the anchors in GitHub’s own URLs: `issue-N` (the opening post of issue
-or pull request N), `issuecomment-ID`, `discussion-N`, `discussioncomment-ID`.
+or pull request N), `issuecomment-ID`, `discussion_rID` (a review comment on a pull
+request’s diff), `discussion-N`, `discussioncomment-ID`.
 
 Messages read through the API are `platform` (GitHub authenticated the account), with the
 author’s `author_association` (`OWNER`, `MEMBER`, `CONTRIBUTOR`, `NONE`, …) as
@@ -115,7 +122,7 @@ conversation is visible as such.
 
 #### edit(ref, message_id, draft, , dry_run=False)
 
-Replace the body of an issue, a comment, a discussion or a discussion comment.
+Replace the body of an issue, a comment, a review comment, a discussion or a discussion comment.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
@@ -144,7 +151,7 @@ mentioned, so `landed` is filtered to the requested names, not the full list.
 
 #### poll(ref, , cursor=None, limit=None)
 
-Issue and comment activity since `cursor`; a first poll looks back a day.
+Issue, comment, review comment and discussion activity since `cursor`; a first poll looks back a day.
 
 The cursor is opaque JSON: the update time the next poll starts from (`t`; GitHub’s
 `since` includes it), the creation time from which an issue still counts as new
@@ -153,6 +160,12 @@ events already delivered at `t` (`seen`). So neither `limit` nor several changes
 within one second can make a poll repeat itself, and a list cut short (more than
 `MAX_PAGES` pages changed) is resumed from where it was cut. A bare ISO time is also
 accepted as a cursor.
+
+Discussions have no `since` filter, so a repository’s are walked newest activity
+first until a page reaches one older than the cursor (`_active_discussions()`),
+and each active one is read whole; one discussion is read whole on every poll. A
+discussion counts as new when it was created at or after the cursor, and a
+discussion comment is `message.updated` when it was created before it.
 
 #### prepare(ref, draft)
 
@@ -163,7 +176,7 @@ The draft as it will post: `notify` handles checked, the missing mentions added.
 
 #### react(ref, message_id, reaction, , dry_run=False)
 
-Add one of `REACTIONS` to an issue, a comment, a discussion or a discussion comment.
+Add one of `REACTIONS` to an issue, a comment, a review comment, a discussion or a discussion comment.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
@@ -184,7 +197,10 @@ Reopen a closed issue, pull request or discussion; the plan reads the state back
 
 #### send(ref, draft, , dry_run=False)
 
-Comment on an issue, pull request or discussion; on a repository, open an issue (`title` required).
+Comment on an issue, pull request or discussion; on a repository, open an issue (`title` required), or a discussion with native `category`.
+
+`draft.reply_to` answers a discussion comment, or a review comment on a pull
+request’s diff (`discussion_rID`), joining its thread.
 
 `draft.notify` handles (`octocat`, `org/team`) the text does not @mention yet
 are mentioned on a closing `cc` line, which GitHub notifies; the plan lists them

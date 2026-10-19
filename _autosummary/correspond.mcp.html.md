@@ -41,10 +41,10 @@ A FastMCP server over the exposed tools, with `data_dir` hidden (not started).
 
 `correspond.tools:<name>` references for the tools the server exposes.
 
-* **Return type:**
-  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
 ```pycon
 >>> "correspond.tools:read" in refs(), "correspond.tools:send" in refs(), "correspond.tools:send" in refs(allow_send=True)
 (True, False, True)
 ```
+
+* **Return type:**
+  [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]

@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-14T06:02:24Z",
+  "built_at": "2026-10-19T10:45:44Z",
   "package": {
     "name": "correspond",
-    "version": "0.0.15",
+    "version": "0.0.16",
     "display_name": "correspond",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "a8605e38c71b5bc41c5c3a0733df005f0c83ce0f",
-    "short_commit": "a8605e3",
+    "commit": "dca82c28cdd12cfee87646d73e909f3c1bc1a85d",
+    "short_commit": "dca82c2",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/thorwhalen/correspond",
-    "commit_url": "https://github.com/thorwhalen/correspond/commit/a8605e38c71b5bc41c5c3a0733df005f0c83ce0f",
+    "commit_url": "https://github.com/thorwhalen/correspond/commit/dca82c28cdd12cfee87646d73e909f3c1bc1a85d",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "thorwhalen/correspond",
-    "sha": "a8605e38c71b5bc41c5c3a0733df005f0c83ce0f",
+    "sha": "dca82c28cdd12cfee87646d73e909f3c1bc1a85d",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "38519758000",
-    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/38519758000",
+    "run_id": "39239573889",
+    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/39239573889",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -61,15 +61,13 @@
   "pypi": {
     "checked": true,
     "latest": "0.0.16",
-    "relation": "behind",
+    "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout a8605e38c71b5bc41c5c3a0733df005f0c83ce0f\npip install \"epythet==0.2.17\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout dca82c28cdd12cfee87646d73e909f3c1bc1a85d\npip install \"epythet==0.2.17\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": false,
-    "notes": [
-      "The documented version (0.0.15) is behind the latest release on PyPI (0.0.16): `pip install correspond` gives newer code than these docs describe."
-    ]
+    "aligned": true,
+    "notes": []
   }
 }
