@@ -10,7 +10,13 @@ References:
   ``?from=<sender>,<sender>`` on ``email:`` keeps the messages from any of several senders,
   each an address or a whole domain (``@example.org``). Both together:
   ``email:?folder=News&from=ada@example.org,@example.net``. A value is percent-encoded
-  where it has a space, ``&``, ``?`` or ``%`` (``email:?folder=%5BGmail%5D/All%20Mail``).
+  where it has a space, ``&``, ``?`` or ``%`` (``email:?folder=%5BGmail%5D/All%20Mail``), and
+  so is an address with one of those. A folder may be named as written (``Énergie``) or as
+  the server lists it in modified UTF-7 (``&AMk-nergie``); both are one reference. On a
+  command line, quote a reference with ``?`` or ``&``: ``correspond read 'email:?folder=News'``.
+
+A message's conversation is the correspondence with its sender (``email:<address>``), in
+whichever folder it was read; ``native["folder"]`` says which.
 
 Message ids are ``Message-ID`` headers, angle brackets included. A draft's ``reply_to`` is
 one, and the send carries ``In-Reply-To`` and ``References``. Reading never marks a message
@@ -84,8 +90,9 @@ DOMAIN_RE = re.compile(
 )
 #: The keys a reference takes after ``?``, in their canonical order.
 REF_KEYS = ("folder", "from")
-#: A mailbox name already in modified UTF-7: printable ASCII, every ``&`` opening ``&-`` or a base64 run.
-_ENCODED_MAILBOX_RE = re.compile(r"^(?:[\x20-\x25\x27-\x7e]|&-|&[A-Za-z0-9+,]+-)*$")
+_MUTF7_RUN_RE = re.compile(r"&([A-Za-z0-9+,]*)-")
+#: Characters an address keeps unescaped in a canonical reference (``%``, ``?`` and ``&`` are escaped).
+_ADDRESS_SAFE = "!#$'*+-/=^_`{|}~.@"
 #: Characters a folder name keeps unescaped in a canonical reference.
 _FOLDER_SAFE = "/[]._-+:@!$'()*,;="
 #: Words that, as a part of an address's local part (``dev-team@``), mark it as a possible mailing list.
@@ -117,16 +124,11 @@ def _quote(text: str) -> str:
 
 
 def _mailbox(name: str) -> str:
-    """``name`` as IMAP says it on the wire: modified UTF-7 (RFC 3501 5.1.3).
+    """``name`` (a Unicode folder name) as IMAP says it on the wire: modified UTF-7 (RFC 3501 5.1.3).
 
-    A name already in that form (ASCII, each ``&`` opening a ``&...-`` run) is kept, so a
-    folder configured the way the server lists it still works.
-
-    >>> _mailbox("News/AI"), _mailbox("Énergie"), _mailbox("R&D"), _mailbox("&AMk-nergie")
-    ('News/AI', '&AMk-nergie', 'R&-D', '&AMk-nergie')
+    >>> _mailbox("News/AI"), _mailbox("Énergie"), _mailbox("R&D"), _mailbox("日本語")
+    ('News/AI', '&AMk-nergie', 'R&-D', '&ZeVnLIqe-')
     """
-    if _ENCODED_MAILBOX_RE.match(name):
-        return name
     out, pending = [], []
 
     def flush():
@@ -149,6 +151,32 @@ def _mailbox(name: str) -> str:
     return "".join(out)
 
 
+def _folder_name(name: str) -> str:
+    """The Unicode name of a folder given either way: as written, or as the server lists it.
+
+    A name counts as the server's modified UTF-7 only when decoding it and encoding it back
+    gives it exactly, so ``Q&A-2024`` stays literal while ``&AMk-nergie`` is ``Énergie``.
+
+    >>> _folder_name("&AMk-nergie"), _folder_name("Q&A-2024"), _folder_name("R&-D")
+    ('Énergie', 'Q&A-2024', 'R&D')
+    """
+    if "&" not in name or not name.isascii():
+        return name
+
+    def decode(match: re.Match) -> str:
+        run = match.group(1)
+        if not run:
+            return "&"
+        padded = run.replace(",", "/") + "=" * (-len(run) % 4)
+        return base64.b64decode(padded, validate=True).decode("utf-16-be")
+
+    try:
+        decoded = _MUTF7_RUN_RE.sub(decode, name)
+    except (ValueError, UnicodeDecodeError):
+        return name
+    return decoded if _mailbox(decoded) == name else name
+
+
 @dataclass(frozen=True)
 class _Scope:
     """What an email reference selects: an address (or none, the folder), a folder, senders."""
@@ -164,14 +192,20 @@ class _Scope:
             query.append(f"folder={quote(self.folder, safe=_FOLDER_SAFE)}")
         if self.senders:
             query.append(f"from={','.join(self.senders)}")
-        return self.address + ("?" + "&".join(query) if query else "")
+        address = quote(self.address, safe=_ADDRESS_SAFE)
+        return address + ("?" + "&".join(query) if query else "")
 
-    def keeps(self, sender: str) -> bool:
-        """Whether a message from ``sender`` is in scope (IMAP's ``FROM`` is a substring match)."""
+    def keeps(self, senders: Iterable[str]) -> bool:
+        """Whether a message from any of ``senders`` (its From addresses) is in scope.
+
+        IMAP's ``FROM`` matches a substring of the header, display name included, so a
+        search for ``ada@example.org`` also finds ``bada@example.org``; this check is exact.
+        """
         wanted = self.senders or ((self.address,) if self.address else ())
-        sender = sender.lower()
         return not wanted or any(
-            sender.endswith(w) if w.startswith("@") else sender == w for w in wanted
+            sender.lower().endswith(w) if w.startswith("@") else sender.lower() == w
+            for sender in senders
+            for w in wanted
         )
 
 
@@ -181,7 +215,11 @@ def _scope(id: str) -> _Scope:
     >>> _scope("ada@example.org?folder=inbox")
     _Scope(address='ada@example.org', folder='INBOX', senders=())
     """
-    address, _, query = id.partition("?")
+    raw_address, _, query = id.partition("?")
+    try:
+        address = unquote(raw_address, errors="strict")
+    except UnicodeDecodeError:
+        raise InvalidRef(f"email:{id} has a %-escape that is not UTF-8") from None
     if address and not ADDRESS_RE.match(address):
         raise InvalidRef(
             f"email references are email: (the folder) or email:<address>, not email:{id}"
@@ -195,11 +233,18 @@ def _scope(id: str) -> _Scope:
             )
         if key in fields:
             raise InvalidRef(f"{key} is given twice in email:{id}")
-        text = unquote(raw)
+        try:
+            text = unquote(raw, errors="strict")
+        except UnicodeDecodeError:
+            raise InvalidRef(
+                f"{key} in email:{id} has a %-escape that is not UTF-8"
+            ) from None
         if not text.strip() or any(ord(c) < 0x20 or c == "\x7f" for c in text):
             raise InvalidRef(f"{key} is empty or holds a control character in email:{id}")
         fields[key] = text
     folder = fields.get("folder")
+    if folder is not None:
+        folder = _folder_name(folder)
     if folder is not None and folder.upper() == "INBOX":
         folder = "INBOX"  # the one case-insensitive name (RFC 3501)
     senders: tuple[str, ...] = ()
@@ -287,6 +332,12 @@ def _html_text(html: str) -> str:
     parser.feed(html)
     parser.close()
     return re.sub(r"\n{3,}", "\n\n", "".join(parser.parts)).strip()
+
+
+def _from_addresses(raw: bytes) -> list[str]:
+    """Every address in a raw message's From header, lower-cased (the headers alone are parsed)."""
+    parsed = BytesParser(policy=policy.default).parsebytes(raw, headersonly=True)
+    return [address for _, address in _addresses(parsed, "From")]
 
 
 def _addresses(message: EmailMessage, header: str) -> list[tuple[str, str]]:
@@ -445,7 +496,8 @@ class Email:
             ),
             notes=(
                 "read and listen look at one folder: the reference's ?folder= (a Gmail label is a folder), else the configured one (INBOX by default); your own sent mail is in another",
-                "?from= on email: keeps the messages from any of several addresses or domains (@example.org): one IMAP SEARCH per sender, then an exact check of each From, since IMAP matches FROM as a substring (so a limit can return fewer)",
+                "?from= on email: keeps the messages from any of several addresses or domains (@example.org, not its subdomains): one IMAP SEARCH per sender, then an exact check of the From addresses (any of them counts), since IMAP matches FROM as a substring of the header; email:<address> gets the same exact check, so a list's rewritten From (ada via group@) is not hers",
+                "a reference with ? or & must be quoted on a command line",
                 "listen polls by UID; IMAP IDLE is not used",
                 "priority sets Importance and X-Priority, which mail clients may ignore",
                 "native html is the HTML part when plain text won as the body (an HTML body is in body only); list_id, list_unsubscribe and list_post are the List-* headers when present",
@@ -704,7 +756,7 @@ class Email:
         """``(folder, user, trusted authserv-ids)``: the reference's folder, else the configured one."""
         user = value(NAME, "user") or ""
         return (
-            scope.folder or value(NAME, "folder") or "INBOX",
+            scope.folder or _folder_name(value(NAME, "folder") or "INBOX"),
             user,
             _csv(value(NAME, "trusted_authserv_ids")),
         )
@@ -730,17 +782,23 @@ class Email:
         scope = _scope(ref.id)
         folder, user, trusted = self._context(scope)
         criteria = ["SINCE", _imap_date(since)] if since is not None else []
+        wanted = limit or DEFAULT_READ_LIMIT
+        kept: list[Message] = []
         with self._imap() as conn:
             self._select(conn, folder)
-            uids = self._search_scope(conn, scope, criteria)[
-                -(limit or DEFAULT_READ_LIMIT) :
-            ]
-            fetched = self._fetch(conn, uids)
-        messages = [
-            self._message(uid, raw, folder=folder, user=user, trusted=trusted)
-            for uid, raw in fetched
-        ]
-        kept = [m for m in messages if scope.keeps(m.author.native_id)]
+            uids = self._search_scope(conn, scope, criteria)
+            # Newest first, a batch at a time, until enough pass the exact sender check:
+            # mail that matched FROM only as a substring must not crowd out the rest.
+            end = len(uids)
+            while end > 0 and len(kept) < wanted:
+                start = max(0, end - wanted)
+                batch = [
+                    self._message(uid, raw, folder=folder, user=user, trusted=trusted)
+                    for uid, raw in self._fetch(conn, uids[start:end])
+                    if scope.keeps(_from_addresses(raw))
+                ]
+                kept = batch + kept
+                end = start
         return window(kept, since=since, limit=limit)
 
     def poll(
@@ -766,15 +824,14 @@ class Email:
                 for u in self._search_scope(conn, scope, criteria)
                 if not resume or u > int(seen_uid)
             ]
-            truncated = bool(limit) and len(uids) > limit
             if limit:
                 uids = uids[:limit]
             fetched = self._fetch(conn, uids)
         events = []
         for uid, raw in fetched:
-            message = self._message(uid, raw, folder=folder, user=user, trusted=trusted)
-            if not scope.keeps(message.author.native_id):
+            if not scope.keeps(_from_addresses(raw)):
                 continue  # FROM matched a substring of another sender
+            message = self._message(uid, raw, folder=folder, user=user, trusted=trusted)
             events.append(
                 Event(
                     kind="message.created",

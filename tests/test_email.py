@@ -620,3 +620,60 @@ def test_a_send_to_an_address_with_a_folder_goes_to_the_address(monkeypatch):
     assert "name an address" in audience.evidence[0], (
         "a filtered folder is still no correspondence"
     )
+
+
+def test_a_folder_named_either_way_is_one_reference_and_one_wire_name():
+    from correspond.channels.mail import _mailbox
+
+    email = Email()
+    assert (
+        email.parse_ref("?folder=%26AMk-nergie").encoded
+        == email.parse_ref("?folder=%C3%89nergie").encoded
+        == "email:?folder=%C3%89nergie"
+    )
+    literal = email.parse_ref("?folder=Q%26A-2024")
+    assert literal.encoded == "email:?folder=Q%26A-2024"
+    assert _mailbox("Q&A-2024") == "Q&-A-2024", "not mistaken for an encoded run"
+
+
+def test_a_limit_counts_mail_that_passes_the_exact_sender_check(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    imap = FakeFolders(
+        {
+            "INBOX": {
+                1: _news(1, "ada@example.org", "Tue, 01", folder="in"),
+                2: _news(2, "bada@example.org", "Wed, 02", folder="in"),
+                3: _news(3, "bada@example.org", "Thu, 03", folder="in"),
+                5: _news(5, "ADA@example.org", "Sat, 05", folder="in"),
+            }
+        }
+    )
+    messages = correspond.read(
+        "email:ada@example.org", limit=2, registry={"email": Email(imap=lambda: imap)}
+    )
+    assert [m.id for m in messages] == ["<in-1@example.org>", "<in-5@example.org>"]
+
+
+def test_any_from_address_in_scope_keeps_the_message(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_EMAIL_USER", "me@example.org")
+    imap = FakeFolders(
+        {
+            "INBOX": {
+                1: _news(1, "Bob <bob@example.net>, Ada <ada@example.org>", "Tue, 01")
+            }
+        }
+    )
+    messages = correspond.read(
+        "email:ada@example.org", registry={"email": Email(imap=lambda: imap)}
+    )
+    assert [m.id for m in messages] == ["<news-1@example.org>"]
+
+
+def test_an_address_with_reserved_characters_is_written_escaped():
+    email = Email()
+    ref = email.parse_ref("a%3Fb@example.org?folder=News")
+    assert ref.encoded == "email:a%3Fb@example.org?folder=News"
+    assert email.parse_ref(ref.id).encoded == ref.encoded
+    for bad in ("?folder=%E9", "a%E9@example.org"):
+        with pytest.raises(correspond.InvalidRef):
+            email.parse_ref(bad)
