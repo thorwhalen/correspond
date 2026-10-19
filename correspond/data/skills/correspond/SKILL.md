@@ -86,7 +86,7 @@ The first listen looks back a little (a day). An event can repeat after an inter
 
 1. If unsure the channel can do it: `correspond capabilities <channel>`.
 2. `correspond audience <ref>` (with the same `--cc` / `--bcc` as the send): who can read it, in words on the first line. `defaulted: true` means nobody could tell, so it counts as public.
-3. `correspond send <ref> "text" --dry-run` (or `edit` / `react` / `upload` / `label` / `unlabel` / `close` / `reopen` with `--dry-run`; `correspond upload <ref> <path>` sends a file, on Telegram and email). Show the operator the plan with its `audience` and `before_send` lines: target, copies, who can read it, the check's verdict, text, title, priority.
+3. `correspond send <ref> "text" --dry-run` (or `edit` / `react` / `upload` / `label` / `unlabel` / `close` / `reopen` with `--dry-run`; `correspond upload <ref> <path>` sends a file, on Telegram and email; `correspond send <ref> "text" --attach a.pdf,b.csv` sends files with the text, and the plan's `files` names each real path to show the operator). Show the operator the plan with its `audience` and `before_send` lines: target, copies, who can read it, the check's verdict, text, title, priority.
 4. Only after the operator approves, run the same command without `--dry-run`.
 
 When someone must be told, say so instead of remembering to mention them: `--notify login1,login2` (addresses on email). The channel adds the mention or the Cc the text lacks, and a channel that cannot guarantee it refuses the send (`not_supported`), so choose another channel rather than dropping the flag.

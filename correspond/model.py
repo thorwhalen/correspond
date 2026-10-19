@@ -921,6 +921,11 @@ class Draft:
 
     >>> Draft(text="hi", notify=["octocat", " ", "Octocat", "hubot"]).notify
     ('octocat', 'hubot')
+
+    ``attachments`` are files that go with the text, each an :class:`Attachment` whose
+    ``content()`` gives its bytes, on channels whose capabilities grade ``upload``. The
+    ``before_send`` check sees them (name, media type, size, SHA-256, ``ref``), never their
+    bytes.
     """
 
     text: str
@@ -931,6 +936,7 @@ class Draft:
     bcc: tuple[str, ...] = ()
     native: Mapping[str, Any] = field(default_factory=dict)
     notify: tuple[str, ...] = ()
+    attachments: tuple[Attachment, ...] = ()
 
     def __post_init__(self):
         if not isinstance(self.text, str):
@@ -954,6 +960,10 @@ class Draft:
                 f"draft native must be a mapping, not {type(self.native).__name__}"
             )
         object.__setattr__(self, "native", {str(k): v for k, v in self.native.items()})
+        attachments = tuple(self.attachments)
+        if not all(isinstance(a, Attachment) for a in attachments):
+            raise TypeError("draft attachments are Attachment objects")
+        object.__setattr__(self, "attachments", attachments)
 
     def to_dict(self) -> dict:
         """JSON-ready. ``native`` and ``notify`` appear only when set, so a draft without them keeps the
@@ -971,6 +981,8 @@ class Draft:
             data["native"] = dict(self.native)
         if self.notify:  # same reason: absent unless set
             data["notify"] = list(self.notify)
+        if self.attachments:  # same reason; metadata only, never the bytes
+            data["attachments"] = [a.to_dict() for a in self.attachments]
         return data
 
 

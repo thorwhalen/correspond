@@ -465,6 +465,13 @@ def _body(message: EmailMessage) -> tuple[str, str | None, str]:
     return content.strip(), content, "plain"
 
 
+def _part(attachment: Attachment) -> tuple[str, bytes, str, str]:
+    """A draft's attachment as ``(name, bytes, maintype, subtype)``, its name and type checked."""
+    name = file_name(attachment.name or attachment.ref)
+    maintype, _, subtype = _media_type(attachment.media_type).partition("/")
+    return name, attachment.content(), maintype, subtype
+
+
 def _with_notify(to: str, draft: Draft) -> tuple[Draft, tuple[str, ...]]:
     """``draft`` with its ``notify`` addresses in Cc (and out of Bcc), and the addresses added."""
     cc = with_copies(to, draft.cc, draft.notify)
@@ -528,7 +535,7 @@ class Email:
                 "?gmail=<search> adds Gmail's search syntax (X-GM-RAW) on a server advertising X-GM-EXT-1 (one CAPABILITY call to check), NotSupported elsewhere; + is a space, as in Gmail's addresses; it narrows ?folder= and ?from=, and the exact From check still applies",
                 "listen with ?gmail= delivers a message only if it matches when the listen first passes it: a search whose answer changes over time (is:starred, a label added later, is:unread) misses mail that comes to match after newer mail moved the cursor on",
                 "listen polls by UID; IMAP IDLE is not used",
-                "upload emails the file to the address as an attachment, its name as the subject (up to 18 MB, about 25 MB once encoded; a server may take less)",
+                "upload emails the file to the address as an attachment, its name as the subject (up to 18 MB, about 25 MB once encoded; a server may take less); a send carries the draft's attachments the same way",
                 "priority sets Importance and X-Priority, which mail clients may ignore",
                 "native html is the HTML part when plain text won as the body (an HTML body is in body only); list_id, list_unsubscribe and list_post are the List-* headers when present",
                 "audience: the address plus cc and bcc; a list-shaped address has members nobody can list",
@@ -1032,7 +1039,7 @@ class Email:
         return self._send(
             ref,
             Draft(text="", title=name),
-            attachment=(name, data, maintype, subtype),
+            attachments=[(name, data, maintype, subtype)],
             operation="upload",
             dry_run=dry_run,
         )
@@ -1042,10 +1049,12 @@ class Email:
         ref: ConversationRef,
         draft: Draft,
         *,
-        attachment: tuple[str, bytes, str, str] | None = None,
+        attachments: list[tuple[str, bytes, str, str]] | None = None,
         operation: str = "send",
         dry_run: bool = False,
     ) -> SendResult:
+        if attachments is None:  # a send: the draft's own files
+            attachments = [_part(a) for a in draft.attachments]
         to = _scope(ref.id).address
         if not to:
             raise ChannelError("send to an address: email:<address>", kind="validation")
@@ -1082,8 +1091,7 @@ class Email:
             elif draft.priority == "low":
                 message["Importance"], message["X-Priority"] = "low", "5"
             message.set_content(draft.text)
-            if attachment is not None:
-                name, data, maintype, subtype = attachment
+            for name, data, maintype, subtype in attachments:
                 message.add_attachment(
                     data, maintype=maintype, subtype=subtype, filename=name
                 )
@@ -1105,14 +1113,18 @@ class Email:
         }
         if draft.notify:
             plan.update(notify=list(draft.notify), cc_added=list(cc_added))
-        if attachment is not None:
-            name, data, maintype, subtype = attachment
-            plan["attachment"] = {
-                "name": name,
-                "media_type": f"{maintype}/{subtype}",
-                "bytes": len(data),
-                "sha256": hashlib.sha256(data).hexdigest(),
-            }
+        if attachments:
+            plan["attachments"] = [
+                {
+                    "name": name,
+                    "media_type": f"{maintype}/{subtype}",
+                    "bytes": len(data),
+                    "sha256": hashlib.sha256(data).hexdigest(),
+                }
+                for name, data, maintype, subtype in attachments
+            ]
+            if operation == "upload":
+                plan["attachment"] = plan["attachments"][0]
         if dry_run:
             return SendResult(
                 ok=True,
