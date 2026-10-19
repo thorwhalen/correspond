@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=056c92e6"></script>
+    <script src="../../_static/documentation_options.js?v=a11416ff"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.20" />
+  <meta name="docsearch:version" content="0.0.21" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1091,6 +1091,26 @@ window.runMermaid = runMermaid;</script>
         <span class="n">summary</span><span class="o">=</span><span class="s2">"Signal through signal-cli-rest-api"</span><span class="p">,</span>
         <span class="n">extra</span><span class="o">=</span><span class="s2">"signal"</span><span class="p">,</span>
         <span class="n">planned</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ISSUES</span><span class="si">}</span><span class="s2">/4"</span><span class="p">,</span>
+    <span class="p">),</span>
+    <span class="n">ChannelInfo</span><span class="p">(</span>
+        <span class="n">name</span><span class="o">=</span><span class="s2">"gdrive"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"A Google Drive folder, read only: the files a conversation announces, each as a message with the file attached"</span><span class="p">,</span>
+        <span class="n">factory</span><span class="o">=</span><span class="s2">"correspond.channels.gdrive:GoogleDrive"</span><span class="p">,</span>
+        <span class="n">modules</span><span class="o">=</span><span class="p">(</span><span class="s2">"pydrivedol"</span><span class="p">,),</span>
+        <span class="n">extra</span><span class="o">=</span><span class="s2">"gdrive"</span><span class="p">,</span>
+        <span class="n">settings</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"service_account_file"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_GDRIVE_SERVICE_ACCOUNT_FILE"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the path of a Google service-account key (JSON), used with the read-only Drive scope"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s2">"Google Cloud console: create a service account with the Drive API enabled, add a JSON key, then share each folder with its client_email as Viewer"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"gdrive:&lt;folder id&gt; lists the folder and its subfolders; it never listens or writes"</span><span class="p">,</span>
+            <span class="s2">"the folder must be shared with the service account's client_email"</span><span class="p">,</span>
+        <span class="p">),</span>
     <span class="p">),</span>
     <span class="n">ChannelInfo</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">"apprise"</span><span class="p">,</span>

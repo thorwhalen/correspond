@@ -1,0 +1,18 @@
+correspond.channels.gdrive
+==========================
+
+.. automodule:: correspond.channels.gdrive
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      READONLY_SCOPE
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      GoogleDrive
+   
