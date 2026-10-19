@@ -1,4 +1,4 @@
-> built 2026-10-19 11:00 UTC from 81f8c4a (main) · correspond 0.0.17. Details: build_info.json
+> built 2026-10-19 11:11 UTC from 654b561 (main) · correspond 0.0.18. Details: build_info.json
 
 # index.html.md
 
@@ -23,15 +23,15 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 
 ## Channels
 
-| Channel    | References                                                                                                                                                                                                                                                | Operations                                                                                                                                                                                                                                                            | Built on                                                                        |
-|------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
-| `github`   | `github:owner/repo`, `github:owner/repo#12`                                                                                                                                                                                                               | read, listen (issues, comments, pull request review threads, discussions), send (opening an issue takes `native` labels, assignees, milestone; `native` category opens a discussion instead), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token                           |
-| `email`    | `email:` (the folder), `email:someone@example.org`; either takes `?folder=<name>` (a Gmail label is a folder), and `email:` takes `?from=<address or domain>,...` (a domain as `@example.org`); quote such a reference in a shell: `'email:?folder=News'` | read, listen, send (with cc and bcc), audience                                                                                                                                                                                                                        | `imaplib`, `smtplib`                                                            |
-| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                                                                                                                                                                                               | send, audience                                                                                                                                                                                                                                                        | `urllib`                                                                        |
-| `macos`    | `macos:`                                                                                                                                                                                                                                                  | send, audience                                                                                                                                                                                                                                                        | `terminal-notifier` or `osascript`                                              |
-| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>`                                                                                                                                                                      | listen, read (what listening logged), send, edit, react, audience                                                                                                                                                                                                     | the Bot API over `urllib`                                                       |
-| `webinbox` | `webinbox:<site>`                                                                                                                                                                                                                                         | read, listen, audience                                                                                                                                                                                                                                                | the ASGI collector below, and `dol` stores                                      |
-| `apprise`  | `apprise:<alias>`                                                                                                                                                                                                                                         | send, audience                                                                                                                                                                                                                                                        | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`) |
+| Channel    | References                                                                                                                                                                                                                                                                                                        | Operations                                                                                                                                                                                                                                                            | Built on                                                                        |
+|------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------|
+| `github`   | `github:owner/repo`, `github:owner/repo#12`                                                                                                                                                                                                                                                                       | read, listen (issues, comments, pull request review threads, discussions), send (opening an issue takes `native` labels, assignees, milestone; `native` category opens a discussion instead), edit, react, label, unlabel, close, reopen, verify (webhooks), audience | the `gh` CLI and its login; correspond holds no token                           |
+| `email`    | `email:` (the folder), `email:someone@example.org`; either takes `?folder=<name>` (a Gmail label is a folder), and `email:` takes `?from=<address or domain>,...` (a domain as `@example.org`); on Gmail, `?gmail=<search>` adds Gmail’s search syntax; quote such a reference in a shell: `'email:?folder=News'` | read, listen, send (with cc and bcc), audience                                                                                                                                                                                                                        | `imaplib`, `smtplib`                                                            |
+| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                                                                                                                                                                                                                                                       | send, audience                                                                                                                                                                                                                                                        | `urllib`                                                                        |
+| `macos`    | `macos:`                                                                                                                                                                                                                                                                                                          | send, audience                                                                                                                                                                                                                                                        | `terminal-notifier` or `osascript`                                              |
+| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>`                                                                                                                                                                                                                              | listen, read (what listening logged), send, edit, react, audience                                                                                                                                                                                                     | the Bot API over `urllib`                                                       |
+| `webinbox` | `webinbox:<site>`                                                                                                                                                                                                                                                                                                 | read, listen, audience                                                                                                                                                                                                                                                | the ASGI collector below, and `dol` stores                                      |
+| `apprise`  | `apprise:<alias>`                                                                                                                                                                                                                                                                                                 | send, audience                                                                                                                                                                                                                                                        | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`) |
 
 Every v0.1 adapter uses the Python standard library; Apprise is the first extra, and registers only when it is installed. Discord ([#2](https://github.com/thorwhalen/correspond/issues/2)), Slack ([#3](https://github.com/thorwhalen/correspond/issues/3)) and Signal ([#4](https://github.com/thorwhalen/correspond/issues/4)) are planned as extras; `correspond channels` lists them with their issues.
 
@@ -1117,6 +1117,14 @@ Email: IMAP to read and listen, SMTP to send, with the standard library.
   so is an address with one of those. A folder may be named as written (`Énergie`) or as
   the server lists it in modified UTF-7 (`&AMk-nergie`); both are one reference. On a
   command line, quote a reference with `?` or `&`: `correspond read 'email:?folder=News'`.
+- `?gmail=<search>` adds Gmail’s own search syntax (`X-GM-RAW`) on a server that
+  advertises `X-GM-EXT-1`, and is refused elsewhere:
+  `email:?gmail=category:promotions+newer_than:7d`. As in Gmail’s own addresses, `+`
+  is a space (a plus sign is `%2B`). It narrows the other keys; it replaces none of them,
+  so `?from=` still checks each From exactly. Listening delivers a message only if it
+  matches when the listen first passes it: a search whose answer changes later
+  (`is:starred`, a label added afterwards, `is:unread`) misses the mail that comes to
+  match after newer mail has moved the cursor on.
 
 A message’s conversation is the correspondence with its sender (`email:<address>`), in
 whichever folder it was read; `native["folder"]` says which.
@@ -4740,18 +4748,16 @@ Remove labels (comma-separated; a label name may not itself contain a comma) fro
 
 # About this build
 
-This documentation was built on **2026-10-19 11:00 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/81f8c4a4be0cb5436f503b6c68af08be302b2e4c"><code>81f8c4a</code></a> on branch <code>main</code>, for **correspond 0.0.17** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-19 11:11 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/654b56195e2680f355e0ddce4d946a00e257d45a"><code>654b561</code></a> on branch <code>main</code>, for **correspond 0.0.18** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.17) is behind the latest release on PyPI (0.0.18): `pip install correspond` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/81f8c4a4be0cb5436f503b6c68af08be302b2e4c"><code>81f8c4a4be0cb5436f503b6c68af08be302b2e4c</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/654b56195e2680f355e0ddce4d946a00e257d45a"><code>654b56195e2680f355e0ddce4d946a00e257d45a</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -4762,9 +4768,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39241346843">39241346843</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39242679328">39242679328</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>81f8c4a4be0cb5436f503b6c68af08be302b2e4c</code> (in the history of the built commit)  |
+| Event commit | <code>654b56195e2680f355e0ddce4d946a00e257d45a</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -4789,13 +4795,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.18/">0.0.18</a>, newer than the documented version (0.0.17).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.18/">0.0.18</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 81f8c4a4be0cb5436f503b6c68af08be302b2e4c
+git checkout 654b56195e2680f355e0ddce4d946a00e257d45a
 pip install "epythet==0.2.17"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

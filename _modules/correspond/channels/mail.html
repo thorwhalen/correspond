@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=63b572e7"></script>
+    <script src="../../../_static/documentation_options.js?v=8bafd125"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.17" />
+  <meta name="docsearch:version" content="0.0.18" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -728,6 +728,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">  so is an address with one of those. A folder may be named as written (``Énergie``) or as</span>
 <span class="sd">  the server lists it in modified UTF-7 (``&amp;AMk-nergie``); both are one reference. On a</span>
 <span class="sd">  command line, quote a reference with ``?`` or ``&amp;``: ``correspond read 'email:?folder=News'``.</span>
+<span class="sd">- ``?gmail=&lt;search&gt;`` adds Gmail's own search syntax (``X-GM-RAW``) on a server that</span>
+<span class="sd">  advertises ``X-GM-EXT-1``, and is refused elsewhere:</span>
+<span class="sd">  ``email:?gmail=category:promotions+newer_than:7d``. As in Gmail's own addresses, ``+``</span>
+<span class="sd">  is a space (a plus sign is ``%2B``). It narrows the other keys; it replaces none of them,</span>
+<span class="sd">  so ``?from=`` still checks each From exactly. Listening delivers a message only if it</span>
+<span class="sd">  matches when the listen first passes it: a search whose answer changes later</span>
+<span class="sd">  (``is:starred``, a label added afterwards, ``is:unread``) misses the mail that comes to</span>
+<span class="sd">  match after newer mail has moved the cursor on.</span>
 
 <span class="sd">A message's conversation is the correspondence with its sender (``email:&lt;address&gt;``), in</span>
 <span class="sd">whichever folder it was read; ``native["folder"]`` says which.</span>
@@ -770,7 +778,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">quote</span><span class="p">,</span> <span class="n">unquote</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span><span class="p">,</span> <span class="n">NotSupported</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">Account</span><span class="p">,</span>
     <span class="n">Attachment</span><span class="p">,</span>
@@ -803,12 +811,16 @@ window.runMermaid = runMermaid;</script>
     <span class="sa">r</span><span class="s2">"^@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$"</span>
 <span class="p">)</span>
 <span class="c1">#: The keys a reference takes after ``?``, in their canonical order.</span>
-<span class="n">REF_KEYS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"folder"</span><span class="p">,</span> <span class="s2">"from"</span><span class="p">)</span>
+<span class="n">REF_KEYS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"folder"</span><span class="p">,</span> <span class="s2">"from"</span><span class="p">,</span> <span class="s2">"gmail"</span><span class="p">)</span>
+<span class="c1">#: The IMAP capability of a server that takes Gmail's search syntax (``X-GM-RAW``).</span>
+<span class="n">GMAIL_CAPABILITY</span> <span class="o">=</span> <span class="s2">"X-GM-EXT-1"</span>
 <span class="n">_MUTF7_RUN_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"&amp;([A-Za-z0-9+,]*)-"</span><span class="p">)</span>
 <span class="c1">#: Characters an address keeps unescaped in a canonical reference (``%``, ``?`` and ``&amp;`` are escaped).</span>
-<span class="n">_ADDRESS_SAFE</span> <span class="o">=</span> <span class="s2">"!#$'*+-/=^_`{|}~.@"</span>
+<span class="n">_ADDRESS_SAFE</span> <span class="o">=</span> <span class="s2">"!#$*+-/=^_`{|}~.@"</span>
 <span class="c1">#: Characters a folder name keeps unescaped in a canonical reference.</span>
-<span class="n">_FOLDER_SAFE</span> <span class="o">=</span> <span class="s2">"/[]._-+:@!$'()*,;="</span>
+<span class="n">_FOLDER_SAFE</span> <span class="o">=</span> <span class="s2">"/[]._-+:@!$()*,;="</span>
+<span class="c1">#: Characters a Gmail search keeps unescaped in a canonical reference; a space is written ``+``.</span>
+<span class="n">_GMAIL_SAFE</span> <span class="o">=</span> <span class="s1">':/[]._-@!$()*,;"&lt;&gt;</span><span class="si">{}</span><span class="s1">|~^'</span>
 <span class="c1">#: Words that, as a part of an address's local part (``dev-team@``), mark it as a possible mailing list.</span>
 <span class="n">LIST_LOCAL_PARTS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"list"</span><span class="p">,</span> <span class="s2">"all"</span><span class="p">,</span> <span class="s2">"team"</span><span class="p">,</span> <span class="s2">"dev"</span><span class="p">,</span> <span class="s2">"announce"</span><span class="p">,</span> <span class="s2">"info"</span><span class="p">)</span>
 <span class="n">_LOCAL_PART_SPLIT</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[-._+]"</span><span class="p">)</span>
@@ -898,6 +910,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
     <span class="n">folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="n">senders</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">gmail</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">encoded</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -906,6 +919,10 @@ window.runMermaid = runMermaid;</script>
             <span class="n">query</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"folder=</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="n">_FOLDER_SAFE</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">senders</span><span class="p">:</span>
             <span class="n">query</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"from=</span><span class="si">{</span><span class="s1">','</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">senders</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">gmail</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">query</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"gmail=</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">gmail</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="n">_GMAIL_SAFE</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'%20'</span><span class="p">,</span><span class="w"> </span><span class="s1">'+'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
         <span class="n">address</span> <span class="o">=</span> <span class="n">quote</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">address</span><span class="p">,</span> <span class="n">safe</span><span class="o">=</span><span class="n">_ADDRESS_SAFE</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">address</span> <span class="o">+</span> <span class="p">(</span><span class="s2">"?"</span> <span class="o">+</span> <span class="s2">"&amp;"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="k">if</span> <span class="n">query</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
 
@@ -927,7 +944,7 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">"""Parse an email reference's id; :class:`InvalidRef` says what is wrong.</span>
 
 <span class="sd">    &gt;&gt;&gt; _scope("ada@example.org?folder=inbox")</span>
-<span class="sd">    _Scope(address='ada@example.org', folder='INBOX', senders=())</span>
+<span class="sd">    _Scope(address='ada@example.org', folder='INBOX', senders=(), gmail=None)</span>
 <span class="sd">    """</span>
     <span class="n">raw_address</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">query</span> <span class="o">=</span> <span class="nb">id</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"?"</span><span class="p">)</span>
     <span class="k">try</span><span class="p">:</span>
@@ -943,10 +960,12 @@ window.runMermaid = runMermaid;</script>
         <span class="n">key</span><span class="p">,</span> <span class="n">equals</span><span class="p">,</span> <span class="n">raw</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"="</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">REF_KEYS</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">equals</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"an email reference takes ?folder=&lt;name&gt; and ?from=&lt;senders&gt;, not </span><span class="si">{</span><span class="n">item</span><span class="si">!r}</span><span class="s2"> (in email:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">)"</span>
+                <span class="sa">f</span><span class="s2">"an email reference takes ?folder=&lt;name&gt;, ?from=&lt;senders&gt; and ?gmail=&lt;search&gt;, not </span><span class="si">{</span><span class="n">item</span><span class="si">!r}</span><span class="s2"> (in email:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">)"</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> is given twice in email:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="o">==</span> <span class="s2">"gmail"</span><span class="p">:</span>
+            <span class="n">raw</span> <span class="o">=</span> <span class="n">raw</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"+"</span><span class="p">,</span> <span class="s2">" "</span><span class="p">)</span>  <span class="c1"># as in Gmail's own addresses; a plus is %2B</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">text</span> <span class="o">=</span> <span class="n">unquote</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"strict"</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
@@ -974,7 +993,9 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">"?from= takes addresses or domains (@example.org), not </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bad</span><span class="p">)</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'an empty name'</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
         <span class="n">senders</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">)))</span>
-    <span class="k">return</span> <span class="n">_Scope</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">address</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">folder</span><span class="o">=</span><span class="n">folder</span><span class="p">,</span> <span class="n">senders</span><span class="o">=</span><span class="n">senders</span><span class="p">)</span>
+    <span class="c1"># Gmail reads a run of spaces as one, so one search has one reference (and one cursor).</span>
+    <span class="n">gmail</span> <span class="o">=</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">fields</span><span class="p">[</span><span class="s2">"gmail"</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="k">if</span> <span class="s2">"gmail"</span> <span class="ow">in</span> <span class="n">fields</span> <span class="k">else</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">_Scope</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">address</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">folder</span><span class="o">=</span><span class="n">folder</span><span class="p">,</span> <span class="n">senders</span><span class="o">=</span><span class="n">senders</span><span class="p">,</span> <span class="n">gmail</span><span class="o">=</span><span class="n">gmail</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_imap_date</span><span class="p">(</span><span class="n">moment</span><span class="p">:</span> <span class="n">datetime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -1217,6 +1238,8 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"read and listen look at one folder: the reference's ?folder= (a Gmail label is a folder), else the configured one (INBOX by default); your own sent mail is in another"</span><span class="p">,</span>
                 <span class="s2">"?from= on email: keeps the messages from any of several addresses or domains (@example.org, not its subdomains): one IMAP SEARCH per sender, then an exact check of the From addresses (any of them counts), since IMAP matches FROM as a substring of the header; email:&lt;address&gt; gets the same exact check, so a list's rewritten From (ada via group@) is not hers"</span><span class="p">,</span>
                 <span class="s2">"a reference with ? or &amp; must be quoted on a command line"</span><span class="p">,</span>
+                <span class="s2">"?gmail=&lt;search&gt; adds Gmail's search syntax (X-GM-RAW) on a server advertising X-GM-EXT-1 (one CAPABILITY call to check), NotSupported elsewhere; + is a space, as in Gmail's addresses; it narrows ?folder= and ?from=, and the exact From check still applies"</span><span class="p">,</span>
+                <span class="s2">"listen with ?gmail= delivers a message only if it matches when the listen first passes it: a search whose answer changes over time (is:starred, a label added later, is:unread) misses mail that comes to match after newer mail moved the cursor on"</span><span class="p">,</span>
                 <span class="s2">"listen polls by UID; IMAP IDLE is not used"</span><span class="p">,</span>
                 <span class="s2">"priority sets Importance and X-Priority, which mail clients may ignore"</span><span class="p">,</span>
                 <span class="s2">"native html is the HTML part when plain text won as the body (an HTML body is in body only); list_id, list_unsubscribe and list_post are the List-* headers when present"</span><span class="p">,</span>
@@ -1367,8 +1390,29 @@ window.runMermaid = runMermaid;</script>
         <span class="k">return</span> <span class="n">validity</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">uidnext</span><span class="p">)</span> <span class="k">if</span> <span class="n">uidnext</span> <span class="ow">and</span> <span class="n">uidnext</span><span class="o">.</span><span class="n">isdigit</span><span class="p">()</span> <span class="k">else</span> <span class="kc">None</span>
 
     <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">_search</span><span class="p">(</span><span class="n">conn</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">criteria</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-        <span class="n">typ</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">uid</span><span class="p">(</span><span class="s2">"SEARCH"</span><span class="p">,</span> <span class="o">*</span><span class="n">criteria</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_search</span><span class="p">(</span><span class="n">conn</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">criteria</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">gmail</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""``UID SEARCH`` on ``criteria``, plus Gmail's ``X-GM-RAW`` search when ``gmail`` is given.</span>
+
+<span class="sd">        A non-ASCII Gmail search goes as a UTF-8 literal, which IMAP sends last, under</span>
+<span class="sd">        ``CHARSET UTF-8``, through ``imaplib``'s ``literal`` attribute: an ``imap=`` transport</span>
+<span class="sd">        other than ``imaplib`` must honour it for such a search.</span>
+<span class="sd">        """</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">criteria</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">gmail</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">gmail</span><span class="o">.</span><span class="n">isascii</span><span class="p">():</span>
+                <span class="n">args</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">"X-GM-RAW"</span><span class="p">,</span> <span class="n">_quote</span><span class="p">(</span><span class="n">gmail</span><span class="p">)]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"CHARSET"</span><span class="p">,</span> <span class="s2">"UTF-8"</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="s2">"X-GM-RAW"</span><span class="p">]</span>
+                <span class="n">conn</span><span class="o">.</span><span class="n">literal</span> <span class="o">=</span> <span class="n">gmail</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">typ</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">uid</span><span class="p">(</span><span class="s2">"SEARCH"</span><span class="p">,</span> <span class="o">*</span><span class="p">(</span><span class="n">args</span> <span class="ow">or</span> <span class="p">[</span><span class="s2">"ALL"</span><span class="p">]))</span>
+        <span class="k">except</span> <span class="n">imaplib</span><span class="o">.</span><span class="n">IMAP4</span><span class="o">.</span><span class="n">error</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">gmail</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"the server refused the Gmail search </span><span class="si">{</span><span class="n">gmail</span><span class="si">!r}</span><span class="s2">: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
         <span class="k">if</span> <span class="n">typ</span> <span class="o">!=</span> <span class="s2">"OK"</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"the IMAP search failed: </span><span class="si">{</span><span class="n">data</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"unavailable"</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="p">((</span><span class="n">data</span> <span class="ow">or</span> <span class="p">[</span><span class="sa">b</span><span class="s2">""</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="sa">b</span><span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
@@ -1484,14 +1528,33 @@ window.runMermaid = runMermaid;</script>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_search_scope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">scope</span><span class="p">:</span> <span class="n">_Scope</span><span class="p">,</span> <span class="n">criteria</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">"""UIDs matching ``criteria`` from the scope's senders: one ``SEARCH`` per sender, merged."""</span>
+<span class="w">        </span><span class="sd">"""UIDs matching ``criteria`` in the scope: one ``SEARCH`` per sender, merged; the Gmail search in each."""</span>
+        <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">gmail</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_require_gmail</span><span class="p">(</span><span class="n">conn</span><span class="p">)</span>
         <span class="n">senders</span> <span class="o">=</span> <span class="n">scope</span><span class="o">.</span><span class="n">senders</span> <span class="ow">or</span> <span class="p">((</span><span class="n">scope</span><span class="o">.</span><span class="n">address</span><span class="p">,)</span> <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">address</span> <span class="k">else</span> <span class="p">())</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">senders</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">criteria</span> <span class="ow">or</span> <span class="p">[</span><span class="s2">"ALL"</span><span class="p">])</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">criteria</span><span class="p">,</span> <span class="n">gmail</span><span class="o">=</span><span class="n">scope</span><span class="o">.</span><span class="n">gmail</span><span class="p">)</span>
         <span class="n">found</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">sender</span> <span class="ow">in</span> <span class="n">senders</span><span class="p">:</span>
-            <span class="n">found</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_search</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">criteria</span><span class="p">,</span> <span class="s2">"FROM"</span><span class="p">,</span> <span class="n">_quote</span><span class="p">(</span><span class="n">sender</span><span class="p">)]))</span>
+            <span class="n">found</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_search</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">criteria</span><span class="p">,</span> <span class="s2">"FROM"</span><span class="p">,</span> <span class="n">_quote</span><span class="p">(</span><span class="n">sender</span><span class="p">)],</span> <span class="n">gmail</span><span class="o">=</span><span class="n">scope</span><span class="o">.</span><span class="n">gmail</span><span class="p">)</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">found</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_require_gmail</span><span class="p">(</span><span class="n">conn</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Refuse ``?gmail=`` unless the server says, once logged in, that it takes ``X-GM-RAW``."""</span>
+        <span class="n">typ</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">capability</span><span class="p">()</span>
+        <span class="n">words</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">d</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="p">(</span><span class="n">data</span> <span class="ow">or</span> <span class="p">[])</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">))</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">typ</span> <span class="o">!=</span> <span class="s2">"OK"</span> <span class="ow">or</span> <span class="n">GMAIL_CAPABILITY</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">words</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
+                <span class="s2">"gmail search"</span><span class="p">,</span>
+                <span class="n">NAME</span><span class="p">,</span>
+                <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"this server does not advertise </span><span class="si">{</span><span class="n">GMAIL_CAPABILITY</span><span class="si">}</span><span class="s2">: Gmail's search runs on Gmail only"</span><span class="p">,</span>
+                    <span class="s2">"?folder= and ?from= work on every server"</span><span class="p">,</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
 
 <div class="viewcode-block" id="Email.read">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.mail.html#correspond.channels.mail.Email.read">[docs]</a>

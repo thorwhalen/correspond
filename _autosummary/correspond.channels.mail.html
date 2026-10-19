@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=63b572e7"></script>
+    <script src="../_static/documentation_options.js?v=8bafd125"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.17" />
+  <meta name="docsearch:version" content="0.0.18" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -431,6 +431,14 @@ where it has a space, <code class="docutils literal notranslate"><span class="pr
 so is an address with one of those. A folder may be named as written (<code class="docutils literal notranslate"><span class="pre">Énergie</span></code>) or as
 the server lists it in modified UTF-7 (<code class="docutils literal notranslate"><span class="pre">&amp;AMk-nergie</span></code>); both are one reference. On a
 command line, quote a reference with <code class="docutils literal notranslate"><span class="pre">?</span></code> or <code class="docutils literal notranslate"><span class="pre">&amp;</span></code>: <code class="docutils literal notranslate"><span class="pre">correspond</span> <span class="pre">read</span> <span class="pre">'email:?folder=News'</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">?gmail=&lt;search&gt;</span></code> adds Gmail’s own search syntax (<code class="docutils literal notranslate"><span class="pre">X-GM-RAW</span></code>) on a server that
+advertises <code class="docutils literal notranslate"><span class="pre">X-GM-EXT-1</span></code>, and is refused elsewhere:
+<code class="docutils literal notranslate"><span class="pre">email:?gmail=category:promotions+newer_than:7d</span></code>. As in Gmail’s own addresses, <code class="docutils literal notranslate"><span class="pre">+</span></code>
+is a space (a plus sign is <code class="docutils literal notranslate"><span class="pre">%2B</span></code>). It narrows the other keys; it replaces none of them,
+so <code class="docutils literal notranslate"><span class="pre">?from=</span></code> still checks each From exactly. Listening delivers a message only if it
+matches when the listen first passes it: a search whose answer changes later
+(<code class="docutils literal notranslate"><span class="pre">is:starred</span></code>, a label added afterwards, <code class="docutils literal notranslate"><span class="pre">is:unread</span></code>) misses the mail that comes to
+match after newer mail has moved the cursor on.</p></li>
 </ul>
 <p>A message’s conversation is the correspondence with its sender (<code class="docutils literal notranslate"><span class="pre">email:&lt;address&gt;</span></code>), in
 whichever folder it was read; <code class="docutils literal notranslate"><span class="pre">native[&quot;folder&quot;]</span></code> says which.</p>

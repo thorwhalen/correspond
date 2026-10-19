@@ -16,6 +16,14 @@ Email: IMAP to read and listen, SMTP to send, with the standard library.
   so is an address with one of those. A folder may be named as written (`Énergie`) or as
   the server lists it in modified UTF-7 (`&AMk-nergie`); both are one reference. On a
   command line, quote a reference with `?` or `&`: `correspond read 'email:?folder=News'`.
+- `?gmail=<search>` adds Gmail’s own search syntax (`X-GM-RAW`) on a server that
+  advertises `X-GM-EXT-1`, and is refused elsewhere:
+  `email:?gmail=category:promotions+newer_than:7d`. As in Gmail’s own addresses, `+`
+  is a space (a plus sign is `%2B`). It narrows the other keys; it replaces none of them,
+  so `?from=` still checks each From exactly. Listening delivers a message only if it
+  matches when the listen first passes it: a search whose answer changes later
+  (`is:starred`, a label added afterwards, `is:unread`) misses the mail that comes to
+  match after newer mail has moved the cursor on.
 
 A message’s conversation is the correspondence with its sender (`email:<address>`), in
 whichever folder it was read; `native["folder"]` says which.
