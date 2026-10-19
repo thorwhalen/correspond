@@ -23,7 +23,7 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 | `email` | `email:` (the folder), `email:someone@example.org`; either takes `?folder=<name>` (a Gmail label is a folder), and `email:` takes `?from=<address or domain>,...` (a domain as `@example.org`); on Gmail, `?gmail=<search>` adds Gmail's search syntax; quote such a reference in a shell: `'email:?folder=News'` | read, listen, send (with cc and bcc), audience | `imaplib`, `smtplib` |
 | `ntfy` | `ntfy:` (the default topic), `ntfy:<topic>` | send, audience | `urllib` |
 | `macos` | `macos:` | send, audience | `terminal-notifier` or `osascript` |
-| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen, read (what listening logged), send, edit, react, audience | the Bot API over `urllib` |
+| `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>` | listen (`getUpdates`, or a webhook on a server), read (what listening logged), send, edit, react, audience, verify (webhook deliveries) | the Bot API over `urllib` |
 | `webinbox` | `webinbox:<site>` | read, listen, audience | the ASGI collector below, and `dol` stores |
 | `apprise` | `apprise:<alias>` | send, audience | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`) |
 
@@ -95,7 +95,7 @@ correspond listen github:owner/repo    # issue, comment, review comment and disc
 correspond listen email: --peek        # look without moving the cursor
 ```
 
-Cursors live under the data root, one per reference. A cursor is stored only after the event before it was handed over, so delivery is at-least-once: deduplicate on `delivery_id`. The first listen looks back a day. Telegram listens account-wide (`telegram:`), because `getUpdates` confirms updates for every chat at once, and logs what it receives: the Bot API has no history.
+Cursors live under the data root, one per reference. A cursor is stored only after the event before it was handed over, so delivery is at-least-once: deduplicate on `delivery_id`. The first listen looks back a day. Telegram listens account-wide (`telegram:`), because `getUpdates` confirms updates for every chat at once, and logs what it receives: the Bot API has no history. On a server, Telegram can push instead: serve the receiver on this machine behind your HTTPS reverse proxy (`uvicorn --factory correspond.channels.telegram:webhook_app_from_env --host 127.0.0.1`), which refuses any request without the `webhook_secret` and any connection from another machine unless `webhook_allow_remote` is set; call `Telegram().set_webhook("https://...")` and set `delivery = "webhook"`, and `listen telegram:` reads what the receiver stored. Telegram serves `getUpdates` or a webhook, never both: `Telegram().delete_webhook()` returns to polling.
 
 ## Configuration
 

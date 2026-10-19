@@ -60,6 +60,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from correspond import settings as _settings
+from correspond.channels._asgi import TOO_LARGE, lifespan, read_body, respond
 from correspond.errors import InvalidRef, MissingRequirement
 from correspond.model import (
     Attachment,
@@ -367,38 +368,6 @@ def _report(
     return record, files
 
 
-async def _respond(
-    send, status: int, payload: Any, headers: Mapping[str, str] | None = None
-) -> None:
-    body = b"" if payload is None else json.dumps(payload).encode("utf-8")
-    raw = [(b"content-type", b"application/json")] if payload is not None else []
-    raw += [
-        (k.encode("latin-1"), str(v).encode("latin-1"))
-        for k, v in (headers or {}).items()
-    ]
-    raw.append((b"content-length", str(len(body)).encode("latin-1")))
-    await send({"type": "http.response.start", "status": status, "headers": raw})
-    await send({"type": "http.response.body", "body": body})
-
-
-_TOO_LARGE = object()
-
-
-async def _read_body(receive, limit: int) -> Any:
-    chunks, size = [], 0
-    while True:
-        message = await receive()
-        if message["type"] == "http.disconnect":
-            return None
-        chunk = message.get("body", b"") or b""
-        size += len(chunk)
-        if size > limit:
-            return _TOO_LARGE
-        chunks.append(chunk)
-        if not message.get("more_body", False):
-            return b"".join(chunks)
-
-
 def _bucket(address: str) -> str:
     """One rate-limit bucket per IPv4 address and per IPv6 /64, with any port removed."""
     text = address.strip()
@@ -479,13 +448,7 @@ def mk_app(
 
     async def app(scope, receive, send):
         if scope["type"] == "lifespan":
-            while True:
-                message = await receive()
-                if message["type"] == "lifespan.startup":
-                    await send({"type": "lifespan.startup.complete"})
-                elif message["type"] == "lifespan.shutdown":
-                    await send({"type": "lifespan.shutdown.complete"})
-                    return
+            return await lifespan(receive, send)
         if scope["type"] != "http":
             return
         headers: dict[str, str] = {}
@@ -499,7 +462,7 @@ def mk_app(
             by_name.get(parts[0]) if len(parts) == 2 and parts[1] == "reports" else None
         )
         if site is None:
-            return await _respond(send, 404, {"error": "no such inbox"})
+            return await respond(send, 404, {"error": "no such inbox"})
         origin = headers.get("origin")
         allowed = (
             (_origin(origin) in site.origins)
@@ -514,8 +477,8 @@ def mk_app(
         method = scope.get("method", "GET")
         if method == "OPTIONS":
             if not cors:
-                return await _respond(send, 403, {"error": "origin not allowed"})
-            return await _respond(
+                return await respond(send, 403, {"error": "origin not allowed"})
+            return await respond(
                 send,
                 204,
                 None,
@@ -527,7 +490,7 @@ def mk_app(
                 },
             )
         if method != "POST":
-            return await _respond(
+            return await respond(
                 send, 405, {"error": "use POST"}, {**cors, "allow": "POST, OPTIONS"}
             )
         if not allowed:
@@ -536,10 +499,10 @@ def mk_app(
                 if origin is not None
                 else "reports must come from an allowed page"
             )
-            return await _respond(send, 403, {"error": reason})
+            return await respond(send, 403, {"error": reason})
         wait = limiter.take((site.name, _client(scope, headers, trusted_proxies)))
         if wait is not None:
-            return await _respond(
+            return await respond(
                 send,
                 429,
                 {"error": "too many reports; try again later"},
@@ -547,7 +510,7 @@ def mk_app(
             )
         declared = headers.get("content-length", "")
         if declared.isdigit() and int(declared) > max_body_bytes:
-            return await _respond(
+            return await respond(
                 send,
                 413,
                 {"error": f"reports are limited to {max_body_bytes} bytes"},
@@ -557,14 +520,14 @@ def mk_app(
             headers.get("content-type", "").split(";")[0].strip().lower()
             != "application/json"
         ):
-            return await _respond(
+            return await respond(
                 send, 415, {"error": "send JSON (content-type: application/json)"}, cors
             )
-        body = await _read_body(receive, max_body_bytes)
+        body = await read_body(receive, max_body_bytes)
         if body is None:
             return None
-        if body is _TOO_LARGE:
-            return await _respond(
+        if body is TOO_LARGE:
+            return await respond(
                 send,
                 413,
                 {"error": f"reports are limited to {max_body_bytes} bytes"},
@@ -573,19 +536,19 @@ def mk_app(
         try:
             payload = json.loads(body)
         except (UnicodeDecodeError, json.JSONDecodeError):
-            return await _respond(send, 400, {"error": "the body is not JSON"}, cors)
+            return await respond(send, 400, {"error": "the body is not JSON"}, cors)
         if not isinstance(payload, dict):
-            return await _respond(
+            return await respond(
                 send, 400, {"error": "the body must be a JSON object"}, cors
             )
         try:
             record, files = _report(site, payload, now=clock())
         except _Refused as refusal:
-            return await _respond(send, refusal.status, {"error": refusal.message}, cors)
+            return await respond(send, refusal.status, {"error": refusal.message}, cors)
         for digest, data in files.items():
             blobs[digest] = data
         store[f"{site.name}/{record['id']}.json"] = record
-        return await _respond(send, 201, {"id": record["id"]}, cors)
+        return await respond(send, 201, {"id": record["id"]}, cors)
 
     return app
 
