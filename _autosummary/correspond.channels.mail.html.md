@@ -7,6 +7,18 @@ Email: IMAP to read and listen, SMTP to send, with the standard library.
 - `email:`: the whole folder (`INBOX` unless configured), which is what `listen` watches.
 - `email:<address>`: the correspondence with one address: its messages in the folder,
   and sends to it.
+- `?folder=<name>` after either picks the folder for this reference alone, so one process
+  reads several (Gmail serves labels as folders: `email:?folder=Newsletters/AI`).
+  `?from=<sender>,<sender>` on `email:` keeps the messages from any of several senders,
+  each an address or a whole domain (`@example.org`). Both together:
+  `email:?folder=News&from=ada@example.org,@example.net`. A value is percent-encoded
+  where it has a space, `&`, `?` or `%` (`email:?folder=%5BGmail%5D/All%20Mail`), and
+  so is an address with one of those. A folder may be named as written (`Énergie`) or as
+  the server lists it in modified UTF-7 (`&AMk-nergie`); both are one reference. On a
+  command line, quote a reference with `?` or `&`: `correspond read 'email:?folder=News'`.
+
+A message’s conversation is the correspondence with its sender (`email:<address>`), in
+whichever folder it was read; `native["folder"]` says which.
 
 Message ids are `Message-ID` headers, angle brackets included. A draft’s `reply_to` is
 one, and the send carries `In-Reply-To` and `References`. Reading never marks a message
@@ -22,6 +34,8 @@ sender (not every server strips those), so a result recorded lower down fails sa
 ```pycon
 >>> Email().parse_ref("Ada@Example.org").encoded
 'email:ada@example.org'
+>>> Email().parse_ref("?from=@Example.NET,ada@example.org&folder=News/AI").encoded
+'email:?folder=News/AI&from=@example.net,ada@example.org'
 ```
 
 ### Module Attributes
@@ -63,11 +77,11 @@ recipients, can be forwarded, and cannot be recalled.
 
 #### *property* capabilities *: [Capabilities](correspond.model.html.md#correspond.model.Capabilities)*
 
-Read and listen to one folder; send with threading headers.
+Read and listen to a folder per reference; send with threading headers.
 
 #### parse_ref(id)
 
-`""` for the folder, or an address.
+`""` for the folder, or an address; either may add `?folder=` (and the folder `?from=`).
 
 * **Return type:**
   [`ConversationRef`](correspond.model.html.md#correspond.model.ConversationRef)
@@ -85,7 +99,7 @@ The draft as it will go out: `notify` addresses checked and put in Cc (out of Bc
 
 #### read(ref, , since=None, limit=None)
 
-Messages in the folder (from `ref`’s address, if it has one), oldest first; never marked seen.
+Messages in the reference’s folder (from its address or senders, if it names any), oldest first; never marked seen.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Message`](correspond.model.html.md#correspond.model.Message)]

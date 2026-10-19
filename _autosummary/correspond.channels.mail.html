@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=c7cdf6fe"></script>
+    <script src="../_static/documentation_options.js?v=63b572e7"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.16" />
+  <meta name="docsearch:version" content="0.0.17" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -422,7 +422,18 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">email:</span></code>: the whole folder (<code class="docutils literal notranslate"><span class="pre">INBOX</span></code> unless configured), which is what <code class="docutils literal notranslate"><span class="pre">listen</span></code> watches.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">email:&lt;address&gt;</span></code>: the correspondence with one address: its messages in the folder,
 and sends to it.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">?folder=&lt;name&gt;</span></code> after either picks the folder for this reference alone, so one process
+reads several (Gmail serves labels as folders: <code class="docutils literal notranslate"><span class="pre">email:?folder=Newsletters/AI</span></code>).
+<code class="docutils literal notranslate"><span class="pre">?from=&lt;sender&gt;,&lt;sender&gt;</span></code> on <code class="docutils literal notranslate"><span class="pre">email:</span></code> keeps the messages from any of several senders,
+each an address or a whole domain (<code class="docutils literal notranslate"><span class="pre">&#64;example.org</span></code>). Both together:
+<code class="docutils literal notranslate"><span class="pre">email:?folder=News&amp;from=ada&#64;example.org,&#64;example.net</span></code>. A value is percent-encoded
+where it has a space, <code class="docutils literal notranslate"><span class="pre">&amp;</span></code>, <code class="docutils literal notranslate"><span class="pre">?</span></code> or <code class="docutils literal notranslate"><span class="pre">%</span></code> (<code class="docutils literal notranslate"><span class="pre">email:?folder=%5BGmail%5D/All%20Mail</span></code>), and
+so is an address with one of those. A folder may be named as written (<code class="docutils literal notranslate"><span class="pre">Énergie</span></code>) or as
+the server lists it in modified UTF-7 (<code class="docutils literal notranslate"><span class="pre">&amp;AMk-nergie</span></code>); both are one reference. On a
+command line, quote a reference with <code class="docutils literal notranslate"><span class="pre">?</span></code> or <code class="docutils literal notranslate"><span class="pre">&amp;</span></code>: <code class="docutils literal notranslate"><span class="pre">correspond</span> <span class="pre">read</span> <span class="pre">'email:?folder=News'</span></code>.</p></li>
 </ul>
+<p>A message’s conversation is the correspondence with its sender (<code class="docutils literal notranslate"><span class="pre">email:&lt;address&gt;</span></code>), in
+whichever folder it was read; <code class="docutils literal notranslate"><span class="pre">native[&quot;folder&quot;]</span></code> says which.</p>
 <p>Message ids are <code class="docutils literal notranslate"><span class="pre">Message-ID</span></code> headers, angle brackets included. A draft’s <code class="docutils literal notranslate"><span class="pre">reply_to</span></code> is
 one, and the send carries <code class="docutils literal notranslate"><span class="pre">In-Reply-To</span></code> and <code class="docutils literal notranslate"><span class="pre">References</span></code>. Reading never marks a message
 seen.</p>
@@ -434,6 +445,8 @@ sender (not every server strips those), so a result recorded lower down fails sa
 <code class="docutils literal notranslate"><span class="pre">claimed</span></code>.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Email</span><span class="p">()</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="s2">"Ada@Example.org"</span><span class="p">)</span><span class="o">.</span><span class="n">encoded</span>
 <span class="go">'email:ada@example.org'</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">Email</span><span class="p">()</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="s2">"?from=@Example.NET,ada@example.org&amp;folder=News/AI"</span><span class="p">)</span><span class="o">.</span><span class="n">encoded</span>
+<span class="go">'email:?folder=News/AI&amp;from=@example.net,ada@example.org'</span>
 </pre></div>
 </div>
 <p class="rubric">Module Attributes</p>
@@ -492,13 +505,13 @@ recipients, can be forwarded, and cannot be recalled.</p>
 <dl class="py property">
 <dt class="sig sig-object py" id="correspond.channels.mail.Email.capabilities">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">capabilities</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="correspond.model.html#correspond.model.Capabilities" title="correspond.model.Capabilities"><span class="pre">Capabilities</span></a></span><a class="headerlink" href="#correspond.channels.mail.Email.capabilities" title="Link to this definition">#</a></dt>
-<dd><p>Read and listen to one folder; send with threading headers.</p>
+<dd><p>Read and listen to a folder per reference; send with threading headers.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.mail.Email.parse_ref">
 <span class="sig-name descname"><span class="pre">parse_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/mail.html#Email.parse_ref"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.mail.Email.parse_ref" title="Link to this definition">#</a></dt>
-<dd><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> for the folder, or an address.</p>
+<dd><p><code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code> for the folder, or an address; either may add <code class="docutils literal notranslate"><span class="pre">?folder=</span></code> (and the folder <code class="docutils literal notranslate"><span class="pre">?from=</span></code>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConversationRef</span></code></a></span></p>
@@ -528,7 +541,7 @@ recipients, can be forwarded, and cannot be recalled.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.mail.Email.read">
 <span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">since</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/mail.html#Email.read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.mail.Email.read" title="Link to this definition">#</a></dt>
-<dd><p>Messages in the folder (from <code class="docutils literal notranslate"><span class="pre">ref</span></code>’s address, if it has one), oldest first; never marked seen.</p>
+<dd><p>Messages in the reference’s folder (from its address or senders, if it names any), oldest first; never marked seen.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="correspond.model.html#correspond.model.Message" title="correspond.model.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a>]</span></p>

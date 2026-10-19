@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=c7cdf6fe"></script>
+    <script src="../../../_static/documentation_options.js?v=63b572e7"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.16" />
+  <meta name="docsearch:version" content="0.0.17" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -719,6 +719,18 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">- ``email:``: the whole folder (``INBOX`` unless configured), which is what ``listen`` watches.</span>
 <span class="sd">- ``email:&lt;address&gt;``: the correspondence with one address: its messages in the folder,</span>
 <span class="sd">  and sends to it.</span>
+<span class="sd">- ``?folder=&lt;name&gt;`` after either picks the folder for this reference alone, so one process</span>
+<span class="sd">  reads several (Gmail serves labels as folders: ``email:?folder=Newsletters/AI``).</span>
+<span class="sd">  ``?from=&lt;sender&gt;,&lt;sender&gt;`` on ``email:`` keeps the messages from any of several senders,</span>
+<span class="sd">  each an address or a whole domain (``@example.org``). Both together:</span>
+<span class="sd">  ``email:?folder=News&amp;from=ada@example.org,@example.net``. A value is percent-encoded</span>
+<span class="sd">  where it has a space, ``&amp;``, ``?`` or ``%`` (``email:?folder=%5BGmail%5D/All%20Mail``), and</span>
+<span class="sd">  so is an address with one of those. A folder may be named as written (``Énergie``) or as</span>
+<span class="sd">  the server lists it in modified UTF-7 (``&amp;AMk-nergie``); both are one reference. On a</span>
+<span class="sd">  command line, quote a reference with ``?`` or ``&amp;``: ``correspond read 'email:?folder=News'``.</span>
+
+<span class="sd">A message's conversation is the correspondence with its sender (``email:&lt;address&gt;``), in</span>
+<span class="sd">whichever folder it was read; ``native["folder"]`` says which.</span>
 
 <span class="sd">Message ids are ``Message-ID`` headers, angle brackets included. A draft's ``reply_to`` is</span>
 <span class="sd">one, and the send carries ``In-Reply-To`` and ``References``. Reading never marks a message</span>
@@ -733,10 +745,13 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">&gt;&gt;&gt; Email().parse_ref("Ada@Example.org").encoded</span>
 <span class="sd">'email:ada@example.org'</span>
+<span class="sd">&gt;&gt;&gt; Email().parse_ref("?from=@Example.NET,ada@example.org&amp;folder=News/AI").encoded</span>
+<span class="sd">'email:?folder=News/AI&amp;from=@example.net,ada@example.org'</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">hashlib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">imaplib</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
@@ -745,7 +760,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Iterator</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">contextlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">contextmanager</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">replace</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span><span class="p">,</span> <span class="n">timezone</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">email</span><span class="w"> </span><span class="kn">import</span> <span class="n">policy</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">email.message</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmailMessage</span>
@@ -753,6 +768,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">email.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">formatdate</span><span class="p">,</span> <span class="n">getaddresses</span><span class="p">,</span> <span class="n">make_msgid</span><span class="p">,</span> <span class="n">parsedate_to_datetime</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">html.parser</span><span class="w"> </span><span class="kn">import</span> <span class="n">HTMLParser</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">quote</span><span class="p">,</span> <span class="n">unquote</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
@@ -783,6 +799,16 @@ window.runMermaid = runMermaid;</script>
     <span class="sa">r</span><span class="s2">"^[A-Za-z0-9.!#$%&amp;'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$"</span>
 <span class="p">)</span>
 <span class="n">MESSAGE_ID_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^&lt;[^&lt;&gt;\s]+@[^&lt;&gt;\s]+&gt;$"</span><span class="p">)</span>
+<span class="n">DOMAIN_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">r</span><span class="s2">"^@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+$"</span>
+<span class="p">)</span>
+<span class="c1">#: The keys a reference takes after ``?``, in their canonical order.</span>
+<span class="n">REF_KEYS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"folder"</span><span class="p">,</span> <span class="s2">"from"</span><span class="p">)</span>
+<span class="n">_MUTF7_RUN_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"&amp;([A-Za-z0-9+,]*)-"</span><span class="p">)</span>
+<span class="c1">#: Characters an address keeps unescaped in a canonical reference (``%``, ``?`` and ``&amp;`` are escaped).</span>
+<span class="n">_ADDRESS_SAFE</span> <span class="o">=</span> <span class="s2">"!#$'*+-/=^_`{|}~.@"</span>
+<span class="c1">#: Characters a folder name keeps unescaped in a canonical reference.</span>
+<span class="n">_FOLDER_SAFE</span> <span class="o">=</span> <span class="s2">"/[]._-+:@!$'()*,;="</span>
 <span class="c1">#: Words that, as a part of an address's local part (``dev-team@``), mark it as a possible mailing list.</span>
 <span class="n">LIST_LOCAL_PARTS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"list"</span><span class="p">,</span> <span class="s2">"all"</span><span class="p">,</span> <span class="s2">"team"</span><span class="p">,</span> <span class="s2">"dev"</span><span class="p">,</span> <span class="s2">"announce"</span><span class="p">,</span> <span class="s2">"info"</span><span class="p">)</span>
 <span class="n">_LOCAL_PART_SPLIT</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[-._+]"</span><span class="p">)</span>
@@ -809,6 +835,146 @@ window.runMermaid = runMermaid;</script>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_quote</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="k">return</span> <span class="s1">'"'</span> <span class="o">+</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"</span><span class="se">\\</span><span class="s2">"</span><span class="p">,</span> <span class="s2">"</span><span class="se">\\\\</span><span class="s2">"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'"'</span><span class="p">,</span> <span class="s1">'</span><span class="se">\\</span><span class="s1">"'</span><span class="p">)</span> <span class="o">+</span> <span class="s1">'"'</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_mailbox</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""``name`` (a Unicode folder name) as IMAP says it on the wire: modified UTF-7 (RFC 3501 5.1.3).</span>
+
+<span class="sd">    &gt;&gt;&gt; _mailbox("News/AI"), _mailbox("Énergie"), _mailbox("R&amp;D"), _mailbox("日本語")</span>
+<span class="sd">    ('News/AI', '&amp;AMk-nergie', 'R&amp;-D', '&amp;ZeVnLIqe-')</span>
+<span class="sd">    """</span>
+    <span class="n">out</span><span class="p">,</span> <span class="n">pending</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">flush</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">pending</span><span class="p">:</span>
+            <span class="n">raw</span> <span class="o">=</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pending</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-16-be"</span><span class="p">)</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">"&amp;"</span>
+                <span class="o">+</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"ascii"</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"="</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="s2">","</span><span class="p">)</span>
+                <span class="o">+</span> <span class="s2">"-"</span>
+            <span class="p">)</span>
+            <span class="n">pending</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+    <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">"</span><span class="se">\x20</span><span class="s2">"</span> <span class="o">&lt;=</span> <span class="n">char</span> <span class="o">&lt;=</span> <span class="s2">"</span><span class="se">\x7e</span><span class="s2">"</span><span class="p">:</span>
+            <span class="n">flush</span><span class="p">()</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"&amp;-"</span> <span class="k">if</span> <span class="n">char</span> <span class="o">==</span> <span class="s2">"&amp;"</span> <span class="k">else</span> <span class="n">char</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">pending</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+    <span class="n">flush</span><span class="p">()</span>
+    <span class="k">return</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_folder_name</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The Unicode name of a folder given either way: as written, or as the server lists it.</span>
+
+<span class="sd">    A name counts as the server's modified UTF-7 only when decoding it and encoding it back</span>
+<span class="sd">    gives it exactly, so ``Q&amp;A-2024`` stays literal while ``&amp;AMk-nergie`` is ``Énergie``.</span>
+
+<span class="sd">    &gt;&gt;&gt; _folder_name("&amp;AMk-nergie"), _folder_name("Q&amp;A-2024"), _folder_name("R&amp;-D")</span>
+<span class="sd">    ('Énergie', 'Q&amp;A-2024', 'R&amp;D')</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="s2">"&amp;"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">name</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">name</span><span class="o">.</span><span class="n">isascii</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">name</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">decode</span><span class="p">(</span><span class="n">match</span><span class="p">:</span> <span class="n">re</span><span class="o">.</span><span class="n">Match</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">run</span> <span class="o">=</span> <span class="n">match</span><span class="o">.</span><span class="n">group</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">"&amp;"</span>
+        <span class="n">padded</span> <span class="o">=</span> <span class="n">run</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">","</span><span class="p">,</span> <span class="s2">"/"</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"="</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">run</span><span class="p">)</span> <span class="o">%</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64decode</span><span class="p">(</span><span class="n">padded</span><span class="p">,</span> <span class="n">validate</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">"utf-16-be"</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">decoded</span> <span class="o">=</span> <span class="n">_MUTF7_RUN_RE</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">decode</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="ne">UnicodeDecodeError</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">name</span>
+    <span class="k">return</span> <span class="n">decoded</span> <span class="k">if</span> <span class="n">_mailbox</span><span class="p">(</span><span class="n">decoded</span><span class="p">)</span> <span class="o">==</span> <span class="n">name</span> <span class="k">else</span> <span class="n">name</span>
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_Scope</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What an email reference selects: an address (or none, the folder), a folder, senders."""</span>
+
+    <span class="n">address</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">""</span>
+    <span class="n">folder</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">senders</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">encoded</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">query</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"folder=</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">folder</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="n">_FOLDER_SAFE</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">senders</span><span class="p">:</span>
+            <span class="n">query</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"from=</span><span class="si">{</span><span class="s1">','</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">senders</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">address</span> <span class="o">=</span> <span class="n">quote</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">address</span><span class="p">,</span> <span class="n">safe</span><span class="o">=</span><span class="n">_ADDRESS_SAFE</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">address</span> <span class="o">+</span> <span class="p">(</span><span class="s2">"?"</span> <span class="o">+</span> <span class="s2">"&amp;"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">query</span><span class="p">)</span> <span class="k">if</span> <span class="n">query</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">keeps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">senders</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Whether a message from any of ``senders`` (its From addresses) is in scope.</span>
+
+<span class="sd">        IMAP's ``FROM`` matches a substring of the header, display name included, so a</span>
+<span class="sd">        search for ``ada@example.org`` also finds ``bada@example.org``; this check is exact.</span>
+<span class="sd">        """</span>
+        <span class="n">wanted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">senders</span> <span class="ow">or</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">address</span><span class="p">,)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">address</span> <span class="k">else</span> <span class="p">())</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="n">wanted</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span>
+            <span class="n">sender</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">w</span><span class="p">)</span> <span class="k">if</span> <span class="n">w</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"@"</span><span class="p">)</span> <span class="k">else</span> <span class="n">sender</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="n">w</span>
+            <span class="k">for</span> <span class="n">sender</span> <span class="ow">in</span> <span class="n">senders</span>
+            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">wanted</span>
+        <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_scope</span><span class="p">(</span><span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_Scope</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Parse an email reference's id; :class:`InvalidRef` says what is wrong.</span>
+
+<span class="sd">    &gt;&gt;&gt; _scope("ada@example.org?folder=inbox")</span>
+<span class="sd">    _Scope(address='ada@example.org', folder='INBOX', senders=())</span>
+<span class="sd">    """</span>
+    <span class="n">raw_address</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">query</span> <span class="o">=</span> <span class="nb">id</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"?"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">address</span> <span class="o">=</span> <span class="n">unquote</span><span class="p">(</span><span class="n">raw_address</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"strict"</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span><span class="sa">f</span><span class="s2">"email:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2"> has a %-escape that is not UTF-8"</span><span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">if</span> <span class="n">address</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">ADDRESS_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">address</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"email references are email: (the folder) or email:&lt;address&gt;, not email:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="n">fields</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">query</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"&amp;"</span><span class="p">)</span> <span class="k">if</span> <span class="n">query</span> <span class="k">else</span> <span class="p">():</span>
+        <span class="n">key</span><span class="p">,</span> <span class="n">equals</span><span class="p">,</span> <span class="n">raw</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">"="</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">REF_KEYS</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">equals</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"an email reference takes ?folder=&lt;name&gt; and ?from=&lt;senders&gt;, not </span><span class="si">{</span><span class="n">item</span><span class="si">!r}</span><span class="s2"> (in email:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">)"</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> is given twice in email:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">unquote</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"strict"</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">UnicodeDecodeError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> in email:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2"> has a %-escape that is not UTF-8"</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">text</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mh">0x20</span> <span class="ow">or</span> <span class="n">c</span> <span class="o">==</span> <span class="s2">"</span><span class="se">\x7f</span><span class="s2">"</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">text</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2"> is empty or holds a control character in email:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">fields</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span>
+    <span class="n">folder</span> <span class="o">=</span> <span class="n">fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"folder"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">folder</span> <span class="o">=</span> <span class="n">_folder_name</span><span class="p">(</span><span class="n">folder</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">folder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">folder</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"INBOX"</span><span class="p">:</span>
+        <span class="n">folder</span> <span class="o">=</span> <span class="s2">"INBOX"</span>  <span class="c1"># the one case-insensitive name (RFC 3501)</span>
+    <span class="n">senders</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="k">if</span> <span class="s2">"from"</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">address</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"email:</span><span class="si">{</span><span class="n">address</span><span class="si">}</span><span class="s2"> already names the sender; ?from= goes on email: (in email:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">)"</span>
+            <span class="p">)</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">part</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">[</span><span class="s2">"from"</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)]</span>
+        <span class="n">bad</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">ADDRESS_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">n</span><span class="p">)</span> <span class="ow">or</span> <span class="n">DOMAIN_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">n</span><span class="p">))]</span>
+        <span class="k">if</span> <span class="n">bad</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"?from= takes addresses or domains (@example.org), not </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">bad</span><span class="p">)</span><span class="w"> </span><span class="ow">or</span><span class="w"> </span><span class="s1">'an empty name'</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span>
+        <span class="n">senders</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">names</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">_Scope</span><span class="p">(</span><span class="n">address</span><span class="o">=</span><span class="n">address</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">folder</span><span class="o">=</span><span class="n">folder</span><span class="p">,</span> <span class="n">senders</span><span class="o">=</span><span class="n">senders</span><span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_imap_date</span><span class="p">(</span><span class="n">moment</span><span class="p">:</span> <span class="n">datetime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -880,6 +1046,12 @@ window.runMermaid = runMermaid;</script>
     <span class="n">parser</span><span class="o">.</span><span class="n">feed</span><span class="p">(</span><span class="n">html</span><span class="p">)</span>
     <span class="n">parser</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">"\n{3,}"</span><span class="p">,</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="p">,</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">parser</span><span class="o">.</span><span class="n">parts</span><span class="p">))</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_from_addresses</span><span class="p">(</span><span class="n">raw</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Every address in a raw message's From header, lower-cased (the headers alone are parsed)."""</span>
+    <span class="n">parsed</span> <span class="o">=</span> <span class="n">BytesParser</span><span class="p">(</span><span class="n">policy</span><span class="o">=</span><span class="n">policy</span><span class="o">.</span><span class="n">default</span><span class="p">)</span><span class="o">.</span><span class="n">parsebytes</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">headersonly</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">address</span> <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">address</span> <span class="ow">in</span> <span class="n">_addresses</span><span class="p">(</span><span class="n">parsed</span><span class="p">,</span> <span class="s2">"From"</span><span class="p">)]</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_addresses</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">EmailMessage</span><span class="p">,</span> <span class="n">header</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]:</span>
@@ -1013,7 +1185,7 @@ window.runMermaid = runMermaid;</script>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Capabilities</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""Read and listen to one folder; send with threading headers."""</span>
+<span class="w">        </span><span class="sd">"""Read and listen to a folder per reference; send with threading headers."""</span>
         <span class="k">return</span> <span class="n">Capabilities</span><span class="p">(</span>
             <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
             <span class="n">read</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
@@ -1042,7 +1214,9 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"list_post"</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
-                <span class="s2">"read and listen look at one folder (INBOX by default); your own sent mail is in another"</span><span class="p">,</span>
+                <span class="s2">"read and listen look at one folder: the reference's ?folder= (a Gmail label is a folder), else the configured one (INBOX by default); your own sent mail is in another"</span><span class="p">,</span>
+                <span class="s2">"?from= on email: keeps the messages from any of several addresses or domains (@example.org, not its subdomains): one IMAP SEARCH per sender, then an exact check of the From addresses (any of them counts), since IMAP matches FROM as a substring of the header; email:&lt;address&gt; gets the same exact check, so a list's rewritten From (ada via group@) is not hers"</span><span class="p">,</span>
+                <span class="s2">"a reference with ? or &amp; must be quoted on a command line"</span><span class="p">,</span>
                 <span class="s2">"listen polls by UID; IMAP IDLE is not used"</span><span class="p">,</span>
                 <span class="s2">"priority sets Importance and X-Priority, which mail clients may ignore"</span><span class="p">,</span>
                 <span class="s2">"native html is the HTML part when plain text won as the body (an HTML body is in body only); list_id, list_unsubscribe and list_post are the List-* headers when present"</span><span class="p">,</span>
@@ -1053,15 +1227,16 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="Email.parse_ref">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.mail.html#correspond.channels.mail.Email.parse_ref">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">parse_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConversationRef</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""``""`` for the folder, or an address."""</span>
-        <span class="n">folder</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"folder"</span><span class="p">)</span>
-        <span class="k">if</span> <span class="nb">id</span> <span class="o">==</span> <span class="s2">""</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">folder</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">ADDRESS_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"email references are email: (the folder) or email:&lt;address&gt;, not email:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">"</span>
-            <span class="p">)</span>
-        <span class="k">return</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="o">.</span><span class="n">lower</span><span class="p">(),</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"address"</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">folder</span><span class="p">)</span></div>
+<span class="w">        </span><span class="sd">"""``""`` for the folder, or an address; either may add ``?folder=`` (and the folder ``?from=``)."""</span>
+        <span class="n">scope</span> <span class="o">=</span> <span class="n">_scope</span><span class="p">(</span><span class="nb">id</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">folder</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">replace</span><span class="p">(</span><span class="n">scope</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">senders</span><span class="o">=</span><span class="p">())</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"folder"</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">scope</span><span class="o">.</span><span class="n">address</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">replace</span><span class="p">(</span><span class="n">folder</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">scope</span><span class="o">.</span><span class="n">encoded</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ConversationRef</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">scope</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"address"</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">folder</span>
+        <span class="p">)</span></div>
 
 
     <span class="c1"># ---------------------------------------------------------------- connections</span>
@@ -1182,7 +1357,7 @@ window.runMermaid = runMermaid;</script>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_select</span><span class="p">(</span><span class="n">conn</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">folder</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
-        <span class="n">typ</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">_quote</span><span class="p">(</span><span class="n">folder</span><span class="p">),</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">typ</span><span class="p">,</span> <span class="n">data</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">_quote</span><span class="p">(</span><span class="n">_mailbox</span><span class="p">(</span><span class="n">folder</span><span class="p">)),</span> <span class="n">readonly</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">typ</span> <span class="o">!=</span> <span class="s2">"OK"</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"the folder </span><span class="si">{</span><span class="n">folder</span><span class="si">!r}</span><span class="s2"> could not be opened: </span><span class="si">{</span><span class="n">data</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"not_found"</span>
@@ -1299,13 +1474,24 @@ window.runMermaid = runMermaid;</script>
             <span class="p">},</span>
         <span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_context</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_context</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scope</span><span class="p">:</span> <span class="n">_Scope</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">set</span><span class="p">[</span><span class="nb">str</span><span class="p">]]:</span>
+<span class="w">        </span><span class="sd">"""``(folder, user, trusted authserv-ids)``: the reference's folder, else the configured one."""</span>
         <span class="n">user</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"user"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
         <span class="k">return</span> <span class="p">(</span>
-            <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"folder"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"INBOX"</span><span class="p">,</span>
+            <span class="n">scope</span><span class="o">.</span><span class="n">folder</span> <span class="ow">or</span> <span class="n">_folder_name</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"folder"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"INBOX"</span><span class="p">),</span>
             <span class="n">user</span><span class="p">,</span>
             <span class="n">_csv</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"trusted_authserv_ids"</span><span class="p">)),</span>
         <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_search_scope</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">scope</span><span class="p">:</span> <span class="n">_Scope</span><span class="p">,</span> <span class="n">criteria</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""UIDs matching ``criteria`` from the scope's senders: one ``SEARCH`` per sender, merged."""</span>
+        <span class="n">senders</span> <span class="o">=</span> <span class="n">scope</span><span class="o">.</span><span class="n">senders</span> <span class="ow">or</span> <span class="p">((</span><span class="n">scope</span><span class="o">.</span><span class="n">address</span><span class="p">,)</span> <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">address</span> <span class="k">else</span> <span class="p">())</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">senders</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">criteria</span> <span class="ow">or</span> <span class="p">[</span><span class="s2">"ALL"</span><span class="p">])</span>
+        <span class="n">found</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">sender</span> <span class="ow">in</span> <span class="n">senders</span><span class="p">:</span>
+            <span class="n">found</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_search</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">criteria</span><span class="p">,</span> <span class="s2">"FROM"</span><span class="p">,</span> <span class="n">_quote</span><span class="p">(</span><span class="n">sender</span><span class="p">)]))</span>
+        <span class="k">return</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">found</span><span class="p">)</span>
 
 <div class="viewcode-block" id="Email.read">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.mail.html#correspond.channels.mail.Email.read">[docs]</a>
@@ -1316,20 +1502,28 @@ window.runMermaid = runMermaid;</script>
         <span class="n">since</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span>
-<span class="w">        </span><span class="sd">"""Messages in the folder (from ``ref``'s address, if it has one), oldest first; never marked seen."""</span>
-        <span class="n">folder</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">trusted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">()</span>
-        <span class="n">criteria</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"FROM"</span><span class="p">,</span> <span class="n">_quote</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)]</span> <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span> <span class="k">else</span> <span class="p">[</span><span class="s2">"ALL"</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">since</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">criteria</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">"SINCE"</span><span class="p">,</span> <span class="n">_imap_date</span><span class="p">(</span><span class="n">since</span><span class="p">)]</span>
+<span class="w">        </span><span class="sd">"""Messages in the reference's folder (from its address or senders, if it names any), oldest first; never marked seen."""</span>
+        <span class="n">scope</span> <span class="o">=</span> <span class="n">_scope</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">folder</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">trusted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">(</span><span class="n">scope</span><span class="p">)</span>
+        <span class="n">criteria</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"SINCE"</span><span class="p">,</span> <span class="n">_imap_date</span><span class="p">(</span><span class="n">since</span><span class="p">)]</span> <span class="k">if</span> <span class="n">since</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">wanted</span> <span class="o">=</span> <span class="n">limit</span> <span class="ow">or</span> <span class="n">DEFAULT_READ_LIMIT</span>
+        <span class="n">kept</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imap</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">folder</span><span class="p">)</span>
-            <span class="n">uids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">criteria</span><span class="p">)[</span><span class="o">-</span><span class="p">(</span><span class="n">limit</span> <span class="ow">or</span> <span class="n">DEFAULT_READ_LIMIT</span><span class="p">)</span> <span class="p">:]</span>
-            <span class="n">fetched</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fetch</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">uids</span><span class="p">)</span>
-        <span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">uid</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">folder</span><span class="o">=</span><span class="n">folder</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">trusted</span><span class="o">=</span><span class="n">trusted</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">uid</span><span class="p">,</span> <span class="n">raw</span> <span class="ow">in</span> <span class="n">fetched</span>
-        <span class="p">]</span>
-        <span class="k">return</span> <span class="n">window</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="n">since</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span></div>
+            <span class="n">uids</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search_scope</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">criteria</span><span class="p">)</span>
+            <span class="c1"># Newest first, a batch at a time, until enough pass the exact sender check:</span>
+            <span class="c1"># mail that matched FROM only as a substring must not crowd out the rest.</span>
+            <span class="n">end</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">uids</span><span class="p">)</span>
+            <span class="k">while</span> <span class="n">end</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">kept</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">wanted</span><span class="p">:</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">end</span> <span class="o">-</span> <span class="n">wanted</span><span class="p">)</span>
+                <span class="n">batch</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">uid</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">folder</span><span class="o">=</span><span class="n">folder</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">trusted</span><span class="o">=</span><span class="n">trusted</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">uid</span><span class="p">,</span> <span class="n">raw</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fetch</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">uids</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">end</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">keeps</span><span class="p">(</span><span class="n">_from_addresses</span><span class="p">(</span><span class="n">raw</span><span class="p">))</span>
+                <span class="p">]</span>
+                <span class="n">kept</span> <span class="o">=</span> <span class="n">batch</span> <span class="o">+</span> <span class="n">kept</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="n">start</span>
+        <span class="k">return</span> <span class="n">window</span><span class="p">(</span><span class="n">kept</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="n">since</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="Email.poll">
@@ -1338,7 +1532,8 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">"""New messages since ``cursor`` (``&lt;uidvalidity&gt;:&lt;uid&gt;``); a first poll, or a changed UIDVALIDITY, looks back a day."""</span>
-        <span class="n">folder</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">trusted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">()</span>
+        <span class="n">scope</span> <span class="o">=</span> <span class="n">_scope</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">folder</span><span class="p">,</span> <span class="n">user</span><span class="p">,</span> <span class="n">trusted</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_context</span><span class="p">(</span><span class="n">scope</span><span class="p">)</span>
         <span class="n">seen_validity</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">seen_uid</span> <span class="o">=</span> <span class="p">(</span><span class="n">cursor</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="s2">":"</span><span class="p">)</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_imap</span><span class="p">()</span> <span class="k">as</span> <span class="n">conn</span><span class="p">:</span>
             <span class="n">validity</span><span class="p">,</span> <span class="n">uidnext</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_select</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">folder</span><span class="p">)</span>
@@ -1350,35 +1545,37 @@ window.runMermaid = runMermaid;</script>
                     <span class="s2">"SINCE"</span><span class="p">,</span>
                     <span class="n">_imap_date</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span> <span class="o">-</span> <span class="n">LISTEN_LOOKBACK</span><span class="p">),</span>
                 <span class="p">]</span>
-            <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
-                <span class="n">criteria</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">"FROM"</span><span class="p">,</span> <span class="n">_quote</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)]</span>
             <span class="c1"># "n:*" always includes the highest UID, even when it is below n.</span>
             <span class="n">uids</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">u</span> <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">criteria</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">resume</span> <span class="ow">or</span> <span class="n">u</span> <span class="o">&gt;</span> <span class="nb">int</span><span class="p">(</span><span class="n">seen_uid</span><span class="p">)</span>
+                <span class="n">u</span>
+                <span class="k">for</span> <span class="n">u</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search_scope</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">criteria</span><span class="p">)</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">resume</span> <span class="ow">or</span> <span class="n">u</span> <span class="o">&gt;</span> <span class="nb">int</span><span class="p">(</span><span class="n">seen_uid</span><span class="p">)</span>
             <span class="p">]</span>
-            <span class="n">truncated</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="n">limit</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">uids</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">limit</span>
             <span class="k">if</span> <span class="n">limit</span><span class="p">:</span>
                 <span class="n">uids</span> <span class="o">=</span> <span class="n">uids</span><span class="p">[:</span><span class="n">limit</span><span class="p">]</span>
             <span class="n">fetched</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fetch</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="n">uids</span><span class="p">)</span>
-        <span class="n">events</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">Event</span><span class="p">(</span>
-                <span class="n">kind</span><span class="o">=</span><span class="s2">"message.created"</span><span class="p">,</span>
-                <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
-                <span class="n">delivery_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"email:</span><span class="si">{</span><span class="n">folder</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">validity</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                <span class="n">cursor</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">validity</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                <span class="n">message</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span>
-                    <span class="n">uid</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">folder</span><span class="o">=</span><span class="n">folder</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">trusted</span><span class="o">=</span><span class="n">trusted</span>
-                <span class="p">),</span>
-                <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">"folder"</span><span class="p">:</span> <span class="n">folder</span><span class="p">,</span> <span class="s2">"uid"</span><span class="p">:</span> <span class="n">uid</span><span class="p">},</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">uid</span><span class="p">,</span> <span class="n">raw</span> <span class="ow">in</span> <span class="n">fetched</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">scope</span><span class="o">.</span><span class="n">keeps</span><span class="p">(</span><span class="n">_from_addresses</span><span class="p">(</span><span class="n">raw</span><span class="p">)):</span>
+                <span class="k">continue</span>  <span class="c1"># FROM matched a substring of another sender</span>
+            <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">uid</span><span class="p">,</span> <span class="n">raw</span><span class="p">,</span> <span class="n">folder</span><span class="o">=</span><span class="n">folder</span><span class="p">,</span> <span class="n">user</span><span class="o">=</span><span class="n">user</span><span class="p">,</span> <span class="n">trusted</span><span class="o">=</span><span class="n">trusted</span><span class="p">)</span>
+            <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Event</span><span class="p">(</span>
+                    <span class="n">kind</span><span class="o">=</span><span class="s2">"message.created"</span><span class="p">,</span>
+                    <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                    <span class="n">delivery_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"email:</span><span class="si">{</span><span class="n">folder</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">validity</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">cursor</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">validity</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span>
+                    <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">"folder"</span><span class="p">:</span> <span class="n">folder</span><span class="p">,</span> <span class="s2">"uid"</span><span class="p">:</span> <span class="n">uid</span><span class="p">},</span>
+                <span class="p">)</span>
             <span class="p">)</span>
-            <span class="k">for</span> <span class="n">uid</span><span class="p">,</span> <span class="n">raw</span> <span class="ow">in</span> <span class="n">fetched</span>
-        <span class="p">]</span>
+        <span class="c1"># Every UID up to the last one fetched has been looked at, delivered or not, so a</span>
+        <span class="c1"># cut list resumes after it, and a sender filtered out cannot stall the cursor.</span>
         <span class="n">final</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">truncated</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">uids</span><span class="p">:</span>
-                <span class="n">final</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">validity</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">uids</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
-            <span class="k">elif</span> <span class="ow">not</span> <span class="n">resume</span> <span class="ow">and</span> <span class="n">uidnext</span><span class="p">:</span>
-                <span class="n">final</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">validity</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">uidnext</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">if</span> <span class="n">uids</span><span class="p">:</span>
+            <span class="n">final</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">validity</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">uids</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">resume</span> <span class="ow">and</span> <span class="n">uidnext</span><span class="p">:</span>
+            <span class="n">final</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">validity</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">uidnext</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s2">"</span>
         <span class="k">return</span> <span class="n">with_final_cursor</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">final</span><span class="p">)</span></div>
 
 
@@ -1396,12 +1593,13 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        class of its own, so moving it to Cc changes the hash. Every email is pushed to its</span>
 <span class="sd">        recipients, can be forwarded, and cannot be recalled.</span>
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+        <span class="n">to</span> <span class="o">=</span> <span class="n">_scope</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">address</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">to</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">Audience</span><span class="o">.</span><span class="n">unknown</span><span class="p">(</span>
                 <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="s2">"email: is the folder, not a correspondence: name an address"</span>
             <span class="p">)</span>
         <span class="k">if</span> <span class="n">draft</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">draft</span><span class="o">.</span><span class="n">notify</span><span class="p">:</span>
-            <span class="n">draft</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_with_notify</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span>  <span class="c1"># the Cc a send will really carry</span>
+            <span class="n">draft</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">_with_notify</span><span class="p">(</span><span class="n">to</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span>  <span class="c1"># the Cc a send will really carry</span>
         <span class="n">copies</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"cc"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">cc</span> <span class="k">if</span> <span class="n">draft</span> <span class="k">else</span> <span class="p">(),</span> <span class="s2">"bcc"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">bcc</span> <span class="k">if</span> <span class="n">draft</span> <span class="k">else</span> <span class="p">()}</span>
         <span class="n">malformed</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="o">*</span><span class="n">copies</span><span class="p">[</span><span class="s2">"cc"</span><span class="p">],</span> <span class="o">*</span><span class="n">copies</span><span class="p">[</span><span class="s2">"bcc"</span><span class="p">])</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">ADDRESS_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
@@ -1411,11 +1609,10 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"not an email address: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">malformed</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">)</span>
         <span class="c1"># Exact addresses: a local part may be case-sensitive, and SMTP receives each as given.</span>
-        <span class="n">recipients</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">((</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="o">*</span><span class="n">copies</span><span class="p">[</span><span class="s2">"cc"</span><span class="p">],</span> <span class="o">*</span><span class="n">copies</span><span class="p">[</span><span class="s2">"bcc"</span><span class="p">])))</span>
+        <span class="n">recipients</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">((</span><span class="n">to</span><span class="p">,</span> <span class="o">*</span><span class="n">copies</span><span class="p">[</span><span class="s2">"cc"</span><span class="p">],</span> <span class="o">*</span><span class="n">copies</span><span class="p">[</span><span class="s2">"bcc"</span><span class="p">])))</span>
         <span class="n">own</span><span class="p">,</span> <span class="n">lists</span> <span class="o">=</span> <span class="n">_csv</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"own_domains"</span><span class="p">)),</span> <span class="n">_csv</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"lists"</span><span class="p">))</span>
         <span class="n">evidence</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="sa">f</span><span class="s2">"to </span><span class="si">{</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">"</span>
-            <span class="o">+</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"; </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">copies</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">)</span>
+            <span class="sa">f</span><span class="s2">"to </span><span class="si">{</span><span class="n">to</span><span class="si">}</span><span class="s2">"</span> <span class="o">+</span> <span class="s2">""</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"; </span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">v</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">copies</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">)</span>
         <span class="p">]</span>
         <span class="n">evidence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
             <span class="sa">f</span><span class="s2">"own domains: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">own</span><span class="p">))</span><span class="si">}</span><span class="s2">"</span>
@@ -1470,7 +1667,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="sa">f</span><span class="s2">"notify on email takes addresses, not: </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">malformed</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
                 <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">return</span> <span class="n">_with_notify</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span> <span class="n">draft</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
+        <span class="k">return</span> <span class="n">_with_notify</span><span class="p">(</span><span class="n">_scope</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">address</span><span class="p">,</span> <span class="n">draft</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="Email.send">
@@ -1484,7 +1681,8 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        added to Cc (and so leaves Bcc, which would hide it); the plan lists it under</span>
 <span class="sd">        ``cc_added``.</span>
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+        <span class="n">to</span> <span class="o">=</span> <span class="n">_scope</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">address</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">to</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="s2">"send to an address: email:&lt;address&gt;"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">)</span>
         <span class="n">cc_before</span> <span class="o">=</span> <span class="n">draft</span><span class="o">.</span><span class="n">cc</span>
         <span class="n">draft</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">prepare</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">)</span>
@@ -1504,7 +1702,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">message</span> <span class="o">=</span> <span class="n">EmailMessage</span><span class="p">()</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">message</span><span class="p">[</span><span class="s2">"From"</span><span class="p">]</span> <span class="o">=</span> <span class="n">sender</span>
-            <span class="n">message</span><span class="p">[</span><span class="s2">"To"</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span>
+            <span class="n">message</span><span class="p">[</span><span class="s2">"To"</span><span class="p">]</span> <span class="o">=</span> <span class="n">to</span>
             <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">cc</span><span class="p">:</span>
                 <span class="n">message</span><span class="p">[</span><span class="s2">"Cc"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">cc</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">:</span>
@@ -1526,7 +1724,7 @@ window.runMermaid = runMermaid;</script>
         <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
             <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"send an email"</span><span class="p">,</span>
             <span class="s2">"from"</span><span class="p">:</span> <span class="n">sender</span><span class="p">,</span>
-            <span class="s2">"to"</span><span class="p">:</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="s2">"to"</span><span class="p">:</span> <span class="n">to</span><span class="p">,</span>
             <span class="s2">"cc"</span><span class="p">:</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">cc</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
             <span class="s2">"bcc"</span><span class="p">:</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">bcc</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
             <span class="s2">"subject"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">,</span>
@@ -1543,7 +1741,7 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
         <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_smtp</span><span class="p">()</span> <span class="k">as</span> <span class="n">server</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">bcc</span><span class="p">:</span>  <span class="c1"># never in a header: only the envelope names them</span>
-                <span class="n">server</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">to_addrs</span><span class="o">=</span><span class="p">[</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="o">*</span><span class="n">draft</span><span class="o">.</span><span class="n">cc</span><span class="p">,</span> <span class="o">*</span><span class="n">draft</span><span class="o">.</span><span class="n">bcc</span><span class="p">])</span>
+                <span class="n">server</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="n">to_addrs</span><span class="o">=</span><span class="p">[</span><span class="n">to</span><span class="p">,</span> <span class="o">*</span><span class="n">draft</span><span class="o">.</span><span class="n">cc</span><span class="p">,</span> <span class="o">*</span><span class="n">draft</span><span class="o">.</span><span class="n">bcc</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">server</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
