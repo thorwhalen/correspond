@@ -14,6 +14,7 @@ the URL (a URL path can carry a token). Tests pass a scripted function of the sa
 
 from __future__ import annotations
 
+import http.client
 import json
 import re
 import secrets
@@ -70,13 +71,14 @@ def urllib_http(
     timeout: float = DEFAULT_TIMEOUT_S,
 ) -> Response:
     """One request with the standard library."""
-    request = urllib.request.Request(
-        url,
-        data=body,
-        method=method,
-        headers={"User-Agent": USER_AGENT, **(headers or {})},
-    )
+    host = urlsplit(url).hostname
     try:
+        request = urllib.request.Request(
+            url,
+            data=body,
+            method=method,
+            headers={"User-Agent": USER_AGENT, **(headers or {})},
+        )
         with urllib.request.urlopen(request, timeout=timeout) as reply:
             return Response(reply.status, _lowered(reply.headers), reply.read())
     except urllib.error.HTTPError as error:
@@ -85,10 +87,21 @@ def urllib_http(
         except OSError:
             payload = b""
         return Response(error.code, _lowered(error.headers), payload or b"")
-    except (urllib.error.URLError, TimeoutError, OSError) as error:
+    except (ValueError, http.client.InvalidURL):
+        # A malformed URL: its error text would carry the whole URL (a webhook's secret
+        # path, say), so only the host is named.
+        raise ChannelError(
+            f"the address for {host} is malformed", kind="validation"
+        ) from None
+    except (
+        urllib.error.URLError,
+        TimeoutError,
+        OSError,
+        http.client.HTTPException,
+    ) as error:
         reason = getattr(error, "reason", None) or type(error).__name__
         raise ChannelError(
-            f"could not reach {urlsplit(url).hostname}: {reason}",
+            f"could not reach {host}: {reason}",
             kind="network",
             retryable=True,
         ) from None

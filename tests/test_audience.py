@@ -163,9 +163,9 @@ def test_a_planned_channel_says_it_is_planned_and_where():
     _assert_defaulted(found, "signal:example-channel", "signal is planned, not built")
     assert signal.planned in found.evidence[0]
     _assert_defaulted(
-        ops.audience(ConversationRef.parse("slack:example"), registry={}),
-        "slack:example",
-        "slack is planned",
+        ops.audience(ConversationRef.parse("signal:example"), registry={}),
+        "signal:example",
+        "signal is planned",
     )
 
 
@@ -180,6 +180,7 @@ AUDIENCE_GRADES = {
     "apprise": "partial",
     "gdrive": "partial",
     "discord": "partial",
+    "slack": "partial",
 }
 
 

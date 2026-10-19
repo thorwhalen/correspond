@@ -373,9 +373,13 @@ CHANNELS: tuple[ChannelInfo, ...] = (
     ),
     ChannelInfo(
         name="slack",
-        summary="Slack: Socket Mode or the Events API",
-        extra="slack",
-        planned=f"{ISSUES}/3",
+        summary="Slack: drafts in Slack's own formatting (mrkdwn), posted through an incoming webhook when one is configured",
+        factory="correspond.channels.slack:Slack",
+        notes=(
+            "slack:<name> needs nothing for a dry run, which renders the draft as mrkdwn to paste; a real send needs the name's incoming webhook in CORRESPOND_SLACK_WEBHOOK_<NAME> (upper case, - and . as _) or the Keychain item correspond-slack-webhook-<name>",
+            "create the webhook in your Slack app's settings (Incoming Webhooks), one per channel: https://api.slack.com/messaging/webhooks",
+            "reading and listening (a Slack app token, slack-sdk) are not built yet",
+        ),
     ),
     ChannelInfo(
         name="signal",
