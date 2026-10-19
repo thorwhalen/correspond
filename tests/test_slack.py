@@ -221,7 +221,9 @@ def test_input_cannot_forge_the_renderers_placeholders(markdown):
 
 
 @pytest.mark.parametrize(
-    "markdown", ["[" * 40_000, "[a](" * 10_000, "*_" * 20_000, "**" * 20_000]
+    "markdown",
+    ["[" * 40_000, "[a](" * 10_000, "*_" * 20_000, "**" * 20_000],
+    ids=["brackets", "unclosed-links", "emphasis-runs", "bold-runs"],
 )
 def test_long_adversarial_input_renders_quickly(markdown):
     import time
