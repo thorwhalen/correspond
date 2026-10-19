@@ -309,3 +309,268 @@ def test_the_native_fields_messages_carry_are_the_ones_capabilities_declare(toke
     declared = set(Telegram().capabilities.native_fields)
     for event in correspond.listen("telegram:", cursors={}, registry=_registry(api)):
         assert set(event.message.native) <= declared
+
+
+# ------------------------------------------------------------------ webhook delivery (#10)
+
+import asyncio  # noqa: E402
+
+from correspond.channels.telegram import (  # noqa: E402
+    SECRET_HEADER,
+    WEBHOOK_LOOKBACK_NS,
+    WEBHOOK_RETENTION_NS,
+    mk_webhook_app,
+    serve_webhook,
+)
+
+SECRET = "example-webhook-secret_1"
+NOW = 1_760_000_000 * 10**9
+HOOKED = {"url": "https://example.org/telegram", "pending_update_count": 0}
+
+
+class Clock:
+    def __init__(self, now=NOW):
+        self.now = now
+
+    def __call__(self):
+        return self.now
+
+
+def _deliver(app, update=None, *, secret=SECRET, method="POST", body=None):
+    raw = body if body is not None else json.dumps(update).encode()
+    headers = [(b"content-type", b"application/json")]
+    if secret is not None:
+        headers.append((SECRET_HEADER.encode(), secret.encode()))
+    scope = {
+        "type": "http",
+        "method": method,
+        "path": "/telegram",
+        "headers": headers,
+        "client": ("127.0.0.1", 50000),
+    }
+    incoming = [{"type": "http.request", "body": raw, "more_body": False}]
+    sent = []
+
+    async def receive():
+        return incoming.pop(0) if incoming else {"type": "http.disconnect"}
+
+    async def send(message):
+        sent.append(message)
+
+    asyncio.run(app(scope, receive, send))
+    return sent[0]["status"]
+
+
+def test_the_receiver_stores_an_update_only_with_the_secret():
+    updates = {}
+    app = mk_webhook_app(secret=SECRET, updates=updates, clock=Clock())
+    update = {"update_id": 10, "message": _message(1)}
+    assert _deliver(app, update, secret=None) == 401
+    assert _deliver(app, update, secret="wrong-secret") == 401
+    assert _deliver(app, update, secret="é") == 401, "a non-ASCII header never matches"
+    assert _deliver(app, update, method="GET") == 405
+    assert updates == {}
+    assert _deliver(app, update) == 200
+    assert _deliver(app, update) == 200, "a repeated delivery is kept, in arrival order"
+    assert list(updates) == [f"{NOW:020d}-10.json", f"{NOW + 1:020d}-10.json"]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        b"not json",
+        b"[1]",
+        b'{"update_id": true}',
+        b'{"update_id": -1}',
+        b"{}",
+        b'{"update_id": 9223372036854775808}',
+        b'{"update_id": ' + b"9" * 5000 + b"}",
+    ],
+)
+def test_the_receiver_refuses_what_is_not_an_update(body):
+    updates = {}
+    assert _deliver(mk_webhook_app(secret=SECRET, updates=updates), body=body) == 400
+    assert updates == {}
+
+
+def test_the_receiver_refuses_a_body_over_its_limit():
+    updates = {}
+    app = mk_webhook_app(secret=SECRET, updates=updates, max_body_bytes=50)
+    assert _deliver(app, {"update_id": 1, "message": _message(1, text="x" * 100)}) == 413
+    assert updates == {}
+
+
+@pytest.mark.parametrize("secret", ["", "has space", "x" * 257, None])
+def test_a_secret_telegram_would_refuse_is_refused_up_front(secret):
+    with pytest.raises(ValueError):
+        mk_webhook_app(secret=secret, updates={})
+
+
+def _webhook_bot(monkeypatch, updates, clock, **results):
+    monkeypatch.setenv("CORRESPOND_TELEGRAM_DELIVERY", "webhook")
+    api = FakeBotApi(getWebhookInfo=HOOKED, **results)
+    log = {}
+    return (
+        api,
+        log,
+        {"telegram": Telegram(http=api, log=log, updates=updates, clock=clock)},
+    )
+
+
+def test_listen_in_webhook_mode_reads_the_receiver_in_arrival_order(token, monkeypatch):
+    updates, clock = {}, Clock()
+    app = mk_webhook_app(secret=SECRET, updates=updates, clock=clock)
+    for update in (
+        {"update_id": 12, "message": _message(3)},
+        {"update_id": 9, "message": _message(1)},
+        {"update_id": 11, "poll": {"id": "p"}},
+    ):
+        assert _deliver(app, update) == 200
+    api, log, registry = _webhook_bot(monkeypatch, updates, clock)
+    cursors = {}
+    first = list(
+        correspond.listen("telegram:", cursors=cursors, limit=1, registry=registry)
+    )
+    assert [e.delivery_id for e in first] == ["telegram:update-12"]
+    assert "webhook" in first[0].message.authenticity.evidence["attested_by"]
+    rest = list(correspond.listen("telegram:", cursors=cursors, registry=registry))
+    assert [e.delivery_id for e in rest] == ["telegram:update-9"], (
+        "11 is passed, not a message"
+    )
+    assert cursors == {"telegram:": f"w{NOW + 2}"}
+    clock.now += 1000
+    late = {
+        "update_id": 10,
+        "edited_message": _message(1, text="edited", edit_date=1_757_581_300),
+    }
+    assert _deliver(app, late) == 200
+    again = list(correspond.listen("telegram:", cursors=cursors, registry=registry))
+    assert [(e.kind, e.delivery_id) for e in again] == [
+        ("message.updated", "telegram:update-10")
+    ], "an id below the ones already passed still arrives"
+    assert list(correspond.listen("telegram:", cursors=cursors, registry=registry)) == []
+    assert [name for name, _ in api.calls] == ["getWebhookInfo"], "never getUpdates"
+    assert set(log) == {"-4001/1.json", "-4001/3.json"}
+
+
+def test_a_first_webhook_listen_looks_back_a_day_and_old_passed_updates_are_deleted(
+    token, monkeypatch
+):
+    clock = Clock()
+    stale = NOW - WEBHOOK_RETENTION_NS - 1
+    updates = {
+        f"{stale:020d}-1.json": {"update_id": 1, "message": _message(1)},
+        f"{NOW - WEBHOOK_LOOKBACK_NS - 1:020d}-2.json": {
+            "update_id": 2,
+            "message": _message(2),
+        },
+        f"{NOW - 5:020d}-3.json": {"update_id": 3, "message": _message(3)},
+        "not-a-received-key.json": {"update_id": 4},
+    }
+    _, _, registry = _webhook_bot(monkeypatch, updates, clock)
+    events = list(correspond.listen("telegram:", cursors={}, registry=registry))
+    assert [e.delivery_id for e in events] == ["telegram:update-3"]
+    assert f"{stale:020d}-1.json" not in updates, "passed and a week old"
+    assert f"{NOW - WEBHOOK_LOOKBACK_NS - 1:020d}-2.json" in updates, "passed, but recent"
+
+
+def test_webhook_mode_with_no_webhook_set_says_so(token, monkeypatch):
+    _, _, registry = _webhook_bot(monkeypatch, {}, Clock())
+    registry["telegram"].http.results["getWebhookInfo"] = {
+        "url": "",
+        "pending_update_count": 3,
+    }
+    with pytest.raises(ChannelError, match="no webhook is set") as caught:
+        list(correspond.listen("telegram:", cursors={}, registry=registry))
+    assert caught.value.kind == "validation"
+
+
+def test_a_getupdates_cursor_left_from_polling_starts_a_webhook_listen_over(
+    token, monkeypatch
+):
+    updates = {f"{NOW - 5:020d}-3.json": {"update_id": 3, "message": _message(3)}}
+    _, _, registry = _webhook_bot(monkeypatch, updates, Clock())
+    events = list(
+        correspond.listen("telegram:", cursors={"telegram:": "14"}, registry=registry)
+    )
+    assert [e.delivery_id for e in events] == ["telegram:update-3"]
+    with pytest.raises(ChannelError):
+        list(
+            correspond.listen("telegram:", cursors={"telegram:": "wx"}, registry=registry)
+        )
+
+
+def test_an_unknown_delivery_is_a_validation_error(token, monkeypatch):
+    monkeypatch.setenv("CORRESPOND_TELEGRAM_DELIVERY", "push")
+    with pytest.raises(ChannelError) as caught:
+        list(correspond.listen("telegram:", cursors={}, registry=_registry(FakeBotApi())))
+    assert caught.value.kind == "validation"
+
+
+def test_serve_webhook_binds_this_machine_unless_opted_in(monkeypatch):
+    calls = []
+    app = mk_webhook_app(secret=SECRET, updates={})
+    serve_webhook(app=app, run=lambda *a, **k: calls.append((a, k)))
+    ((args, kwargs),) = calls
+    assert args == (app,) and kwargs == {
+        "host": "127.0.0.1",
+        "port": 8081,
+        "workers": 1,
+        "proxy_headers": False,
+    }
+    for host in ("0.0.0.0", "203.0.113.7", "example.org"):
+        with pytest.raises(ChannelError, match="webhook_allow_remote"):
+            serve_webhook(host=host, app=app, run=lambda *a, **k: None)
+    serve_webhook(host="::1", app=app, run=lambda *a, **k: None)
+    monkeypatch.setenv("CORRESPOND_TELEGRAM_WEBHOOK_ALLOW_REMOTE", "true")
+    serve_webhook(host="0.0.0.0", app=app, run=lambda *a, **k: calls.append(k["host"]))
+    assert calls[-1] == "0.0.0.0"
+
+
+def test_verify_grades_a_delivery_by_its_secret_token(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_TELEGRAM_WEBHOOK_SECRET", SECRET)
+    registry = {"telegram": Telegram(http=FakeBotApi())}
+    good = correspond.verify(
+        "telegram", {"X-Telegram-Bot-Api-Secret-Token": SECRET}, b"{}", registry=registry
+    )
+    assert good.grade.value == "platform" and good.evidence["secret_token"] == "valid"
+    for headers, reason in (({}, "missing"), ({SECRET_HEADER: "nope"}, "mismatch")):
+        bad = correspond.verify("telegram", headers, b"{}", registry=registry)
+        assert (bad.grade.value, bad.evidence["secret_token"]) == ("forged", reason)
+
+
+def test_set_and_delete_webhook_plan_first_and_read_the_state_back(token, monkeypatch):
+    monkeypatch.setenv("CORRESPOND_TELEGRAM_WEBHOOK_SECRET", SECRET)
+    info = {**HOOKED, "has_custom_certificate": False}
+    api = FakeBotApi(setWebhook=True, deleteWebhook=True, getWebhookInfo=info)
+    bot = Telegram(http=api, log={})
+    planned = bot.set_webhook("https://example.org/telegram", dry_run=True)
+    assert planned.dry_run and api.calls == []
+    assert SECRET not in json.dumps(planned.plan)
+    result = bot.set_webhook("HTTPS://example.org/telegram")
+    assert result.ok and result.plan["now"] == HOOKED
+    sent = dict(api.calls)["setWebhook"]
+    assert sent["secret_token"] == SECRET and sent["max_connections"] == 1
+    assert sent["allowed_updates"][0] == "message"
+    assert SECRET not in json.dumps(result.plan)
+    with pytest.raises(ChannelError):
+        bot.set_webhook("http://example.org/telegram")
+    api.results["getWebhookInfo"] = {"url": "", "pending_update_count": 2}
+    gone = bot.delete_webhook()
+    assert gone.plan["now"]["url"] == ""
+    assert dict(api.calls)["deleteWebhook"] == {"drop_pending_updates": False}
+
+
+def test_a_conflict_says_how_to_get_out_of_it(token):
+    description = "Conflict: can't use getUpdates method while webhook is active"
+    api = FakeBotApi(
+        getUpdates=Response(
+            409,
+            {},
+            json.dumps(
+                {"ok": False, "error_code": 409, "description": description}
+            ).encode(),
+        )
+    )
+    with pytest.raises(ChannelError, match="delete_webhook"):
+        list(correspond.listen("telegram:", cursors={}, registry=_registry(api)))

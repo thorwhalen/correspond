@@ -248,7 +248,7 @@ CHANNELS: tuple[ChannelInfo, ...] = (
     ),
     ChannelInfo(
         name="telegram",
-        summary="A Telegram bot over the Bot API: listen with getUpdates, read what was logged, send, edit, react",
+        summary="A Telegram bot over the Bot API: listen with getUpdates or a webhook, read what was logged, send, edit, react",
         factory="correspond.channels.telegram:Telegram",
         settings=(
             Setting(
@@ -265,10 +265,30 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 what="the Bot API server",
                 default="https://api.telegram.org",
             ),
+            Setting(
+                key="delivery",
+                env="CORRESPOND_TELEGRAM_DELIVERY",
+                what="where listen takes updates from: poll (getUpdates) or webhook (what the webhook receiver stored); Telegram serves one or the other",
+                default="poll",
+            ),
+            Setting(
+                key="webhook_secret",
+                env="CORRESPOND_TELEGRAM_WEBHOOK_SECRET",
+                what="the secret token Telegram sends with every webhook delivery (1-256 of A-Z, a-z, 0-9, _ and -)",
+                where='generate one with: python -c "import secrets; print(secrets.token_urlsafe(32))"',
+                secret=True,
+            ),
+            Setting(
+                key="webhook_allow_remote",
+                env="CORRESPOND_TELEGRAM_WEBHOOK_ALLOW_REMOTE",
+                what="true to let serve_webhook bind the webhook receiver to an address other machines reach (it binds 127.0.0.1 otherwise; put your HTTPS reverse proxy in front)",
+                default="false",
+            ),
         ),
         notes=(
             "a bot can write only to chats that wrote to it first, or groups it was added to",
             "privacy mode (on by default) hides group messages that do not address the bot",
+            "webhook delivery on a server: install correspond[server], run serve_webhook() from correspond.channels.telegram (127.0.0.1:8081, one worker) behind your HTTPS reverse proxy, call Telegram().set_webhook('https://...'), and set delivery = webhook",
         ),
     ),
     ChannelInfo(
