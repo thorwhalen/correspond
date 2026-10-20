@@ -24,7 +24,7 @@ Add `--json` to any command for the full result. A result with `ok: false` exits
 | Reference | Is |
 |---|---|
 | `github:owner/repo` | a repository: read lists open issues and pull requests; send opens an issue (`--title` required), or a discussion with `--native '{"category": "Q&A"}'` |
-| `github:owner/repo#12` | an issue, pull request or discussion, with its comments; a pull request's review comments on the diff come threaded (ids `discussion_rID`; reply to one with `--reply-to` to join its thread) |
+| `github:owner/repo#12` | an issue, pull request or discussion, with its comments; a pull request's review comments on the diff come threaded (ids `discussion_rID`; reply to one with `--reply-to` to join its thread), and so does each review's summary (id `pullrequestreview-ID`, `state` in native; read and listen only) |
 | `email:` | the mail folder (INBOX); `email:someone@example.org` the correspondence with one address; add `?folder=Newsletters/AI` to read another folder or Gmail label, and on `email:` `?from=a@example.org,@example.net` for several senders or a domain, and on Gmail `?gmail=newer_than:7d+category:updates` for Gmail's own search (percent-encode spaces: `%20`; always single-quote such a reference in the shell: `correspond read 'email:?folder=News&from=@example.org'`) |
 | `ntfy:` | the operator's default notification topic; `ntfy:<topic>` a named one |
 | `macos:` | a banner on this Mac |
