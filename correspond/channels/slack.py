@@ -464,6 +464,7 @@ class Slack:
     ):
         self.http = http
         self.socket = socket
+        self._socket_ended_at: float | None = None
         self._events = events
         self.run = run
         self.clock = clock
@@ -502,7 +503,7 @@ class Slack:
                 "read and listen see a channel's top-level messages, thread parents and replies also sent to the channel; the other replies are read through the thread's own reference, slack:<channel>/<thread ts> (conversations.replies), which listen polls and send replies in; reading a thread too long for 20 pages of replies (about 4,000) returns its newest ones (it walks back from the latest reply); Slack's own notices (someone joined, the topic changed) are left out; listen polls over the Web API and sees new messages, not edits",
                 "an author's handle and display name come from users.info (the token needs users:read), kept an hour per token (as are channel names), so two workspaces never share them; without the scope the author is the user id alone",
                 "with delivery = events, listen reads what the Events API receiver (correspond-slack-events, behind your HTTPS reverse proxy) stored instead of polling, and also reports edits (message.updated) and deletions (message.deleted); the receiver verifies every request's signature and answers Slack's url_verification",
-                "with delivery = socket (the slack extra, an app-level xapp- token in app_token, Socket Mode on in the app's settings), listen opens Slack's Socket Mode for a window of listen_wait_s quiet seconds (60 s at most), acknowledges what Slack pushes, stores every message event as the receiver does and reports this reference's: no public URL needed, but what arrives while no listen has the socket open reaches it only through Slack's own retries",
+                "with delivery = socket (the slack extra, an app-level xapp- token in app_token, Socket Mode on in the app's settings), listen opens Slack's Socket Mode for a window of listen_wait_s quiet seconds (60 s at most), stores every message event as the receiver does (every channel's, kept a week) before acknowledging it, and reports this reference's (listens to several references in a row share one window; one listening process per store): no public URL needed, but what arrives while no listen has the socket open reaches it only through Slack's own retries",
                 "install the app in your own workspace (a commercially distributed app outside Slack's Marketplace gets one history request a minute); listen walks forward through time windows, delivering each whole before the next, so a poll a rate limit cuts short keeps what it delivered and the next one resumes there, and a backlog drains a little each poll; the newest minute waits for the next poll (this clock may run ahead of Slack's)",
                 "a file is fetched with the token only from Slack's own hosts (the token needs files:read); a file hosted elsewhere is not fetched",
                 "a channel named rather than given by id is looked up with conversations.list (the token needs channels:read, and groups:read for a private one); a name is trusted five minutes, so a renamed channel answers to its new name within them",
@@ -1195,10 +1196,14 @@ class Slack:
     def _receive_socket(self) -> int:
         """One Socket Mode window: the ``message`` events Slack pushes, stored as the Events API receiver stores them.
 
-        Every event is stored, whichever channel it is in, so a listen to one channel never
-        loses another's (Slack counts an acknowledged event as delivered); each reference's
-        listen then reads the store from its own cursor. An event already stored (Slack's
-        retry) is not stored twice. Returns how many were stored.
+        Each event is stored before Slack is told it arrived, so one that could not be
+        stored is sent again. Every event is stored, whichever channel it is in, so a listen
+        to one channel never loses another's; each reference's listen then reads the store
+        from its own cursor. An event already stored (Slack's retry) is not stored twice.
+        Listens to several references in a row share one window: a window that ended less
+        than ``listen_wait_s`` ago is not opened again. The store has one writer at a time
+        (one listening process, and not the Events API receiver too). Returns how many
+        events were stored.
         """
         app_token = require(NAME, "app_token", run=self.run)
         if not app_token.startswith(APP_TOKEN_PREFIX):
@@ -1216,28 +1221,40 @@ class Slack:
                 f"slack listen_wait_s is a number of seconds above 0 and at most {MAX_LISTEN_WAIT_S:g}, not {raw!r}",
                 kind="validation",
             )
-        payloads = self.socket(app_token, wait=wait)
+        if (
+            self._socket_ended_at is not None
+            and 0 <= self.clock() - self._socket_ended_at < wait
+        ):
+            return 0  # the last window just closed: its events are in the store
         events = self.events
         stamps, seen = [0], set()
         for key in list(events):
             if match := RECEIVED_KEY_RE.match(key):
                 stamps.append(int(match["stamp"]))
                 seen.add(match["event"])
-        last = max(stamps)
-        stored = 0
-        for payload in payloads:
+        last = [max(stamps)]
+        stored = [0]
+
+        def keep(payload: dict) -> None:
             record = (
-                event_record(payload)
-                if isinstance(payload, Mapping) and payload.get("type") == "event_callback"
-                else None
+                event_record(payload) if payload.get("type") == "event_callback" else None
             )
             if record is None or record["event_id"] in seen:
-                continue
-            last = max(int(self.clock() * 10**9), last + 1)  # strictly increasing
-            events[received_key(last, record["event_id"])] = {**record, "received_ns": last}
+                return
+            stamp = max(int(self.clock() * 10**9), last[0] + 1)  # strictly increasing
+            events[received_key(stamp, record["event_id"])] = {
+                **record,
+                "received_ns": stamp,
+            }
+            last[0] = stamp
             seen.add(record["event_id"])
-            stored += 1
-        return stored
+            stored[0] += 1
+
+        try:
+            self.socket(app_token, wait=wait, sink=keep)
+        finally:
+            self._socket_ended_at = self.clock()
+        return stored[0]
 
     def _poll_received(
         self,
