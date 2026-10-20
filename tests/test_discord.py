@@ -322,7 +322,12 @@ def test_only_listed_users_are_pinged_mass_mentions_stay_text():
     result = correspond.send(f"discord:{CHANNEL}", text, registry=_registry(backend))
     assert result.ok and backend.sent == [(CHANNEL, text)]
     assert backend.options[-1] == {
-        "allowed_mentions": {"everyone": False, "roles": False, "users": ["42"]},
+        "allowed_mentions": {
+            "everyone": False,
+            "roles": False,
+            "users": ["42"],
+            "replied_user": False,
+        },
         "reply_to": None,
     }
     assert result.plan["suppressed_mentions"] == ["<@&4242>", "@everyone", "@here"]
@@ -476,3 +481,22 @@ def test_a_members_roles_are_its_authority():
     assert member.native["role_ids"] == ["501", "502"]
     plain = discord._message(ref, _message(1010, created="2026-09-11T12:00:00+00:00"))
     assert plain.author.authority is None and plain.native["role_ids"] == []
+
+
+def test_allowed_mentions_reach_discord_as_no_mass_pings():
+    pytest.importorskip("discord")
+    from discorddol.base import _allowed_mentions
+
+    backend = FakeBackend()
+    registry = _registry(backend)
+    for text, users in (("@everyone <@&4242>", []), ("**hi <@7>**", [7])):
+        correspond.send(f"discord:{CHANNEL}", text, reply_to="1001", registry=registry)
+        wire = _allowed_mentions(backend.options[-1]["allowed_mentions"]).to_dict()
+        assert wire["parse"] == [] and not wire.get("replied_user")
+        assert [int(u) for u in wire.get("users", [])] == users
+
+
+def test_more_than_100_pinged_users_is_refused():
+    text = " ".join(f"<@{i}>" for i in range(1, 102))
+    result = correspond.send(f"discord:{CHANNEL}", text[:2000], registry=_registry(FakeBackend()))
+    assert (result.ok, result.error_kind) == (False, "validation")

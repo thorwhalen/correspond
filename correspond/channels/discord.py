@@ -12,8 +12,8 @@ mentions it.
   that message's id; a first poll looks back a day). It does not open the gateway, so it
   sees new messages, not edits or deletions, and one channel per reference.
 - ``send`` posts a message (2,000 characters at most); a title is prepended in bold. With
-  ``reply_to`` it is a Discord reply to that message. Only the users it mentions as
-  ``<@id>`` (and a replied-to author) are pinged: ``@everyone``, ``@here`` and role
+  ``reply_to`` it is a Discord reply to that message (its author is not pinged). Only
+  the users it mentions as ``<@id>`` are pinged: ``@everyone``, ``@here`` and role
   mentions stay text, through Discord's allowed mentions.
 - ``verify`` grades an HTTP interaction Discord posted to your endpoint: ``crypto`` when
   its Ed25519 signature (``X-Signature-Ed25519`` over ``X-Signature-Timestamp`` + body)
@@ -69,6 +69,8 @@ NAME = "discord"
 #: A Discord snowflake: a channel, thread, message or user id.
 SNOWFLAKE_MAX_DIGITS = 20
 MAX_TEXT_CHARS = 2000
+#: Discord's cap on the users one message may ping (allowed_mentions.users).
+MAX_PINGED_USERS = 100
 READ_DEFAULT = 50
 LISTEN_LOOKBACK = timedelta(days=1)
 #: How far behind the clock a quiet first poll sets its cursor.
@@ -200,7 +202,7 @@ class Discord:
             notes=(
                 "a bot reads message text only with the Message Content intent (Developer Portal; Discord's approval above 100 servers) or when the message mentions it; otherwise the text is empty",
                 "listen polls one channel over REST for messages newer than the cursor: it sees new messages, not edits or deletions; the gateway is not used",
-                "send posts to a channel the bot may write to; a title is prepended in bold; with reply_to it is a Discord reply (the replied-to author is pinged)",
+                "send posts to a channel the bot may write to; a title is prepended in bold; with reply_to it is a Discord reply (the replied-to author is not pinged: mention them as <@id> to ping them)",
                 "only user mentions <@id> ping (listed in the plan); @everyone, @here and role mentions stay text through Discord's allowed mentions (listed in the plan as suppressed)",
                 "an author's authority is the server role ids the message carried (none in a DM or from a webhook)",
                 "an attachment is fetched from Discord's CDN by its signed link, which expires after about a day: read the message again for a fresh one",
@@ -474,7 +476,17 @@ class Discord:
         }
         if reply_to:
             plan["reply_to"] = reply_to
-        allowed = {"everyone": False, "roles": False, "users": mentions}
+        if len(mentions) > MAX_PINGED_USERS:
+            raise ChannelError(
+                f"the text mentions {len(mentions)} users; Discord pings at most {MAX_PINGED_USERS} per message",
+                kind="validation",
+            )
+        allowed = {
+            "everyone": False,
+            "roles": False,
+            "users": mentions,
+            "replied_user": False,
+        }
         if dry_run:
             return SendResult(
                 ok=True, channel=NAME, conversation=ref.encoded, dry_run=True, plan=plan
