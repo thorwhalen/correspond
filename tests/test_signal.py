@@ -204,3 +204,14 @@ def test_the_channel_is_built_and_registered():
 
     assert info("signal").planned is None
     assert ops.get_channel("signal").name == "signal"
+
+
+def test_one_unattributable_frame_does_not_lose_the_others_and_groups_do_not_bleed():
+    sealed = json.dumps({"envelope": {"timestamp": 1, "dataMessage": {"timestamp": 1, "message": "x"}}})
+    adapter = _signal(frames=[sealed, _frame(1700000000001, "kept")])
+    assert [e.message.text for e in adapter.poll(adapter.parse_ref(""))] == ["kept"]
+    short, long_ = _group_ref("a"), _group_ref("a") + "/more"
+    adapter.log[f"{long_}/5.json"] = adapter.log[f"{FRIEND}/1700000000001.json"]
+    assert adapter.read(adapter.parse_ref(short)) == []
+    with pytest.raises(ChannelError, match="timestamps"):
+        adapter.send(adapter.parse_ref(FRIEND), Draft(text="x", reply_to="abc"))

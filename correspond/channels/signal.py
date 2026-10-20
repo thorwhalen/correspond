@@ -223,6 +223,8 @@ class Signal:
     def _message(self, envelope: Mapping[str, Any], data: Mapping[str, Any], account: str) -> Message:
         source = str(envelope.get("sourceNumber") or envelope.get("source") or envelope.get("sourceUuid") or "")
         group = (data.get("groupInfo") or {}).get("groupId")
+        if not group and not source:
+            raise InvalidRef("the envelope names no sender")
         conversation = self.parse_ref(_group_ref(group)) if group else self.parse_ref(source)
         quote_ = data.get("quote") or {}
         return Message(
@@ -281,7 +283,10 @@ class Signal:
                     )
                 )
                 continue
-            message = self._message(envelope, data, account)
+            try:
+                message = self._message(envelope, data, account)
+            except InvalidRef:  # sealed sender or an odd source: nothing to attribute it to
+                continue
             if kind == "message.updated":
                 message = replace(
                     message,
@@ -344,10 +349,12 @@ class Signal:
         wait = float(value(NAME, "listen_wait_s") or DEFAULT_LISTEN_WAIT_S)
         frames = self.ws(_ws_url(self._base(), account), timeout=wait)
         events, last = self._events(frames, account)
-        if limit:
-            events = events[: max(1, int(limit))]
-            last = events[-1].cursor if events and events[-1].cursor else last
-        events += self._identity_changes(account)
+        # ``limit`` is not applied: Signal delivers each message once, so cutting the
+        # batch here would lose the rest for good.
+        try:
+            events += self._identity_changes(account)
+        except ChannelError:  # a failed identity lookup must not lose the messages in hand
+            pass
         return with_final_cursor(events, last or cursor)
 
     # --------------------------------------------------------------- operations
@@ -356,8 +363,11 @@ class Signal:
         """What the log holds for a conversation, oldest first."""
         if not ref.id:
             raise ChannelError("read one conversation: signal:+<number> or signal:group.<id>", kind="validation")
-        prefix = f"{ref.id}/"
-        messages = [Message.from_dict(self.log[k]) for k in list(self.log) if k.startswith(prefix)]
+        messages = [
+            Message.from_dict(self.log[k])
+            for k in list(self.log)
+            if not k.startswith("identities/") and k.rpartition("/")[0] == ref.id
+        ]
         messages.sort(key=lambda m: (m.sent_at, m.id))
         return window(messages, since=since, limit=limit)
 
@@ -412,6 +422,11 @@ class Signal:
         text = f"{draft.title}\n\n{draft.text}" if draft.title else draft.text
         body: dict[str, Any] = {"message": text, "number": account, "recipients": [ref.id]}
         if draft.reply_to:
+            if not str(draft.reply_to).isdigit():
+                raise ChannelError(
+                    f"Signal message ids are timestamps, not {draft.reply_to!r}",
+                    kind="validation",
+                )
             body["quote_timestamp"] = int(draft.reply_to)
             body["quote_author"] = self._quote_author(ref, draft.reply_to)
         plan = {
