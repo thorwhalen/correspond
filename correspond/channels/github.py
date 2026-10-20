@@ -161,6 +161,9 @@ PAGE_SIZE = 100
 MAX_PAGES = 20
 READ_REPOSITORY_DEFAULT = 30
 LISTEN_LOOKBACK = timedelta(hours=24)
+#: A repository listen re-reads this many most recently active discussions whole on every
+#: poll, whatever their ``updatedAt``: some replies move neither it nor the activity order.
+RECENT_DISCUSSIONS = 3
 CLOCK_SKEW = timedelta(seconds=5)
 SECONDARY_LIMIT_WAIT_S = 60.0
 GH_TIMEOUT_S = 120
@@ -675,7 +678,9 @@ def _read_discussions(github, scope):
         # Not an issue: read as a discussion, which raises not_found when it is not one.
         return [scope.number], False, scope.probe.headers.get("date")
     try:
-        numbers = github._active_discussions(scope.owner, scope.repo, scope.position)
+        numbers = github._active_discussions(
+            scope.owner, scope.repo, scope.position, recent=github.recent_discussions
+        )
     except ChannelError as error:
         if error.kind not in _REFUSED_LISTING:
             raise
@@ -716,9 +721,16 @@ class GitHub:
 
     name = NAME
 
-    def __init__(self, *, run: Callable[..., Any] = subprocess.run, gh: str = "gh"):
+    def __init__(
+        self,
+        *,
+        run: Callable[..., Any] = subprocess.run,
+        gh: str = "gh",
+        recent_discussions: int = RECENT_DISCUSSIONS,
+    ):
         self.run = run
         self.gh = gh
+        self.recent_discussions = recent_discussions
         self._login: str | None = None
 
     @property
@@ -771,7 +783,7 @@ class GitHub:
             ),
             notes=(
                 "listen polls the issue, comment, pull request review comment and discussion activity of a repository, or of one issue, pull request or discussion",
-                "listen is partial on a repository's discussions: GitHub has no since filter for them, so listen walks them by GitHub's latest-activity order and reads each one active since the cursor (one extra call each); a post GitHub does not count as activity on its discussion (seen on some replies) is not delivered there, and only a comment's latest 100 replies are seen; listening to one discussion reads it whole on every poll and misses none of its posts",
+                f"listen is partial on a repository's discussions: GitHub has no since filter for them, so listen walks them by GitHub's latest-activity order and reads each one active since the cursor, and the {self.recent_discussions} most recently active whatever their update time (one extra call each, recent_discussions= sets how many); a post GitHub does not count as activity on its discussion (seen on some replies) is delivered only when its discussion is among those, and only a comment's latest 100 replies are seen; listening to one discussion reads it whole on every poll and misses none of its posts",
                 "a gh token that may not read discussions listens to a repository's issues, comments and review comments only (logged as a warning)",
                 "GitHub moves a review comment's updated_at when its review is submitted and when a push outdates it, so listen reports those as message.updated with the text unchanged, and a review comment carries no edited_at",
                 "reply_to works in discussions and in pull request review threads (a reply to a reply joins its thread); issue and pull request conversation comments are flat",
@@ -1535,16 +1547,22 @@ class GitHub:
                 break
         return numbers
 
-    def _active_discussions(self, owner: str, repo: str, since: datetime) -> list[int]:
-        """The numbers of the repository's discussions active at or after ``since``.
+    def _active_discussions(
+        self, owner: str, repo: str, since: datetime, *, recent: int = 0
+    ) -> list[int]:
+        """The numbers of the repository's discussions active at or after ``since``, and the ``recent`` most recently active.
 
         GitHub orders discussions by latest activity (a new comment or reply moves one to
         the front) but has no ``since`` filter, so pages are read newest first until one
         holds a discussion last updated before ``since``. The order is by activity while
         ``updatedAt`` also moves on other changes (a label or category set in bulk), so a
-        page is read whole rather than cut at its first older entry.
+        page is read whole rather than cut at its first older entry. Some replies move
+        neither ``updatedAt`` nor the order, so the first ``recent`` discussions in that
+        order are included whatever their ``updatedAt``: reading them whole finds such a
+        reply by its own creation time.
         """
         numbers: list[int] = []
+        walked = 0
         after = None
         while True:
             data = self._graphql(
@@ -1553,9 +1571,16 @@ class GitHub:
             page = (data.get("repository") or {}).get("discussions") or {}
             nodes = page.get("nodes") or []
             active = [n for n in nodes if parse_time(n["updatedAt"]) >= since]
-            numbers += [int(n["number"]) for n in active]
+            numbers += [
+                int(n["number"])
+                for i, n in enumerate(nodes, start=walked)
+                if i < recent or parse_time(n["updatedAt"]) >= since
+            ]
+            walked += len(nodes)
             page_info = page.get("pageInfo") or {}
-            if len(active) < len(nodes) or not page_info.get("hasNextPage"):
+            if (len(active) < len(nodes) and walked >= recent) or not page_info.get(
+                "hasNextPage"
+            ):
                 return list(dict.fromkeys(numbers))
             after = page_info.get("endCursor")
 

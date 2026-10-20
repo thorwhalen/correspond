@@ -2100,6 +2100,10 @@ def test_polling_a_repository_finds_review_comments_and_active_discussions():
             [_post(501, created="2026-09-11T09:00:00Z", replies=[])],
         ),
         6: _numbered_discussion(6, "2026-09-11T10:00:00Z"),
+        # Older than the cursor, but among the most recently active: read, nothing new in it.
+        8: _numbered_discussion(
+            8, "2026-09-01T00:00:00Z", [_post(801, created="2026-09-10T00:00:00Z")]
+        ),
     }
 
     def graphql(payload):
@@ -2161,6 +2165,74 @@ def test_discussion_activity_reads_further_pages_while_every_entry_is_active():
     gh = ScriptedGh(("POST", "graphql", graphql))
     since = correspond.model.parse_time("2026-09-11T08:00:00Z")
     assert GitHub(run=gh)._active_discussions("octocat", "hello-world", since) == [6, 5]
+
+
+def test_discussion_activity_includes_the_most_recently_active_whatever_their_update_time():
+    pages = []
+
+    def graphql(payload):
+        pages.append(payload["variables"]["after"])
+        if payload["variables"]["after"] is None:
+            return 200, _activity(
+                (6, "2026-09-11T10:00:00Z"), (5, "2026-09-01T00:00:00Z"), next_page="p2"
+            )
+        return 200, _activity((4, "2026-08-01T00:00:00Z"), (3, "2026-07-01T00:00:00Z"))
+
+    gh = ScriptedGh(("POST", "graphql", graphql))
+    since = correspond.model.parse_time("2026-09-11T08:00:00Z")
+    github = GitHub(run=gh)
+    assert github._active_discussions("octocat", "hello-world", since, recent=3) == [
+        6,
+        5,
+        4,
+    ]
+    assert pages == [None, "p2"]  # the walk goes on until it has seen ``recent`` of them
+
+
+def test_a_reply_that_did_not_move_its_discussion_is_delivered_once():
+    """correspond#53: a reply GitHub did not count as activity on its discussion."""
+    since = "2026-09-11T08:00:00Z"
+    date = {"Date": "Fri, 11 Sep 2026 12:00:00 GMT"}
+    discussion = _numbered_discussion(
+        7,
+        "2026-09-01T00:00:00Z",
+        [
+            _post(
+                701,
+                created="2026-09-02T00:00:00Z",
+                replies=[_post(702, created="2026-09-11T09:00:00Z")],
+            )
+        ],
+    )
+
+    def graphql(payload):
+        if "discussions(" in payload["query"]:
+            # The discussion's updatedAt did not move with its new reply.
+            return 200, _activity((7, "2026-09-02T00:00:00Z"))
+        return 200, discussion
+
+    def gh():
+        return ScriptedGh(
+            WHOAMI,
+            ("GET", rf"repos/{REPO}/issues/comments\?.*", (200, [], date)),
+            ("GET", rf"repos/{REPO}/issues\?.*", (200, [])),
+            ("GET", rf"repos/{REPO}/pulls\?state=all&.*", (200, [])),
+            ("GET", rf"repos/{REPO}/pulls/comments\?.*", (200, [])),
+            ("POST", "graphql", graphql),
+        )
+
+    cursors = {f"github:{REPO}": since}
+
+    def listen():
+        return [
+            e.message.id
+            for e in correspond.listen(
+                f"github:{REPO}", cursors=cursors, registry={"github": GitHub(run=gh())}
+            )
+        ]
+
+    assert listen() == ["discussioncomment-702"]
+    assert listen() == []
 
 
 def _categories(enabled=True):
