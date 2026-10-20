@@ -25,6 +25,7 @@ from urllib.parse import urlsplit
 
 from correspond.channels._http import urllib_http
 from correspond.channels._http import retry_after_seconds
+from correspond.channels._slack_hosts import API_BASE, api_base as _api_base, on_slack_host
 from correspond.channels._websocket import require_websocket
 from correspond.channels._websocket import websocket_connect as _websocket_connect
 from correspond.errors import ChannelError
@@ -37,11 +38,9 @@ __all__ = [
     "websocket_connect",
 ]
 
-CONNECTIONS_OPEN_URL = "https://slack.com/api/apps.connections.open"
-#: Hosts a Socket Mode URL may name. GovSlack's (``.slack-gov.com``) is not one: the
-#: connection is asked of ``slack.com``, which never names it, so widening this alone
-#: would add nothing; GovSlack needs its own API base first.
-SOCKET_HOST_SUFFIX = ".slack.com"
+#: The Web API method that hands out a Socket Mode connection, under the API base.
+CONNECTIONS_OPEN = "apps.connections.open"
+CONNECTIONS_OPEN_URL = f"{API_BASE}/{CONNECTIONS_OPEN}"
 #: How long a window waits for Slack's ``hello``, even when ``wait`` is shorter.
 HELLO_TIMEOUT_S = 15.0
 #: The longest one window stays open, however busy the workspace.
@@ -59,16 +58,24 @@ def websocket_connect(url: str, *, timeout: float) -> Any:
     )
 
 
-def socket_url(app_token: str, *, http: Callable[..., Any] = urllib_http) -> str:
+def socket_url(
+    app_token: str,
+    *,
+    http: Callable[..., Any] = urllib_http,
+    api_base: str = API_BASE,
+) -> str:
     """The ``wss://`` URL ``apps.connections.open`` hands out for one connection.
 
-    The token goes only to ``slack.com``; the URL it returns must be ``wss://`` on a Slack
-    host, or it is refused (a tampered answer must not point the listener elsewhere).
+    The token goes only to ``api_base`` (commercial Slack's, or GovSlack's
+    ``https://slack-gov.com/api``); the URL it returns must be ``wss://`` on a host of that
+    same cloud (``*.slack.com``, or ``*.slack-gov.com`` for GovSlack), or it is refused (a
+    tampered answer must not point the listener elsewhere).
     """
+    base = _api_base(api_base)
     try:
         reply = http(
             "POST",
-            CONNECTIONS_OPEN_URL,
+            f"{base}/{CONNECTIONS_OPEN}",
             headers={
                 "Authorization": f"Bearer {app_token}",
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -117,7 +124,7 @@ def socket_url(app_token: str, *, http: Callable[..., Any] = urllib_http) -> str
             else "validation",
         )
     url = str(data.get("url") or "")
-    if not _slack_socket_url(url):
+    if not _slack_socket_url(url, base):
         raise ChannelError(
             "Slack apps.connections.open answered with a URL that is not wss:// on a Slack host",
             kind="validation",
@@ -125,20 +132,21 @@ def socket_url(app_token: str, *, http: Callable[..., Any] = urllib_http) -> str
     return url
 
 
-def _slack_socket_url(url: str) -> bool:
-    """Whether ``url`` is ``wss://`` on one of Slack's hosts.
+def _slack_socket_url(url: str, base: str = API_BASE) -> bool:
+    """Whether ``url`` is ``wss://`` on one of the hosts of ``base``'s cloud.
 
     >>> _slack_socket_url("wss://wss-primary.slack.com/link/?ticket=t"), _slack_socket_url("wss://slack.com.example.org/")
     (True, False)
     >>> _slack_socket_url("ws://wss-primary.slack.com/link/")
     False
+    >>> _slack_socket_url("wss://wss-primary.slack-gov.com/link/"), _slack_socket_url("wss://wss-primary.slack-gov.com/link/", "https://slack-gov.com/api")
+    (False, True)
     """
     try:
         parts = urlsplit(url)
     except ValueError:
         return False
-    host = (parts.hostname or "").lower()
-    return parts.scheme == "wss" and host.endswith(SOCKET_HOST_SUFFIX)
+    return parts.scheme == "wss" and on_slack_host(parts.hostname, base)
 
 
 def socket_window(
@@ -150,6 +158,7 @@ def socket_window(
     http: Callable[..., Any] = urllib_http,
     clock: Callable[[], float] = time.monotonic,
     max_window_s: float = MAX_WINDOW_S,
+    api_base: str = API_BASE,
 ) -> list[dict]:
     """One Socket Mode window: the ``events_api`` payloads Slack pushed, in arrival order.
 
@@ -159,10 +168,12 @@ def socket_window(
     interactions) are acknowledged and dropped. A ``disconnect`` envelope, or the
     connection closing or failing, ends the window with what it has; before Slack's
     ``hello`` either is an error (Socket Mode off for the app, a refused link).
+    ``api_base`` is the Web API the connection is asked of (GovSlack's for a GovSlack
+    workspace), and the cloud whose hosts the socket may be on.
     """
     if connect is websocket_connect:  # before the token is spent on a connection
         require_websocket(extra="slack", service="Slack's Socket Mode")
-    url = socket_url(app_token, http=http)
+    url = socket_url(app_token, http=http, api_base=api_base)
     connection = connect(url, timeout=max(wait, HELLO_TIMEOUT_S))
     payloads: list[dict] = []
     started = clock()

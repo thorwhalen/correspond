@@ -425,6 +425,12 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 secret=True,
             ),
             Setting(
+                key="api_base",
+                env="CORRESPOND_SLACK_API_BASE",
+                what="the Web API your workspace lives behind: https://slack.com/api, or https://slack-gov.com/api for GovSlack (Socket Mode and file fetches then go to slack-gov.com hosts only)",
+                default="https://slack.com/api",
+            ),
+            Setting(
                 key="signing_secret",
                 env="CORRESPOND_SLACK_SIGNING_SECRET",
                 what="the app's signing secret, used only to verify requests Slack sends (Events API, interactivity)",

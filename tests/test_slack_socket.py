@@ -459,3 +459,37 @@ def test_socket_listens_in_two_processes_take_turns_on_one_store(socket_mode):
     )
     assert behind._receive_socket() == 1
     assert [k.split("-")[1] for k in sorted(store)] == ["Ev0001.json", "Ev0002.json"]
+
+
+GOV_API = "https://slack-gov.com/api"
+GOV_SOCKET = "wss://wss-primary.slack-gov.com/link/?ticket=example"
+
+
+def test_govslack_asks_slack_gov_for_the_connection_and_accepts_its_host():
+    http = _opener({"ok": True, "url": GOV_SOCKET})
+    assert socket_url(APP_TOKEN, http=http, api_base=GOV_API) == GOV_SOCKET
+    assert http.asked[0][1] == f"{GOV_API}/apps.connections.open"
+
+
+@pytest.mark.parametrize(
+    "api_base, url",
+    [
+        (None, GOV_SOCKET),  # commercial Slack's answer cannot name GovSlack's host
+        (GOV_API, SOCKET),  # nor GovSlack's a commercial one
+    ],
+)
+def test_a_socket_url_on_the_other_cloud_is_refused(api_base, url):
+    extra = {} if api_base is None else {"api_base": api_base}
+    with pytest.raises(ChannelError) as caught:
+        socket_url(APP_TOKEN, http=_opener({"ok": True, "url": url}), **extra)
+    assert caught.value.kind == "validation"
+
+
+def test_socket_delivery_passes_govslack_base_to_the_window(socket_mode, monkeypatch):
+    seen = []
+    slack = Slack(keychain=lambda s: "", events={}, socket=lambda token, **k: seen.append(k) or [])
+    slack._receive_socket()
+    monkeypatch.setenv("CORRESPOND_SLACK_API_BASE", GOV_API)
+    slack._socket_ended_at = None
+    slack._receive_socket()
+    assert "api_base" not in seen[0] and seen[1]["api_base"] == GOV_API

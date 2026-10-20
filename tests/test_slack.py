@@ -1455,3 +1455,73 @@ def test_one_adapter_shared_across_threads_lists_channels_once(token):
         list(pool.map(lambda n: correspond.read(f"slack:c{n % 6}", registry=registry), range(24)))
     listed = [p.get("cursor") for n, p in api.calls if n == "conversations.list"]
     assert listed == [None, "2", "4"], listed
+
+
+GOV_API = "https://slack-gov.com/api"
+
+
+def _gov_history(url):
+    """HISTORY as a GovSlack workspace answers it: its file on files.slack-gov.com."""
+    gov = [dict(m) for m in HISTORY]
+    gov[-1]["files"] = [{**gov[-1]["files"][0], "url_private": url}]
+    return gov
+
+
+def test_govslack_sends_the_web_api_and_file_fetches_to_slack_gov_only(token, monkeypatch):
+    monkeypatch.setenv("CORRESPOND_SLACK_API_BASE", GOV_API + "/")
+    asked = []
+    api = FakeSlackApi(_gov_history("https://files.slack-gov.com/F1"))
+
+    def http(method, url, *, headers=None, body=None, timeout=None):
+        asked.append(url)
+        if url.startswith("https://files.slack-gov.com/"):
+            return Response(200, {"content-type": "application/pdf"}, b"%PDF-1.7")
+        return api(method, url, headers=headers, body=body)
+
+    bot = correspond.read(f"slack:{CHANNEL}", limit=1, registry=_api_registry(http))[-1]
+    assert bot.attachments[0].content() == b"%PDF-1.7"
+    assert asked and all(u.startswith(("https://slack-gov.com/api/", "https://files.slack-gov.com/")) for u in asked)
+
+
+def test_govslack_never_sends_its_token_to_a_commercial_slack_host(token, monkeypatch):
+    monkeypatch.setenv("CORRESPOND_SLACK_API_BASE", GOV_API)
+    sent = []
+    api = FakeSlackApi(_gov_history("https://files.slack.com/F1"))
+
+    def http(method, url, *, headers=None, body=None, timeout=None):
+        if url.startswith("https://files."):
+            sent.append(url)
+        return api(method, url, headers=headers, body=body)
+
+    bot = correspond.read(f"slack:{CHANNEL}", limit=1, registry=_api_registry(http))[-1]
+    with pytest.raises(correspond.ChannelError, match="outside Slack"):
+        bot.attachments[0].content()
+    assert sent == []
+
+
+def test_commercial_slack_never_sends_its_token_to_a_govslack_host(token):
+    sent = []
+    api = FakeSlackApi(_gov_history("https://files.slack-gov.com/F1"))
+
+    def http(method, url, *, headers=None, body=None, timeout=None):
+        if url.startswith("https://files."):
+            sent.append(url)
+        return api(method, url, headers=headers, body=body)
+
+    bot = correspond.read(f"slack:{CHANNEL}", limit=1, registry=_api_registry(http))[-1]
+    with pytest.raises(correspond.ChannelError, match="outside Slack"):
+        bot.attachments[0].content()
+    assert sent == []
+
+
+def test_an_api_base_other_than_slacks_is_refused_before_the_token_goes_anywhere(token, monkeypatch):
+    monkeypatch.setenv("CORRESPOND_SLACK_API_BASE", "https://example.org/api")
+    asked = []
+
+    def http(method, url, *, headers=None, body=None, timeout=None):
+        asked.append(url)
+        return FakeSlackApi(HISTORY)(method, url, headers=headers, body=body)
+
+    with pytest.raises(correspond.ChannelError) as caught:
+        correspond.read(f"slack:{CHANNEL}", registry=_api_registry(http))
+    assert caught.value.kind == "validation" and asked == []
