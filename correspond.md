@@ -1,4 +1,4 @@
-> built 2026-10-20 13:33 UTC from 55e940b (main) · correspond 0.0.39. Details: build_info.json
+> built 2026-10-20 13:39 UTC from 520beb9 (main) · correspond 0.0.40. Details: build_info.json
 
 # index.html.md
 
@@ -838,7 +838,10 @@ A Discord bot over REST: read a channel, poll it for new messages, post to it.
 
 #### audience(ref, , draft=None)
 
-The members of the channel’s server who can view it: a group nobody lists here.
+A DM’s two participants (or a group DM’s members), listed; otherwise the server’s members who can view the channel, never listed.
+
+The channel is looked up once per reference. When it cannot be (no lookup in
+this backend, or Discord refused), the answer is the wider server group.
 
 * **Return type:**
   [`Audience`](_autosummary/correspond.model.html.md#correspond.model.Audience)
@@ -5616,18 +5619,18 @@ Where a channel’s platform delivers its updates now (Telegram: none means list
 
 # About this build
 
-This documentation was built on **2026-10-20 13:33 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/55e940bf4dd5d35f17a4880e4e0882d05aee6bdc"><code>55e940b</code></a> on branch <code>main</code>, for **correspond 0.0.39** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-20 13:39 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/520beb906012bfb6071b0e739537c174b3696e1e"><code>520beb9</code></a> on branch <code>main</code>, for **correspond 0.0.40** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.39) is behind the latest release on PyPI (0.0.40): `pip install correspond` gives newer code than these docs describe.
+- The documented version (0.0.40) is behind the latest release on PyPI (0.0.41): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/55e940bf4dd5d35f17a4880e4e0882d05aee6bdc"><code>55e940bf4dd5d35f17a4880e4e0882d05aee6bdc</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/520beb906012bfb6071b0e739537c174b3696e1e"><code>520beb906012bfb6071b0e739537c174b3696e1e</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -5638,9 +5641,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39431197847">39431197847</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39432010163">39432010163</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>55e940bf4dd5d35f17a4880e4e0882d05aee6bdc</code> (in the history of the built commit)  |
+| Event commit | <code>520beb906012bfb6071b0e739537c174b3696e1e</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -5665,13 +5668,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.40/">0.0.40</a>, newer than the documented version (0.0.39).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.41/">0.0.41</a>, newer than the documented version (0.0.40).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 55e940bf4dd5d35f17a4880e4e0882d05aee6bdc
+git checkout 520beb906012bfb6071b0e739537c174b3696e1e
 pip install "epythet==0.2.20"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

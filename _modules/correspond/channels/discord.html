@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=e648f5b4"></script>
+    <script src="../../../_static/documentation_options.js?v=84bd753f"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.39" />
+  <meta name="docsearch:version" content="0.0.40" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -798,6 +798,8 @@ window.runMermaid = runMermaid;</script>
 <span class="n">DISCORD_EPOCH_MS</span> <span class="o">=</span> <span class="mi">1_420_070_400_000</span>
 <span class="c1">#: What would notify a whole server or a role: kept as text, never a ping.</span>
 <span class="n">MASS_MENTION_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"@(?:everyone|here)\b|&lt;@&amp;[0-9]+&gt;"</span><span class="p">)</span>
+<span class="c1">#: Discord channel types (``str(channel.type)``) of a direct message, one-to-one or group.</span>
+<span class="n">DIRECT_CHANNEL_TYPES</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"private"</span><span class="p">,</span> <span class="s2">"group"</span><span class="p">})</span>
 <span class="c1">#: How old an interaction's timestamp may be before its signature counts as a replay.</span>
 <span class="n">SIGNATURE_MAX_AGE_S</span> <span class="o">=</span> <span class="mi">300</span>
 <span class="c1">#: An Ed25519 signature is 64 bytes, its public key 32, both sent as hex.</span>
@@ -902,6 +904,7 @@ window.runMermaid = runMermaid;</script>
         <span class="bp">self</span><span class="o">.</span><span class="n">gateway</span> <span class="o">=</span> <span class="n">gateway</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">http</span> <span class="o">=</span> <span class="n">http</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_backend</span> <span class="o">=</span> <span class="n">backend</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_channel_records</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>
 
     <span class="nd">@property</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">backend</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
@@ -957,7 +960,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"only user mentions &lt;@id&gt; ping (listed in the plan); @everyone, @here and role mentions stay text through Discord's allowed mentions (listed in the plan as suppressed)"</span><span class="p">,</span>
                 <span class="s2">"an author's authority is the server role ids the message carried (none in a DM or from a webhook)"</span><span class="p">,</span>
                 <span class="s2">"an attachment is fetched from Discord's CDN by its signed link, which expires after about a day: read the message again for a fresh one"</span><span class="p">,</span>
-                <span class="s2">"audience is the channel's server members who can view it, never listed"</span><span class="p">,</span>
+                <span class="s2">"audience is the channel's server members who can view it, never listed; a DM's audience is the bot and the other user, listed (a group DM's, its members)"</span><span class="p">,</span>
                 <span class="s2">"verify grades an HTTP interaction crypto when its Ed25519 signature checks against the application's public key (DISCORD_PUBLIC_KEY), forged otherwise, including Discord's deliberate invalid-signature probes and timestamps older than five minutes"</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span>
@@ -1177,10 +1180,39 @@ window.runMermaid = runMermaid;</script>
 
     <span class="c1"># ----------------------------------------------------------------- audience</span>
 
+    <span class="k">def</span><span class="w"> </span><span class="nf">_channel_record</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""discorddol's record of the channel (``channel(id)``), looked up once per reference."""</span>
+        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_records</span><span class="p">:</span>
+            <span class="n">record</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"channel </span><span class="si">{</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">channel</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_channel_records</span><span class="p">[</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">record</span> <span class="ow">or</span> <span class="p">{})</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_records</span><span class="p">[</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">]</span>
+
 <div class="viewcode-block" id="Discord.audience">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.discord.html#correspond.channels.discord.Discord.audience">[docs]</a>
     <span class="k">def</span><span class="w"> </span><span class="nf">audience</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Audience</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""The members of the channel's server who can view it: a group nobody lists here."""</span>
+<span class="w">        </span><span class="sd">"""A DM's two participants (or a group DM's members), listed; otherwise the server's members who can view the channel, never listed.</span>
+
+<span class="sd">        The channel is looked up once per reference. When it cannot be (no lookup in</span>
+<span class="sd">        this backend, or Discord refused), the answer is the wider server group.</span>
+<span class="sd">        """</span>
+        <span class="n">evidence</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">backend</span><span class="p">,</span> <span class="s2">"channel"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                    <span class="s2">"this backend cannot look a channel up (discorddol &gt;= 0.0.7 can)"</span><span class="p">,</span>
+                    <span class="n">kind</span><span class="o">=</span><span class="s2">"unavailable"</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">record</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_record</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="n">record</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">evidence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"the channel could not be looked up (</span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">): assumed a server channel"</span>
+            <span class="p">)</span>
+        <span class="n">kind</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">"."</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">kind</span> <span class="ow">in</span> <span class="n">DIRECT_CHANNEL_TYPES</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_direct_audience</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">record</span><span class="p">,</span> <span class="n">group</span><span class="o">=</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"group"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">Audience</span><span class="p">(</span>
             <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
             <span class="n">scope</span><span class="o">=</span><span class="n">Scope</span><span class="o">.</span><span class="n">GROUP</span><span class="p">,</span>
@@ -1192,10 +1224,47 @@ window.runMermaid = runMermaid;</script>
             <span class="n">durability</span><span class="o">=</span><span class="p">(</span><span class="s2">"copies_pushed"</span><span class="p">,</span> <span class="s2">"edit_history_visible"</span><span class="p">),</span>
             <span class="n">widening</span><span class="o">=</span><span class="p">(</span><span class="s2">"joiners_read_history"</span><span class="p">,</span> <span class="s2">"forwarding"</span><span class="p">,</span> <span class="s2">"visibility_flip"</span><span class="p">),</span>
             <span class="n">evidence</span><span class="o">=</span><span class="p">(</span>
+                <span class="o">*</span><span class="n">evidence</span><span class="p">,</span>
                 <span class="s2">"a Discord channel is read by the members of its server its permission overwrites allow; correspond does not list them"</span><span class="p">,</span>
             <span class="p">),</span>
         <span class="p">)</span></div>
 
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_direct_audience</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">*</span><span class="p">,</span> <span class="n">group</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Audience</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The people in a DM or group DM: the bot and its recipients, a complete list."""</span>
+        <span class="n">readers</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">ChannelIdentity</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">native_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">user_id</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">user_id</span> <span class="ow">in</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"recipients"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">()</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"me_id"</span><span class="p">):</span>
+            <span class="n">readers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">ChannelIdentity</span><span class="p">(</span>
+                    <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                    <span class="n">native_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"me_id"</span><span class="p">]),</span>
+                    <span class="n">is_bot</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">is_self</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">listed</span> <span class="o">=</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">native_id</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">readers</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"no one listed"</span>
+        <span class="k">return</span> <span class="n">Audience</span><span class="p">(</span>
+            <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">scope</span><span class="o">=</span><span class="n">Scope</span><span class="o">.</span><span class="n">NAMED</span><span class="p">,</span>
+            <span class="n">readers</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">readers</span><span class="p">),</span>
+            <span class="n">complete</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"recipients"</span><span class="p">)),</span>
+            <span class="n">durability</span><span class="o">=</span><span class="p">(</span><span class="s2">"copies_pushed"</span><span class="p">,</span> <span class="s2">"edit_history_visible"</span><span class="p">),</span>
+            <span class="n">widening</span><span class="o">=</span><span class="p">(</span>
+                <span class="p">(</span><span class="s2">"joiners_read_history"</span><span class="p">,</span> <span class="s2">"forwarding"</span><span class="p">)</span> <span class="k">if</span> <span class="n">group</span> <span class="k">else</span> <span class="p">(</span><span class="s2">"forwarding"</span><span class="p">,)</span>
+            <span class="p">),</span>
+            <span class="n">evidence</span><span class="o">=</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"a group DM: the bot and its members (</span><span class="si">{</span><span class="n">listed</span><span class="si">}</span><span class="s2">); a member can add others, who read the history"</span>
+                    <span class="k">if</span> <span class="n">group</span>
+                    <span class="k">else</span> <span class="sa">f</span><span class="s2">"a direct message: the bot and one user (</span><span class="si">{</span><span class="n">listed</span><span class="si">}</span><span class="s2">)"</span>
+                <span class="p">),</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
 
     <span class="c1"># ----------------------------------------------------------------- verifying</span>
 

@@ -50,7 +50,10 @@ A Discord bot over REST: read a channel, poll it for new messages, post to it.
 
 #### audience(ref, , draft=None)
 
-The members of the channel’s server who can view it: a group nobody lists here.
+A DM’s two participants (or a group DM’s members), listed; otherwise the server’s members who can view the channel, never listed.
+
+The channel is looked up once per reference. When it cannot be (no lookup in
+this backend, or Discord refused), the answer is the wider server group.
 
 * **Return type:**
   [`Audience`](correspond.model.html.md#correspond.model.Audience)
