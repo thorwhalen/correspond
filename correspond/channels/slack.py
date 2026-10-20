@@ -48,6 +48,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 import time
 from collections.abc import Callable, Mapping, MutableMapping
 from dataclasses import dataclass, field, replace
@@ -412,6 +413,7 @@ class _Workspace:
     A listing of channel names that stopped once the name it looked for appeared keeps
     the cursor it stopped at (``channels_next``), so the next name not yet seen resumes
     there instead of listing from scratch; ``None`` there means the listing is whole.
+    ``lock`` guards these caches when one adapter is shared across threads.
     """
 
     channel_ids: dict[str, str] = field(default_factory=dict)
@@ -422,14 +424,18 @@ class _Workspace:
     )  # id: (until, user)
     users_refused_until: float = 0.0
     account: Account | None = None
+    lock: threading.RLock = field(
+        default_factory=threading.RLock, repr=False, compare=False
+    )
 
     def remember_user(
         self, user_id: str, entry: tuple[float, dict | None], *, now: float
     ) -> None:
         """Keep ``entry`` for ``user_id``, dropping the entries that expired (the cache only grows with live ones)."""
-        for gone in [k for k, (until, _) in self.users.items() if until <= now]:
-            del self.users[gone]
-        self.users[user_id] = entry
+        with self.lock:
+            for gone in [k for k, (until, _) in self.users.items() if until <= now]:
+                del self.users[gone]
+            self.users[user_id] = entry
 
 
 def _parent_of(messages: list[dict], thread: str) -> dict | None:
@@ -473,6 +479,7 @@ class Slack:
         self.sleep = sleep
         self._keychain = keychain
         self._workspaces: dict[str, _Workspace] = {}  # token digest: what it learned
+        self._workspaces_lock = threading.Lock()
         self._server_now: float | None = None
 
     @property
@@ -637,10 +644,11 @@ class Slack:
         listener whose token rotates leaves its old ones behind).
         """
         key = _token_key(token)
-        known = self._workspaces.pop(key, None) or _Workspace()
-        self._workspaces[key] = known  # most recently used last
-        while len(self._workspaces) > MAX_WORKSPACES:
-            del self._workspaces[next(iter(self._workspaces))]
+        with self._workspaces_lock:
+            known = self._workspaces.pop(key, None) or _Workspace()
+            self._workspaces[key] = known  # most recently used last
+            while len(self._workspaces) > MAX_WORKSPACES:
+                del self._workspaces[next(iter(self._workspaces))]
         return known
 
     @staticmethod
@@ -658,11 +666,17 @@ class Slack:
         A listing stops at the page that has the name; a later name it has not reached
         resumes from there, and a resumed listing that fails or ends without the name
         (a channel created on a page already read) is read once more from the start.
+        Threads sharing the adapter look names up one at a time (the workspace's lock).
         """
         name = self._where(ref)[0]
         if CHANNEL_ID_RE.match(name):
             return name
         known = self._workspace(token)
+        with known.lock:
+            return self._locked_channel_id(known, name, token)
+
+    def _locked_channel_id(self, known: _Workspace, name: str, token: str) -> str:
+        """:meth:`_channel_id` for a name, with ``known.lock`` held."""
         now = self.clock()
         listed_at = known.channels_listed_at
         fresh = listed_at is not None and now - listed_at < CHANNEL_CACHE_TTL_S
@@ -689,7 +703,11 @@ class Slack:
         return known.channel_ids[name]
 
     def _list_channels(self, known: _Workspace, name: str, token: str) -> None:
-        """Read ``conversations.list`` pages into ``known`` from its cursor, until ``name`` shows or the list ends."""
+        """Read ``conversations.list`` pages into ``known`` from its cursor, until ``name`` shows or the list ends.
+
+        A resumed listing joins pages read apart in time, so a later page wins: a name
+        another channel took in between resolves to that channel, not the older one.
+        """
         while known.channels_next is not None and name not in known.channel_ids:
             data = self._api(
                 "conversations.list",
@@ -703,7 +721,7 @@ class Slack:
             )
             for channel in data.get("channels") or ():
                 if channel.get("name"):
-                    known.channel_ids.setdefault(channel["name"], channel["id"])
+                    known.channel_ids[channel["name"]] = channel["id"]
             following = (data.get("response_metadata") or {}).get("next_cursor")
             known.channels_next = following or None
 
@@ -750,7 +768,11 @@ class Slack:
         limit: int | None,
         latest: str | None = None,
     ) -> list[dict]:
-        """``conversations.history``, newest first, every page up to ``limit`` messages."""
+        """``conversations.history``, newest first, every page up to ``limit`` messages.
+
+        Only messages someone wrote (:data:`MESSAGE_SUBTYPES`) count toward ``limit``, so
+        Slack's own notices, dropped by :meth:`read`, do not leave it short.
+        """
         found: list[dict] = []
         cursor = None
         while True:
@@ -777,9 +799,14 @@ class Slack:
                         raise
                     self.sleep(wait)
             found += list(data.get("messages") or ())
+            written = [
+                i for i, m in enumerate(found) if m.get("subtype") in MESSAGE_SUBTYPES
+            ]
+            if limit and len(written) >= limit:
+                return found[: written[limit - 1] + 1]
             cursor = (data.get("response_metadata") or {}).get("next_cursor")
-            if not cursor or not data.get("has_more") or (limit and len(found) >= limit):
-                return found[:limit] if limit else found
+            if not cursor or not data.get("has_more"):
+                return found
 
     def _replies(
         self,
