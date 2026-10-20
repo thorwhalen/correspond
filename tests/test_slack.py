@@ -645,6 +645,37 @@ def test_verify_checks_the_signature_and_refuses_a_replay(monkeypatch):
     assert tampered.grade.value == "forged"
 
 
+def test_verify_fails_closed_on_odd_inputs(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_SLACK_SIGNING_SECRET", "example-signing-secret")
+    registry = _api_registry(FakeSlackApi())
+    body = b'{"type":"event_callback"}'
+    now = int(NOW)
+    signed = _signed("example-signing-secret", body, now)
+    class Unprintable:
+        def __str__(self):
+            raise RuntimeError("no")
+
+    cases = [
+        ({"X-Slack-Signature": Unprintable()}, body, "no headers"),
+        (signed, body.decode(), "body is not bytes"),
+        (signed, None, "body is not bytes"),
+        (None, body, "no headers"),
+        ("not a mapping", body, "no headers"),
+        ({b"X-Slack-Signature": b"v0=00"}, body, "no timestamp"),
+        (_signed("example-signing-secret", body, "9" * 5000), body, "no timestamp"),
+        ({**signed, "X-Slack-Request-Timestamp": "\u0661\u0662"}, body, "no timestamp"),
+        ({"X-Slack-Request-Timestamp": str(now)}, body, "missing"),
+        ({**signed, "X-Slack-Signature": "v0=\u00e9"}, body, "mismatch"),
+        (_signed("example-signing-secret", body, now + 600), body, "stale"),  # future-dated
+        (_signed("wrong-secret", body, now - 600), body, "mismatch"),  # forged beats stale
+    ]
+    for headers, raw, reason in cases:
+        verdict = correspond.verify("slack", headers, raw, registry=registry)
+        assert verdict.grade.value == "forged" and reason in verdict.evidence["signature"], reason
+    for raw in (bytearray(body), memoryview(body)):
+        assert correspond.verify("slack", signed, raw, registry=registry).grade.value == "crypto"
+
+
 def test_a_file_outside_slack_never_gets_the_token(token):
     sent = []
 
