@@ -87,7 +87,7 @@ post; with nothing: a draft.
 
 #### parse_ref(id)
 
-A channel’s id as Slack writes it, or its name, `#` optional, lower-cased.
+A channel’s id as Slack writes it, or its name, `#` optional, lower-cased; `/<thread ts>` after it names one thread.
 
 * **Return type:**
   [`ConversationRef`](correspond.model.html.md#correspond.model.ConversationRef)
@@ -108,7 +108,7 @@ events, or at a rate limit, keeping what it delivered: the next resumes there.
 
 #### read(ref, , since=None, limit=None)
 
-The channel’s latest top-level messages (`limit`, else 50), oldest first.
+The channel’s latest top-level messages (`limit`, else 50), oldest first; for a thread, its parent and replies.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Message`](correspond.model.html.md#correspond.model.Message)]
