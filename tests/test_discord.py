@@ -232,6 +232,53 @@ def test_the_audience_is_a_group_nobody_lists():
     assert (audience.scope.value, audience.complete) == ("group", False)
 
 
+class ChannelBackend(FakeBackend):
+    """A FakeBackend that also answers discorddol's ``channel(id)``."""
+
+    def __init__(self, record=None, error=None):
+        super().__init__()
+        self.record, self.lookup_error, self.lookups = record, error, []
+
+    def channel(self, channel_id):
+        self.lookups.append(channel_id)
+        if self.lookup_error:
+            raise self.lookup_error
+        return dict(self.record)
+
+
+def test_a_dm_audience_is_the_bot_and_the_other_user():
+    backend = ChannelBackend(
+        {"id": CHANNEL, "type": "private", "recipients": ["7"], "me_id": "3"}
+    )
+    registry = _registry(backend)
+    audience = correspond.audience(f"discord:{CHANNEL}", registry=registry)
+    assert (audience.scope.value, audience.complete) == ("named", True)
+    readers = {(r.native_id, r.is_self) for r in audience.readers}
+    assert readers == {("7", False), ("3", True)}
+    assert "joiners_read_history" not in audience.widening
+    correspond.audience(f"discord:{CHANNEL}", registry=registry)
+    assert backend.lookups == [CHANNEL]  # looked up once per reference
+
+
+def test_a_group_dm_audience_lists_its_members():
+    backend = ChannelBackend(
+        {"id": CHANNEL, "type": "ChannelType.group", "recipients": ["7", "8"]}
+    )
+    audience = correspond.audience(f"discord:{CHANNEL}", registry=_registry(backend))
+    assert audience.scope.value == "named" and audience.complete
+    assert {r.native_id for r in audience.readers} == {"7", "8"}
+    assert "joiners_read_history" in audience.widening
+
+
+def test_a_server_channel_or_a_failed_lookup_is_the_server_group():
+    server = ChannelBackend({"id": CHANNEL, "type": "text", "guild_id": "1"})
+    refused = ChannelBackend(error=PermissionError("403"))
+    for backend in (server, refused):
+        audience = correspond.audience(f"discord:{CHANNEL}", registry=_registry(backend))
+        assert (audience.scope.value, audience.complete) == ("group", False)
+    assert any("could not be looked up" in e for e in audience.evidence)
+
+
 def _burst(n, *, start=2000, day="2026-09-12"):
     return [
         _message(start + i, created=f"{day}T10:{i:02d}:00+00:00", content=f"m{i}")
