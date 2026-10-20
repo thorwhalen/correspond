@@ -50,7 +50,7 @@ import re
 import subprocess
 import threading
 import time
-from collections.abc import Callable, Mapping, MutableMapping
+from collections.abc import Callable, Iterator, Mapping, MutableMapping
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -436,6 +436,21 @@ class _Workspace:
             for gone in [k for k, (until, _) in self.users.items() if until <= now]:
                 del self.users[gone]
             self.users[user_id] = entry
+
+
+def _drained(events: Iterator[Event]) -> tuple[list[Event], str | None]:
+    """The events a :func:`~correspond.ops.with_final_cursor` generator yields, and its final cursor.
+
+    >>> from correspond.ops import with_final_cursor
+    >>> _drained(with_final_cursor([], "e1"))
+    ([], 'e1')
+    """
+    found: list[Event] = []
+    while True:
+        try:
+            found.append(next(events))
+        except StopIteration as done:
+            return found, done.value
 
 
 def _parent_of(messages: list[dict], thread: str) -> dict | None:
@@ -1132,10 +1147,22 @@ class Slack:
         channel = self._channel_id(ref, token)
         thread = self._where(ref)[1]
         delivery = self._delivery()
+        failed = None
         if delivery == "socket":
-            self._receive_socket()
+            try:
+                self._receive_socket()
+            except ChannelError as error:
+                if not error.retryable:
+                    raise
+                failed = error  # the store may already hold this reference's events
         if delivery in ("events", "socket"):
-            return self._poll_received(ref, channel, thread, token, cursor, limit)
+            received = self._poll_received(ref, channel, thread, token, cursor, limit)
+            if failed is None:
+                return received
+            events, final = _drained(received)
+            if not events:
+                raise failed
+            return with_final_cursor(events, final)
         now = self.clock()
         position = match["ts"] if match else f"{now - LISTEN_LOOKBACK_S:.6f}"
         if thread:

@@ -46,6 +46,10 @@ _KIND_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
 _SEGMENT_RE = re.compile(r"^[A-Za-z0-9._@+=%-]+$")
 
 
+#: A new state folder is the owner's only: it holds messages, tokens' cursors and reports.
+PRIVATE_DIR_MODE = 0o700
+
+
 def kind_dir(kind: str, *, data_dir: str | os.PathLike | None = None):
     """The folder for one kind of state under the data root."""
     if not _KIND_RE.match(kind):
@@ -141,7 +145,9 @@ class QuotedKeys(MutableMapping):
 def _files(kind: str, cls_name: str, data_dir) -> MutableMapping:
     import dol
 
-    root = str(kind_dir(kind, data_dir=data_dir)) + os.sep
+    folder = kind_dir(kind, data_dir=data_dir)
+    folder.mkdir(mode=PRIVATE_DIR_MODE, parents=True, exist_ok=True)
+    root = str(folder) + os.sep
     return SafeKeys(dol.mk_dirs_if_missing(getattr(dol, cls_name)(root)))
 
 
@@ -221,7 +227,7 @@ class SendStore(MutableMapping):
         return self._read(self._path(key), key)
 
     def __setitem__(self, key, value):
-        os.makedirs(self.folder, exist_ok=True)
+        os.makedirs(self.folder, mode=PRIVATE_DIR_MODE, exist_ok=True)
         path = self._path(key)
         temporary = f"{path}.{os.getpid()}.tmp"
         with open(temporary, "w", encoding="utf-8") as file:
@@ -254,7 +260,7 @@ class SendStore(MutableMapping):
 
     def claim(self, key: str, record: Any) -> bool:
         """Store ``record`` for ``key`` unless a record holds it (one saying ``failed`` does not); False, storing nothing, if one does."""
-        os.makedirs(self.folder, exist_ok=True)
+        os.makedirs(self.folder, mode=PRIVATE_DIR_MODE, exist_ok=True)
         path = self._path(key)
         try:
             handle = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
