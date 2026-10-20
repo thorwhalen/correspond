@@ -20,7 +20,8 @@ from urllib.parse import urlsplit
 from collections.abc import Callable, Mapping
 from typing import Any
 
-from correspond.errors import ChannelError, MissingRequirement
+from correspond.channels._websocket import websocket_connect as _websocket_connect
+from correspond.errors import ChannelError
 
 __all__ = [
     "GATEWAY_URL",
@@ -63,45 +64,9 @@ class _Quiet(Exception):
 
 def websocket_connect(url: str, *, timeout: float) -> Any:
     """A websocket-client connection whose ``recv`` raises ``TimeoutError`` when quiet (the default ``connect=``)."""
-    try:
-        import websocket
-    except ImportError:
-        raise MissingRequirement(
-            "discord",
-            "gateway listening needs the websocket-client package",
-            fix="pip install 'correspond[discord]'",
-            kind="unavailable",
-        ) from None
-
-    class Connection:
-        def __init__(self):
-            try:
-                self._ws = websocket.create_connection(url, timeout=timeout)
-            except (OSError, websocket.WebSocketException) as error:
-                raise ChannelError(
-                    f"cannot reach Discord's gateway: {type(error).__name__}",
-                    kind="network",
-                    retryable=True,
-                ) from None
-
-        def send(self, text: str) -> None:
-            self._ws.send(text)
-
-        def recv(self, timeout: float | None = None) -> str:
-            if timeout is not None:
-                self._ws.settimeout(timeout)
-            try:
-                frame = self._ws.recv()
-            except websocket.WebSocketTimeoutException:
-                raise TimeoutError from None
-            except websocket.WebSocketConnectionClosedException:
-                raise ConnectionError(getattr(self._ws, "status", None)) from None
-            return frame if isinstance(frame, str) else frame.decode()
-
-        def close(self) -> None:
-            self._ws.close()
-
-    return Connection()
+    return _websocket_connect(
+        url, timeout=timeout, extra="discord", service="Discord's gateway"
+    )
 
 
 def _discord_gateway_url(url: Any) -> bool:

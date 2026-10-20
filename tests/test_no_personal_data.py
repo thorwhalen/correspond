@@ -94,7 +94,7 @@ SECRET_RES = {
         r"\b(?:gh[pousr]_[A-Za-z0-9]{36,}|github_" + r"pat_[A-Za-z0-9_]{22,})"
     ),
     "a Telegram bot token": re.compile(r"\b\d{8,10}:[A-Za-z0-9_-]{35}\b"),
-    "a Slack token": re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,}"),
+    "a Slack token": re.compile(r"\bxox[abprs]-[A-Za-z0-9-]{10,}|\bxapp-[A-Za-z0-9-]{10,}"),
     "a PyPI token": re.compile(r"\bpypi-[A-Za-z0-9_-]{40,}"),
     "a private key": re.compile(r"-----BEGIN (?:[A-Z]+ )*PRIVATE KEY-----"),
     "a phone number": re.compile(r"(?<![\w/+])\+\d{10,15}\b"),
@@ -262,6 +262,7 @@ def test_the_guard_actually_catches_leaks():
     assert secrets_in("token: " + "ghp_" + "a" * 36) == ["a GitHub token"]
     assert secrets_in("bot " + "123456789" + ":" + "A" * 35) == ["a Telegram bot token"]
     assert secrets_in("xox" + "b-" + "1234567890-abc") == ["a Slack token"]
+    assert secrets_in("xa" + "pp-" + "1-A0EXAMPLE-1234") == ["a Slack token"]
     assert secrets_in("pypi" + "-" + "A" * 45) == ["a PyPI token"]
     assert secrets_in("-----BEGIN OPENSSH " + "PRIVATE KEY-----") == ["a private key"]
     assert secrets_in("call +" + "15551234567") == ["a phone number"]
