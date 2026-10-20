@@ -317,9 +317,13 @@ CHANNEL = "C024BE91L"
 class FakeSlackApi:
     """The Web API methods the adapter calls, answering as Slack does (HTTP 200, ok true or false)."""
 
-    def __init__(self, history=(), channels=(), errors=None, pages=1):
+    def __init__(
+        self, history=(), channels=(), errors=None, pages=1, users=None, replies=None
+    ):
         self.history = sorted(history, key=lambda m: float(m["ts"]), reverse=True)
         self.channels = list(channels)
+        self.users = dict(users or {})
+        self.replies = dict(replies or {})
         self.errors = dict(errors or {})
         self.pages = pages
         self.calls = []
@@ -366,6 +370,34 @@ class FakeSlackApi:
                 {
                     "ok": True,
                     "messages": page,
+                    "has_more": more,
+                    "response_metadata": {
+                        "next_cursor": str(start + size) if more else ""
+                    },
+                }
+            )
+        if name == "users.info":
+            user = self.users.get(params["user"])
+            if user is None:
+                return self._json({"ok": False, "error": "user_not_found"})
+            return self._json({"ok": True, "user": user})
+        if name == "conversations.replies":
+            thread = sorted(
+                self.replies.get(params["ts"], ()), key=lambda m: float(m["ts"])
+            )
+            found = [
+                m
+                for m in thread
+                if float(m["ts"]) > float(params.get("oldest") or 0)
+                or m["ts"] == params["ts"]  # Slack always returns the parent
+            ]
+            size = int(params.get("limit") or 200)
+            start = int(params.get("cursor") or 0)
+            more = start + size < len(found)
+            return self._json(
+                {
+                    "ok": True,
+                    "messages": found[start : start + size],
                     "has_more": more,
                     "response_metadata": {
                         "next_cursor": str(start + size) if more else ""
@@ -674,6 +706,92 @@ def test_verify_fails_closed_on_odd_inputs(monkeypatch):
         assert verdict.grade.value == "forged" and reason in verdict.evidence["signature"], reason
     for raw in (bytearray(body), memoryview(body)):
         assert correspond.verify("slack", signed, raw, registry=registry).grade.value == "crypto"
+
+
+THREAD = "1760000010.000100"
+REPLIES = {
+    THREAD: [
+        _msg(THREAD, "the parent", thread_ts=THREAD, reply_count=3),
+        _msg("1760000015.000100", "a reply inside the thread", thread_ts=THREAD),
+        _msg("1760000025.000100", "another reply", thread_ts=THREAD, user="U0BEA"),
+        _msg("1760000035.000100", "a third", thread_ts=THREAD),
+    ]
+}
+
+
+def test_a_thread_reference_parses_and_reads_its_replies(token):
+    ref = Slack().parse_ref(f"#Releases/{THREAD}")
+    assert (ref.id, ref.kind, ref.parent.id) == (f"releases/{THREAD}", "thread", "releases")
+    for bad in (f"{CHANNEL}/not-a-ts", f"{CHANNEL}/"):
+        with pytest.raises(correspond.InvalidRef):
+            Slack().parse_ref(bad)
+    api = FakeSlackApi(HISTORY, replies=REPLIES)
+    messages = correspond.read(f"slack:{CHANNEL}/{THREAD}", registry=_api_registry(api))
+    assert [m.text for m in messages][:2] == ["the parent", "a reply inside the thread"]
+    assert messages[1].thread_root == THREAD and str(messages[1].conversation) == f"slack:{CHANNEL}/{THREAD}"
+    assert [p["ts"] for name, p in api.calls if name == "conversations.replies"] == [THREAD]
+
+
+def test_listen_to_a_thread_delivers_new_replies_and_resumes(token):
+    registry = _api_registry(FakeSlackApi(replies=REPLIES))
+    ref = f"slack:{CHANNEL}/{THREAD}"
+    cursors = {ref: "1760000015.000100"}
+    first = list(correspond.listen(ref, cursors=cursors, limit=1, registry=registry))
+    assert [e.message.text for e in first] == ["another reply"]
+    rest = list(correspond.listen(ref, cursors=cursors, registry=registry))
+    assert [e.message.text for e in rest] == ["a third"]
+    assert list(correspond.listen(ref, cursors=cursors, registry=registry)) == []
+    assert cursors[ref] == "1760000035.000100"
+
+
+def test_send_to_a_thread_reference_replies_in_it(token):
+    api = FakeSlackApi()
+    sent = correspond.send(f"slack:{CHANNEL}/{THREAD}", "noted", registry=_api_registry(api))
+    assert sent.ok
+    posted = [p for name, p in api.calls if name == "chat.postMessage"][-1]
+    assert (posted["channel"], posted["thread_ts"]) == (CHANNEL, THREAD)
+
+
+def test_authors_carry_their_handle_asked_once(token):
+    users = {
+        "U0ADA": {
+            "id": "U0ADA",
+            "name": "ada",
+            "profile": {"display_name": "Ada", "real_name": "Ada Example"},
+        }
+    }
+    api = FakeSlackApi(HISTORY, users=users, replies=REPLIES)
+    registry = _api_registry(api)
+    messages = correspond.read(f"slack:{CHANNEL}", registry=registry)
+    ada = [m for m in messages if m.author.native_id == "U0ADA"][0]
+    assert (ada.author.handle, ada.author.display_name) == ("ada", "Ada")
+    correspond.read(f"slack:{CHANNEL}/{THREAD}", registry=registry)  # U0BEA is unknown
+    asked = [p["user"] for name, p in api.calls if name == "users.info"]
+    assert asked.count("U0ADA") == 1 and asked.count("U0BEA") == 1
+    beatrice = [
+        m
+        for m in correspond.read(f"slack:{CHANNEL}/{THREAD}", registry=registry)
+        if m.author.native_id == "U0BEA"
+    ][0]
+    assert beatrice.author.handle is None  # Slack would not say: the id alone
+    assert [p["user"] for name, p in api.calls if name == "users.info"].count("U0BEA") == 1
+
+
+def test_a_renamed_channel_is_found_by_its_new_name(token):
+    clock = [NOW]
+    api = FakeSlackApi(HISTORY, channels=[{"id": CHANNEL, "name": "releases"}])
+    registry = {
+        "slack": Slack(http=api, keychain=lambda service: "", clock=lambda: clock[0])
+    }
+    correspond.read("slack:releases", registry=registry)
+    api.channels = [{"id": CHANNEL, "name": "shipped"}]  # renamed in Slack
+    correspond.read("slack:releases", registry=registry)  # within the cache's lifetime
+    clock[0] += 3600  # past it: the old name no longer resolves
+    with pytest.raises(correspond.ChannelError) as caught:
+        correspond.read("slack:releases", registry=registry)
+    assert caught.value.kind == "not_found"
+    correspond.read("slack:shipped", registry=registry)
+    assert [name for name, _ in api.calls].count("conversations.list") == 2
 
 
 def test_a_file_outside_slack_never_gets_the_token(token):

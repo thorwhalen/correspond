@@ -50,6 +50,7 @@ import re
 import subprocess
 import time
 from collections.abc import Callable, Mapping
+from dataclasses import replace
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import Any
@@ -254,6 +255,7 @@ _API_ERRORS = {
     "channel_not_found": "not_found",
     "thread_not_found": "not_found",
     "message_not_found": "not_found",
+    "user_not_found": "not_found",
     "ratelimited": "rate_limited",
     "msg_too_long": "validation",
     "no_text": "validation",
@@ -286,6 +288,14 @@ SIGNATURE_MAX_AGE_S = 300
 #: Digits a Unix timestamp in seconds can plausibly have; longer is refused before parsing.
 TIMESTAMP_MAX_DIGITS = 12
 TS_RE = re.compile(r"^[0-9]{1,12}\.[0-9]{1,9}$")
+#: A user's id as Slack writes it (``U...`` or ``W...``), the only ids ``users.info`` is asked about.
+USER_ID_RE = re.compile(r"^[UW][A-Z0-9]{2,20}$")
+#: How long a channel name's id is trusted before ``conversations.list`` is asked again (a rename shows within it).
+CHANNEL_CACHE_TTL_S = 300
+#: How long a user's handle and display name are trusted before ``users.info`` is asked again.
+USER_CACHE_TTL_S = 3600
+#: Pages of ``conversations.replies`` read for one thread at most.
+MAX_THREAD_PAGES = 20
 #: A listen cursor: the ts reached, and the window width the walk was using.
 CURSOR_RE = re.compile(
     r"^(?P<ts>[0-9]{1,12}\.[0-9]{1,9})(?:/(?P<width>[0-9]{1,9}(?:\.[0-9]{1,6})?))?$"
@@ -344,6 +354,8 @@ class Slack:
         self.sleep = sleep
         self._keychain = keychain
         self._channel_ids: dict[str, str] = {}
+        self._channels_listed_at: float | None = None
+        self._users: dict[str, tuple[float, dict | None]] = {}
         self._whoami: dict[str, Account] = {}
         self._server_now: float | None = None
 
@@ -374,25 +386,36 @@ class Slack:
                 "with a token (CORRESPOND_SLACK_TOKEN) read, listen and send use the Web API, and send replies in a thread with reply_to = the message's ts; a bot token posts as the app, a user token as the person, and the plan says which",
                 "a channel with its own incoming webhook (CORRESPOND_SLACK_WEBHOOK_<CHANNEL>, or the Keychain) posts through it, a reply excepted (a webhook cannot thread); a channel without one posts with the token",
                 "the text cannot mention anyone: every < is escaped and only http, https and mailto targets become links, so <!channel>, <@U...> or [x](!here) arrive as text",
-                "read and listen see a channel's top-level messages, thread parents and replies also sent to the channel, not the other replies inside threads; Slack's own notices (someone joined, the topic changed) are left out; listen polls over the Web API and sees new messages, not edits",
+                "read and listen see a channel's top-level messages, thread parents and replies also sent to the channel; the other replies are read through the thread's own reference, slack:<channel>/<thread ts> (conversations.replies), which listen polls and send replies in; Slack's own notices (someone joined, the topic changed) are left out; listen polls over the Web API and sees new messages, not edits",
+                "an author's handle and display name come from users.info (the token needs users:read), kept an hour; without the scope the author is the user id alone",
                 "push delivery (the Events API, Socket Mode) is not built: listen polls; verify is ready for a receiver of Slack's signed requests",
                 "install the app in your own workspace (a commercially distributed app outside Slack's Marketplace gets one history request a minute); listen walks forward through time windows, delivering each whole before the next, so a poll a rate limit cuts short keeps what it delivered and the next one resumes there, and a backlog drains a little each poll; the newest minute waits for the next poll (this clock may run ahead of Slack's)",
                 "a file is fetched with the token only from Slack's own hosts (the token needs files:read); a file hosted elsewhere is not fetched",
-                "a channel named rather than given by id is looked up with conversations.list (the token needs channels:read, and groups:read for a private one)",
+                "a channel named rather than given by id is looked up with conversations.list (the token needs channels:read, and groups:read for a private one); a name is trusted five minutes, so a renamed channel answers to its new name within them",
                 "verify checks a request's X-Slack-Signature with the signing secret, and refuses one older than 5 minutes",
             ),
         )
 
     def parse_ref(self, id: str) -> ConversationRef:
-        """A channel's id as Slack writes it, or its name, ``#`` optional, lower-cased."""
+        """A channel's id as Slack writes it, or its name, ``#`` optional, lower-cased; ``/<thread ts>`` after it names one thread."""
         text = (id or "").strip()
+        if "/" in text:
+            channel, _, thread = text.partition("/")
+            if not TS_RE.match(thread):
+                raise InvalidRef(
+                    f"a Slack thread is slack:<channel>/<thread ts> (the parent message's ts, such as 1700000000.000100), not slack:{id}"
+                )
+            parent = self.parse_ref(channel)
+            return ConversationRef(
+                channel=NAME, id=f"{parent.id}/{thread}", kind="thread", parent=parent
+            )
         if CHANNEL_ID_RE.match(text):
             return ConversationRef(channel=NAME, id=text, kind="channel")
         name = text[1:] if text.startswith("#") else text
         name = name.lower()
         if not NAME_RE.match(name):
             raise InvalidRef(
-                f"slack references are slack:<channel name> (1-80 of a-z, 0-9, - and _) or slack:<channel id>, never a webhook URL, not slack:{id}"
+                f"slack references are slack:<channel name> (1-80 of a-z, 0-9, - and _) or slack:<channel id>, then /<thread ts> for one thread, never a webhook URL, not slack:{id}"
             )
         return ConversationRef(channel=NAME, id=name, kind="channel")
 
@@ -468,11 +491,26 @@ class Slack:
             )
         return token
 
+    @staticmethod
+    def _where(ref: ConversationRef) -> tuple[str, str | None]:
+        """The reference's channel (a name or an id) and its thread's ts, if it names one."""
+        channel, _, thread = ref.id.partition("/")
+        return channel, thread or None
+
     def _channel_id(self, ref: ConversationRef, token: str) -> str:
-        """The channel's id: the reference's own, or a name looked up with ``conversations.list``."""
-        if CHANNEL_ID_RE.match(ref.id):
-            return ref.id
-        if ref.id not in self._channel_ids:
+        """The channel's id: the reference's own, or a name looked up with ``conversations.list``.
+
+        Names are trusted for :data:`CHANNEL_CACHE_TTL_S` seconds; after that, or for a
+        name not seen, the list is read again from scratch, so a renamed channel's old
+        name stops resolving and its new one starts.
+        """
+        name = self._where(ref)[0]
+        if CHANNEL_ID_RE.match(name):
+            return name
+        listed_at = self._channels_listed_at
+        fresh = listed_at is not None and self.clock() - listed_at < CHANNEL_CACHE_TTL_S
+        if not (fresh and name in self._channel_ids):
+            self._channel_ids, self._channels_listed_at = {}, self.clock()
             cursor = None
             while True:
                 data = self._api(
@@ -489,14 +527,37 @@ class Slack:
                     if channel.get("name"):
                         self._channel_ids.setdefault(channel["name"], channel["id"])
                 cursor = (data.get("response_metadata") or {}).get("next_cursor")
-                if ref.id in self._channel_ids or not cursor:
+                if name in self._channel_ids or not cursor:
                     break
-        if ref.id not in self._channel_ids:
+        if name not in self._channel_ids:
             raise ChannelError(
-                f"no channel #{ref.id} that the token can see (invite the app, or give its id)",
+                f"no channel #{name} that the token can see (invite the app, or give its id)",
                 kind="not_found",
             )
-        return self._channel_ids[ref.id]
+        return self._channel_ids[name]
+
+    def _user(self, user_id: str, token: str) -> dict | None:
+        """``users.info`` for one user, kept :data:`USER_CACHE_TTL_S` seconds; ``None`` when Slack will not say.
+
+        A refusal (the token lacks ``users:read``, an unknown user) is remembered as
+        ``None`` for as long, so it is not asked again for every message; a rate limit is
+        not remembered.
+        """
+        if not USER_ID_RE.match(user_id):
+            return None
+        now = self.clock()
+        known = self._users.get(user_id)
+        if known and now - known[0] < USER_CACHE_TTL_S:
+            return known[1]
+        try:
+            found = self._api("users.info", {"user": user_id}, token=token).get("user")
+        except ChannelError as error:
+            if error.kind in ("rate_limited", "network"):
+                return known[1] if known else None
+            found = None
+        user = found if isinstance(found, dict) else None
+        self._users[user_id] = (now, user)
+        return user
 
     def _history(
         self,
@@ -538,6 +599,67 @@ class Slack:
             if not cursor or not data.get("has_more") or (limit and len(found) >= limit):
                 return found[:limit] if limit else found
 
+    def _replies(
+        self, channel: str, thread: str, token: str, *, oldest: str | None
+    ) -> list[dict]:
+        """``conversations.replies``: the thread's parent and replies after ``oldest``, oldest first.
+
+        A thread is read whole (at most :data:`MAX_THREAD_PAGES` pages); a rate limit
+        after the first page keeps what was read.
+        """
+        found: list[dict] = []
+        cursor = None
+        for _ in range(MAX_THREAD_PAGES):
+            params = {
+                "channel": channel,
+                "ts": thread,
+                "oldest": oldest,
+                "limit": PAGE_SIZE,
+                "cursor": cursor,
+            }
+            try:
+                data = self._api("conversations.replies", params, token=token)
+            except ChannelError as error:
+                if error.kind != "rate_limited" or not found:
+                    raise
+                break
+            found += list(data.get("messages") or ())
+            cursor = (data.get("response_metadata") or {}).get("next_cursor")
+            if not cursor or not data.get("has_more"):
+                break
+        if oldest is not None:
+            found = [m for m in found if float(m["ts"]) > float(oldest)]
+        return sorted(found, key=lambda m: float(m["ts"]))
+
+    def _poll_thread(
+        self,
+        ref: ConversationRef,
+        channel: str,
+        thread: str,
+        token: str,
+        *,
+        position: str,
+        wanted: int | None,
+    ):
+        """New replies in one thread after ``position`` (a ts), oldest first; the cursor is the last one delivered."""
+        events = []
+        for item in self._replies(channel, thread, token, oldest=position):
+            if wanted and len(events) >= wanted:
+                break
+            if item.get("subtype") not in MESSAGE_SUBTYPES:
+                continue
+            position = str(item["ts"])
+            events.append(
+                Event(
+                    kind="message.created",
+                    channel=NAME,
+                    delivery_id=f"slack:{channel}:{position}",
+                    cursor=position,
+                    message=self._message(ref, item, token),
+                )
+            )
+        return with_final_cursor(events, position if events else None)
+
     def _message(self, conversation: ConversationRef, data: dict, token: str) -> Message:
         ts = str(data["ts"])
         thread = data.get("thread_ts")
@@ -570,16 +692,26 @@ class Slack:
 
             return load
 
+        user = (
+            self._user(str(data["user"]), token)
+            if data.get("user") and not data.get("bot_id")
+            else None
+        ) or {}
+        profile = user.get("profile") or {}
         return Message(
             id=ts,
             conversation=conversation,
             author=ChannelIdentity(
                 channel=NAME,
                 native_id=str(data.get("user") or data.get("bot_id") or ""),
+                handle=user.get("name") or None,
                 display_name=(data.get("bot_profile") or {}).get("name")
+                or profile.get("display_name")
+                or profile.get("real_name")
+                or user.get("real_name")
                 or data.get("username")
                 or None,
-                is_bot=bool(data.get("bot_id")),
+                is_bot=bool(data.get("bot_id") or user.get("is_bot")),
             ),
             authenticity=_PLATFORM,
             sent_at=_ts_time(ts) or datetime.fromtimestamp(0, tz=timezone.utc),
@@ -621,12 +753,16 @@ class Slack:
         since: datetime | None = None,
         limit: int | None = None,
     ) -> list[Message]:
-        """The channel's latest top-level messages (``limit``, else 50), oldest first."""
+        """The channel's latest top-level messages (``limit``, else 50), oldest first; for a thread, its parent and replies."""
         token = self._require_token("read a channel")
         channel = self._channel_id(ref, token)
         oldest = f"{since.timestamp():.6f}" if since is not None else None
         count = max(1, int(limit)) if limit else READ_DEFAULT
-        found = self._history(channel, token, oldest=oldest, limit=count)
+        thread = self._where(ref)[1]
+        if thread:
+            found = self._replies(channel, thread, token, oldest=oldest)
+        else:
+            found = self._history(channel, token, oldest=oldest, limit=count)
         messages = [
             self._message(ref, data, token)
             for data in found
@@ -659,6 +795,16 @@ class Slack:
         channel = self._channel_id(ref, token)
         now = self.clock()
         position = match["ts"] if match else f"{now - LISTEN_LOOKBACK_S:.6f}"
+        thread = self._where(ref)[1]
+        if thread:
+            return self._poll_thread(
+                ref,
+                channel,
+                thread,
+                token,
+                position=position,
+                wanted=max(1, int(limit)) if limit else None,
+            )
         width = float(match["width"]) if match and match["width"] else WINDOW_START_S
         width = min(WINDOW_MAX_S, max(WINDOW_MIN_S, width))
         started = (float(position), width)
@@ -840,6 +986,9 @@ class Slack:
                 NAME,
                 alternatives=("the text cannot mention anyone; name them in it",),
             )
+        name, thread = self._where(ref)
+        if thread and not draft.reply_to:
+            draft = replace(draft, reply_to=thread)
         if draft.reply_to and not TS_RE.match(draft.reply_to):
             raise ChannelError(
                 f"reply_to is a Slack message ts such as 1700000000.000100, not {draft.reply_to!r}",
@@ -862,7 +1011,7 @@ class Slack:
                 kind="validation",
             )
         token = self._token(dry_run=dry_run)
-        webhook_set = bool(os.environ.get(webhook_env(ref.id), "").strip())
+        webhook_set = bool(os.environ.get(webhook_env(name), "").strip())
         # A channel's own webhook is the operator's explicit choice for it, a reply excepted.
         via_webhook = webhook_set and not draft.reply_to
         plan: dict[str, Any] = {
@@ -871,7 +1020,7 @@ class Slack:
             else "post with the token (chat.postMessage)"
             if token
             else "post with the token if one is found when sending, else through the channel's incoming webhook",
-            "channel": ref.id,
+            "channel": name,
             "format": "mrkdwn",
             "text": text,
             "characters": len(text),
@@ -884,7 +1033,7 @@ class Slack:
         if not token and not webhook_set:
             plan["looked_up_when_sending"] = [
                 "CORRESPOND_SLACK_TOKEN (or the Keychain)",
-                f"{webhook_env(ref.id)} (or the Keychain item {webhook_keychain_service(ref.id)})",
+                f"{webhook_env(name)} (or the Keychain item {webhook_keychain_service(name)})",
             ]
         if dry_run:
             return SendResult(
@@ -892,7 +1041,7 @@ class Slack:
             )
         if via_webhook:
             return self._post_webhook(ref, text, plan)
-        if token is None and not draft.reply_to and self._webhook(ref.id):
+        if token is None and not draft.reply_to and self._webhook(name):
             return self._post_webhook(ref, text, plan)
         if token:
             return self._post(ref, text, draft.reply_to, token, plan)
