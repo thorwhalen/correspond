@@ -2564,3 +2564,39 @@ def test_listening_to_a_repository_reads_the_reviews_of_pull_requests_updated_si
     assert [(e.kind, e.message.id) for e in events] == [("message.created", "pullrequestreview-81")]
     assert events[0].message.conversation.id == f"{REPO}#3"
     assert not any("pulls/2/" in path for path in gh.paths()), "a pull request not updated since the cursor is not read"
+
+
+def test_a_comment_with_more_than_100_replies_is_read_whole():
+    def reply(n):
+        return _post(n, created="2026-09-11T10:05:00Z", replies=None)
+
+    busy = _post(501, replies=[reply(n) for n in range(700, 800)])
+    busy["replies"]["totalCount"] = 150  # the inline page holds the latest 100
+
+    def answer(payload):
+        if "node(id:" not in payload["query"]:
+            return 200, _discussion([busy])
+        assert payload["variables"]["id"] == "DC_node501"
+        first = payload["variables"]["after"] is None
+        numbers = range(650, 750) if first else range(750, 800)
+        return 200, {
+            "data": {
+                "node": {
+                    "replies": {
+                        "pageInfo": {"hasNextPage": first, "endCursor": "c1" if first else None},
+                        "nodes": [reply(n) for n in numbers],
+                    }
+                }
+            }
+        }
+
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/5", (404, {"message": "Not Found"})),
+        ("POST", "graphql", answer),
+    )
+    messages = _read(gh, f"github:{REPO}#5")
+    replies = [m for m in messages if m.reply_to == "discussioncomment-501"]
+    assert len(replies) == 150 and replies[0].id == "discussioncomment-650"
+    comment = next(m for m in messages if m.id == "discussioncomment-501")
+    assert "replies_truncated" not in comment.native
