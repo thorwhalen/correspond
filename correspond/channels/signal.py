@@ -114,7 +114,15 @@ def requirements_problems() -> list[str]:
 def _ws_url(base: str, number: str) -> str:
     parts = urlsplit(base)
     scheme = "wss" if parts.scheme == "https" else "ws"
-    return urlunsplit((scheme, parts.netloc, f"{parts.path.rstrip('/')}/v1/receive/{quote(number, safe='')}", "", ""))
+    return urlunsplit(
+        (
+            scheme,
+            parts.netloc,
+            f"{parts.path.rstrip('/')}/v1/receive/{quote(number, safe='')}",
+            "",
+            "",
+        )
+    )
 
 
 def _group_ref(internal_id: str) -> str:
@@ -220,12 +228,21 @@ class Signal:
 
     # --------------------------------------------------------------- listening
 
-    def _message(self, envelope: Mapping[str, Any], data: Mapping[str, Any], account: str) -> Message:
-        source = str(envelope.get("sourceNumber") or envelope.get("source") or envelope.get("sourceUuid") or "")
+    def _message(
+        self, envelope: Mapping[str, Any], data: Mapping[str, Any], account: str
+    ) -> Message:
+        source = str(
+            envelope.get("sourceNumber")
+            or envelope.get("source")
+            or envelope.get("sourceUuid")
+            or ""
+        )
         group = (data.get("groupInfo") or {}).get("groupId")
         if not group and not source:
             raise InvalidRef("the envelope names no sender")
-        conversation = self.parse_ref(_group_ref(group)) if group else self.parse_ref(source)
+        conversation = (
+            self.parse_ref(_group_ref(group)) if group else self.parse_ref(source)
+        )
         quote_ = data.get("quote") or {}
         return Message(
             id=str(data.get("timestamp") or envelope.get("timestamp")),
@@ -245,7 +262,9 @@ class Signal:
             raw=dict(envelope),
         )
 
-    def _events(self, frames: Iterable[str], account: str) -> tuple[list[Event], str | None]:
+    def _events(
+        self, frames: Iterable[str], account: str
+    ) -> tuple[list[Event], str | None]:
         events, last = [], None
         for frame in frames:
             try:
@@ -278,14 +297,17 @@ class Signal:
                             "remove": bool(reaction.get("isRemove")),
                             "target_author": reaction.get("targetAuthor"),
                             "target_sent_timestamp": reaction.get("targetSentTimestamp"),
-                            "from": envelope.get("sourceNumber") or envelope.get("source"),
+                            "from": envelope.get("sourceNumber")
+                            or envelope.get("source"),
                         },
                     )
                 )
                 continue
             try:
                 message = self._message(envelope, data, account)
-            except InvalidRef:  # sealed sender or an odd source: nothing to attribute it to
+            except (
+                InvalidRef
+            ):  # sealed sender or an odd source: nothing to attribute it to
                 continue
             if kind == "message.updated":
                 message = replace(
@@ -312,12 +334,17 @@ class Signal:
         events = []
         for identity in known if isinstance(known, list) else []:
             who = str(identity.get("number") or identity.get("uuid") or "")
-            safety = str(identity.get("safety_number") or identity.get("fingerprint") or "")
+            safety = str(
+                identity.get("safety_number") or identity.get("fingerprint") or ""
+            )
             if not who or not safety:
                 continue
             key = f"identities/{who}.json"
             before = self.log.get(key)
-            self.log[key] = {"safety_number": safety, "trust_level": identity.get("trust_level")}
+            self.log[key] = {
+                "safety_number": safety,
+                "trust_level": identity.get("trust_level"),
+            }
             if before and before.get("safety_number") != safety:
                 events.append(
                     Event(
@@ -333,7 +360,9 @@ class Signal:
                 )
         return events
 
-    def poll(self, ref: ConversationRef, *, cursor: str | None = None, limit: int | None = None):
+    def poll(
+        self, ref: ConversationRef, *, cursor: str | None = None, limit: int | None = None
+    ):
         """What the WebSocket delivered within ``listen_wait_s``, then any safety-number changes.
 
         Signal hands each message to the receiver once, so the cursor (the last envelope
@@ -353,7 +382,9 @@ class Signal:
         # batch here would lose the rest for good.
         try:
             events += self._identity_changes(account)
-        except ChannelError:  # a failed identity lookup must not lose the messages in hand
+        except (
+            ChannelError
+        ):  # a failed identity lookup must not lose the messages in hand
             pass
         return with_final_cursor(events, last or cursor)
 
@@ -362,7 +393,10 @@ class Signal:
     def read(self, ref: ConversationRef, *, since=None, limit=None) -> list[Message]:
         """What the log holds for a conversation, oldest first."""
         if not ref.id:
-            raise ChannelError("read one conversation: signal:+<number> or signal:group.<id>", kind="validation")
+            raise ChannelError(
+                "read one conversation: signal:+<number> or signal:group.<id>",
+                kind="validation",
+            )
         messages = [
             Message.from_dict(self.log[k])
             for k in list(self.log)
@@ -374,25 +408,39 @@ class Signal:
     def audience(self, ref: ConversationRef, *, draft: Draft | None = None) -> Audience:
         """Who reads a conversation: a person's is ``named``; a group's members are listed by the REST API."""
         if not ref.id:
-            return Audience.unknown(ref.encoded, "signal: is the account's receive stream, not a conversation: name one")
-        common = dict(ref=ref.encoded, retractable=False, durability=("copies_pushed",), widening=("forwarding",))
+            return Audience.unknown(
+                ref.encoded,
+                "signal: is the account's receive stream, not a conversation: name one",
+            )
+        common = dict(
+            ref=ref.encoded,
+            retractable=False,
+            durability=("copies_pushed",),
+            widening=("forwarding",),
+        )
         if ref.kind == "person":
             return Audience(
                 scope=Scope.NAMED,
                 readers=(ChannelIdentity(channel=NAME, native_id=ref.id),),
                 complete=True,
                 external=None,
-                evidence=("a one-to-one Signal conversation: the account and this contact",),
+                evidence=(
+                    "a one-to-one Signal conversation: the account and this contact",
+                ),
                 **common,
             )
         account = require(NAME, "number")
-        group = self._call("GET", f"/v1/groups/{quote(account, safe='')}/{quote(ref.id, safe='')}")
+        group = self._call(
+            "GET", f"/v1/groups/{quote(account, safe='')}/{quote(ref.id, safe='')}"
+        )
         group = group if isinstance(group, dict) else {}
         members = [str(m) for m in group.get("members") or []]
         link = group.get("invite_link")
         evidence = [f"GET groups: {len(members)} members listed"]
         if link:
-            evidence.append("the group has an invite link: anyone holding it can join and read what follows")
+            evidence.append(
+                "the group has an invite link: anyone holding it can join and read what follows"
+            )
         return Audience(
             scope=Scope.PUBLIC if link else Scope.GROUP,
             readers=tuple(ChannelIdentity(channel=NAME, native_id=m) for m in members),
@@ -412,15 +460,27 @@ class Signal:
             )
         return str(found["author"]["native_id"])
 
-    def send(self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False) -> SendResult:
+    def send(
+        self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
+    ) -> SendResult:
         """``POST /v2/send`` to a person or group, the title (if any) prepended; a reply quotes a logged message."""
         if not ref.id:
-            raise ChannelError("name a recipient: signal:+<number> or signal:group.<id>", kind="validation")
+            raise ChannelError(
+                "name a recipient: signal:+<number> or signal:group.<id>",
+                kind="validation",
+            )
         if draft.attachments:
-            raise ChannelError("signal sends text only here: attachments are not supported", kind="validation")
+            raise ChannelError(
+                "signal sends text only here: attachments are not supported",
+                kind="validation",
+            )
         account = require(NAME, "number")
         text = f"{draft.title}\n\n{draft.text}" if draft.title else draft.text
-        body: dict[str, Any] = {"message": text, "number": account, "recipients": [ref.id]}
+        body: dict[str, Any] = {
+            "message": text,
+            "number": account,
+            "recipients": [ref.id],
+        }
         if draft.reply_to:
             if not str(draft.reply_to).isdigit():
                 raise ChannelError(
@@ -439,7 +499,9 @@ class Signal:
             "text": text,
         }
         if dry_run:
-            return SendResult(ok=True, channel=NAME, conversation=ref.encoded, dry_run=True, plan=plan)
+            return SendResult(
+                ok=True, channel=NAME, conversation=ref.encoded, dry_run=True, plan=plan
+            )
         result = self._call("POST", "/v2/send", body)
         stamp = str((result or {}).get("timestamp") or "")
         if stamp:
@@ -447,7 +509,9 @@ class Signal:
                 Message(
                     id=stamp,
                     conversation=ref,
-                    author=ChannelIdentity(channel=NAME, native_id=account, handle=account, is_self=True),
+                    author=ChannelIdentity(
+                        channel=NAME, native_id=account, handle=account, is_self=True
+                    ),
                     authenticity=_PLATFORM,
                     sent_at=_at(stamp),
                     text=text,
