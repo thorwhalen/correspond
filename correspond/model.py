@@ -84,7 +84,12 @@ OPERATIONS = (
 #: Whose name a write goes out under.
 ACTS_AS = ("bot", "user", "app", "service")
 #: What an :class:`Event` reports.
-EVENT_KINDS = ("message.created", "message.updated", "reaction.added")
+EVENT_KINDS = (
+    "message.created",
+    "message.updated",
+    "reaction.added",
+    "identity.changed",
+)
 #: The priorities a draft may ask for; channels without priorities refuse anything but ``None``.
 PRIORITIES = ("low", "normal", "high", "urgent")
 

@@ -29,6 +29,7 @@ Add `--json` to any command for the full result. A result with `ok: false` exits
 | `ntfy:` | the operator's default notification topic; `ntfy:<topic>` a named one |
 | `macos:` | a banner on this Mac |
 | `telegram:` | the bot's update stream (listen); `telegram:<chat id>`, `telegram:@name` or `telegram:<chat id>/<topic id>` a chat |
+| `signal:` | the linked account's receive stream (listen); `signal:+<number>` or `signal:group.<id>` a conversation. `read` shows only what correspond logged since linking |
 | `webinbox:<site>` | reports posted from a web page to the collector |
 | `slack:<channel>` | a Slack channel (its name, `#` optional, or its id): `send --dry-run` gives the draft in Slack's own formatting (mrkdwn: `*bold*`, `<url|text>`, no tables) to show the operator or paste; with a token (`CORRESPOND_SLACK_TOKEN`) `read`, `listen` and `send` (replies in threads, `--reply-to <ts>`) use the Web API; with only a webhook, `send` posts through it |
 | `discord:<channel id>` | a Discord channel or thread the bot can see: read, listen (new messages, polled), send; needs `correspond[discord]` and a bot token |

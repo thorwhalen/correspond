@@ -61,6 +61,10 @@ gdrive = [
 apprise = [
     "apprise>=1.6",
 ]
+# The Signal channel (listen over the REST API's WebSocket) is optional.
+signal = [
+    "websocket-client>=1.6",
+]
 dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",

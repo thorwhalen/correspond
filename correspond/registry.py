@@ -12,8 +12,8 @@ is missing, without printing a secret.
 
 >>> info("telegram").setting("token").env
 'TELEGRAM_BOT_TOKEN'
->>> info("signal").planned
-'https://github.com/thorwhalen/correspond/issues/4'
+>>> info("signal").setting("number").env
+'CORRESPOND_SIGNAL_NUMBER'
 """
 
 from __future__ import annotations
@@ -404,9 +404,37 @@ CHANNELS: tuple[ChannelInfo, ...] = (
     ),
     ChannelInfo(
         name="signal",
-        summary="Signal through signal-cli-rest-api",
+        summary="Signal through signal-cli-rest-api in JSON-RPC mode: listen over its WebSocket, read what was logged, send",
+        factory="correspond.channels.signal:Signal",
         extra="signal",
-        planned=f"{ISSUES}/4",
+        check="correspond.channels.signal:requirements_problems",
+        settings=(
+            Setting(
+                key="number",
+                env="CORRESPOND_SIGNAL_NUMBER",
+                what="the number of the Signal account signal-cli is registered or linked to",
+                where="link signal-cli to your account (signal-cli link) or register a number, then run the signal-cli-rest-api server (see its README)",
+                required=True,
+            ),
+            Setting(
+                key="url",
+                env="CORRESPOND_SIGNAL_URL",
+                what="the signal-cli-rest-api server",
+                default="http://127.0.0.1:8080",
+            ),
+            Setting(
+                key="listen_wait_s",
+                env="CORRESPOND_SIGNAL_LISTEN_WAIT_S",
+                what="how many quiet seconds a listen waits on the WebSocket before it returns",
+                default="3",
+            ),
+        ),
+        notes=(
+            "signal-cli needs a registered or linked number; a signal-cli release older than about three months stops working against Signal's servers, so update it when listening goes quiet",
+            "run signal-cli-rest-api with MODE=json-rpc: listen receives over its WebSocket (pip install 'correspond[signal]' adds the client)",
+            "there is no history before linking: read returns only what correspond logged",
+            "the server's trust-new-identities setting is an authenticity policy; a changed safety number arrives as an identity.changed event",
+        ),
     ),
     ChannelInfo(
         name="gdrive",
