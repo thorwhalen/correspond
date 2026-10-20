@@ -1,4 +1,4 @@
-> built 2026-10-20 13:05 UTC from fd86d4c (main) · correspond 0.0.38. Details: build_info.json
+> built 2026-10-20 13:33 UTC from 55e940b (main) · correspond 0.0.39. Details: build_info.json
 
 # index.html.md
 
@@ -1868,6 +1868,13 @@ webhook, which cannot thread, it renders in a dry run for the operator to paste.
 #### verify(headers, body)
 
 `crypto` when `X-Slack-Signature` matches the signing secret over a fresh timestamp, `forged` otherwise.
+
+Raises [`MissingRequirement`](_autosummary/correspond.errors.html.md#correspond.errors.MissingRequirement) when the signing secret is
+unset (a configuration error, never a verdict on the request). Anything that is not
+a well-formed signed request (headers that are not a mapping, a body that is not
+bytes, a timestamp that is not a short run of digits) is graded `forged`, never
+raised. Replay protection is the five-minute window only: act idempotently on an
+event’s id.
 
 * **Return type:**
   [`Authenticity`](_autosummary/correspond.model.html.md#correspond.model.Authenticity)
@@ -5609,16 +5616,18 @@ Where a channel’s platform delivers its updates now (Telegram: none means list
 
 # About this build
 
-This documentation was built on **2026-10-20 13:05 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/fd86d4cf5dfb041098326875a234be8e0449120b"><code>fd86d4c</code></a> on branch <code>main</code>, for **correspond 0.0.38** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-20 13:33 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/55e940bf4dd5d35f17a4880e4e0882d05aee6bdc"><code>55e940b</code></a> on branch <code>main</code>, for **correspond 0.0.39** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.39) is behind the latest release on PyPI (0.0.40): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/fd86d4cf5dfb041098326875a234be8e0449120b"><code>fd86d4cf5dfb041098326875a234be8e0449120b</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/55e940bf4dd5d35f17a4880e4e0882d05aee6bdc"><code>55e940bf4dd5d35f17a4880e4e0882d05aee6bdc</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -5629,9 +5638,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39427272520">39427272520</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39431197847">39431197847</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>fd86d4cf5dfb041098326875a234be8e0449120b</code> (in the history of the built commit)  |
+| Event commit | <code>55e940bf4dd5d35f17a4880e4e0882d05aee6bdc</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -5656,13 +5665,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.38/">0.0.38</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.40/">0.0.40</a>, newer than the documented version (0.0.39).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout fd86d4cf5dfb041098326875a234be8e0449120b
+git checkout 55e940bf4dd5d35f17a4880e4e0882d05aee6bdc
 pip install "epythet==0.2.20"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

@@ -127,6 +127,13 @@ webhook, which cannot thread, it renders in a dry run for the operator to paste.
 
 `crypto` when `X-Slack-Signature` matches the signing secret over a fresh timestamp, `forged` otherwise.
 
+Raises [`MissingRequirement`](correspond.errors.html.md#correspond.errors.MissingRequirement) when the signing secret is
+unset (a configuration error, never a verdict on the request). Anything that is not
+a well-formed signed request (headers that are not a mapping, a body that is not
+bytes, a timestamp that is not a short run of digits) is graded `forged`, never
+raised. Replay protection is the five-minute window only: act idempotently on an
+event’s id.
+
 * **Return type:**
   [`Authenticity`](correspond.model.html.md#correspond.model.Authenticity)
 

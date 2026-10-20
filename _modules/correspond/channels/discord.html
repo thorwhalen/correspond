@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=423071ad"></script>
+    <script src="../../../_static/documentation_options.js?v=e648f5b4"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.38" />
+  <meta name="docsearch:version" content="0.0.39" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1090,7 +1090,9 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">        With ``listen_via = "gateway"``, one gateway window instead (see the module docstring).</span>
 <span class="sd">        """</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"listen_via"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"rest"</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"gateway"</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"listen_via"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"rest"</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s2">"gateway"</span><span class="p">:</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_gateway_poll</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">cursor</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">cursor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">str</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">():</span>
             <span class="n">after</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">_snowflake</span><span class="p">(</span><span class="n">cursor</span><span class="p">,</span> <span class="s2">"message"</span><span class="p">)</span>
@@ -1128,7 +1130,9 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">_gateway_poll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">"""One gateway window: the channel's message events, and the session to resume next time."""</span>
         <span class="k">try</span><span class="p">:</span>
-            <span class="n">state</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span> <span class="k">if</span> <span class="n">cursor</span> <span class="ow">and</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"{"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">state</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">cursor</span><span class="p">)</span> <span class="k">if</span> <span class="n">cursor</span> <span class="ow">and</span> <span class="n">cursor</span><span class="o">.</span><span class="n">lstrip</span><span class="p">()</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"{"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="p">)</span>
         <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
             <span class="n">state</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># a REST cursor, or a damaged one: identify afresh</span>
         <span class="n">wait</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"listen_wait_s"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span> <span class="ow">or</span> <span class="mi">5</span><span class="p">)</span>
@@ -1162,7 +1166,9 @@ window.runMermaid = runMermaid;</script>
                     <span class="n">kind</span><span class="o">=</span><span class="s2">"message.updated"</span> <span class="k">if</span> <span class="n">updated</span> <span class="k">else</span> <span class="s2">"message.created"</span><span class="p">,</span>
                     <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
                     <span class="n">delivery_id</span><span class="o">=</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">:edited:</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'edited_timestamp'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">updated</span> <span class="k">else</span> <span class="n">base</span>
+                        <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">base</span><span class="si">}</span><span class="s2">:edited:</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">'edited_timestamp'</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+                        <span class="k">if</span> <span class="n">updated</span>
+                        <span class="k">else</span> <span class="n">base</span>
                     <span class="p">),</span>
                     <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span>
                 <span class="p">)</span>
