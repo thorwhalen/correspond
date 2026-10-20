@@ -191,3 +191,25 @@ def test_a_non_ascii_content_length_is_not_a_crash(monkeypatch):
     app = mk_events_app(verify=_verifier(monkeypatch), events={})
     asyncio.run(app(scope, receive, send))
     assert sent[0]["status"] == 200
+
+
+def test_the_receiver_keeps_only_the_channels_keep_channels_names(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_SLACK_KEEP_CHANNELS", "C0OTHER01")
+    store = {}
+    app = mk_events_app(verify=_verifier(monkeypatch), events=store)
+    assert _deliver(app, _callback(_message("1760000000.000100")))[0] == 200
+    assert store == {}  # acknowledged, not kept
+    everything = mk_events_app(verify=_verifier(monkeypatch), events=store, keep=lambda c: True)
+    assert _deliver(everything, _callback(_message("1760000000.000100")))[0] == 200
+    assert len(store) == 1
+
+
+def test_the_receiver_takes_its_stamps_after_every_other_writer(monkeypatch):
+    from correspond.stores import arrival_stamps
+
+    with arrival_stamps("slack-events").issue(500):  # another writer, clock ahead
+        pass
+    store = {}
+    app = mk_events_app(verify=_verifier(monkeypatch), events=store, clock=lambda: 7)
+    assert _deliver(app, _callback(_message("1760000000.000100")))[0] == 200
+    assert list(store) == [received_key(501, "Ev0001")]

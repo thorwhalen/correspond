@@ -24,20 +24,27 @@ import hashlib
 import json
 import os
 import re
+import stat
+import warnings
 from collections.abc import Iterator, MutableMapping
+from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
 from urllib.parse import quote, unquote
 
 from correspond import settings
 
 __all__ = [
+    "ArrivalStamps",
     "QuotedKeys",
     "SafeKeys",
     "SendStore",
+    "arrival_stamps",
     "bytes_store",
     "cursor_store",
     "json_store",
     "kind_dir",
+    "private_dir",
     "send_store",
     "text_store",
 ]
@@ -46,8 +53,12 @@ _KIND_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
 _SEGMENT_RE = re.compile(r"^[A-Za-z0-9._@+=%-]+$")
 
 
-#: A new state folder is the owner's only: it holds messages, tokens' cursors and reports.
+#: A state folder is the owner's only: it holds messages, tokens' cursors and reports.
 PRIVATE_DIR_MODE = 0o700
+#: The data-root folder that holds the files writers lock to take turns.
+LOCKS_KIND = "locks"
+#: Digits of a stored arrival stamp (nanoseconds since the epoch fit in 20).
+STAMP_DIGITS = 20
 
 
 def kind_dir(kind: str, *, data_dir: str | os.PathLike | None = None):
@@ -142,11 +153,32 @@ class QuotedKeys(MutableMapping):
             return False
 
 
+def private_dir(kind: str, *, data_dir: str | os.PathLike | None = None) -> Path:
+    """The folder for one kind of state, created owner-only, and tightened to owner-only if it was not.
+
+    A folder made by an older correspond kept the mode the umask gave it; the first use
+    since takes the group's and others' access away. A folder this user does not own is
+    left as it is, with a warning. (Windows has no such modes: nothing changes there.)
+    """
+    folder = kind_dir(kind, data_dir=data_dir)
+    folder.mkdir(mode=PRIVATE_DIR_MODE, parents=True, exist_ok=True)
+    if os.name == "posix":
+        mode = stat.S_IMODE(folder.stat().st_mode)
+        if mode & ~PRIVATE_DIR_MODE:
+            try:
+                folder.chmod(mode & PRIVATE_DIR_MODE)
+            except OSError as error:
+                warnings.warn(
+                    f"the state folder {folder} is open to others (mode {mode:o}) and could not be made owner-only: {error}",
+                    stacklevel=2,
+                )
+    return folder
+
+
 def _files(kind: str, cls_name: str, data_dir) -> MutableMapping:
     import dol
 
-    folder = kind_dir(kind, data_dir=data_dir)
-    folder.mkdir(mode=PRIVATE_DIR_MODE, parents=True, exist_ok=True)
+    folder = private_dir(kind, data_dir=data_dir)
     root = str(folder) + os.sep
     return SafeKeys(dol.mk_dirs_if_missing(getattr(dol, cls_name)(root)))
 
@@ -181,6 +213,80 @@ def cursor_store(
     to manual ``correspond listen`` calls) keeps its own ``kind``.
     """
     return QuotedKeys(text_store(kind, data_dir=data_dir), suffix=".txt")
+
+
+class ArrivalStamps:
+    """Strictly increasing arrival stamps (nanoseconds) shared by every process that opens one file.
+
+    Writers that put events in one store, keyed by arrival so readers can keep a cursor
+    (the Slack Events API receiver and Socket Mode listens), take their stamps here.
+    :meth:`issue` holds an exclusive lock on the file for the whole block, so the writer
+    that took a stamp also stores its event before any other writer takes the next one:
+    a reader that saw a stamp has seen every event stamped below it, and no event lands
+    below a cursor already handed out. The lock is the operating system's (``flock``, or
+    ``msvcrt.locking`` on Windows): it orders the processes of one machine, not a store
+    shared between machines.
+
+    >>> import tempfile
+    >>> stamps = ArrivalStamps(Path(tempfile.mkdtemp()) / "demo.stamp")
+    >>> with stamps.issue(5) as first:  # store the event here, under the lock
+    ...     pass
+    >>> with stamps.issue(3) as second:  # a clock behind the last stamp
+    ...     pass
+    >>> with stamps.issue(4, floor=9) as third:
+    ...     pass
+    >>> first, second, third
+    (5, 6, 10)
+    """
+
+    def __init__(self, path: str | os.PathLike):
+        self.path = Path(path)
+
+    @contextmanager
+    def issue(self, now_ns: int, *, floor: int = 0) -> Iterator[int]:
+        """Hold the lock and yield a stamp above ``now_ns - 1``, ``floor`` and every stamp issued before."""
+        fd = os.open(self.path, os.O_RDWR | os.O_CREAT, 0o600)
+        with os.fdopen(fd, "r+b") as file:
+            release = _lock(file)
+            try:
+                file.seek(0)
+                text = file.read(STAMP_DIGITS).decode("ascii", "replace")
+                last = int(text) if text.isdigit() else 0
+                stamp = max(int(now_ns), last + 1, floor + 1)
+                file.seek(0)
+                file.write(f"{stamp:0{STAMP_DIGITS}d}".encode("ascii"))
+                file.flush()
+                yield stamp
+            finally:
+                release()
+
+
+def _lock(file) -> Any:
+    """Take an exclusive lock on ``file`` (waiting for it); return the function that releases it."""
+    if os.name == "nt":
+        import msvcrt
+
+        file.seek(0)
+        msvcrt.locking(file.fileno(), msvcrt.LK_LOCK, 1)
+
+        def release():
+            file.seek(0)
+            msvcrt.locking(file.fileno(), msvcrt.LK_UNLCK, 1)
+
+        return release
+    import fcntl
+
+    fcntl.flock(file.fileno(), fcntl.LOCK_EX)
+    return lambda: fcntl.flock(file.fileno(), fcntl.LOCK_UN)
+
+
+def arrival_stamps(
+    kind: str, *, data_dir: str | os.PathLike | None = None
+) -> ArrivalStamps:
+    """The arrival stamps of the ``kind`` store: ``<data root>/locks/<kind>.stamp``."""
+    if not _KIND_RE.match(kind):
+        raise ValueError(f"store kind {kind!r} must be a lowercase name")
+    return ArrivalStamps(private_dir(LOCKS_KIND, data_dir=data_dir) / f"{kind}.stamp")
 
 
 class SendStore(MutableMapping):

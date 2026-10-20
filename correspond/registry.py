@@ -451,6 +451,11 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 default="5",
             ),
             Setting(
+                key="keep_channels",
+                env="CORRESPOND_SLACK_KEEP_CHANNELS",
+                what="with delivery = events or socket, the channel ids (comma-separated) whose message events are stored; the others are acknowledged and dropped (default: every channel's, kept a week)",
+            ),
+            Setting(
                 key="webhook_store",
                 env="CORRESPOND_SLACK_WEBHOOK_STORE",
                 what='where the Events API receiver keeps events, as "module:attr" naming a MutableMapping of JSON-ready dicts, or a callable returning one (a bytes store needs a JSON codec; default: files under the data root)',

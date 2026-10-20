@@ -34,6 +34,7 @@ from correspond.channels.slack import (
     NAME,
     RECEIVED_KEY_RE,
     Slack,
+    configured_kept_channels,
     event_record,
     received_key,
 )
@@ -91,6 +92,8 @@ def mk_events_app(
     max_body_bytes: int = MAX_EVENT_BODY_BYTES,
     clock: Callable[[], int] = time.time_ns,
     prune_every_ns: int = PRUNE_EVERY_NS,
+    keep: Callable[[str], bool] | None = None,
+    stamps: Any = None,
 ) -> Callable[..., Awaitable[None]]:
     """The receiver as an ASGI app: Slack POSTs signed requests, the app stores the ``message`` events in ``events``.
 
@@ -105,6 +108,13 @@ def mk_events_app(
     window) is acknowledged and not stored twice.
     ``events`` defaults to files under the data root (``slack-events/``).
 
+    ``keep`` says which channel ids' events are stored (the others are acknowledged and
+    dropped); it defaults to the ``keep_channels`` setting, and to every channel when that
+    is unset. ``stamps`` (an :class:`~correspond.stores.ArrivalStamps`, by default the one
+    Socket Mode listens share) stamps each event and holds its lock while the event is
+    stored, so writers on one machine take turns and none stores an event below a cursor
+    a listen already passed.
+
     The receiver deletes events older than the retention itself (:func:`prune_events`),
     on a write, at most once per ``prune_every_ns``.
     """
@@ -112,6 +122,13 @@ def mk_events_app(
         verify = Slack().verify
     if events is None:
         events = configured_store(NAME, EVENTS_KIND)
+    if keep is None:
+        kept = configured_kept_channels()
+        keep = (lambda channel: True) if kept is None else kept.__contains__
+    if stamps is None:
+        from correspond.stores import arrival_stamps
+
+        stamps = arrival_stamps(EVENTS_KIND)
     last = [0]
     pruned_at = [None]
     seen: set[str] = set()
@@ -170,11 +187,15 @@ def mk_events_app(
             return await respond(send, 200, None)
         if stored(record["event_id"]):  # Slack's retry, or a replay within the window
             return await respond(send, 200, None)
-        last[0] = max(clock(), last[0] + 1)  # strictly increasing
-        events[received_key(last[0], record["event_id"])] = {
-            **record,
-            "received_ns": last[0],
-        }
+        if not keep(record["channel"]):  # a channel nobody listens to
+            return await respond(send, 200, None)
+        # strictly increasing, and stored before any other writer takes a stamp
+        with stamps.issue(clock(), floor=last[0]) as stamp:
+            events[received_key(stamp, record["event_id"])] = {
+                **record,
+                "received_ns": stamp,
+            }
+        last[0] = stamp
         seen.add(record["event_id"])
         await respond(send, 200, None)
         # after the response: the event is stored, a failing prune must not undo that

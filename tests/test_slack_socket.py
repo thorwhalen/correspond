@@ -405,3 +405,57 @@ def test_a_socket_failure_that_is_not_retryable_is_raised(socket_mode):
     with pytest.raises(ChannelError) as caught:
         list(correspond.listen(f"slack:{CHANNEL}", cursors={}, registry={"slack": slack}))
     assert caught.value.kind == "auth"
+
+
+def test_keep_channels_stores_only_those_channels_events(monkeypatch, socket_mode):
+    monkeypatch.setenv("CORRESPOND_SLACK_KEEP_CHANNELS", f"{CHANNEL}, G0PRIVATE1")
+    payloads = [
+        _envelope(_message("1760000000.000100", "kept"))["payload"],
+        _envelope(_message("1760000001.000100", "dropped"), event_id="Ev0002", channel=OTHER)["payload"],
+    ]
+    store = {}
+    registry = {
+        "slack": Slack(
+            http=_users_unknown, keychain=lambda s: "", clock=lambda: NOW_S, events=store,
+            socket=lambda token, *, wait, sink: [sink(p) for p in payloads],
+        )
+    }
+    got = list(correspond.listen(f"slack:{CHANNEL}", cursors={}, registry=registry))
+    assert [e.message.text for e in got] == ["kept"]
+    assert [v["channel"] for v in store.values()] == [CHANNEL]
+    with pytest.raises(ChannelError) as caught:
+        list(correspond.listen(f"slack:{OTHER}", cursors={}, registry=registry))
+    assert caught.value.kind == "validation" and "keep_channels" in str(caught.value)
+
+
+def test_keep_channels_takes_ids_not_names(monkeypatch, socket_mode):
+    monkeypatch.setenv("CORRESPOND_SLACK_KEEP_CHANNELS", "general")
+    slack = Slack(
+        http=_users_unknown, keychain=lambda s: "", clock=lambda: NOW_S, events={},
+        socket=lambda token, *, wait, sink: [],
+    )
+    with pytest.raises(ChannelError) as caught:
+        slack._receive_socket()
+    assert caught.value.kind == "validation" and "channel ids" in str(caught.value)
+
+
+def test_socket_listens_in_two_processes_take_turns_on_one_store(socket_mode):
+    """Two adapters (two processes) on one store, the second with a clock behind: its event still lands after the first's."""
+    store = {}
+    first = _envelope(_message("1760000000.000100"))["payload"]
+    second = _envelope(_message("1760000001.000100"), event_id="Ev0002")["payload"]
+    ahead = Slack(
+        http=_users_unknown, keychain=lambda s: "", clock=lambda: NOW_S + 1, events=store,
+        socket=lambda token, *, wait, sink: sink(first),
+    )
+
+    def behind_window(token, *, wait, sink):
+        ahead._receive_socket()  # the other process stores while this window is open
+        sink(second)
+
+    behind = Slack(
+        http=_users_unknown, keychain=lambda s: "", clock=lambda: NOW_S, events=store,
+        socket=behind_window,
+    )
+    assert behind._receive_socket() == 1
+    assert [k.split("-")[1] for k in sorted(store)] == ["Ev0001.json", "Ev0002.json"]
