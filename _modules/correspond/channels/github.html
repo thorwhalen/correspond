@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=26ffa1e9"></script>
+    <script src="../../../_static/documentation_options.js?v=828725f0"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.28" />
+  <meta name="docsearch:version" content="0.0.29" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -824,9 +824,18 @@ window.runMermaid = runMermaid;</script>
 <span class="n">REF_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
     <span class="sa">r</span><span class="s2">"^(?P&lt;owner&gt;[A-Za-z0-9][A-Za-z0-9-]{0,38})/(?P&lt;repo&gt;[A-Za-z0-9._-]{1,100})(?:#(?P&lt;number&gt;[1-9][0-9]{0,9}))?$"</span>
 <span class="p">)</span>
+<span class="c1">#: What each message id prefix names. GitHub's own anchors: a review comment on the diff is</span>
+<span class="c1">#: ``discussion_rID`` (no dash), a review's summary is ``pullrequestreview-ID``.</span>
+<span class="n">MESSAGE_ID_KINDS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"issue-"</span><span class="p">:</span> <span class="s2">"issue"</span><span class="p">,</span>
+    <span class="s2">"issuecomment-"</span><span class="p">:</span> <span class="s2">"issuecomment"</span><span class="p">,</span>
+    <span class="s2">"discussion-"</span><span class="p">:</span> <span class="s2">"discussion"</span><span class="p">,</span>
+    <span class="s2">"discussioncomment-"</span><span class="p">:</span> <span class="s2">"discussioncomment"</span><span class="p">,</span>
+    <span class="s2">"discussion_r"</span><span class="p">:</span> <span class="s2">"reviewcomment"</span><span class="p">,</span>
+    <span class="s2">"pullrequestreview-"</span><span class="p">:</span> <span class="s2">"review"</span><span class="p">,</span>
+<span class="p">}</span>
 <span class="n">MESSAGE_ID_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
-    <span class="sa">r</span><span class="s2">"^(?:(?P&lt;kind&gt;issue|issuecomment|discussion|discussioncomment)-|(?P&lt;review&gt;discussion_r))"</span>
-    <span class="sa">r</span><span class="s2">"(?P&lt;id&gt;[1-9][0-9]{0,19})$"</span>
+    <span class="sa">rf</span><span class="s2">"^(?P&lt;prefix&gt;</span><span class="si">{</span><span class="s1">'|'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">,</span><span class="w"> </span><span class="n">MESSAGE_ID_KINDS</span><span class="p">))</span><span class="si">}</span><span class="s2">)(?P&lt;id&gt;[1-9][0-9]</span><span class="se">{{</span><span class="s2">0,19</span><span class="se">}}</span><span class="s2">)$"</span>
 <span class="p">)</span>
 <span class="n">NODE_ID_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^(?P&lt;kind&gt;D|DC)_[A-Za-z0-9_-]{4,}$"</span><span class="p">)</span>
 <span class="n">REACTIONS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"+1"</span><span class="p">,</span> <span class="s2">"-1"</span><span class="p">,</span> <span class="s2">"laugh"</span><span class="p">,</span> <span class="s2">"confused"</span><span class="p">,</span> <span class="s2">"heart"</span><span class="p">,</span> <span class="s2">"hooray"</span><span class="p">,</span> <span class="s2">"rocket"</span><span class="p">,</span> <span class="s2">"eyes"</span><span class="p">)</span>
@@ -1208,7 +1217,9 @@ window.runMermaid = runMermaid;</script>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
     <span class="n">read</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
     <span class="n">candidates</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span>
-    <span class="n">changed</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">dict</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"updated_at"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">item</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]</span>
+    <span class="n">changed</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">dict</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="p">(</span>
+        <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"updated_at"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">item</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]</span>
+    <span class="p">)</span>
     <span class="n">counts_openings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 
 
@@ -1313,6 +1324,65 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="n">found</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_review_message</span><span class="p">(</span><span class="n">review</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A submitted review that says something: a verdict, or a body. A pending review has no</span>
+<span class="sd">    ``submitted_at``; a "comment" review with no body only wraps its comments on the diff."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">review</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"submitted_at"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">((</span><span class="n">review</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"body"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="ow">or</span> <span class="n">review</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"state"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"COMMENTED"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_read_reviews</span><span class="p">(</span><span class="n">github</span><span class="p">,</span> <span class="n">scope</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Reviews submitted since the cursor.</span>
+
+<span class="sd">    The reviews list has no ``since``, so a pull request's is read whole and filtered here.</span>
+<span class="sd">    A repository has no reviews endpoint at all: its pull requests are read by latest update</span>
+<span class="sd">    (a review moves that), newest first, until one is older than the cursor, and each one's</span>
+<span class="sd">    reviews are read whole.</span>
+<span class="sd">    """</span>
+    <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">number</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">scope</span><span class="o">.</span><span class="n">probe</span><span class="o">.</span><span class="n">status</span> <span class="o">&lt;</span> <span class="mi">400</span> <span class="ow">and</span> <span class="p">(</span><span class="n">scope</span><span class="o">.</span><span class="n">probe</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pull_request"</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="n">pulls</span> <span class="o">=</span> <span class="p">[</span><span class="n">scope</span><span class="o">.</span><span class="n">number</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">pulls</span> <span class="o">=</span> <span class="n">github</span><span class="o">.</span><span class="n">_pulls_updated_since</span><span class="p">(</span><span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="p">,</span> <span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="n">scope</span><span class="o">.</span><span class="n">position</span><span class="p">)</span>
+    <span class="n">found</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">date</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">for</span> <span class="n">number</span> <span class="ow">in</span> <span class="n">pulls</span><span class="p">:</span>
+        <span class="n">reviews</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">date</span> <span class="o">=</span> <span class="n">github</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/reviews"</span><span class="p">,</span> <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+        <span class="n">found</span> <span class="o">+=</span> <span class="p">[</span>
+            <span class="p">{</span><span class="o">**</span><span class="n">r</span><span class="p">,</span> <span class="s2">"_pull_number"</span><span class="p">:</span> <span class="n">number</span><span class="p">}</span>
+            <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">reviews</span>
+            <span class="k">if</span> <span class="n">_is_review_message</span><span class="p">(</span><span class="n">r</span><span class="p">)</span> <span class="ow">and</span> <span class="n">parse_time</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s2">"submitted_at"</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="n">scope</span><span class="o">.</span><span class="n">position</span>
+        <span class="p">]</span>
+    <span class="k">return</span> <span class="n">found</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="n">date</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_review_candidates</span><span class="p">(</span><span class="n">github</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">reviews</span><span class="p">):</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">review</span> <span class="ow">in</span> <span class="n">reviews</span><span class="p">:</span>
+        <span class="n">conversation</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">review</span><span class="p">[</span><span class="s1">'_pull_number'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"pull_request"</span><span class="p">,</span>
+            <span class="n">parent</span><span class="o">=</span><span class="n">scope</span><span class="o">.</span><span class="n">repository</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">submitted</span> <span class="o">=</span> <span class="n">review</span><span class="p">[</span><span class="s2">"submitted_at"</span><span class="p">]</span>
+        <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">parse_time</span><span class="p">(</span><span class="n">submitted</span><span class="p">),</span>
+                <span class="sa">f</span><span class="s2">"pullrequestreview-</span><span class="si">{</span><span class="n">review</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">submitted</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="s2">"message.created"</span><span class="p">,</span>  <span class="c1"># a review is delivered once, when it is submitted</span>
+                <span class="n">github</span><span class="o">.</span><span class="n">_review</span><span class="p">(</span>
+                    <span class="n">conversation</span><span class="p">,</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">review</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="o">!=</span> <span class="s2">"_pull_number"</span><span class="p">}</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">found</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_read_discussions</span><span class="p">(</span><span class="n">github</span><span class="p">,</span> <span class="n">scope</span><span class="p">):</span>
     <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">number</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">probe</span><span class="o">.</span><span class="n">status</span> <span class="o">&lt;</span> <span class="mi">400</span><span class="p">:</span>
@@ -1351,6 +1421,7 @@ window.runMermaid = runMermaid;</script>
     <span class="n">PollSource</span><span class="p">(</span><span class="s2">"issue comments"</span><span class="p">,</span> <span class="n">_read_issue_comments</span><span class="p">,</span> <span class="n">_issue_comment_candidates</span><span class="p">),</span>
     <span class="n">PollSource</span><span class="p">(</span><span class="s2">"issues"</span><span class="p">,</span> <span class="n">_read_issues</span><span class="p">,</span> <span class="n">_issue_candidates</span><span class="p">,</span> <span class="n">counts_openings</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
     <span class="n">PollSource</span><span class="p">(</span><span class="s2">"review comments"</span><span class="p">,</span> <span class="n">_read_review_comments</span><span class="p">,</span> <span class="n">_review_comment_candidates</span><span class="p">),</span>
+    <span class="n">PollSource</span><span class="p">(</span><span class="s2">"reviews"</span><span class="p">,</span> <span class="n">_read_reviews</span><span class="p">,</span> <span class="n">_review_candidates</span><span class="p">),</span>
     <span class="n">PollSource</span><span class="p">(</span><span class="s2">"discussions"</span><span class="p">,</span> <span class="n">_read_discussions</span><span class="p">,</span> <span class="n">_discussion_candidates</span><span class="p">),</span>
 <span class="p">)</span>
 
@@ -1421,7 +1492,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"a gh token that may not read discussions listens to a repository's issues, comments and review comments only (logged as a warning)"</span><span class="p">,</span>
                 <span class="s2">"GitHub moves a review comment's updated_at when its review is submitted and when a push outdates it, so listen reports those as message.updated with the text unchanged, and a review comment carries no edited_at"</span><span class="p">,</span>
                 <span class="s2">"reply_to works in discussions and in pull request review threads (a reply to a reply joins its thread); issue and pull request conversation comments are flat"</span><span class="p">,</span>
-                <span class="s2">"reading or listening to a pull request includes its review comments on the diff (message ids discussion_rID, with path, line, original_line, review_id and diff_hunk in native); reviews' own summary bodies are not read"</span><span class="p">,</span>
+                <span class="s2">"reading or listening to a pull request includes its review comments on the diff (message ids discussion_rID, with path, line, original_line, review_id and diff_hunk in native); a pull request's reviews are read too, each review's summary as a message pullrequestreview-ID with its state (APPROVED, CHANGES_REQUESTED, COMMENTED, DISMISSED) in native; a review with no body and only a COMMENTED state is left out, and listening to a repository finds them through the pull requests updated since the cursor"</span><span class="p">,</span>
                 <span class="s2">"a discussion comment's replies are its latest 100 (native replies_truncated when there are more)"</span><span class="p">,</span>
                 <span class="s2">"notify mentions each handle the text lacks; GitHub notifies a mentioned user or team who can see the repository, so on a private one a non-member is not reached"</span><span class="p">,</span>
                 <span class="s2">"listen can miss a change only when more than 2,000 issues or comments change within the same second"</span><span class="p">,</span>
@@ -1683,9 +1754,52 @@ window.runMermaid = runMermaid;</script>
             <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments"</span>
             <span class="k">if</span> <span class="n">since</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
                 <span class="n">path</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">"?since=</span><span class="si">{</span><span class="n">format_time</span><span class="p">(</span><span class="n">since</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
-            <span class="n">reviews</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-            <span class="n">messages</span> <span class="o">+=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_review_comment</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">reviews</span><span class="p">]</span>
+            <span class="n">comments_on_diff</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">messages</span> <span class="o">+=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_review_comment</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">c</span><span class="p">)</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">comments_on_diff</span><span class="p">]</span>
+            <span class="n">reviews</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/reviews"</span><span class="p">,</span> <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
+            <span class="n">messages</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_reviews</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">reviews</span><span class="p">,</span> <span class="n">since</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">messages</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_reviews</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">conversation</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span>
+        <span class="n">reviews</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+        <span class="n">since</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The submitted reviews worth a message, as :meth:`_review` makes them, from ``since`` on."""</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">review</span> <span class="ow">in</span> <span class="n">reviews</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">_is_review_message</span><span class="p">(</span><span class="n">review</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">since</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">parse_time</span><span class="p">(</span><span class="n">review</span><span class="p">[</span><span class="s2">"submitted_at"</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">since</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_review</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">review</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">found</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_review</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">conversation</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">review</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A pull request review's own summary (``pullrequestreview-ID``); its ``state`` is in native.</span>
+
+<span class="sd">        The review's comments on the diff are separate messages (``discussion_rID``) that</span>
+<span class="sd">        name it in ``review_id``. GitHub gives a review no update time, and an edit of its</span>
+<span class="sd">        body does not move anything, so ``edited_at`` stays unset.</span>
+<span class="sd">        """</span>
+        <span class="k">return</span> <span class="n">Message</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"pullrequestreview-</span><span class="si">{</span><span class="n">review</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">conversation</span><span class="p">,</span>
+            <span class="n">author</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_identity</span><span class="p">(</span><span class="n">review</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">),</span> <span class="n">review</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"author_association"</span><span class="p">)),</span>
+            <span class="n">authenticity</span><span class="o">=</span><span class="n">_PLATFORM</span><span class="p">,</span>
+            <span class="n">sent_at</span><span class="o">=</span><span class="n">parse_time</span><span class="p">(</span><span class="n">review</span><span class="p">[</span><span class="s2">"submitted_at"</span><span class="p">]),</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">review</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"body"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+            <span class="n">body</span><span class="o">=</span><span class="n">review</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"body"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+            <span class="n">body_format</span><span class="o">=</span><span class="s2">"markdown"</span><span class="p">,</span>
+            <span class="n">url</span><span class="o">=</span><span class="n">review</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"html_url"</span><span class="p">),</span>
+            <span class="n">native</span><span class="o">=</span><span class="p">{</span><span class="s2">"state"</span><span class="p">:</span> <span class="n">review</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"state"</span><span class="p">),</span> <span class="s2">"review_id"</span><span class="p">:</span> <span class="n">review</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]},</span>
+            <span class="n">raw</span><span class="o">=</span><span class="n">review</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_review_comment</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">conversation</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">comment</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
@@ -2033,7 +2147,7 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">poll</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="p">):</span>
-<span class="w">        </span><span class="sd">"""Issue, comment, review comment and discussion activity since ``cursor``; a first poll looks back a day.</span>
+<span class="w">        </span><span class="sd">"""Issue, comment, review comment, review and discussion activity since ``cursor``; a first poll looks back a day.</span>
 
 <span class="sd">        The cursor is opaque JSON: the update time the next poll starts from (``t``; GitHub's</span>
 <span class="sd">        ``since`` includes it), the creation time from which an issue still counts as new</span>
@@ -2125,6 +2239,26 @@ window.runMermaid = runMermaid;</script>
             <span class="n">final</span> <span class="o">=</span> <span class="n">_encode_cursor</span><span class="p">(</span><span class="n">position</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">delivered</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">with_final_cursor</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">final</span><span class="p">)</span></div>
 
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_pulls_updated_since</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">since</span><span class="p">:</span> <span class="n">datetime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""The numbers of the repository's pull requests updated at or after ``since``, newest first.</span>
+
+<span class="sd">        Read page by page, newest update first, until a page reaches one older than ``since``</span>
+<span class="sd">        (at most ``MAX_PAGES`` pages: beyond that the oldest are not looked at).</span>
+<span class="sd">        """</span>
+        <span class="n">numbers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">MAX_PAGES</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">batch</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls?state=all&amp;sort=updated&amp;direction=desc"</span>
+                    <span class="sa">f</span><span class="s2">"&amp;per_page=</span><span class="si">{</span><span class="n">PAGE_SIZE</span><span class="si">}</span><span class="s2">&amp;page=</span><span class="si">{</span><span class="n">page</span><span class="si">}</span><span class="s2">"</span>
+                <span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+                <span class="ow">or</span> <span class="p">[]</span>
+            <span class="p">)</span>
+            <span class="n">numbers</span> <span class="o">+=</span> <span class="p">[</span><span class="n">p</span><span class="p">[</span><span class="s2">"number"</span><span class="p">]</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">batch</span> <span class="k">if</span> <span class="n">parse_time</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">"updated_at"</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="n">since</span><span class="p">]</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">PAGE_SIZE</span> <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">parse_time</span><span class="p">(</span><span class="n">p</span><span class="p">[</span><span class="s2">"updated_at"</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">since</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">batch</span><span class="p">):</span>
+                <span class="k">break</span>
+        <span class="k">return</span> <span class="n">numbers</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_active_discussions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">since</span><span class="p">:</span> <span class="n">datetime</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""The numbers of the repository's discussions active at or after ``since``.</span>
@@ -2522,10 +2656,10 @@ window.runMermaid = runMermaid;</script>
         <span class="n">match</span> <span class="o">=</span> <span class="n">MESSAGE_ID_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">message_id</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">match</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"GitHub message ids look like issue-12, issuecomment-345, discussion_r678 (a review comment), discussion-6 or discussioncomment-789, not </span><span class="si">{</span><span class="n">message_id</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"GitHub message ids look like issue-12, issuecomment-345, discussion_r678 (a review comment), pullrequestreview-9 (a review), discussion-6 or discussioncomment-789, not </span><span class="si">{</span><span class="n">message_id</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
                 <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
             <span class="p">)</span>
-        <span class="k">return</span> <span class="n">match</span><span class="p">[</span><span class="s2">"kind"</span><span class="p">]</span> <span class="ow">or</span> <span class="s2">"reviewcomment"</span><span class="p">,</span> <span class="n">match</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">MESSAGE_ID_KINDS</span><span class="p">[</span><span class="n">match</span><span class="p">[</span><span class="s2">"prefix"</span><span class="p">]],</span> <span class="n">match</span><span class="p">[</span><span class="s2">"id"</span><span class="p">]</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_node_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">kind</span><span class="p">,</span> <span class="n">ident</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message_kind</span><span class="p">(</span><span class="n">message_id</span><span class="p">)</span>

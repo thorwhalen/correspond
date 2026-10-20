@@ -1,4 +1,4 @@
-> built 2026-10-20 03:48 UTC from 155b912 (main) · correspond 0.0.28. Details: build_info.json
+> built 2026-10-20 04:42 UTC from 736ef0a (main) · correspond 0.0.29. Details: build_info.json
 
 # index.html.md
 
@@ -1111,7 +1111,7 @@ mentioned, so `landed` is filtered to the requested names, not the full list.
 
 #### poll(ref, , cursor=None, limit=None)
 
-Issue, comment, review comment and discussion activity since `cursor`; a first poll looks back a day.
+Issue, comment, review comment, review and discussion activity since `cursor`; a first poll looks back a day.
 
 The cursor is opaque JSON: the update time the next poll starts from (`t`; GitHub’s
 `since` includes it), the creation time from which an issue still counts as new
@@ -5368,16 +5368,18 @@ Where a channel’s platform delivers its updates now (Telegram: none means list
 
 # About this build
 
-This documentation was built on **2026-10-20 03:48 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/155b912b0f11a29fb8dfc50a6e23f2f7e3655132"><code>155b912</code></a> on branch <code>main</code>, for **correspond 0.0.28** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-20 04:42 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/736ef0a97e682c3367b307214354ae55b23f3be0"><code>736ef0a</code></a> on branch <code>main</code>, for **correspond 0.0.29** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.29) is behind the latest release on PyPI (0.0.30): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/155b912b0f11a29fb8dfc50a6e23f2f7e3655132"><code>155b912b0f11a29fb8dfc50a6e23f2f7e3655132</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/736ef0a97e682c3367b307214354ae55b23f3be0"><code>736ef0a97e682c3367b307214354ae55b23f3be0</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -5388,9 +5390,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39366069451">39366069451</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39370827665">39370827665</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>155b912b0f11a29fb8dfc50a6e23f2f7e3655132</code> (in the history of the built commit)  |
+| Event commit | <code>736ef0a97e682c3367b307214354ae55b23f3be0</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -5415,13 +5417,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.28/">0.0.28</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.30/">0.0.30</a>, newer than the documented version (0.0.29).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 155b912b0f11a29fb8dfc50a6e23f2f7e3655132
+git checkout 736ef0a97e682c3367b307214354ae55b23f3be0
 pip install "epythet==0.2.18"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

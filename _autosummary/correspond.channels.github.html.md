@@ -151,7 +151,7 @@ mentioned, so `landed` is filtered to the requested names, not the full list.
 
 #### poll(ref, , cursor=None, limit=None)
 
-Issue, comment, review comment and discussion activity since `cursor`; a first poll looks back a day.
+Issue, comment, review comment, review and discussion activity since `cursor`; a first poll looks back a day.
 
 The cursor is opaque JSON: the update time the next poll starts from (`t`; GitHub’s
 `since` includes it), the creation time from which an issue still counts as new
