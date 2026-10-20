@@ -1186,7 +1186,9 @@ class GitHub:
         nodes: list[dict] = []
         after = None
         for _ in range(MAX_PAGES):
-            data = self._graphql(COMMENT_REPLIES_QUERY, {"id": comment["id"], "after": after})
+            data = self._graphql(
+                COMMENT_REPLIES_QUERY, {"id": comment["id"], "after": after}
+            )
             page = ((data.get("node") or {}).get("replies")) or {}
             nodes.extend(page.get("nodes") or [])
             page_info = page.get("pageInfo") or {}
