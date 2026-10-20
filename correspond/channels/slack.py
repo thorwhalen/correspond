@@ -50,7 +50,7 @@ import re
 import subprocess
 import time
 from collections.abc import Callable, Mapping, MutableMapping
-from dataclasses import replace
+from dataclasses import dataclass, field, replace
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from typing import Any
@@ -296,8 +296,14 @@ CHANNEL_CACHE_TTL_S = 300
 USER_CACHE_TTL_S = 3600
 #: How long a failed ``users.info`` (other than a refusal or an unknown user) waits before it is asked again.
 USER_RETRY_S = 60
-#: Pages of ``conversations.replies`` read for one thread at most.
+#: Pages of ``conversations.replies`` read for one thread at most (a read past them walks back from the newest reply).
 MAX_THREAD_PAGES = 20
+#: The narrowest window a long thread's walk back looks at: Slack's ts resolution, so it holds one reply at most.
+THREAD_TAIL_MIN_WINDOW_S = 0.000001
+#: How much an empty or sparse window widens the next one as a long thread's walk goes back.
+THREAD_TAIL_GROWTH = 8
+#: Workspaces (tokens) one adapter keeps caches for; the least recently used is dropped past it.
+MAX_WORKSPACES = 8
 #: How listen learns of new messages: by polling the Web API, or from the Events API receiver.
 DELIVERIES = ("poll", "events")
 #: The data-root folder the Events API receiver stores events in.
@@ -351,6 +357,49 @@ def _posts_as(token: str) -> str:
     return "whoever the token belongs to (checked when sending)"
 
 
+def _token_key(token: str) -> str:
+    """The key a token's caches are kept under: a digest, so no cache holds the token itself.
+
+    >>> _token_key("xoxb-1") == _token_key("xoxb-1") != _token_key("xoxb-2")
+    True
+    """
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+@dataclass
+class _Workspace:
+    """What one token has learned of its workspace: channel names, authors, whose token it is.
+
+    A listing of channel names that stopped once the name it looked for appeared keeps
+    the cursor it stopped at (``channels_next``), so the next name not yet seen resumes
+    there instead of listing from scratch; ``None`` there means the listing is whole.
+    """
+
+    channel_ids: dict[str, str] = field(default_factory=dict)
+    channels_listed_at: float | None = None
+    channels_next: str | None = None
+    users: dict[str, tuple[float, dict | None]] = field(default_factory=dict)  # id: (until, user)
+    users_refused_until: float = 0.0
+    account: Account | None = None
+
+    def remember_user(
+        self, user_id: str, entry: tuple[float, dict | None], *, now: float
+    ) -> None:
+        """Keep ``entry`` for ``user_id``, dropping the entries that expired (the cache only grows with live ones)."""
+        for gone in [k for k, (until, _) in self.users.items() if until <= now]:
+            del self.users[gone]
+        self.users[user_id] = entry
+
+
+def _parent_of(messages: list[dict], thread: str) -> dict | None:
+    """The thread's parent among ``messages`` (ts compared as numbers: ``1.5`` is ``1.500000``).
+
+    >>> _parent_of([{"ts": "1.500000"}, {"ts": "2.000000"}], "1.5")
+    {'ts': '1.500000'}
+    """
+    return next((m for m in messages if float(m["ts"]) == float(thread)), None)
+
+
 def _ts_time(ts: str | None) -> datetime | None:
     try:
         return datetime.fromtimestamp(float(ts), tz=timezone.utc) if ts else None
@@ -379,11 +428,7 @@ class Slack:
         self.clock = clock
         self.sleep = sleep
         self._keychain = keychain
-        self._channel_ids: dict[str, str] = {}
-        self._channels_listed_at: float | None = None
-        self._users: dict[str, tuple[float, dict | None]] = {}  # id: (until, user)
-        self._users_refused_until = 0.0
-        self._whoami: dict[str, Account] = {}
+        self._workspaces: dict[str, _Workspace] = {}  # token digest: what it learned
         self._server_now: float | None = None
 
     @property
@@ -413,8 +458,8 @@ class Slack:
                 "with a token (CORRESPOND_SLACK_TOKEN) read, listen and send use the Web API, and send replies in a thread with reply_to = the message's ts; a bot token posts as the app, a user token as the person, and the plan says which",
                 "a channel with its own incoming webhook (CORRESPOND_SLACK_WEBHOOK_<CHANNEL>, or the Keychain) posts through it, a reply excepted (a webhook cannot thread); a channel without one posts with the token",
                 "the text cannot mention anyone: every < is escaped and only http, https and mailto targets become links, so <!channel>, <@U...> or [x](!here) arrive as text",
-                "read and listen see a channel's top-level messages, thread parents and replies also sent to the channel; the other replies are read through the thread's own reference, slack:<channel>/<thread ts> (conversations.replies), which listen polls and send replies in; Slack's own notices (someone joined, the topic changed) are left out; listen polls over the Web API and sees new messages, not edits",
-                "an author's handle and display name come from users.info (the token needs users:read), kept an hour; without the scope the author is the user id alone",
+                "read and listen see a channel's top-level messages, thread parents and replies also sent to the channel; the other replies are read through the thread's own reference, slack:<channel>/<thread ts> (conversations.replies), which listen polls and send replies in; reading a thread too long for 20 pages of replies (about 4,000) returns its newest ones (it walks back from the latest reply); Slack's own notices (someone joined, the topic changed) are left out; listen polls over the Web API and sees new messages, not edits",
+                "an author's handle and display name come from users.info (the token needs users:read), kept an hour per token (as are channel names), so two workspaces never share them; without the scope the author is the user id alone",
                 "with delivery = events, listen reads what the Events API receiver (correspond-slack-events, behind your HTTPS reverse proxy) stored instead of polling, and also reports edits (message.updated) and deletions (message.deleted); the receiver verifies every request's signature and answers Slack's url_verification; Socket Mode is not built",
                 "install the app in your own workspace (a commercially distributed app outside Slack's Marketplace gets one history request a minute); listen walks forward through time windows, delivering each whole before the next, so a poll a rate limit cuts short keeps what it delivered and the next one resumes there, and a backlog drains a little each poll; the newest minute waits for the next poll (this clock may run ahead of Slack's)",
                 "a file is fetched with the token only from Slack's own hosts (the token needs files:read); a file hosted elsewhere is not fetched",
@@ -540,6 +585,19 @@ class Slack:
             )
         return token
 
+    def _workspace(self, token: str) -> _Workspace:
+        """The caches of the workspace ``token`` belongs to: two tokens never share one.
+
+        At most :data:`MAX_WORKSPACES` are kept; the least recently used goes first (a
+        listener whose token rotates leaves its old ones behind).
+        """
+        key = _token_key(token)
+        known = self._workspaces.pop(key, None) or _Workspace()
+        self._workspaces[key] = known  # most recently used last
+        while len(self._workspaces) > MAX_WORKSPACES:
+            del self._workspaces[next(iter(self._workspaces))]
+        return known
+
     @staticmethod
     def _where(ref: ConversationRef) -> tuple[str, str | None]:
         """The reference's channel (a name or an id) and its thread's ts, if it names one."""
@@ -549,41 +607,60 @@ class Slack:
     def _channel_id(self, ref: ConversationRef, token: str) -> str:
         """The channel's id: the reference's own, or a name looked up with ``conversations.list``.
 
-        Names are trusted for :data:`CHANNEL_CACHE_TTL_S` seconds; after that, or for a
-        name not seen, the list is read again from scratch, so a renamed channel's old
-        name stops resolving and its new one starts.
+        Names are kept per token and trusted for :data:`CHANNEL_CACHE_TTL_S` seconds; after
+        that, or for a name a whole listing did not have, the list is read again from
+        scratch, so a renamed channel's old name stops resolving and its new one starts.
+        A listing stops at the page that has the name; a later name it has not reached
+        resumes from there, and a resumed listing that fails or ends without the name
+        (a channel created on a page already read) is read once more from the start.
         """
         name = self._where(ref)[0]
         if CHANNEL_ID_RE.match(name):
             return name
-        listed_at = self._channels_listed_at
-        fresh = listed_at is not None and self.clock() - listed_at < CHANNEL_CACHE_TTL_S
-        if not (fresh and name in self._channel_ids):
-            self._channel_ids, self._channels_listed_at = {}, self.clock()
-            cursor = None
-            while True:
-                data = self._api(
-                    "conversations.list",
-                    {
-                        "types": "public_channel,private_channel",
-                        "exclude_archived": "true",
-                        "limit": PAGE_SIZE,
-                        "cursor": cursor,
-                    },
-                    token=token,
-                )
-                for channel in data.get("channels") or ():
-                    if channel.get("name"):
-                        self._channel_ids.setdefault(channel["name"], channel["id"])
-                cursor = (data.get("response_metadata") or {}).get("next_cursor")
-                if name in self._channel_ids or not cursor:
-                    break
-        if name not in self._channel_ids:
+        known = self._workspace(token)
+        now = self.clock()
+        listed_at = known.channels_listed_at
+        fresh = listed_at is not None and now - listed_at < CHANNEL_CACHE_TTL_S
+        if not (fresh and name in known.channel_ids):
+            resumed = fresh and bool(known.channels_next)
+            if not resumed:
+                known.channel_ids, known.channels_listed_at = {}, now
+                known.channels_next = ""
+            try:
+                self._list_channels(known, name, token)
+            except ChannelError:
+                if not resumed:
+                    raise
+                known.channels_next = None  # a stale cursor: start over below
+            if resumed and name not in known.channel_ids:
+                known.channel_ids, known.channels_listed_at = {}, now
+                known.channels_next = ""
+                self._list_channels(known, name, token)
+        if name not in known.channel_ids:
             raise ChannelError(
                 f"no channel #{name} that the token can see (invite the app, or give its id)",
                 kind="not_found",
             )
-        return self._channel_ids[name]
+        return known.channel_ids[name]
+
+    def _list_channels(self, known: _Workspace, name: str, token: str) -> None:
+        """Read ``conversations.list`` pages into ``known`` from its cursor, until ``name`` shows or the list ends."""
+        while known.channels_next is not None and name not in known.channel_ids:
+            data = self._api(
+                "conversations.list",
+                {
+                    "types": "public_channel,private_channel",
+                    "exclude_archived": "true",
+                    "limit": PAGE_SIZE,
+                    "cursor": known.channels_next or None,
+                },
+                token=token,
+            )
+            for channel in data.get("channels") or ():
+                if channel.get("name"):
+                    known.channel_ids.setdefault(channel["name"], channel["id"])
+            following = (data.get("response_metadata") or {}).get("next_cursor")
+            known.channels_next = following or None
 
     def _user(self, user_id: str, token: str) -> dict | None:
         """``users.info`` for one user, kept :data:`USER_CACHE_TTL_S` seconds; ``None`` when Slack will not say.
@@ -596,26 +673,27 @@ class Slack:
         """
         if not USER_ID_RE.match(user_id):
             return None
+        workspace = self._workspace(token)
         now = self.clock()
-        if now < self._users_refused_until:
+        if now < workspace.users_refused_until:
             return None
-        known = self._users.get(user_id)
+        known = workspace.users.get(user_id)
         if known and now < known[0]:
             return known[1]
         try:
             found = self._api("users.info", {"user": user_id}, token=token).get("user")
         except ChannelError as error:
             if error.kind in ("auth", "permission"):
-                self._users_refused_until = now + USER_CACHE_TTL_S
+                workspace.users_refused_until = now + USER_CACHE_TTL_S
                 return None
             if error.kind != "not_found":
                 wait = min(USER_CACHE_TTL_S, error.retry_after or USER_RETRY_S)
                 stale = known[1] if known else None
-                self._users[user_id] = (now + wait, stale)
+                workspace.remember_user(user_id, (now + wait, stale), now=now)
                 return stale
             found = None
         user = found if isinstance(found, dict) else None
-        self._users[user_id] = (now + USER_CACHE_TTL_S, user)
+        workspace.remember_user(user_id, (now + USER_CACHE_TTL_S, user), now=now)
         return user
 
     def _history(
@@ -659,16 +737,27 @@ class Slack:
                 return found[:limit] if limit else found
 
     def _replies(
-        self, channel: str, thread: str, token: str, *, oldest: str | None
+        self,
+        channel: str,
+        thread: str,
+        token: str,
+        *,
+        oldest: str | None,
+        newest: int | None = None,
     ) -> list[dict]:
         """``conversations.replies``: the thread's parent and replies after ``oldest``, oldest first.
 
-        A thread is read whole (at most :data:`MAX_THREAD_PAGES` pages); a rate limit
-        after the first page keeps what was read.
+        A thread is read from its start, at most :data:`MAX_THREAD_PAGES` pages; a rate
+        limit after the first page keeps what was read. A read that wants the ``newest``
+        replies of a thread longer than those pages (as its parent's ``reply_count`` says
+        on the first page, or as the pages running out show) walks back from the thread's
+        latest reply instead (:meth:`_thread_tail`); a listen (no ``newest``) moves on from
+        its cursor, so the oldest pages are the ones it wants.
         """
         found: list[dict] = []
         cursor = None
-        for _ in range(MAX_THREAD_PAGES):
+        unread = False
+        for page in range(MAX_THREAD_PAGES):
             params = {
                 "channel": channel,
                 "ts": thread,
@@ -686,9 +775,104 @@ class Slack:
             cursor = (data.get("response_metadata") or {}).get("next_cursor")
             if not cursor or not data.get("has_more"):
                 break
+            if newest and page == 0 and oldest is None:
+                parent = _parent_of(found, thread)
+                replies = parent.get("reply_count") if parent else None
+                if isinstance(replies, int) and replies >= MAX_THREAD_PAGES * PAGE_SIZE:
+                    unread = True  # too long to page through: straight to its newest end
+                    break
+        else:
+            unread = True
+        found.sort(key=lambda m: float(m["ts"]))
+        if unread and newest and found:
+            found = self._thread_tail(channel, thread, token, head=found, count=newest)
         if oldest is not None:
             found = [m for m in found if float(m["ts"]) > float(oldest)]
-        return sorted(found, key=lambda m: float(m["ts"]))
+        return found
+
+    def _api_waiting(self, method: str, params: dict[str, Any], *, token: str) -> dict:
+        """:meth:`_api`, waiting a rate limit out a few times (when the wait is short) before giving up."""
+        for attempt in range(RATE_WAIT_TRIES + 1):
+            try:
+                return self._api(method, params, token=token)
+            except ChannelError as error:
+                wait = error.retry_after or RATE_WAIT_MAX_S
+                if (
+                    error.kind != "rate_limited"
+                    or attempt == RATE_WAIT_TRIES
+                    or wait > RATE_WAIT_MAX_S
+                ):
+                    raise
+                self.sleep(wait)
+        raise AssertionError("unreachable")  # pragma: no cover
+
+    def _thread_tail(
+        self, channel: str, thread: str, token: str, *, head: list[dict], count: int
+    ) -> list[dict]:
+        """The newest ``count`` replies of a thread too long to page through, oldest first.
+
+        ``head`` is what was read from the start (oldest first). The walk goes back from the
+        thread's latest reply (its parent's ``latest_reply``, else the later of Slack's clock
+        and this one) one time window ``(low, high]`` at a time, the first sized from the
+        thread's average pace. A window holding more than a page is narrowed (to the newer of
+        its half and what its first page did not reach) and asked again; an empty or sparse
+        one widens the next :data:`THREAD_TAIL_GROWTH`-fold. The walk stops with ``count``
+        replies, on reaching ``head`` (the two then join without a gap), or after
+        ``2 * MAX_THREAD_PAGES`` calls; a short rate limit is waited out.
+        """
+        floor = float(head[-1]["ts"])
+        parent = _parent_of(head, thread)
+        top = str(parent.get("latest_reply") or "") if parent else ""
+        if not TS_RE.match(top) or float(top) <= floor:
+            top = f"{max(self.clock(), self._server_now or 0.0, floor) + CLOCK_SKEW_S:.6f}"
+        replies = parent.get("reply_count") if parent else None
+        if isinstance(replies, int) and replies > 0:
+            pace = (float(top) - float(thread)) / replies  # seconds per reply, on average
+        else:
+            others = [m for m in head if m is not parent]
+            span = floor - float(others[0]["ts"]) if others else 0.0
+            pace = span / len(others) if span > 0 else 1.0
+        width = max(THREAD_TAIL_MIN_WINDOW_S, pace * min(count, PAGE_SIZE // 2))
+        collected: list[dict] = []
+        wanted = 0
+        high = top
+        for _ in range(2 * MAX_THREAD_PAGES):
+            if wanted >= count or float(high) <= floor:
+                break
+            low = f"{max(floor, float(high) - width):.6f}"
+            data = self._api_waiting(
+                "conversations.replies",
+                {
+                    "channel": channel,
+                    "ts": thread,
+                    "oldest": low,
+                    "latest": high,
+                    "inclusive": "true",
+                    "limit": PAGE_SIZE,
+                },
+                token=token,
+            )
+            page = [
+                m
+                for m in data.get("messages") or ()
+                if float(low) < float(m["ts"]) <= float(high) and m is not parent
+                and float(m["ts"]) != float(thread)
+            ]
+            if data.get("has_more") and page:
+                # The page is the window's oldest replies: the rest lie after its last one.
+                reached = max(float(m["ts"]) for m in page)
+                narrower = max(reached, float(high) - width / 2)
+                width = max(THREAD_TAIL_MIN_WINDOW_S, float(high) - narrower)
+                continue
+            collected = page + collected
+            wanted += sum(1 for m in page if m.get("subtype") in MESSAGE_SUBTYPES)
+            high = low
+            if len(page) < PAGE_SIZE // 4:
+                width *= THREAD_TAIL_GROWTH
+        collected.sort(key=lambda m: float(m["ts"]))
+        if float(high) <= floor:  # the walk met the head: nothing in between is missing
+            return head + collected
+        return ([parent] if parent else []) + collected
 
     def _poll_thread(
         self,
@@ -834,7 +1018,7 @@ class Slack:
         count = max(1, int(limit)) if limit else READ_DEFAULT
         thread = self._where(ref)[1]
         if thread:
-            found = self._replies(channel, thread, token, oldest=oldest)
+            found = self._replies(channel, thread, token, oldest=oldest, newest=count)
         else:
             found = self._history(channel, token, oldest=oldest, limit=count)
         messages = [
@@ -1286,17 +1470,18 @@ class Slack:
 
     def _account(self, token: str) -> Account | None:
         """Whose name the token posts under, asked of Slack once (``auth.test``): a bot or a person."""
-        if token not in self._whoami:
+        workspace = self._workspace(token)
+        if workspace.account is None:
             try:
                 data = self._api("auth.test", {}, token=token)
             except ChannelError:
                 return None
-            self._whoami[token] = Account(
+            workspace.account = Account(
                 channel=NAME,
                 id=str(data.get("user_id") or data.get("bot_id") or ""),
                 acts_as="bot" if data.get("bot_id") else "user",
             )
-        return self._whoami[token]
+        return workspace.account
 
     def _post_webhook(self, ref: ConversationRef, text: str, plan: dict) -> SendResult:
         url = self._webhook(self._where(ref)[0])

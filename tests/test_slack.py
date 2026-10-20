@@ -318,8 +318,18 @@ class FakeSlackApi:
     """The Web API methods the adapter calls, answering as Slack does (HTTP 200, ok true or false)."""
 
     def __init__(
-        self, history=(), channels=(), errors=None, pages=1, users=None, replies=None
+        self,
+        history=(),
+        channels=(),
+        errors=None,
+        pages=1,
+        users=None,
+        replies=None,
+        *,
+        token=TOKEN,
+        channel_page=None,
     ):
+        self.token, self.channel_page = token, channel_page
         self.history = sorted(history, key=lambda m: float(m["ts"]), reverse=True)
         self.channels = list(channels)
         self.users = dict(users or {})
@@ -332,7 +342,7 @@ class FakeSlackApi:
         from urllib.parse import parse_qsl
 
         name = url.rsplit("/", 1)[-1]
-        assert headers["Authorization"] == f"Bearer {TOKEN}"
+        assert headers["Authorization"] == f"Bearer {self.token}"
         params = dict(parse_qsl(body.decode())) if body else {}
         self.calls.append((name, params))
         if name in self.errors:
@@ -340,11 +350,16 @@ class FakeSlackApi:
                 200, {}, json.dumps({"ok": False, "error": self.errors[name]}).encode()
             )
         if name == "conversations.list":
+            size = self.channel_page or len(self.channels) or 1
+            start = int(params.get("cursor") or 0)
+            more = start + size < len(self.channels)
             return self._json(
                 {
                     "ok": True,
-                    "channels": self.channels,
-                    "response_metadata": {"next_cursor": ""},
+                    "channels": self.channels[start : start + size],
+                    "response_metadata": {
+                        "next_cursor": str(start + size) if more else ""
+                    },
                 }
             )
         if name == "conversations.history":
@@ -385,10 +400,16 @@ class FakeSlackApi:
             thread = sorted(
                 self.replies.get(params["ts"], ()), key=lambda m: float(m["ts"])
             )
+            inclusive = params.get("inclusive") == "true"
+            oldest = float(params.get("oldest") or 0)
+            latest = float(params.get("latest") or "inf")
             found = [
                 m
                 for m in thread
-                if float(m["ts"]) > float(params.get("oldest") or 0)
+                if (
+                    (float(m["ts"]) >= oldest if inclusive else float(m["ts"]) > oldest)
+                    and (float(m["ts"]) <= latest if inclusive else float(m["ts"]) < latest)
+                )
                 or m["ts"] == params["ts"]  # Slack always returns the parent
             ]
             size = int(params.get("limit") or 200)
@@ -1131,3 +1152,267 @@ def test_a_thread_listen_leaves_the_newest_minute_for_the_next_poll(token):
     got = list(correspond.listen(ref, cursors=cursors, registry=registry))
     assert [e.message.text for e in got] == ["another reply"]
     assert cursors[ref] == "1760000025.000100"
+
+
+def _long_thread(count, *, step=1.0, burst=0, burst_step=0.001, latest_reply=True):
+    """A thread of ``count`` replies ``step`` s apart, its last ``burst`` of them ``burst_step`` s apart."""
+    stamps, at = [], float(THREAD)
+    for i in range(count):
+        at += burst_step if i >= count - burst else step
+        stamps.append(f"{at:.6f}")
+    parent = _msg(THREAD, "the parent", thread_ts=THREAD, reply_count=count)
+    if latest_reply:
+        parent["latest_reply"] = stamps[-1]
+    return {THREAD: [parent] + [_msg(ts, f"r{i}", thread_ts=THREAD) for i, ts in enumerate(stamps)]}
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        {},  # evenly spread
+        {"step": 0.01},  # dense
+        {"burst": 500},  # the newest 500 in half a second: the walk narrows its window
+        {"latest_reply": False},  # no latest_reply on the parent: the walk starts at the clock
+    ],
+)
+def test_reading_a_thread_longer_than_the_page_cap_returns_its_newest_replies(token, shape):
+    from correspond.channels.slack import MAX_THREAD_PAGES
+
+    replies = _long_thread(4500, **shape)
+    api = FakeSlackApi(replies=replies)
+    clock = float(replies[THREAD][-1]["ts"]) + 5
+    registry = {"slack": Slack(http=api, keychain=lambda s: "", clock=lambda: clock)}
+    messages = correspond.read(f"slack:{CHANNEL}/{THREAD}", registry=registry)
+    assert [m.text for m in messages] == [f"r{i}" for i in range(4450, 4500)]
+    more = correspond.read(f"slack:{CHANNEL}/{THREAD}", limit=300, registry=registry)
+    assert [m.text for m in more] == [f"r{i}" for i in range(4200, 4500)]
+    asked = [name for name, _ in api.calls].count("conversations.replies")
+    assert asked <= 2 * 2 * MAX_THREAD_PAGES, asked
+
+
+def test_a_long_threads_read_since_a_time_keeps_the_newest_after_it(token):
+    from datetime import datetime, timezone
+
+    replies = _long_thread(4500)
+    api = FakeSlackApi(replies=replies)
+    since = datetime.fromtimestamp(float(replies[THREAD][100]["ts"]) + 0.5, tz=timezone.utc)
+    messages = correspond.read(
+        f"slack:{CHANNEL}/{THREAD}", since=since, limit=500, registry=_api_registry(api)
+    )
+    assert [m.text for m in messages] == [f"r{i}" for i in range(4000, 4500)]
+    short = correspond.read(  # since near the end: within the cap, read whole
+        f"slack:{CHANNEL}/{THREAD}",
+        since=datetime.fromtimestamp(float(replies[THREAD][4400]["ts"]) + 0.5, tz=timezone.utc),
+        limit=500,
+        registry=_api_registry(api),
+    )
+    assert [m.text for m in short] == [f"r{i}" for i in range(4400, 4500)]
+
+
+def test_a_thread_within_the_page_cap_is_still_read_whole(token):
+    api = FakeSlackApi(replies=_long_thread(450))
+    messages = correspond.read(f"slack:{CHANNEL}/{THREAD}", limit=500, registry=_api_registry(api))
+    assert [m.text for m in messages] == ["the parent"] + [f"r{i}" for i in range(450)]
+    assert [name for name, _ in api.calls].count("conversations.replies") == 3
+
+
+def test_listen_on_a_long_thread_still_moves_forward_from_its_cursor(token):
+    replies = _long_thread(4500)
+    api = FakeSlackApi(replies=replies)
+    clock = float(replies[THREAD][-1]["ts"]) + 3600
+    registry = {"slack": Slack(http=api, keychain=lambda s: "", clock=lambda: clock)}
+    ref = f"slack:{CHANNEL}/{THREAD}"
+    cursors = {ref: replies[THREAD][10]["ts"]}
+    got = list(correspond.listen(ref, cursors=cursors, limit=3, registry=registry))
+    assert [e.message.text for e in got] == ["r10", "r11", "r12"]
+
+
+OTHER_TOKEN = "xoxb-other"  # a second, equally fictional workspace
+
+
+def _two_workspaces(first, second):
+    """One transport answering for two tokens, each with its own fake workspace."""
+
+    def http(method, url, *, headers=None, body=None, timeout=None):
+        api = second if headers["Authorization"] == f"Bearer {OTHER_TOKEN}" else first
+        return api(method, url, headers=headers, body=body, timeout=timeout)
+
+    return http
+
+
+def test_channel_names_and_authors_are_kept_per_token(monkeypatch):
+    user = lambda handle: {"id": "U0ADA", "name": handle, "profile": {}}
+    first = FakeSlackApi(
+        HISTORY, channels=[{"id": CHANNEL, "name": "releases"}], users={"U0ADA": user("ada")}
+    )
+    second = FakeSlackApi(
+        HISTORY,
+        channels=[{"id": "C0SECOND1", "name": "releases"}],
+        users={"U0ADA": user("ana")},
+        token=OTHER_TOKEN,
+    )
+    registry = {"slack": Slack(http=_two_workspaces(first, second), keychain=lambda s: "", clock=lambda: NOW)}
+
+    def handles(token):
+        monkeypatch.setenv("CORRESPOND_SLACK_TOKEN", token)
+        messages = correspond.read("slack:releases", registry=registry)
+        return {m.author.handle for m in messages if m.author.native_id == "U0ADA"}
+
+    assert handles(TOKEN) == {"ada"}
+    assert handles(OTHER_TOKEN) == {"ana"}
+    assert handles(TOKEN) == {"ada"}  # still cached for the first token: no new calls
+    assert {p["channel"] for n, p in second.calls if n == "conversations.history"} == {"C0SECOND1"}
+    assert [n for n, _ in first.calls].count("conversations.list") == 1
+    assert [n for n, _ in first.calls].count("users.info") == 1
+
+
+def test_a_token_without_users_read_does_not_silence_another(monkeypatch):
+    first = FakeSlackApi(HISTORY, errors={"users.info": "missing_scope"})
+    second = FakeSlackApi(
+        HISTORY, users={"U0ADA": {"id": "U0ADA", "name": "ada", "profile": {}}}, token=OTHER_TOKEN
+    )
+    registry = {"slack": Slack(http=_two_workspaces(first, second), keychain=lambda s: "", clock=lambda: NOW)}
+    monkeypatch.setenv("CORRESPOND_SLACK_TOKEN", TOKEN)
+    correspond.read(f"slack:{CHANNEL}", registry=registry)
+    monkeypatch.setenv("CORRESPOND_SLACK_TOKEN", OTHER_TOKEN)
+    messages = correspond.read(f"slack:{CHANNEL}", registry=registry)
+    assert {m.author.handle for m in messages if m.author.native_id == "U0ADA"} == {"ada"}
+
+
+def test_the_caches_never_hold_the_token_itself(token):
+    slack = Slack(http=FakeSlackApi(HISTORY), keychain=lambda s: "", clock=lambda: NOW)
+    correspond.read(f"slack:{CHANNEL}", registry={"slack": slack})
+    assert TOKEN not in repr(vars(slack))
+
+
+def test_a_listing_stopped_early_resumes_where_it_stopped(token):
+    channels = [{"id": f"C0000000{i}", "name": f"c{i}"} for i in range(6)]
+    api = FakeSlackApi(HISTORY, channels=channels, channel_page=2)
+    registry = _api_registry(api)
+    for name in ("c0", "c5", "c0", "c3", "c5"):
+        correspond.read(f"slack:{name}", registry=registry)
+    listed = [p.get("cursor") for n, p in api.calls if n == "conversations.list"]
+    assert listed == [None, "2", "4"], listed
+    with pytest.raises(correspond.ChannelError) as caught:
+        correspond.read("slack:nowhere", registry=registry)  # a whole, fresh list without it: listed again
+    assert caught.value.kind == "not_found"
+    assert [n for n, _ in api.calls].count("conversations.list") == 6
+
+
+def _thread_of(*segments, latest_reply=True):
+    """A thread whose replies come in ``(count, step)`` segments, each ``step`` s after the last."""
+    stamps, at = [], float(THREAD)
+    for count, step in segments:
+        for _ in range(count):
+            at += step
+            stamps.append(f"{at:.6f}")
+    parent = _msg(THREAD, "the parent", thread_ts=THREAD, reply_count=len(stamps))
+    if latest_reply:
+        parent["latest_reply"] = stamps[-1]
+    return {THREAD: [parent] + [_msg(ts, f"r{i}", thread_ts=THREAD) for i, ts in enumerate(stamps)]}
+
+
+@pytest.mark.parametrize(
+    "segments",
+    [
+        [(4200, 0.01), (100, 30 * 86400)],  # a fast start, then a monthly trickle
+        [(4200, 3600), (3000, 0.0005)],  # an hourly thread, then a burst
+        [(4200, 1), (100, 7 * 86400)],  # a weekly trickle after a busy hour
+        [(4200, 1), (500, 0.000001)],  # 500 replies a microsecond apart
+        [(500, 0.5), (5000, 600), (200, 0.01)],  # three paces
+    ],
+)
+def test_a_long_threads_newest_replies_are_found_whatever_its_pace(token, segments):
+    from correspond.channels.slack import MAX_THREAD_PAGES
+
+    replies = _thread_of(*segments)
+    total = len(replies[THREAD]) - 1
+    api = FakeSlackApi(replies=replies)
+    clock = float(replies[THREAD][-1]["ts"]) + 5
+    registry = {"slack": Slack(http=api, keychain=lambda s: "", clock=lambda: clock)}
+    messages = correspond.read(f"slack:{CHANNEL}/{THREAD}", registry=registry)
+    assert [m.text for m in messages] == [f"r{i}" for i in range(total - 50, total)]
+    asked = [name for name, _ in api.calls].count("conversations.replies")
+    assert asked <= 1 + 2 * MAX_THREAD_PAGES, asked
+
+
+def test_a_thread_whose_parent_counts_too_many_replies_skips_its_oldest_pages(token):
+    api = FakeSlackApi(replies=_thread_of((4500, 1)))
+    correspond.read(f"slack:{CHANNEL}/{THREAD}", registry=_api_registry(api))
+    paged = [p for n, p in api.calls if n == "conversations.replies" and p.get("cursor")]
+    assert paged == [], "the first page's reply_count sends the read to the newest end"
+    assert [n for n, _ in api.calls].count("conversations.replies") <= 6
+
+
+def test_a_thread_ts_written_short_still_finds_its_parent(token):
+    replies = _thread_of((4500, 1))
+    short = THREAD.rstrip("0")  # 1760000010.0001
+    replies = {short: replies[THREAD]}
+    api = FakeSlackApi(replies=replies)
+    clock = float(replies[short][-1]["ts"]) - 3 * 86400  # a clock far behind: latest_reply is used
+    registry = {"slack": Slack(http=api, keychain=lambda s: "", clock=lambda: clock)}
+    messages = correspond.read(f"slack:{CHANNEL}/{short}", registry=registry)
+    assert [m.text for m in messages] == [f"r{i}" for i in range(4450, 4500)]
+
+
+def test_a_long_threads_walk_waits_a_short_rate_limit_out(token):
+    replies = _thread_of((4500, 1))
+    api = FakeSlackApi(replies=replies)
+    limited = [2]
+
+    def http(method, url, *, headers=None, body=None, timeout=None):
+        if "conversations.replies" in url and b"latest=" in (body or b"") and limited[0]:
+            limited[0] -= 1
+            return Response(429, {"retry-after": "1"}, b"")
+        return api(method, url, headers=headers, body=body, timeout=timeout)
+
+    slept = []
+    registry = {
+        "slack": Slack(http=http, keychain=lambda s: "", clock=lambda: NOW, sleep=slept.append)
+    }
+    messages = correspond.read(f"slack:{CHANNEL}/{THREAD}", registry=registry)
+    assert [m.text for m in messages] == [f"r{i}" for i in range(4450, 4500)]
+    assert slept == [1, 1]
+
+
+def test_a_channel_created_on_a_page_already_listed_is_found(token):
+    channels = [{"id": f"C0000000{i}", "name": f"c{i}"} for i in range(6)]
+    api = FakeSlackApi(HISTORY, channels=channels, channel_page=2)
+    registry = _api_registry(api)
+    correspond.read("slack:c0", registry=registry)  # stops after the first page
+    api.channels.insert(1, {"id": "C0000NEW1", "name": "fresh"})  # lands on page one
+    correspond.read("slack:fresh", registry=registry)
+    history = [p["channel"] for n, p in api.calls if n == "conversations.history"]
+    assert history[-1] == "C0000NEW1"
+
+
+def test_a_stale_listing_cursor_starts_the_listing_over(token):
+    channels = [{"id": f"C0000000{i}", "name": f"c{i}"} for i in range(6)]
+    api = FakeSlackApi(HISTORY, channels=channels, channel_page=2)
+    registry = _api_registry(api)
+    correspond.read("slack:c0", registry=registry)
+    api.errors["conversations.list"] = "invalid_cursor"
+    original = api.__call__
+
+    def http(method, url, *, headers=None, body=None, timeout=None):
+        from urllib.parse import parse_qsl
+
+        params = dict(parse_qsl(body.decode())) if body else {}
+        if "conversations.list" in url and not params.get("cursor"):
+            api.errors.pop("conversations.list", None)  # from the start, it answers
+        return original(method, url, headers=headers, body=body, timeout=timeout)
+
+    registry["slack"].http = http
+    correspond.read("slack:c5", registry=registry)
+    assert [p["channel"] for n, p in api.calls if n == "conversations.history"][-1] == "C00000005"
+
+
+def test_an_adapter_keeps_caches_for_a_few_tokens_only():
+    from correspond.channels.slack import MAX_WORKSPACES
+
+    slack = Slack()
+    for i in range(MAX_WORKSPACES + 3):
+        slack._workspace(f"xoxb-rotated-{i}").channel_ids["x"] = str(i)
+    assert len(slack._workspaces) == MAX_WORKSPACES
+    assert slack._workspace(f"xoxb-rotated-{MAX_WORKSPACES + 2}").channel_ids == {"x": str(MAX_WORKSPACES + 2)}
+    assert slack._workspace("xoxb-rotated-0").channel_ids == {}  # dropped, started anew
