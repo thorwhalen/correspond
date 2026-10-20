@@ -624,7 +624,9 @@ def _read_reviews(github, scope):
     reviews are read whole.
     """
     if scope.number is not None:
-        if not (scope.probe.status < 400 and (scope.probe.json() or {}).get("pull_request")):
+        if not (
+            scope.probe.status < 400 and (scope.probe.json() or {}).get("pull_request")
+        ):
             return None
         pulls = [scope.number]
     else:
@@ -1524,8 +1526,12 @@ class GitHub:
                 ).json()
                 or []
             )
-            numbers += [p["number"] for p in batch if parse_time(p["updated_at"]) >= since]
-            if len(batch) < PAGE_SIZE or any(parse_time(p["updated_at"]) < since for p in batch):
+            numbers += [
+                p["number"] for p in batch if parse_time(p["updated_at"]) >= since
+            ]
+            if len(batch) < PAGE_SIZE or any(
+                parse_time(p["updated_at"]) < since for p in batch
+            ):
                 break
         return numbers
 
