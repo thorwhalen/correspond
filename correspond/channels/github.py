@@ -110,9 +110,18 @@ NAME = "github"
 REF_RE = re.compile(
     r"^(?P<owner>[A-Za-z0-9][A-Za-z0-9-]{0,38})/(?P<repo>[A-Za-z0-9._-]{1,100})(?:#(?P<number>[1-9][0-9]{0,9}))?$"
 )
+#: What each message id prefix names. GitHub's own anchors: a review comment on the diff is
+#: ``discussion_rID`` (no dash), a review's summary is ``pullrequestreview-ID``.
+MESSAGE_ID_KINDS = {
+    "issue-": "issue",
+    "issuecomment-": "issuecomment",
+    "discussion-": "discussion",
+    "discussioncomment-": "discussioncomment",
+    "discussion_r": "reviewcomment",
+    "pullrequestreview-": "review",
+}
 MESSAGE_ID_RE = re.compile(
-    r"^(?:(?P<kind>issue|issuecomment|discussion|discussioncomment)-|(?P<review>discussion_r))"
-    r"(?P<id>[1-9][0-9]{0,19})$"
+    rf"^(?P<prefix>{'|'.join(map(re.escape, MESSAGE_ID_KINDS))})(?P<id>[1-9][0-9]{{0,19}})$"
 )
 NODE_ID_RE = re.compile(r"^(?P<kind>D|DC)_[A-Za-z0-9_-]{4,}$")
 REACTIONS = ("+1", "-1", "laugh", "confused", "heart", "hooray", "rocket", "eyes")
@@ -596,6 +605,65 @@ def _review_comment_candidates(github, scope, comments):
     return found
 
 
+def _is_review_message(review: Mapping[str, Any]) -> bool:
+    """A submitted review that says something: a verdict, or a body. A pending review has no
+    ``submitted_at``; a "comment" review with no body only wraps its comments on the diff."""
+    if not review.get("submitted_at"):
+        return False
+    return bool((review.get("body") or "").strip()) or review.get("state") != "COMMENTED"
+
+
+def _read_reviews(github, scope):
+    """Reviews submitted since the cursor.
+
+    The reviews list has no ``since``, so a pull request's is read whole and filtered here.
+    A repository has no reviews endpoint at all: its pull requests are read by latest update
+    (a review moves that), newest first, until one is older than the cursor, and each one's
+    reviews are read whole.
+    """
+    if scope.number is not None:
+        if not (scope.probe.status < 400 and (scope.probe.json() or {}).get("pull_request")):
+            return None
+        pulls = [scope.number]
+    else:
+        pulls = github._pulls_updated_since(scope.owner, scope.repo, scope.position)
+    found: list[dict] = []
+    date = None
+    for number in pulls:
+        reviews, _, date = github._collect(
+            f"repos/{scope.owner}/{scope.repo}/pulls/{number}/reviews", bounded=False
+        )
+        found += [
+            {**r, "_pull_number": number}
+            for r in reviews
+            if _is_review_message(r) and parse_time(r["submitted_at"]) >= scope.position
+        ]
+    return found, False, date
+
+
+def _review_candidates(github, scope, reviews):
+    found = []
+    for review in reviews:
+        conversation = ConversationRef(
+            channel=NAME,
+            id=f"{scope.owner}/{scope.repo}#{review['_pull_number']}",
+            kind="pull_request",
+            parent=scope.repository,
+        )
+        submitted = review["submitted_at"]
+        found.append(
+            (
+                parse_time(submitted),
+                f"pullrequestreview-{review['id']}@{submitted}",
+                "message.created",  # a review is delivered once, when it is submitted
+                github._review(
+                    conversation, {k: v for k, v in review.items() if k != "_pull_number"}
+                ),
+            )
+        )
+    return found
+
+
 def _read_discussions(github, scope):
     if scope.number is not None:
         if scope.probe.status < 400:
@@ -634,6 +702,7 @@ POLL_SOURCES: tuple[PollSource, ...] = (
     PollSource("issue comments", _read_issue_comments, _issue_comment_candidates),
     PollSource("issues", _read_issues, _issue_candidates, counts_openings=True),
     PollSource("review comments", _read_review_comments, _review_comment_candidates),
+    PollSource("reviews", _read_reviews, _review_candidates),
     PollSource("discussions", _read_discussions, _discussion_candidates),
 )
 
@@ -702,7 +771,7 @@ class GitHub:
                 "a gh token that may not read discussions listens to a repository's issues, comments and review comments only (logged as a warning)",
                 "GitHub moves a review comment's updated_at when its review is submitted and when a push outdates it, so listen reports those as message.updated with the text unchanged, and a review comment carries no edited_at",
                 "reply_to works in discussions and in pull request review threads (a reply to a reply joins its thread); issue and pull request conversation comments are flat",
-                "reading or listening to a pull request includes its review comments on the diff (message ids discussion_rID, with path, line, original_line, review_id and diff_hunk in native); reviews' own summary bodies are not read",
+                "reading or listening to a pull request includes its review comments on the diff (message ids discussion_rID, with path, line, original_line, review_id and diff_hunk in native); a pull request's reviews are read too, each review's summary as a message pullrequestreview-ID with its state (APPROVED, CHANGES_REQUESTED, COMMENTED, DISMISSED) in native; a review with no body and only a COMMENTED state is left out, and listening to a repository finds them through the pull requests updated since the cursor",
                 "a discussion comment's replies are its latest 100 (native replies_truncated when there are more)",
                 "notify mentions each handle the text lacks; GitHub notifies a mentioned user or team who can see the repository, so on a private one a non-member is not reached",
                 "listen can miss a change only when more than 2,000 issues or comments change within the same second",
@@ -958,9 +1027,52 @@ class GitHub:
             path = f"repos/{owner}/{repo}/pulls/{number}/comments"
             if since is not None:
                 path += f"?since={format_time(since)}"
-            reviews, _, _ = self._collect(path, bounded=False)
-            messages += [self._review_comment(conversation, c) for c in reviews]
+            comments_on_diff, _, _ = self._collect(path, bounded=False)
+            messages += [self._review_comment(conversation, c) for c in comments_on_diff]
+            reviews, _, _ = self._collect(
+                f"repos/{owner}/{repo}/pulls/{number}/reviews", bounded=False
+            )
+            messages += self._reviews(conversation, reviews, since)
         return messages
+
+    def _reviews(
+        self,
+        conversation: ConversationRef,
+        reviews: Iterable[Mapping[str, Any]],
+        since: datetime | None = None,
+    ) -> list[Message]:
+        """The submitted reviews worth a message, as :meth:`_review` makes them, from ``since`` on."""
+        found = []
+        for review in reviews:
+            if not _is_review_message(review):
+                continue
+            if since is not None and parse_time(review["submitted_at"]) < since:
+                continue
+            found.append(self._review(conversation, review))
+        return found
+
+    def _review(
+        self, conversation: ConversationRef, review: Mapping[str, Any]
+    ) -> Message:
+        """A pull request review's own summary (``pullrequestreview-ID``); its ``state`` is in native.
+
+        The review's comments on the diff are separate messages (``discussion_rID``) that
+        name it in ``review_id``. GitHub gives a review no update time, and an edit of its
+        body does not move anything, so ``edited_at`` stays unset.
+        """
+        return Message(
+            id=f"pullrequestreview-{review['id']}",
+            conversation=conversation,
+            author=self._identity(review.get("user"), review.get("author_association")),
+            authenticity=_PLATFORM,
+            sent_at=parse_time(review["submitted_at"]),
+            text=review.get("body") or "",
+            body=review.get("body") or "",
+            body_format="markdown",
+            url=review.get("html_url"),
+            native={"state": review.get("state"), "review_id": review["id"]},
+            raw=review,
+        )
 
     def _review_comment(
         self, conversation: ConversationRef, comment: Mapping[str, Any]
@@ -1303,7 +1415,7 @@ class GitHub:
     def poll(
         self, ref: ConversationRef, *, cursor: str | None = None, limit: int | None = None
     ):
-        """Issue, comment, review comment and discussion activity since ``cursor``; a first poll looks back a day.
+        """Issue, comment, review comment, review and discussion activity since ``cursor``; a first poll looks back a day.
 
         The cursor is opaque JSON: the update time the next poll starts from (``t``; GitHub's
         ``since`` includes it), the creation time from which an issue still counts as new
@@ -1394,6 +1506,26 @@ class GitHub:
         elif not limited:
             final = _encode_cursor(position, position, delivered)
         return with_final_cursor(events, final)
+
+    def _pulls_updated_since(self, owner: str, repo: str, since: datetime) -> list[int]:
+        """The numbers of the repository's pull requests updated at or after ``since``, newest first.
+
+        Read page by page, newest update first, until a page reaches one older than ``since``
+        (at most ``MAX_PAGES`` pages: beyond that the oldest are not looked at).
+        """
+        numbers: list[int] = []
+        for page in range(1, MAX_PAGES + 1):
+            batch = (
+                self._api(
+                    f"repos/{owner}/{repo}/pulls?state=all&sort=updated&direction=desc"
+                    f"&per_page={PAGE_SIZE}&page={page}"
+                ).json()
+                or []
+            )
+            numbers += [p["number"] for p in batch if parse_time(p["updated_at"]) >= since]
+            if len(batch) < PAGE_SIZE or any(parse_time(p["updated_at"]) < since for p in batch):
+                break
+        return numbers
 
     def _active_discussions(self, owner: str, repo: str, since: datetime) -> list[int]:
         """The numbers of the repository's discussions active at or after ``since``.
@@ -1785,10 +1917,10 @@ class GitHub:
         match = MESSAGE_ID_RE.match(message_id)
         if not match:
             raise ChannelError(
-                f"GitHub message ids look like issue-12, issuecomment-345, discussion_r678 (a review comment), discussion-6 or discussioncomment-789, not {message_id!r}",
+                f"GitHub message ids look like issue-12, issuecomment-345, discussion_r678 (a review comment), pullrequestreview-9 (a review), discussion-6 or discussioncomment-789, not {message_id!r}",
                 kind="validation",
             )
-        return match["kind"] or "reviewcomment", match["id"]
+        return MESSAGE_ID_KINDS[match["prefix"]], match["id"]
 
     def _node_id(self, owner: str, repo: str, number: int | None, message_id: str) -> str:
         kind, ident = self._message_kind(message_id)

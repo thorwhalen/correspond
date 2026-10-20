@@ -173,9 +173,11 @@ NO_DISCUSSIONS = {
         }
     }
 }
-#: A repository poll's further reads, answered with nothing: no review comments, no discussions.
+#: A repository poll's further reads, answered with nothing: no review comments, no pull
+#: requests (so no reviews), no discussions.
 QUIET = (
     ("GET", rf"repos/{REPO}/pulls/comments\?.*", (200, [])),
+    ("GET", rf"repos/{REPO}/pulls\?state=all&.*", (200, [])),
     ("POST", "graphql", (200, NO_DISCUSSIONS)),
 )
 
@@ -1872,7 +1874,7 @@ def _review(
     return data
 
 
-def _pull_routes(*reviews, comments=()):
+def _pull_routes(*reviews, comments=(), summaries=()):
     return (
         ("GET", rf"repos/{REPO}/issues/3", (200, _issue(3, pr=True))),
         (
@@ -1884,6 +1886,11 @@ def _pull_routes(*reviews, comments=()):
             "GET",
             rf"repos/{REPO}/pulls/3/comments\?per_page=100&page=1",
             (200, list(reviews)),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/pulls/3/reviews\?per_page=100&page=1",
+            (200, list(summaries)),
         ),
     )
 
@@ -2044,6 +2051,7 @@ def test_listening_to_a_pull_request_includes_review_comment_activity():
                 ],
             ),
         ),
+        ("GET", rf"repos/{REPO}/pulls/3/reviews\?per_page=100&page=1", (200, [])),
     )
     events = list(
         correspond.listen(
@@ -2120,6 +2128,7 @@ def test_polling_a_repository_finds_review_comments_and_active_discussions():
             rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since={since}&per_page=100&page=1",
             (200, []),
         ),
+        ("GET", rf"repos/{REPO}/pulls\?state=all&.*", (200, [])),
         (
             "GET",
             rf"repos/{REPO}/pulls/comments\?sort=updated&direction=asc&since={since}&per_page=100&page=1",
@@ -2284,6 +2293,7 @@ def _repository_poll(since, date, graphql, *, comments=()):
             rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since={since}&per_page=100&page=1",
             (200, [], {"Date": date}),
         ),
+        ("GET", rf"repos/{REPO}/pulls\?state=all&.*", (200, [])),
         (
             "GET",
             rf"repos/{REPO}/pulls/comments\?sort=updated&direction=asc&since={since}&per_page=100&page=1",
@@ -2366,3 +2376,119 @@ def test_listen_is_declared_partial_with_why():
     caps = GitHub().capabilities
     assert caps.listen is Support.PARTIAL
     assert any("listen is partial on a repository's discussions" in n for n in caps.notes)
+
+
+def _summary(review_id, *, state="APPROVED", body="", submitted="2026-09-11T09:30:00Z", user="octocat"):
+    data = {
+        "id": review_id,
+        "user": {"login": user, "id": 1, "type": "User"},
+        "body": body,
+        "state": state,
+        "author_association": "MEMBER",
+        "html_url": f"https://github.com/{REPO}/pull/3#pullrequestreview-{review_id}",
+        "pull_request_url": f"https://api.github.com/repos/{REPO}/pulls/3",
+    }
+    if submitted:
+        data["submitted_at"] = submitted
+    return data
+
+
+def test_reading_a_pull_request_includes_the_summaries_of_its_reviews():
+    gh = ScriptedGh(
+        WHOAMI,
+        *_pull_routes(
+            summaries=[
+                _summary(80, state="CHANGES_REQUESTED", body="Please fix the export."),
+                _summary(81, state="APPROVED"),  # a verdict with no words still counts
+                _summary(82, state="COMMENTED"),  # only wraps its comments on the diff
+                _summary(83, state="PENDING", body="draft", submitted=None),
+            ]
+        ),
+    )
+    messages = _read(gh, f"github:{REPO}#3")
+    assert [m.id for m in messages] == ["issue-3", "pullrequestreview-80", "pullrequestreview-81"]
+    changes, approved = messages[1:]
+    assert changes.native == {"state": "CHANGES_REQUESTED", "review_id": 80}
+    assert changes.text == "Please fix the export." and approved.text == ""
+    assert changes.conversation.kind == "pull_request" and changes.edited_at is None
+    assert set(changes.native) <= set(GitHub().capabilities.native_fields)
+
+
+def test_message_ids_name_their_kind():
+    kind = GitHub._message_kind
+    assert kind("pullrequestreview-80") == ("review", "80")
+    assert kind("discussion_r5") == ("reviewcomment", "5")
+    assert kind("issuecomment-7") == ("issuecomment", "7")
+    for bad in ("pullrequestreview", "pullrequestreview-0", "pullrequestreview_80"):
+        with pytest.raises(ChannelError):
+            kind(bad)
+
+
+def test_a_review_is_neither_edited_nor_reacted_to_yet():
+    registry = {"github": GitHub(run=ScriptedGh(WHOAMI))}
+    for operation in (
+        lambda: correspond.edit(f"github:{REPO}#3", "pullrequestreview-80", "x", registry=registry),
+        lambda: correspond.react(f"github:{REPO}#3", "pullrequestreview-80", "eyes", registry=registry),
+    ):
+        assert operation().error_kind == "validation"
+
+
+def test_listening_to_a_pull_request_delivers_reviews_submitted_since_the_cursor():
+    since = "2026-09-11T08:00:00Z"
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/3", (200, _issue(3, pr=True))),
+        ("GET", rf"repos/{REPO}/issues/3/comments\?since={since}&per_page=100&page=1", (200, [])),
+        ("GET", rf"repos/{REPO}/pulls/3/comments\?since={since}&per_page=100&page=1", (200, [])),
+        (
+            "GET",
+            rf"repos/{REPO}/pulls/3/reviews\?per_page=100&page=1",
+            (
+                200,
+                [
+                    _summary(80, body="old", submitted="2026-09-11T07:00:00Z"),
+                    _summary(81, state="CHANGES_REQUESTED", body="new", submitted="2026-09-11T08:30:00Z"),
+                ],
+            ),
+        ),
+    )
+    events = list(
+        correspond.listen(
+            f"github:{REPO}#3",
+            cursors={f"github:{REPO}#3": since},
+            registry={"github": GitHub(run=gh)},
+        )
+    )
+    assert [(e.kind, e.message.id) for e in events] == [("message.created", "pullrequestreview-81")]
+    assert events[0].message.native["state"] == "CHANGES_REQUESTED"
+
+
+def test_listening_to_a_repository_reads_the_reviews_of_pull_requests_updated_since_the_cursor():
+    since = "2026-09-11T08:00:00Z"
+    date = "Fri, 11 Sep 2026 12:00:00 GMT"
+    pull = lambda n, updated: {"number": n, "updated_at": updated}  # noqa: E731
+    gh = ScriptedGh(
+        WHOAMI,
+        ("GET", rf"repos/{REPO}/issues/comments\?sort=updated&direction=asc&since={since}&per_page=100&page=1", (200, [], {"Date": date})),
+        ("GET", rf"repos/{REPO}/issues\?state=all&sort=updated&direction=asc&since={since}&per_page=100&page=1", (200, [])),
+        ("GET", rf"repos/{REPO}/pulls/comments\?.*", (200, [])),
+        (
+            "GET",
+            rf"repos/{REPO}/pulls\?state=all&sort=updated&direction=desc&per_page=100&page=1",
+            (200, [pull(3, "2026-09-11T08:30:00Z"), pull(2, "2026-09-10T08:30:00Z")]),
+        ),
+        (
+            "GET",
+            rf"repos/{REPO}/pulls/3/reviews\?per_page=100&page=1",
+            (200, [_summary(81, state="CHANGES_REQUESTED", body="new", submitted="2026-09-11T08:30:00Z"), _summary(80, body="old", submitted="2026-09-11T07:00:00Z")], {"Date": date}),
+        ),
+        ("POST", "graphql", (200, NO_DISCUSSIONS)),
+    )
+    events = list(
+        correspond.listen(
+            f"github:{REPO}", cursors={f"github:{REPO}": since}, registry={"github": GitHub(run=gh)}
+        )
+    )
+    assert [(e.kind, e.message.id) for e in events] == [("message.created", "pullrequestreview-81")]
+    assert events[0].message.conversation.id == f"{REPO}#3"
+    assert not any("pulls/2/" in path for path in gh.paths()), "a pull request not updated since the cursor is not read"
