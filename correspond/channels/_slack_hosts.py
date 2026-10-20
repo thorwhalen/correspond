@@ -63,13 +63,13 @@ def on_slack_host(host: str | None, base: str = API_BASE) -> bool:
 
     >>> on_slack_host("wss-primary.slack.com"), on_slack_host("slack.com.example.org")
     (True, False)
-    >>> on_slack_host("evilslack.com"), on_slack_host(""), on_slack_host("a\n.slack.com")
+    >>> on_slack_host("evilslack.com"), on_slack_host(""), on_slack_host("a\\n.slack.com")
     (False, False, False)
     """
     domain = API_BASES[api_base(base)]
-    name = (host or "").lower()
-    if not name.isascii():  # no look-alikes that lower-case into ASCII (Kelvin sign and the like)
+    if not (host or "").isascii():  # before lower(): the Kelvin sign lower-cases to k
         return False
+    name = (host or "").lower()
     if name == domain:
         return True
     prefix, dot, rest = name.rpartition("." + domain)
