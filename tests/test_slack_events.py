@@ -191,3 +191,42 @@ def test_a_non_ascii_content_length_is_not_a_crash(monkeypatch):
     app = mk_events_app(verify=_verifier(monkeypatch), events={})
     asyncio.run(app(scope, receive, send))
     assert sent[0]["status"] == 200
+
+
+def test_the_receiver_keeps_only_the_channels_keep_channels_names(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_SLACK_KEEP_CHANNELS", "C0OTHER01")
+    store = {}
+    app = mk_events_app(verify=_verifier(monkeypatch), events=store)
+    assert _deliver(app, _callback(_message("1760000000.000100")))[0] == 200
+    assert store == {}  # acknowledged, not kept
+    everything = mk_events_app(verify=_verifier(monkeypatch), events=store, keep=lambda c: True)
+    assert _deliver(everything, _callback(_message("1760000000.000100")))[0] == 200
+    assert len(store) == 1
+
+
+def test_the_receiver_takes_its_stamps_after_every_other_writer(monkeypatch):
+    from correspond.stores import arrival_stamps
+
+    with arrival_stamps("slack-events").issue(500):  # another writer, clock ahead
+        pass
+    store = {}
+    app = mk_events_app(verify=_verifier(monkeypatch), events=store, clock=lambda: 7)
+    assert _deliver(app, _callback(_message("1760000000.000100")))[0] == 200
+    assert list(store) == [received_key(501, "Ev0001")]
+
+
+def test_an_events_listen_to_a_channel_keep_channels_leaves_out_is_refused(monkeypatch):
+    monkeypatch.setenv("CORRESPOND_SLACK_TOKEN", "xoxb-fake")
+    monkeypatch.setenv("CORRESPOND_SLACK_DELIVERY", "events")
+    monkeypatch.setenv("CORRESPOND_SLACK_KEEP_CHANNELS", "C0OTHER01")
+    registry = {"slack": Slack(keychain=lambda s: "", clock=lambda: NOW_S, events={})}
+    with pytest.raises(correspond.ChannelError) as caught:
+        list(correspond.listen(f"slack:{CHANNEL}", cursors={}, registry=registry))
+    assert caught.value.kind == "validation" and "keep_channels" in str(caught.value)
+
+
+def test_the_receiver_stamps_after_what_the_store_already_holds(monkeypatch):
+    store = {received_key(900, "Ev0009"): {"channel": CHANNEL, "event": _message("1760000000.000100")}}
+    app = mk_events_app(verify=_verifier(monkeypatch), events=store, clock=lambda: 7)
+    assert _deliver(app, _callback(_message("1760000001.000100")))[0] == 200
+    assert max(store) == received_key(901, "Ev0001")

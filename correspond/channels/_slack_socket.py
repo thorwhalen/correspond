@@ -38,7 +38,9 @@ __all__ = [
 ]
 
 CONNECTIONS_OPEN_URL = "https://slack.com/api/apps.connections.open"
-#: Hosts a Socket Mode URL may name.
+#: Hosts a Socket Mode URL may name. GovSlack's (``.slack-gov.com``) is not one: the
+#: connection is asked of ``slack.com``, which never names it, so widening this alone
+#: would add nothing; GovSlack needs its own API base first.
 SOCKET_HOST_SUFFIX = ".slack.com"
 #: How long a window waits for Slack's ``hello``, even when ``wait`` is shorter.
 HELLO_TIMEOUT_S = 15.0

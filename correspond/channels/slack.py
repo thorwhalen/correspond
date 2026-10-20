@@ -397,6 +397,31 @@ def event_record(payload: Any) -> dict | None:
     }
 
 
+def kept_channels(raw: Any) -> frozenset[str] | None:
+    """The channel ids the ``keep_channels`` setting names, or ``None`` (unset: every channel's events are kept).
+
+    >>> sorted(kept_channels("C0123ABCD, G0123ABCD"))
+    ['C0123ABCD', 'G0123ABCD']
+    >>> kept_channels("") is None
+    True
+    """
+    names = [n for n in re.split(r"[\s,]+", str(raw or "")) if n]
+    if not names:
+        return None
+    wrong = [n for n in names if not CHANNEL_ID_RE.fullmatch(n)]
+    if wrong:
+        raise ChannelError(
+            f"slack keep_channels is a comma-separated list of channel ids (C..., G...: a channel's id is at the bottom of its details), not names such as {wrong[0]!r}",
+            kind="validation",
+        )
+    return frozenset(names)
+
+
+def configured_kept_channels(*, run: Callable[..., Any] = subprocess.run) -> frozenset[str] | None:
+    """The ``keep_channels`` setting, parsed (see :func:`kept_channels`)."""
+    return kept_channels(value(NAME, "keep_channels", run=run, keychain=False))
+
+
 def _token_key(token: str) -> str:
     """The key a token's caches are kept under: a digest, so no cache holds the token itself.
 
@@ -484,9 +509,11 @@ class Slack:
         sleep: Callable[[float], None] = time.sleep,
         events: MutableMapping[str, Any] | None = None,
         socket: Callable[..., list[dict]] = socket_window,
+        stamps: Any = None,
     ):
         self.http = http
         self.socket = socket
+        self._stamps = stamps
         self._socket_ended_at: float | None = None
         self._events = events
         self.run = run
@@ -527,7 +554,7 @@ class Slack:
                 "read and listen see a channel's top-level messages, thread parents and replies also sent to the channel; the other replies are read through the thread's own reference, slack:<channel>/<thread ts> (conversations.replies), which listen polls and send replies in; reading a thread too long for 20 pages of replies (about 4,000) returns its newest ones (it walks back from the latest reply); Slack's own notices (someone joined, the topic changed) are left out; listen polls over the Web API and sees new messages, not edits",
                 "an author's handle and display name come from users.info (the token needs users:read), kept an hour per token (as are channel names), so two workspaces never share them; without the scope the author is the user id alone",
                 "with delivery = events, listen reads what the Events API receiver (correspond-slack-events, behind your HTTPS reverse proxy) stored instead of polling, and also reports edits (message.updated) and deletions (message.deleted); the receiver verifies every request's signature and answers Slack's url_verification",
-                "with delivery = socket (the slack extra, an app-level xapp- token in app_token, Socket Mode on in the app's settings), listen opens Slack's Socket Mode for a window of listen_wait_s quiet seconds (60 s at most), stores every message event as the receiver does (every channel's, kept a week) before acknowledging it, and reports this reference's (listens to several references in a row share one window; one listening process per store): no public URL needed, but what arrives while no listen has the socket open reaches it only through Slack's own retries",
+                "with delivery = socket (the slack extra, an app-level xapp- token in app_token, Socket Mode on in the app's settings), listen opens Slack's Socket Mode for a window of listen_wait_s quiet seconds (60 s at most), stores every message event as the receiver does (every channel's, or only those keep_channels names; kept a week) before acknowledging it, and reports this reference's (listens to several references in a row share one window; writers on one machine take turns through a lock, so several listening processes and the receiver may share the store): no public URL needed, but what arrives while no listen has the socket open reaches it only through Slack's own retries",
                 "install the app in your own workspace (a commercially distributed app outside Slack's Marketplace gets one history request a minute); listen walks forward through time windows, delivering each whole before the next, so a poll a rate limit cuts short keeps what it delivered and the next one resumes there, and a backlog drains a little each poll; the newest minute waits for the next poll (this clock may run ahead of Slack's)",
                 "a file is fetched with the token only from Slack's own hosts (the token needs files:read); a file hosted elsewhere is not fetched",
                 "a channel named rather than given by id is looked up with conversations.list (the token needs channels:read, and groups:read for a private one); a name is trusted five minutes, so a renamed channel answers to its new name within them",
@@ -568,6 +595,15 @@ class Slack:
 
             self._events = configured_store(NAME, EVENTS_KIND)
         return self._events
+
+    @property
+    def stamps(self) -> Any:
+        """Where a Socket Mode listen takes arrival stamps: shared with the Events API receiver (:func:`correspond.stores.arrival_stamps`)."""
+        if self._stamps is None:
+            from correspond.stores import arrival_stamps
+
+            self._stamps = arrival_stamps(EVENTS_KIND)
+        return self._stamps
 
     def _delivery(self) -> str:
         delivery = (
@@ -1147,6 +1183,13 @@ class Slack:
         channel = self._channel_id(ref, token)
         thread = self._where(ref)[1]
         delivery = self._delivery()
+        if delivery in ("events", "socket"):
+            kept = configured_kept_channels(run=self.run)
+            if kept is not None and channel not in kept:
+                raise ChannelError(
+                    f"slack keep_channels does not name {channel}, so no event of it is kept: add it to listen to slack:{ref.id}",
+                    kind="validation",
+                )
         failed = None
         if delivery == "socket":
             try:
@@ -1260,9 +1303,12 @@ class Slack:
         to one channel never loses another's; each reference's listen then reads the store
         from its own cursor. An event already stored (Slack's retry) is not stored twice.
         Listens to several references in a row share one window: a window that ended less
-        than ``listen_wait_s`` ago is not opened again. The store has one writer at a time
-        (one listening process, and not the Events API receiver too). Returns how many
-        events were stored.
+        than ``listen_wait_s`` ago is not opened again. With ``keep_channels`` set, only
+        those channels' events are stored (the others are acknowledged and dropped).
+        Writers take turns: each event is stamped and stored under the lock of
+        :func:`correspond.stores.arrival_stamps`, which the Events API receiver and other
+        listening processes on this machine share, so none stores an event below a cursor
+        another already passed. Returns how many events were stored.
         """
         app_token = require(NAME, "app_token", run=self.run)
         if not app_token.startswith(APP_TOKEN_PREFIX):
@@ -1285,6 +1331,7 @@ class Slack:
             and 0 <= self.clock() - self._socket_ended_at < wait
         ):
             return 0  # the last window just closed: its events are in the store
+        kept = configured_kept_channels(run=self.run)
         events = self.events
         stamps, seen = [0], set()
         for key in list(events):
@@ -1300,11 +1347,14 @@ class Slack:
             )
             if record is None or record["event_id"] in seen:
                 return
-            stamp = max(int(self.clock() * 10**9), last[0] + 1)  # strictly increasing
-            events[received_key(stamp, record["event_id"])] = {
-                **record,
-                "received_ns": stamp,
-            }
+            if kept is not None and record["channel"] not in kept:
+                return  # acknowledged, not kept
+            # strictly increasing, and stored before any other writer takes a stamp
+            with self.stamps.issue(int(self.clock() * 10**9), floor=last[0]) as stamp:
+                events[received_key(stamp, record["event_id"])] = {
+                    **record,
+                    "received_ns": stamp,
+                }
             last[0] = stamp
             seen.add(record["event_id"])
             stored[0] += 1
@@ -1342,9 +1392,11 @@ class Slack:
                 kind="validation",
             )
         wanted = max(1, int(limit)) if limit else None
+        with self.stamps.hold():  # no writer is midway: every listed event is whole
+            keys = list(self.events)
         received = sorted(
             (int(match["stamp"]), key)
-            for key in list(self.events)
+            for key in keys
             if (match := RECEIVED_KEY_RE.match(key))
         )
         events: list[Event] = []
