@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=cee5022b"></script>
+    <script src="../../../_static/documentation_options.js?v=26ffa1e9"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.27" />
+  <meta name="docsearch:version" content="0.0.28" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1180,6 +1180,181 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
 
 
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">_PollScope</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What ``GitHub.poll`` is listening to: a repository, or one issue/pull request/discussion."""</span>
+
+    <span class="n">owner</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">repo</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">number</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">stamp</span><span class="p">:</span> <span class="nb">str</span>  <span class="c1"># the cursor's position as ``since``</span>
+    <span class="n">position</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">openings_from</span><span class="p">:</span> <span class="n">datetime</span>
+    <span class="n">repository</span><span class="p">:</span> <span class="n">ConversationRef</span>
+    <span class="n">probe</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># the response for ``number`` as an issue, when there is a number</span>
+
+
+<span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PollSource</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""One list ``GitHub.poll`` reads: the cursor logic is written once over these.</span>
+
+<span class="sd">    ``read(github, scope)`` returns ``(items, cut, server_date)``, or ``None`` when the</span>
+<span class="sd">    source does not apply to the scope. ``candidates(github, scope, items)`` returns</span>
+<span class="sd">    ``(moment, key, kind, message)`` tuples. ``changed(item)`` is the time a list item is</span>
+<span class="sd">    ordered by (for a list cut short). ``counts_openings``: while this list is read in</span>
+<span class="sd">    parts, the creation time from which an item still counts as new stays behind.</span>
+<span class="sd">    """</span>
+
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">read</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="n">candidates</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span>
+    <span class="n">changed</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">dict</span><span class="p">],</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">item</span><span class="p">:</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"updated_at"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">item</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]</span>
+    <span class="n">counts_openings</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_read_issue_comments</span><span class="p">(</span><span class="n">github</span><span class="p">,</span> <span class="n">scope</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">number</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">github</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/comments?sort=updated&amp;direction=asc&amp;since=</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">probe</span><span class="o">.</span><span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">400</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>  <span class="c1"># not an issue: a discussion</span>
+    <span class="c1"># One issue's comments come ordered by id, not by update, so a cut list would not be</span>
+    <span class="c1"># complete up to any time: read every page (an issue holds a bounded number).</span>
+    <span class="k">return</span> <span class="n">github</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments?since=</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_issue_comment_candidates</span><span class="p">(</span><span class="n">github</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">comments</span><span class="p">):</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">comment</span> <span class="ow">in</span> <span class="n">comments</span><span class="p">:</span>
+        <span class="n">issue_number</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"issue_url"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">conversation</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">issue_number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">parent</span><span class="o">=</span><span class="n">scope</span><span class="o">.</span><span class="n">repository</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">changed</span> <span class="o">=</span> <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"updated_at"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">comment</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]</span>
+        <span class="n">is_new</span> <span class="o">=</span> <span class="n">parse_time</span><span class="p">(</span><span class="n">comment</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="n">scope</span><span class="o">.</span><span class="n">openings_from</span>
+        <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">parse_time</span><span class="p">(</span><span class="n">changed</span><span class="p">),</span>
+                <span class="sa">f</span><span class="s2">"issuecomment-</span><span class="si">{</span><span class="n">comment</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">changed</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="s2">"message.created"</span> <span class="k">if</span> <span class="n">is_new</span> <span class="k">else</span> <span class="s2">"message.updated"</span><span class="p">,</span>
+                <span class="n">github</span><span class="o">.</span><span class="n">_comment</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">comment</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">found</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_read_issues</span><span class="p">(</span><span class="n">github</span><span class="p">,</span> <span class="n">scope</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">number</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">github</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues?state=all&amp;sort=updated&amp;direction=asc&amp;since=</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_issue_candidates</span><span class="p">(</span><span class="n">github</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">issues</span><span class="p">):</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">issue</span> <span class="ow">in</span> <span class="n">issues</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">parse_time</span><span class="p">(</span><span class="n">issue</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">scope</span><span class="o">.</span><span class="n">openings_from</span><span class="p">:</span>
+            <span class="k">continue</span>  <span class="c1"># an older issue that changed: its comments arrive as their own events</span>
+        <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">parse_time</span><span class="p">(</span><span class="n">issue</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]),</span>
+                <span class="sa">f</span><span class="s2">"issue-</span><span class="si">{</span><span class="n">issue</span><span class="p">[</span><span class="s1">'number'</span><span class="p">]</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">issue</span><span class="p">[</span><span class="s1">'created_at'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="s2">"message.created"</span><span class="p">,</span>
+                <span class="n">github</span><span class="o">.</span><span class="n">_opening</span><span class="p">(</span>
+                    <span class="n">github</span><span class="o">.</span><span class="n">_issue_conversation</span><span class="p">(</span><span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="p">,</span> <span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="n">issue</span><span class="p">),</span> <span class="n">issue</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">found</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_read_review_comments</span><span class="p">(</span><span class="n">github</span><span class="p">,</span> <span class="n">scope</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">number</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">github</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/comments?sort=updated&amp;direction=asc&amp;since=</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">probe</span><span class="o">.</span><span class="n">status</span> <span class="o">&lt;</span> <span class="mi">400</span> <span class="ow">and</span> <span class="p">(</span><span class="n">scope</span><span class="o">.</span><span class="n">probe</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pull_request"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">github</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments?since=</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_review_comment_candidates</span><span class="p">(</span><span class="n">github</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">comments</span><span class="p">):</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">comment</span> <span class="ow">in</span> <span class="n">comments</span><span class="p">:</span>
+        <span class="n">pull_number</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">str</span><span class="p">(</span><span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pull_request_url"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">conversation</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">pull_number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"pull_request"</span><span class="p">,</span>
+            <span class="n">parent</span><span class="o">=</span><span class="n">scope</span><span class="o">.</span><span class="n">repository</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">changed</span> <span class="o">=</span> <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"updated_at"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">comment</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]</span>
+        <span class="n">is_new</span> <span class="o">=</span> <span class="n">parse_time</span><span class="p">(</span><span class="n">comment</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="n">scope</span><span class="o">.</span><span class="n">openings_from</span>
+        <span class="n">found</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">parse_time</span><span class="p">(</span><span class="n">changed</span><span class="p">),</span>
+                <span class="sa">f</span><span class="s2">"discussion_r</span><span class="si">{</span><span class="n">comment</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">changed</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                <span class="s2">"message.created"</span> <span class="k">if</span> <span class="n">is_new</span> <span class="k">else</span> <span class="s2">"message.updated"</span><span class="p">,</span>
+                <span class="n">github</span><span class="o">.</span><span class="n">_review_comment</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">comment</span><span class="p">),</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">found</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_read_discussions</span><span class="p">(</span><span class="n">github</span><span class="p">,</span> <span class="n">scope</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">number</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">probe</span><span class="o">.</span><span class="n">status</span> <span class="o">&lt;</span> <span class="mi">400</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="c1"># Not an issue: read as a discussion, which raises not_found when it is not one.</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">scope</span><span class="o">.</span><span class="n">number</span><span class="p">],</span> <span class="kc">False</span><span class="p">,</span> <span class="n">scope</span><span class="o">.</span><span class="n">probe</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"date"</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">numbers</span> <span class="o">=</span> <span class="n">github</span><span class="o">.</span><span class="n">_active_discussions</span><span class="p">(</span><span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="p">,</span> <span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="n">scope</span><span class="o">.</span><span class="n">position</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_REFUSED_LISTING</span><span class="p">:</span>
+            <span class="k">raise</span>
+        <span class="c1"># A token that may not read discussions still listens to everything else.</span>
+        <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+            <span class="s2">"listen </span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">: discussions skipped: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="p">,</span> <span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="n">error</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="k">return</span> <span class="n">numbers</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">None</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_discussion_candidates</span><span class="p">(</span><span class="n">github</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">numbers</span><span class="p">):</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">discussion_number</span> <span class="ow">in</span> <span class="n">numbers</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">found</span> <span class="o">+=</span> <span class="n">github</span><span class="o">.</span><span class="n">_discussion_activity</span><span class="p">(</span>
+                <span class="n">scope</span><span class="o">.</span><span class="n">owner</span><span class="p">,</span> <span class="n">scope</span><span class="o">.</span><span class="n">repo</span><span class="p">,</span> <span class="n">discussion_number</span><span class="p">,</span> <span class="n">scope</span><span class="o">.</span><span class="n">position</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">scope</span><span class="o">.</span><span class="n">number</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">error</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s2">"not_found"</span><span class="p">:</span>
+                <span class="k">raise</span>
+            <span class="k">continue</span>  <span class="c1"># deleted between the walk and the read: nothing left to deliver</span>
+    <span class="k">return</span> <span class="n">found</span>
+
+
+<span class="c1"># Adding a poll source (label events, ...) is one entry here.</span>
+<span class="n">POLL_SOURCES</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">PollSource</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">PollSource</span><span class="p">(</span><span class="s2">"issue comments"</span><span class="p">,</span> <span class="n">_read_issue_comments</span><span class="p">,</span> <span class="n">_issue_comment_candidates</span><span class="p">),</span>
+    <span class="n">PollSource</span><span class="p">(</span><span class="s2">"issues"</span><span class="p">,</span> <span class="n">_read_issues</span><span class="p">,</span> <span class="n">_issue_candidates</span><span class="p">,</span> <span class="n">counts_openings</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+    <span class="n">PollSource</span><span class="p">(</span><span class="s2">"review comments"</span><span class="p">,</span> <span class="n">_read_review_comments</span><span class="p">,</span> <span class="n">_review_comment_candidates</span><span class="p">),</span>
+    <span class="n">PollSource</span><span class="p">(</span><span class="s2">"discussions"</span><span class="p">,</span> <span class="n">_read_discussions</span><span class="p">,</span> <span class="n">_discussion_candidates</span><span class="p">),</span>
+<span class="p">)</span>
+
+
 <div class="viewcode-block" id="GitHub">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.github.html#correspond.channels.github.GitHub">[docs]</a>
 <span class="k">class</span><span class="w"> </span><span class="nc">GitHub</span><span class="p">:</span>
@@ -1883,124 +2058,32 @@ window.runMermaid = runMermaid;</script>
         <span class="n">repository</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="p">(</span>
             <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"repository"</span>
         <span class="p">)</span>
-        <span class="n">reviews</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">reviews_cut</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">discussions</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">probe</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">number</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">probe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">allow</span><span class="o">=</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="mi">410</span><span class="p">))</span>
+        <span class="n">scope</span> <span class="o">=</span> <span class="n">_PollScope</span><span class="p">(</span>
+            <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">number</span><span class="p">,</span> <span class="n">stamp</span><span class="p">,</span> <span class="n">position</span><span class="p">,</span> <span class="n">openings_from</span><span class="p">,</span> <span class="n">repository</span><span class="p">,</span> <span class="n">probe</span>
+        <span class="p">)</span>
+
+        <span class="n">candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Message</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">horizons</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">datetime</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="c1"># The server's Date on each list read: every list is complete up to its own, so the</span>
         <span class="c1"># earliest is how far this poll can vouch for, whatever is read after it.</span>
         <span class="n">dates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">if</span> <span class="n">number</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">comments</span><span class="p">,</span> <span class="n">comments_cut</span><span class="p">,</span> <span class="n">date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/comments?sort=updated&amp;direction=asc&amp;since=</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span>
-            <span class="p">)</span>
-            <span class="n">issues</span><span class="p">,</span> <span class="n">issues_cut</span><span class="p">,</span> <span class="n">issues_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues?state=all&amp;sort=updated&amp;direction=asc&amp;since=</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span>
-            <span class="p">)</span>
-            <span class="n">reviews</span><span class="p">,</span> <span class="n">reviews_cut</span><span class="p">,</span> <span class="n">reviews_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
-                <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/comments?sort=updated&amp;direction=asc&amp;since=</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span>
-            <span class="p">)</span>
-            <span class="n">dates</span> <span class="o">+=</span> <span class="p">[</span><span class="n">date</span><span class="p">,</span> <span class="n">issues_date</span><span class="p">,</span> <span class="n">reviews_date</span><span class="p">]</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">discussions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_active_discussions</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">position</span><span class="p">)</span>
-            <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_REFUSED_LISTING</span><span class="p">:</span>
-                    <span class="k">raise</span>
-                <span class="c1"># A token that may not read discussions still listens to everything else.</span>
-                <span class="n">_log</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">"listen </span><span class="si">%s</span><span class="s2">: discussions skipped: </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">probe</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_api</span><span class="p">(</span><span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">allow</span><span class="o">=</span><span class="p">(</span><span class="mi">404</span><span class="p">,</span> <span class="mi">410</span><span class="p">))</span>
-            <span class="n">issues</span><span class="p">,</span> <span class="n">issues_cut</span> <span class="o">=</span> <span class="p">[],</span> <span class="kc">False</span>
-            <span class="k">if</span> <span class="n">probe</span><span class="o">.</span><span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">400</span><span class="p">:</span>
-                <span class="c1"># Not an issue: read as a discussion, which raises not_found when it is not one.</span>
-                <span class="n">comments</span><span class="p">,</span> <span class="n">comments_cut</span> <span class="o">=</span> <span class="p">[],</span> <span class="kc">False</span>
-                <span class="n">dates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">probe</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"date"</span><span class="p">))</span>
-                <span class="n">discussions</span> <span class="o">=</span> <span class="p">[</span><span class="n">number</span><span class="p">]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="c1"># One issue's comments come ordered by id, not by update, so a cut list would</span>
-                <span class="c1"># not be complete up to any time: read every page (an issue holds a bounded</span>
-                <span class="c1"># number), and the same for a pull request's review comments.</span>
-                <span class="n">comments</span><span class="p">,</span> <span class="n">comments_cut</span><span class="p">,</span> <span class="n">date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
-                    <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/issues/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments?since=</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                    <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">dates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
-                <span class="k">if</span> <span class="p">(</span><span class="n">probe</span><span class="o">.</span><span class="n">json</span><span class="p">()</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pull_request"</span><span class="p">):</span>
-                    <span class="n">reviews</span><span class="p">,</span> <span class="n">reviews_cut</span><span class="p">,</span> <span class="n">reviews_date</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_collect</span><span class="p">(</span>
-                        <span class="sa">f</span><span class="s2">"repos/</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">/pulls/</span><span class="si">{</span><span class="n">number</span><span class="si">}</span><span class="s2">/comments?since=</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                        <span class="n">bounded</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                    <span class="p">)</span>
-                    <span class="n">dates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">reviews_date</span><span class="p">)</span>
-
-        <span class="n">candidates</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="n">datetime</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Message</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">comment</span> <span class="ow">in</span> <span class="n">comments</span><span class="p">:</span>
-            <span class="n">issue_number</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="nb">str</span><span class="p">(</span><span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"issue_url"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="p">)</span>
-            <span class="n">conversation</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="p">(</span>
-                <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">issue_number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">repository</span>
-            <span class="p">)</span>
-            <span class="n">changed</span> <span class="o">=</span> <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"updated_at"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">comment</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]</span>
-            <span class="n">is_new</span> <span class="o">=</span> <span class="n">parse_time</span><span class="p">(</span><span class="n">comment</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="n">openings_from</span>
-            <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="p">(</span>
-                    <span class="n">parse_time</span><span class="p">(</span><span class="n">changed</span><span class="p">),</span>
-                    <span class="sa">f</span><span class="s2">"issuecomment-</span><span class="si">{</span><span class="n">comment</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">changed</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                    <span class="s2">"message.created"</span> <span class="k">if</span> <span class="n">is_new</span> <span class="k">else</span> <span class="s2">"message.updated"</span><span class="p">,</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_comment</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">comment</span><span class="p">),</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">for</span> <span class="n">comment</span> <span class="ow">in</span> <span class="n">reviews</span><span class="p">:</span>
-            <span class="n">pull_number</span> <span class="o">=</span> <span class="p">(</span>
-                <span class="nb">str</span><span class="p">(</span><span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"pull_request_url"</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span><span class="o">.</span><span class="n">rsplit</span><span class="p">(</span><span class="s2">"/"</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-            <span class="p">)</span>
-            <span class="n">conversation</span> <span class="o">=</span> <span class="n">ConversationRef</span><span class="p">(</span>
-                <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
-                <span class="nb">id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">owner</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">repo</span><span class="si">}</span><span class="s2">#</span><span class="si">{</span><span class="n">pull_number</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                <span class="n">kind</span><span class="o">=</span><span class="s2">"pull_request"</span><span class="p">,</span>
-                <span class="n">parent</span><span class="o">=</span><span class="n">repository</span><span class="p">,</span>
-            <span class="p">)</span>
-            <span class="n">changed</span> <span class="o">=</span> <span class="n">comment</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"updated_at"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">comment</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]</span>
-            <span class="n">is_new</span> <span class="o">=</span> <span class="n">parse_time</span><span class="p">(</span><span class="n">comment</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="n">openings_from</span>
-            <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="p">(</span>
-                    <span class="n">parse_time</span><span class="p">(</span><span class="n">changed</span><span class="p">),</span>
-                    <span class="sa">f</span><span class="s2">"discussion_r</span><span class="si">{</span><span class="n">comment</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">changed</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                    <span class="s2">"message.created"</span> <span class="k">if</span> <span class="n">is_new</span> <span class="k">else</span> <span class="s2">"message.updated"</span><span class="p">,</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_review_comment</span><span class="p">(</span><span class="n">conversation</span><span class="p">,</span> <span class="n">comment</span><span class="p">),</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">for</span> <span class="n">issue</span> <span class="ow">in</span> <span class="n">issues</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">parse_time</span><span class="p">(</span><span class="n">issue</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">openings_from</span><span class="p">:</span>
-                <span class="k">continue</span>  <span class="c1"># an older issue that changed: its comments arrive as their own events</span>
-            <span class="n">candidates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
-                <span class="p">(</span>
-                    <span class="n">parse_time</span><span class="p">(</span><span class="n">issue</span><span class="p">[</span><span class="s2">"created_at"</span><span class="p">]),</span>
-                    <span class="sa">f</span><span class="s2">"issue-</span><span class="si">{</span><span class="n">issue</span><span class="p">[</span><span class="s1">'number'</span><span class="p">]</span><span class="si">}</span><span class="s2">@</span><span class="si">{</span><span class="n">issue</span><span class="p">[</span><span class="s1">'created_at'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
-                    <span class="s2">"message.created"</span><span class="p">,</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">_opening</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_issue_conversation</span><span class="p">(</span><span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">issue</span><span class="p">),</span> <span class="n">issue</span><span class="p">),</span>
-                <span class="p">)</span>
-            <span class="p">)</span>
-        <span class="k">for</span> <span class="n">discussion_number</span> <span class="ow">in</span> <span class="n">discussions</span><span class="p">:</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="n">candidates</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_discussion_activity</span><span class="p">(</span>
-                    <span class="n">owner</span><span class="p">,</span> <span class="n">repo</span><span class="p">,</span> <span class="n">discussion_number</span><span class="p">,</span> <span class="n">position</span>
-                <span class="p">)</span>
-            <span class="k">except</span> <span class="n">ChannelError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">number</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">error</span><span class="o">.</span><span class="n">kind</span> <span class="o">!=</span> <span class="s2">"not_found"</span><span class="p">:</span>
-                    <span class="k">raise</span>
-                <span class="k">continue</span>  <span class="c1"># deleted between the walk and the read: nothing left to deliver</span>
+        <span class="n">issues_cut</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">POLL_SOURCES</span><span class="p">:</span>
+            <span class="n">read</span> <span class="o">=</span> <span class="n">source</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scope</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">read</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">continue</span>  <span class="c1"># this source does not apply to the scope</span>
+            <span class="n">items</span><span class="p">,</span> <span class="n">cut</span><span class="p">,</span> <span class="n">date</span> <span class="o">=</span> <span class="n">read</span>
+            <span class="n">dates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+            <span class="n">candidates</span> <span class="o">+=</span> <span class="n">source</span><span class="o">.</span><span class="n">candidates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">scope</span><span class="p">,</span> <span class="n">items</span><span class="p">)</span>
+            <span class="n">issues_cut</span> <span class="o">=</span> <span class="n">issues_cut</span> <span class="ow">or</span> <span class="p">(</span><span class="n">cut</span> <span class="ow">and</span> <span class="n">source</span><span class="o">.</span><span class="n">counts_openings</span><span class="p">)</span>
+            <span class="c1"># A list cut short is complete only up to its last item: later events wait for</span>
+            <span class="c1"># the next poll, which starts from there.</span>
+            <span class="k">if</span> <span class="n">cut</span> <span class="ow">and</span> <span class="n">items</span><span class="p">:</span>
+                <span class="n">horizons</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">parse_time</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">changed</span><span class="p">(</span><span class="n">items</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])))</span>
         <span class="n">candidates</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">candidates</span> <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">c</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">position</span> <span class="ow">and</span> <span class="n">c</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">)]</span>
-        <span class="c1"># A list cut short is complete only up to its last item: later events wait for the</span>
-        <span class="c1"># next poll, which starts from there.</span>
-        <span class="n">horizons</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">parse_time</span><span class="p">(</span><span class="n">items</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"updated_at"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">items</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">"created_at"</span><span class="p">])</span>
-            <span class="k">for</span> <span class="n">items</span><span class="p">,</span> <span class="n">cut</span> <span class="ow">in</span> <span class="p">(</span>
-                <span class="p">(</span><span class="n">comments</span><span class="p">,</span> <span class="n">comments_cut</span><span class="p">),</span>
-                <span class="p">(</span><span class="n">issues</span><span class="p">,</span> <span class="n">issues_cut</span><span class="p">),</span>
-                <span class="p">(</span><span class="n">reviews</span><span class="p">,</span> <span class="n">reviews_cut</span><span class="p">),</span>
-            <span class="p">)</span>
-            <span class="k">if</span> <span class="n">cut</span> <span class="ow">and</span> <span class="n">items</span>
-        <span class="p">]</span>
         <span class="c1"># Nothing after the earliest list's server time (less the clock skew) is vouched for:</span>
         <span class="c1"># a later event would move the cursor past what that list could not yet hold.</span>
         <span class="n">server_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">t</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">map</span><span class="p">(</span><span class="n">_http_date</span><span class="p">,</span> <span class="n">dates</span><span class="p">)</span> <span class="k">if</span> <span class="n">t</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">]</span>
