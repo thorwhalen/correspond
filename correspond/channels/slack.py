@@ -417,7 +417,9 @@ def kept_channels(raw: Any) -> frozenset[str] | None:
     return frozenset(names)
 
 
-def configured_kept_channels(*, run: Callable[..., Any] = subprocess.run) -> frozenset[str] | None:
+def configured_kept_channels(
+    *, run: Callable[..., Any] = subprocess.run
+) -> frozenset[str] | None:
     """The ``keep_channels`` setting, parsed (see :func:`kept_channels`)."""
     return kept_channels(value(NAME, "keep_channels", run=run, keychain=False))
 

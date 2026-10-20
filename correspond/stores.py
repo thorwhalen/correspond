@@ -168,11 +168,7 @@ def private_dir(kind: str, *, data_dir: str | os.PathLike | None = None) -> Path
         info = os.lstat(folder)
         mode = stat.S_IMODE(info.st_mode)
         if stat.S_ISDIR(info.st_mode) and mode & ~PRIVATE_DIR_MODE:
-            reason = (
-                "it belongs to another user"
-                if info.st_uid != os.getuid()
-                else None
-            )
+            reason = "it belongs to another user" if info.st_uid != os.getuid() else None
             if reason is None:
                 try:
                     folder.chmod(mode & PRIVATE_DIR_MODE)
