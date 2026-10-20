@@ -154,7 +154,9 @@ def gateway_window(
     resuming = _resumable(state)
     base = state["resume_gateway_url"] if resuming else GATEWAY_URL
     if not resuming:
-        _spend_identify(state, wall(), max_identifies_per_day)  # refuses before connecting
+        _spend_identify(
+            state, wall(), max_identifies_per_day
+        )  # refuses before connecting
     connection = connect(base.rstrip("/") + "/" + GATEWAY_QUERY, timeout=wait)
     dispatches: list[dict] = []
     heartbeat_s = None
@@ -268,6 +270,10 @@ def _identify(token: str, intents: int) -> dict:
         "d": {
             "token": token,
             "intents": intents,
-            "properties": {"os": "linux", "browser": "correspond", "device": "correspond"},
+            "properties": {
+                "os": "linux",
+                "browser": "correspond",
+                "device": "correspond",
+            },
         },
     }

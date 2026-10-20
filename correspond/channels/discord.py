@@ -366,7 +366,9 @@ class Discord:
 
         With ``listen_via = "gateway"``, one gateway window instead (see the module docstring).
         """
-        if (value(NAME, "listen_via", run=self.run) or "rest").strip().lower() == "gateway":
+        if (
+            value(NAME, "listen_via", run=self.run) or "rest"
+        ).strip().lower() == "gateway":
             return self._gateway_poll(ref, cursor)
         if cursor is not None and str(cursor).strip():
             after: Any = _snowflake(cursor, "message")
@@ -403,7 +405,9 @@ class Discord:
     def _gateway_poll(self, ref: ConversationRef, cursor: str | None):
         """One gateway window: the channel's message events, and the session to resume next time."""
         try:
-            state = json.loads(cursor) if cursor and cursor.lstrip().startswith("{") else None
+            state = (
+                json.loads(cursor) if cursor and cursor.lstrip().startswith("{") else None
+            )
         except ValueError:
             state = None  # a REST cursor, or a damaged one: identify afresh
         wait = float(value(NAME, "listen_wait_s", run=self.run) or 5)
@@ -437,7 +441,9 @@ class Discord:
                     kind="message.updated" if updated else "message.created",
                     channel=NAME,
                     delivery_id=(
-                        f"{base}:edited:{data.get('edited_timestamp')}" if updated else base
+                        f"{base}:edited:{data.get('edited_timestamp')}"
+                        if updated
+                        else base
                     ),
                     message=message,
                 )
