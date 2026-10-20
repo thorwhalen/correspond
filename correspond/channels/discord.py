@@ -458,9 +458,7 @@ class Discord:
     def _channel_record(self, ref: ConversationRef) -> Mapping[str, Any]:
         """discorddol's record of the channel (``channel(id)``), looked up once per reference."""
         if ref.id not in self._channel_records:
-            record = self._call(
-                f"channel {ref.id}", lambda: self.backend.channel(ref.id)
-            )
+            record = self._call(f"channel {ref.id}", lambda: self.backend.channel(ref.id))
             self._channel_records[ref.id] = dict(record or {})
         return self._channel_records[ref.id]
 
