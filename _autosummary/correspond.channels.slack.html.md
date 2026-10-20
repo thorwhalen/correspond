@@ -27,7 +27,9 @@ Three uses, one channel, each needing a little more set up:
   once with `conversations.list`. Install the app in your own workspace: Slack limits a
   commercially distributed app outside its Marketplace to one history request a minute.
   [`Slack.verify()`](#correspond.channels.slack.Slack.verify) checks a request Slack sends (`X-Slack-Signature`, with the
-  > signing secret), graded `crypto`.
+  > signing secret), graded `crypto`. A GovSlack workspace sets `api_base` to
+  > `https://slack-gov.com/api` (`CORRESPOND_SLACK_API_BASE`); the token then goes only
+  > to `*.slack-gov.com` hosts, Socket Mode included.
 
 Slack’s `mrkdwn` is not Markdown: `*bold*`, `_italic_`, `~strike~`, `<url|text>`
 links, no headings, no tables, and `&`, `<` and `>` escaped. [`to_mrkdwn()`](#correspond.channels.slack.to_mrkdwn)
