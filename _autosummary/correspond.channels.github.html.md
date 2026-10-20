@@ -63,10 +63,10 @@ from its visibility, and its collaborators when the account may list them.
 
 ### Classes
 
-| [`GitHub`](#correspond.channels.github.GitHub)(\*[, run, gh])   | GitHub through `gh`: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.   |
-|--------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| [`GitHub`](#correspond.channels.github.GitHub)(\*[, run, gh, recent_discussions])   | GitHub through `gh`: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.   |
+|----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
 
-### *class* correspond.channels.github.GitHub(\*, run=<function run>, gh='gh')
+### *class* correspond.channels.github.GitHub(\*, run=<function run>, gh='gh', recent_discussions=3)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
