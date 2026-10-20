@@ -13,7 +13,10 @@ mentions it.
 - `listen` polls the channel for messages newer than the last one seen (the cursor is
   that message’s id; a first poll looks back a day). It does not open the gateway, so it
   sees new messages, not edits or deletions, and one channel per reference.
-- `send` posts a message (2,000 characters at most); a title is prepended in bold.
+- `send` posts a message (2,000 characters at most); a title is prepended in bold. With
+  `reply_to` it is a Discord reply to that message (its author is not pinged). Only
+  the users it mentions as `<@id>` are pinged: `@everyone`, `@here` and role
+  mentions stay text, through Discord’s allowed mentions.
 - `verify` grades an HTTP interaction Discord posted to your endpoint: `crypto` when
   its Ed25519 signature (`X-Signature-Ed25519` over `X-Signature-Timestamp` + body)
   checks against the application’s public key, `forged` otherwise. Discord sends
@@ -21,7 +24,7 @@ mentions it.
   (answer them 401).
 
 Senders are `platform`: Discord authenticated the account, and correspond fetched the
-message from the API itself. The bot token never appears in an error or a plan.
+message from the API itself. A server member’s role ids are its `authority`. The bot token never appears in an error or a plan.
 
 Needs the `discord` extra (discorddol, over discord.py in REST-only mode), imported on
 first use, not when the channel is listed.

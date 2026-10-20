@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=0e525676"></script>
+    <script src="../_static/documentation_options.js?v=aa2ad26f"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.36" />
+  <meta name="docsearch:version" content="0.0.37" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -433,7 +433,10 @@ mentions it.</p>
 <li><p><code class="docutils literal notranslate"><span class="pre">listen</span></code> polls the channel for messages newer than the last one seen (the cursor is
 that message’s id; a first poll looks back a day). It does not open the gateway, so it
 sees new messages, not edits or deletions, and one channel per reference.</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">send</span></code> posts a message (2,000 characters at most); a title is prepended in bold.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">send</span></code> posts a message (2,000 characters at most); a title is prepended in bold. With
+<code class="docutils literal notranslate"><span class="pre">reply_to</span></code> it is a Discord reply to that message (its author is not pinged). Only
+the users it mentions as <code class="docutils literal notranslate"><span class="pre">&lt;&#64;id&gt;</span></code> are pinged: <code class="docutils literal notranslate"><span class="pre">&#64;everyone</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;here</span></code> and role
+mentions stay text, through Discord’s allowed mentions.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">verify</span></code> grades an HTTP interaction Discord posted to your endpoint: <code class="docutils literal notranslate"><span class="pre">crypto</span></code> when
 its Ed25519 signature (<code class="docutils literal notranslate"><span class="pre">X-Signature-Ed25519</span></code> over <code class="docutils literal notranslate"><span class="pre">X-Signature-Timestamp</span></code> + body)
 checks against the application’s public key, <code class="docutils literal notranslate"><span class="pre">forged</span></code> otherwise. Discord sends
@@ -441,7 +444,7 @@ deliberately invalid signatures to test the endpoint; those must come back <code
 (answer them 401).</p></li>
 </ul>
 <p>Senders are <code class="docutils literal notranslate"><span class="pre">platform</span></code>: Discord authenticated the account, and correspond fetched the
-message from the API itself. The bot token never appears in an error or a plan.</p>
+message from the API itself. A server member’s role ids are its <code class="docutils literal notranslate"><span class="pre">authority</span></code>. The bot token never appears in an error or a plan.</p>
 <p>Needs the <code class="docutils literal notranslate"><span class="pre">discord</span></code> extra (discorddol, over discord.py in REST-only mode), imported on
 first use, not when the channel is listed.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Discord</span><span class="p">()</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="s2">"123456789012345678"</span><span class="p">)</span><span class="o">.</span><span class="n">encoded</span>

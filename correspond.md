@@ -1,4 +1,4 @@
-> built 2026-10-20 12:51 UTC from 416c722 (main) · correspond 0.0.36. Details: build_info.json
+> built 2026-10-20 12:56 UTC from 3ab05f4 (main) · correspond 0.0.37. Details: build_info.json
 
 # index.html.md
 
@@ -34,7 +34,7 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 | `webinbox` | `webinbox:<site>`                                                                                                                                                                                                                                                                                                 | read, listen, audience                                                                                                                                                                                                                                                | the ASGI collector below, and `dol` stores                                                                                                                 |
 | `apprise`  | `apprise:<alias>`                                                                                                                                                                                                                                                                                                 | send, audience                                                                                                                                                                                                                                                        | the `apprise` package, about 155 services (`pip install "correspond[apprise]"`)                                                                            |
 | `gdrive`   | `gdrive:<folder id>` (or the folder’s URL)                                                                                                                                                                                                                                                                        | read (one message per file, the file attached, fetched on demand), audience (the folder’s sharing); read only                                                                                                                                                         | pydrivedol and a service-account key, read-only scope (`pip install "correspond[gdrive]"`)                                                                 |
-| `discord`  | `discord:<channel id>` (a channel or a thread)                                                                                                                                                                                                                                                                    | read, listen (polling a channel over REST: new messages, not edits), send, audience, verify (an HTTP interaction’s Ed25519 signature, graded `crypto`)                                                                                                                | discorddol and a bot token (`pip install "correspond[discord]"`); the Message Content intent, or the bot reads empty text; `DISCORD_PUBLIC_KEY` for verify |
+| `discord`  | `discord:<channel id>` (a channel or a thread)                                                                                                                                                                                                                                                                    | read, listen (polling a channel over REST: new messages, not edits), send (with replies; only user mentions ping), audience, verify (an HTTP interaction’s Ed25519 signature, graded `crypto`)                                                                        | discorddol and a bot token (`pip install "correspond[discord]"`); the Message Content intent, or the bot reads empty text; `DISCORD_PUBLIC_KEY` for verify |
 | `slack`    | `slack:<channel>` (a channel’s name, `#` optional, or its id)                                                                                                                                                                                                                                                     | with a token: read, listen (polling), send (replies in threads), verify (signed requests); with only a webhook: send; with nothing: a dry run that renders the draft as Slack mrkdwn, ready to paste; audience                                                        | `urllib`; `CORRESPOND_SLACK_TOKEN` (an app installed in your workspace), or a webhook URL in `CORRESPOND_SLACK_WEBHOOK_<CHANNEL>`                          |
 
 Every v0.1 adapter uses the Python standard library. Apprise, Google Drive and Discord are extras, and each registers only when its extra is installed. Signal (through `signal-cli-rest-api`; its WebSocket client is the `signal` extra) is built too.
@@ -801,7 +801,10 @@ mentions it.
 - `listen` polls the channel for messages newer than the last one seen (the cursor is
   that message’s id; a first poll looks back a day). It does not open the gateway, so it
   sees new messages, not edits or deletions, and one channel per reference.
-- `send` posts a message (2,000 characters at most); a title is prepended in bold.
+- `send` posts a message (2,000 characters at most); a title is prepended in bold. With
+  `reply_to` it is a Discord reply to that message (its author is not pinged). Only
+  the users it mentions as `<@id>` are pinged: `@everyone`, `@here` and role
+  mentions stay text, through Discord’s allowed mentions.
 - `verify` grades an HTTP interaction Discord posted to your endpoint: `crypto` when
   its Ed25519 signature (`X-Signature-Ed25519` over `X-Signature-Timestamp` + body)
   checks against the application’s public key, `forged` otherwise. Discord sends
@@ -809,7 +812,7 @@ mentions it.
   (answer them 401).
 
 Senders are `platform`: Discord authenticated the account, and correspond fetched the
-message from the API itself. The bot token never appears in an error or a plan.
+message from the API itself. A server member’s role ids are its `authority`. The bot token never appears in an error or a plan.
 
 Needs the `discord` extra (discorddol, over discord.py in REST-only mode), imported on
 first use, not when the channel is listed.
@@ -5601,18 +5604,18 @@ Where a channel’s platform delivers its updates now (Telegram: none means list
 
 # About this build
 
-This documentation was built on **2026-10-20 12:51 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/416c722d9e9348400d124382d270cad989040439"><code>416c722</code></a> on branch <code>main</code>, for **correspond 0.0.36** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-20 12:56 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/3ab05f4074e0ff91bc59853b417d75a67fb4d233"><code>3ab05f4</code></a> on branch <code>main</code>, for **correspond 0.0.37** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.36) is behind the latest release on PyPI (0.0.37): `pip install correspond` gives newer code than these docs describe.
+- The documented version (0.0.37) is behind the latest release on PyPI (0.0.38): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/416c722d9e9348400d124382d270cad989040439"><code>416c722d9e9348400d124382d270cad989040439</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/3ab05f4074e0ff91bc59853b417d75a67fb4d233"><code>3ab05f4074e0ff91bc59853b417d75a67fb4d233</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -5623,9 +5626,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39425384842">39425384842</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39426077004">39426077004</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>416c722d9e9348400d124382d270cad989040439</code> (in the history of the built commit)  |
+| Event commit | <code>3ab05f4074e0ff91bc59853b417d75a67fb4d233</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -5650,13 +5653,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.37/">0.0.37</a>, newer than the documented version (0.0.36).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.38/">0.0.38</a>, newer than the documented version (0.0.37).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 416c722d9e9348400d124382d270cad989040439
+git checkout 3ab05f4074e0ff91bc59853b417d75a67fb4d233
 pip install "epythet==0.2.20"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
