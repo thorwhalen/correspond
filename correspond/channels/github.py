@@ -184,6 +184,14 @@ DISCUSSION_QUERY = (
     + _POST
     + "}}}}}}}"
 )
+#: All of one discussion comment's replies, oldest first, for a comment with more than
+#: :data:`DISCUSSION_QUERY` reads inline (its latest 100).
+COMMENT_REPLIES_QUERY = (
+    "query($id:ID!,$after:String){node(id:$id){... on DiscussionComment{"
+    "replies(first:100,after:$after){pageInfo{hasNextPage endCursor} nodes{"
+    + _POST
+    + "}}}}}"
+)
 #: Discussions by latest activity, newest first: GitHub has no ``since`` for discussions.
 DISCUSSION_ACTIVITY_QUERY = (
     "query($owner:String!,$name:String!,$after:String){"
@@ -783,12 +791,12 @@ class GitHub:
             ),
             notes=(
                 "listen polls the issue, comment, pull request review comment and discussion activity of a repository, or of one issue, pull request or discussion",
-                f"listen is partial on a repository's discussions: GitHub has no since filter for them, so listen walks them by GitHub's latest-activity order and reads each one active since the cursor, and the {self.recent_discussions} most recently active whatever their update time (one extra call each, recent_discussions= sets how many); a post GitHub does not count as activity on its discussion (seen on some replies) is delivered only when its discussion is among those, and only a comment's latest 100 replies are seen; listening to one discussion reads it whole on every poll and misses none of its posts",
+                f"listen is partial on a repository's discussions: GitHub has no since filter for them, so listen walks them by GitHub's latest-activity order and reads each one active since the cursor, and the {self.recent_discussions} most recently active whatever their update time (one extra call each, recent_discussions= sets how many); a post GitHub does not count as activity on its discussion (seen on some replies) is delivered only when its discussion is among those, listening to one discussion reads it whole on every poll and misses none of its posts",
                 "a gh token that may not read discussions listens to a repository's issues, comments and review comments only (logged as a warning)",
                 "GitHub moves a review comment's updated_at when its review is submitted and when a push outdates it, so listen reports those as message.updated with the text unchanged, and a review comment carries no edited_at",
                 "reply_to works in discussions and in pull request review threads (a reply to a reply joins its thread); issue and pull request conversation comments are flat",
                 "reading or listening to a pull request includes its review comments on the diff (message ids discussion_rID, with path, line, original_line, review_id and diff_hunk in native); a pull request's reviews are read too, each review's summary as a message pullrequestreview-ID with its state (APPROVED, CHANGES_REQUESTED, COMMENTED, DISMISSED) in native; a review with no body and only a COMMENTED state is left out, and listening to a repository finds them through the pull requests updated since the cursor",
-                "a discussion comment's replies are its latest 100 (native replies_truncated when there are more)",
+                f"a discussion comment with more than 100 replies costs one extra call per 100 to read them all (up to {MAX_PAGES * 100}; past that its latest 100, with native replies_truncated)",
                 "notify mentions each handle the text lacks; GitHub notifies a mentioned user or team who can see the repository, so on a private one a non-member is not reached",
                 "listen can miss a change only when more than 2,000 issues or comments change within the same second",
                 "audience is the repository's readership and never complete (installed apps, webhooks and security managers cannot be listed); a 404 or 403 resolves to public",
@@ -1163,7 +1171,29 @@ class GitHub:
             if not page_info.get("hasNextPage"):
                 break
             after = page_info.get("endCursor")
+        for comment in comments:
+            replies = comment.get("replies") or {}
+            if (replies.get("totalCount") or 0) > len(replies.get("nodes") or []):
+                comment["replies"] = self._all_replies(comment, replies)
         return discussion, comments
+
+    def _all_replies(self, comment: Mapping[str, Any], inline: Mapping[str, Any]) -> dict:
+        """Every reply of a busy comment (one call per 100), in place of its latest 100.
+
+        Within :data:`MAX_PAGES` pages; past that the inline latest 100 stay, and the
+        comment is marked ``replies_truncated``.
+        """
+        nodes: list[dict] = []
+        after = None
+        for _ in range(MAX_PAGES):
+            data = self._graphql(COMMENT_REPLIES_QUERY, {"id": comment["id"], "after": after})
+            page = ((data.get("node") or {}).get("replies")) or {}
+            nodes.extend(page.get("nodes") or [])
+            page_info = page.get("pageInfo") or {}
+            if not page_info.get("hasNextPage"):
+                return {"totalCount": len(nodes), "nodes": nodes}
+            after = page_info.get("endCursor")
+        return dict(inline)
 
     def _discussion_messages(self, owner: str, repo: str, number: int) -> list[Message]:
         discussion, comments = self._discussion(owner, repo, number)
