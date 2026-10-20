@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-20T16:58:28Z",
+  "built_at": "2026-10-20T17:09:10Z",
   "package": {
     "name": "correspond",
-    "version": "0.0.43",
+    "version": "0.0.44",
     "display_name": "correspond",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "b72be5c02a8772fefa87fa27063c75ccfae5be1a",
-    "short_commit": "b72be5c",
+    "commit": "f2db79f63a3af2e23ef7052e5908b4f18aa9383b",
+    "short_commit": "f2db79f",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/thorwhalen/correspond",
-    "commit_url": "https://github.com/thorwhalen/correspond/commit/b72be5c02a8772fefa87fa27063c75ccfae5be1a",
+    "commit_url": "https://github.com/thorwhalen/correspond/commit/f2db79f63a3af2e23ef7052e5908b4f18aa9383b",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "thorwhalen/correspond",
-    "sha": "b72be5c02a8772fefa87fa27063c75ccfae5be1a",
+    "sha": "f2db79f63a3af2e23ef7052e5908b4f18aa9383b",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "39461840197",
-    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/39461840197",
+    "run_id": "39463277373",
+    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/39463277373",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -60,14 +60,16 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.43",
-    "relation": "same",
+    "latest": "0.0.45",
+    "relation": "behind",
     "error": null
   },
-  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout b72be5c02a8772fefa87fa27063c75ccfae5be1a\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout f2db79f63a3af2e23ef7052e5908b4f18aa9383b\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": true,
-    "notes": []
+    "aligned": false,
+    "notes": [
+      "The documented version (0.0.44) is behind the latest release on PyPI (0.0.45): `pip install correspond` gives newer code than these docs describe."
+    ]
   }
 }

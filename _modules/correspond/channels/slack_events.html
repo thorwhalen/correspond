@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=b345ff55"></script>
+    <script src="../../../_static/documentation_options.js?v=78cc6f98"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.43" />
+  <meta name="docsearch:version" content="0.0.44" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -731,7 +731,6 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Awaitable</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
@@ -744,12 +743,12 @@ window.runMermaid = runMermaid;</script>
     <span class="n">serve_receiver</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.channels.slack</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">CHANNEL_ID_RE</span><span class="p">,</span>
     <span class="n">EVENTS_KIND</span><span class="p">,</span>
     <span class="n">EVENTS_RETENTION_NS</span><span class="p">,</span>
     <span class="n">NAME</span><span class="p">,</span>
     <span class="n">RECEIVED_KEY_RE</span><span class="p">,</span>
     <span class="n">Slack</span><span class="p">,</span>
+    <span class="n">event_record</span><span class="p">,</span>
     <span class="n">received_key</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span>
@@ -768,7 +767,6 @@ window.runMermaid = runMermaid;</script>
 
 <span class="n">EVENTS_PORT</span> <span class="o">=</span> <span class="mi">8083</span>
 <span class="n">MAX_EVENT_BODY_BYTES</span> <span class="o">=</span> <span class="mi">1_000_000</span>
-<span class="n">_EVENT_ID_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^Ev[A-Za-z0-9]{1,40}$"</span><span class="p">)</span>
 <span class="n">PRUNE_EVERY_NS</span> <span class="o">=</span> <span class="mi">3600</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span>  <span class="c1"># how often (at most) the receiver prunes on a write</span>
 
 
@@ -800,28 +798,7 @@ window.runMermaid = runMermaid;</script>
 
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">_record</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">"""What is kept of an ``event_callback``: its id, the channel, the ``message`` event. ``None`` for anything else."""</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
-        <span class="k">return</span> <span class="kc">None</span>
-    <span class="n">event</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"event"</span><span class="p">)</span>
-    <span class="n">event_id</span> <span class="o">=</span> <span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"event_id"</span><span class="p">)</span>
-    <span class="k">if</span> <span class="p">(</span>
-        <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
-        <span class="ow">or</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"type"</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">"message"</span>
-        <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">event_id</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
-        <span class="ow">or</span> <span class="ow">not</span> <span class="n">_EVENT_ID_RE</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">event_id</span><span class="p">)</span>
-    <span class="p">):</span>
-        <span class="k">return</span> <span class="kc">None</span>
-    <span class="n">channel</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"channel"</span><span class="p">)</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">channel</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">CHANNEL_ID_RE</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">channel</span><span class="p">):</span>
-        <span class="k">return</span> <span class="kc">None</span>
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="s2">"event_id"</span><span class="p">:</span> <span class="n">event_id</span><span class="p">,</span>
-        <span class="s2">"team_id"</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"team_id"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">),</span>
-        <span class="s2">"channel"</span><span class="p">:</span> <span class="n">channel</span><span class="p">,</span>
-        <span class="s2">"event"</span><span class="p">:</span> <span class="n">event</span><span class="p">,</span>
-    <span class="p">}</span>
+<span class="n">_record</span> <span class="o">=</span> <span class="n">event_record</span>  <span class="c1"># kept for importers of the old private name</span>
 
 
 <div class="viewcode-block" id="mk_events_app">

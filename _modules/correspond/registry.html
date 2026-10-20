@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=b345ff55"></script>
+    <script src="../../_static/documentation_options.js?v=78cc6f98"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.43" />
+  <meta name="docsearch:version" content="0.0.44" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1157,8 +1157,21 @@ window.runMermaid = runMermaid;</script>
             <span class="n">Setting</span><span class="p">(</span>
                 <span class="n">key</span><span class="o">=</span><span class="s2">"delivery"</span><span class="p">,</span>
                 <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_SLACK_DELIVERY"</span><span class="p">,</span>
-                <span class="n">what</span><span class="o">=</span><span class="s2">"where listen takes messages from: poll (conversations.history) or events (what the Events API receiver stored: new, edited and deleted messages)"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"where listen takes messages from: poll (conversations.history), events (what the Events API receiver stored: new, edited and deleted messages) or socket (a short Socket Mode window, no public URL: the same events; needs app_token and the slack extra)"</span><span class="p">,</span>
                 <span class="n">default</span><span class="o">=</span><span class="s2">"poll"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"app_token"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_SLACK_APP_TOKEN"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"an app-level token (xapp-) with connections:write, used only by delivery = socket to open Slack's Socket Mode"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s2">"api.slack.com/apps: your app, Socket Mode (turn it on), then Basic Information, App-Level Tokens, Generate Token and Scopes with connections:write; subscribe to the bot events message.channels (and message.groups) under Event Subscriptions"</span><span class="p">,</span>
+                <span class="n">secret</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"listen_wait_s"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_SLACK_LISTEN_WAIT_S"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"with delivery = socket, how many quiet seconds a listen keeps Socket Mode open before it returns (at most 60; a window closes after 60 s in all)"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"5"</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">Setting</span><span class="p">(</span>
                 <span class="n">key</span><span class="o">=</span><span class="s2">"webhook_store"</span><span class="p">,</span>
@@ -1177,6 +1190,7 @@ window.runMermaid = runMermaid;</script>
             <span class="s2">"create the webhook in your Slack app's settings (Incoming Webhooks), one per channel: https://api.slack.com/messaging/webhooks"</span><span class="p">,</span>
             <span class="s2">"with CORRESPOND_SLACK_TOKEN, read, listen and send use the Web API (and send replies in threads); without one, send uses the webhook"</span><span class="p">,</span>
             <span class="s2">"push delivery on a server: install correspond[server], run correspond-slack-events (127.0.0.1:8083, one worker) behind your HTTPS reverse proxy, give its URL as the app's Event Subscriptions Request URL with the bot events message.channels (and message.groups), and set delivery = events"</span><span class="p">,</span>
+            <span class="s2">"push delivery without a public URL (local use; not for apps in Slack's Marketplace): install correspond[slack], turn Socket Mode on, put an app-level token (connections:write) in CORRESPOND_SLACK_APP_TOKEN, subscribe to message.channels (and message.groups), and set delivery = socket; a listen then opens the socket for listen_wait_s quiet seconds, so run listen often or messages sent between windows may be missed"</span><span class="p">,</span>
         <span class="p">),</span>
     <span class="p">),</span>
     <span class="n">ChannelInfo</span><span class="p">(</span>

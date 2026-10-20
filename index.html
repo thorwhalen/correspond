@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="_static/documentation_options.js?v=b345ff55"></script>
+    <script src="_static/documentation_options.js?v=78cc6f98"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.43" />
+  <meta name="docsearch:version" content="0.0.44" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -411,8 +411,8 @@ correspond<span class="w"> </span>requirements<span class="w"> </span>email<span
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">slack</span></code></p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">slack:&lt;channel&gt;</span></code> (a channel’s name, <code class="docutils literal notranslate"><span class="pre">#</span></code> optional, or its id); <code class="docutils literal notranslate"><span class="pre">slack:&lt;channel&gt;/&lt;thread</span> <span class="pre">ts&gt;</span></code> for one thread</p></td>
-<td><p>with a token: read, listen (polling, or pushed through the Events API receiver), send (replies in threads), verify (signed requests); with only a webhook: send; with nothing: a dry run that renders the draft as Slack mrkdwn, ready to paste; audience</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">urllib</span></code>; <code class="docutils literal notranslate"><span class="pre">CORRESPOND_SLACK_TOKEN</span></code> (an app installed in your workspace), or a webhook URL in <code class="docutils literal notranslate"><span class="pre">CORRESPOND_SLACK_WEBHOOK_&lt;CHANNEL&gt;</span></code></p></td>
+<td><p>with a token: read, listen (polling, or pushed through the Events API receiver or Socket Mode), send (replies in threads), verify (signed requests); with only a webhook: send; with nothing: a dry run that renders the draft as Slack mrkdwn, ready to paste; audience</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">urllib</span></code>; <code class="docutils literal notranslate"><span class="pre">websocket-client</span></code> for Socket Mode (extra <code class="docutils literal notranslate"><span class="pre">slack</span></code>); <code class="docutils literal notranslate"><span class="pre">CORRESPOND_SLACK_TOKEN</span></code> (an app installed in your workspace), or a webhook URL in <code class="docutils literal notranslate"><span class="pre">CORRESPOND_SLACK_WEBHOOK_&lt;CHANNEL&gt;</span></code></p></td>
 </tr>
 </tbody>
 </table>
@@ -669,7 +669,7 @@ claude<span class="w"> </span>--dangerously-load-development-channels<span class
 </section>
 </section>
 
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-20 16:58 UTC from <a href="https://github.com/thorwhalen/correspond/commit/b72be5c02a8772fefa87fa27063c75ccfae5be1a">b72be5c</a> (main) · correspond 0.0.43 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-10-20 17:09 UTC from <a href="https://github.com/thorwhalen/correspond/commit/f2db79f63a3af2e23ef7052e5908b4f18aa9383b">f2db79f</a> (main) · correspond 0.0.44 · <a href="about-this-build.html">about this build</a></p>
 
                 </article>
               

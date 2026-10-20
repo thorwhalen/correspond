@@ -63,7 +63,7 @@ them itself. Neither the token nor a webhook URL appears in a plan or an error.
 
 Slack truncates a message’s text past this many characters.
 
-### *class* correspond.channels.slack.Slack(\*, http=<function urllib_http>, keychain=None, run=<function run>, clock=<built-in function time>, sleep=<built-in function sleep>, events=None)
+### *class* correspond.channels.slack.Slack(\*, http=<function urllib_http>, keychain=None, run=<function run>, clock=<built-in function time>, sleep=<built-in function sleep>, events=None, socket=<function socket_window>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
