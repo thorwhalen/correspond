@@ -52,7 +52,7 @@ server = [
 ]
 # The Discord channel (a bot over REST) is optional.
 discord = [
-    "discorddol>=0.0.6",  # allowed_mentions, reply_to, author role_ids
+    "discorddol>=0.0.7",  # allowed_mentions, reply_to, author role_ids, channel(id)
     "cryptography>=41",  # Ed25519 signatures on HTTP interactions (verify)
     "websocket-client>=1.6",  # the gateway, for listen_via = gateway
 ]

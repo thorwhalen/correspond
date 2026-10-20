@@ -84,6 +84,8 @@ CLOCK_SKEW = timedelta(seconds=5)
 DISCORD_EPOCH_MS = 1_420_070_400_000
 #: What would notify a whole server or a role: kept as text, never a ping.
 MASS_MENTION_RE = re.compile(r"@(?:everyone|here)\b|<@&[0-9]+>")
+#: Discord channel types (``str(channel.type)``) of a direct message, one-to-one or group.
+DIRECT_CHANNEL_TYPES = frozenset({"private", "group"})
 #: How old an interaction's timestamp may be before its signature counts as a replay.
 SIGNATURE_MAX_AGE_S = 300
 #: An Ed25519 signature is 64 bytes, its public key 32, both sent as hex.
@@ -186,6 +188,7 @@ class Discord:
         self.gateway = gateway
         self.http = http
         self._backend = backend
+        self._channel_records: dict[str, Mapping[str, Any]] = {}
 
     @property
     def backend(self) -> Any:
@@ -241,7 +244,7 @@ class Discord:
                 "only user mentions <@id> ping (listed in the plan); @everyone, @here and role mentions stay text through Discord's allowed mentions (listed in the plan as suppressed)",
                 "an author's authority is the server role ids the message carried (none in a DM or from a webhook)",
                 "an attachment is fetched from Discord's CDN by its signed link, which expires after about a day: read the message again for a fresh one",
-                "audience is the channel's server members who can view it, never listed",
+                "audience is the channel's server members who can view it, never listed; a DM's audience is the bot and the other user, listed (a group DM's, its members)",
                 "verify grades an HTTP interaction crypto when its Ed25519 signature checks against the application's public key (DISCORD_PUBLIC_KEY), forged otherwise, including Discord's deliberate invalid-signature probes and timestamps older than five minutes",
             ),
         )
@@ -452,8 +455,37 @@ class Discord:
 
     # ----------------------------------------------------------------- audience
 
+    def _channel_record(self, ref: ConversationRef) -> Mapping[str, Any]:
+        """discorddol's record of the channel (``channel(id)``), looked up once per reference."""
+        if ref.id not in self._channel_records:
+            record = self._call(
+                f"channel {ref.id}", lambda: self.backend.channel(ref.id)
+            )
+            self._channel_records[ref.id] = dict(record or {})
+        return self._channel_records[ref.id]
+
     def audience(self, ref: ConversationRef, *, draft: Draft | None = None) -> Audience:
-        """The members of the channel's server who can view it: a group nobody lists here."""
+        """A DM's two participants (or a group DM's members), listed; otherwise the server's members who can view the channel, never listed.
+
+        The channel is looked up once per reference. When it cannot be (no lookup in
+        this backend, or Discord refused), the answer is the wider server group.
+        """
+        evidence: list[str] = []
+        try:
+            if not callable(getattr(self.backend, "channel", None)):
+                raise ChannelError(
+                    "this backend cannot look a channel up (discorddol >= 0.0.7 can)",
+                    kind="unavailable",
+                )
+            record = self._channel_record(ref)
+        except ChannelError as error:
+            record = {}
+            evidence.append(
+                f"the channel could not be looked up ({error}): assumed a server channel"
+            )
+        kind = str(record.get("type") or "").rsplit(".", 1)[-1]
+        if kind in DIRECT_CHANNEL_TYPES:
+            return self._direct_audience(ref, record, group=kind == "group")
         return Audience(
             ref=ref.encoded,
             scope=Scope.GROUP,
@@ -465,7 +497,44 @@ class Discord:
             durability=("copies_pushed", "edit_history_visible"),
             widening=("joiners_read_history", "forwarding", "visibility_flip"),
             evidence=(
+                *evidence,
                 "a Discord channel is read by the members of its server its permission overwrites allow; correspond does not list them",
+            ),
+        )
+
+    def _direct_audience(
+        self, ref: ConversationRef, record: Mapping[str, Any], *, group: bool
+    ) -> Audience:
+        """The people in a DM or group DM: the bot and its recipients, a complete list."""
+        readers = [
+            ChannelIdentity(channel=NAME, native_id=str(user_id))
+            for user_id in record.get("recipients") or ()
+        ]
+        if record.get("me_id"):
+            readers.append(
+                ChannelIdentity(
+                    channel=NAME,
+                    native_id=str(record["me_id"]),
+                    is_bot=True,
+                    is_self=True,
+                )
+            )
+        listed = ", ".join(r.native_id for r in readers) or "no one listed"
+        return Audience(
+            ref=ref.encoded,
+            scope=Scope.NAMED,
+            readers=tuple(readers),
+            complete=bool(record.get("recipients")),
+            durability=("copies_pushed", "edit_history_visible"),
+            widening=(
+                ("joiners_read_history", "forwarding") if group else ("forwarding",)
+            ),
+            evidence=(
+                (
+                    f"a group DM: the bot and its members ({listed}); a member can add others, who read the history"
+                    if group
+                    else f"a direct message: the bot and one user ({listed})"
+                ),
             ),
         )
 
