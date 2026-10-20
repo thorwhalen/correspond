@@ -491,7 +491,9 @@ class PollSource:
     name: str
     read: Callable[..., Any]
     candidates: Callable[..., list]
-    changed: Callable[[dict], str] = lambda item: item.get("updated_at") or item["created_at"]
+    changed: Callable[[dict], str] = lambda item: (
+        item.get("updated_at") or item["created_at"]
+    )
     counts_openings: bool = False
 
 
