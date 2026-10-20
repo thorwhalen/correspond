@@ -8,7 +8,7 @@ Discord resets a bot token after 1,000 identifies in a day, so a listener that
 re-identified on every poll would lose its token within a day of one-minute polls.
 
 The protocol is spoken over an injected ``connect(url, *, timeout)`` returning an object
-with ``send(text)``, ``recv() -> text`` (raising ``TimeoutError`` when quiet) and
+with ``send(text)``, ``recv(timeout=None) -> text`` (raising ``TimeoutError`` when quiet) and
 ``close()``; the default wraps websocket-client (the ``discord`` extra).
 """
 
@@ -48,6 +48,11 @@ OP_HELLO = 10
 OP_HEARTBEAT_ACK = 11
 #: Hosts a resume URL may name: the token is sent there, so a tampered cursor must not redirect it.
 GATEWAY_HOST_SUFFIX = ".discord.gg"
+#: How long a window waits for READY or RESUMED, even when ``wait`` is shorter.
+READY_TIMEOUT_S = 15.0
+#: Identifies one listener may spend in a day before it refuses (Discord's limit is 1,000 a token).
+MAX_IDENTIFIES_PER_DAY = 100
+DAY_S = 86_400
 #: Close codes after which reconnecting cannot help (bad token, bad intents, ...).
 FATAL_CLOSE_CODES = frozenset({4004, 4010, 4011, 4012, 4013, 4014})
 
@@ -82,7 +87,9 @@ def websocket_connect(url: str, *, timeout: float) -> Any:
         def send(self, text: str) -> None:
             self._ws.send(text)
 
-        def recv(self) -> str:
+        def recv(self, timeout: float | None = None) -> str:
+            if timeout is not None:
+                self._ws.settimeout(timeout)
             try:
                 frame = self._ws.recv()
             except websocket.WebSocketTimeoutException:
@@ -108,9 +115,8 @@ def _discord_gateway_url(url: Any) -> bool:
     except ValueError:
         return False
     host = (parts.hostname or "").lower()
-    return parts.scheme == "wss" and (
-        host == GATEWAY_HOST_SUFFIX[1:] or host.endswith(GATEWAY_HOST_SUFFIX)
-    )
+    # The bare discord.gg is the invite domain, not a gateway.
+    return parts.scheme == "wss" and host.endswith(GATEWAY_HOST_SUFFIX)
 
 
 def _resumable(state: Mapping[str, Any] | None) -> bool:
@@ -130,27 +136,53 @@ def gateway_window(
     intents: int = DEFAULT_INTENTS,
     connect: Callable[..., Any] = websocket_connect,
     clock: Callable[[], float] = time.monotonic,
+    wall: Callable[[], float] = time.time,
+    ready_timeout: float = READY_TIMEOUT_S,
+    max_identifies_per_day: int = MAX_IDENTIFIES_PER_DAY,
 ) -> tuple[list[dict], dict]:
     """Dispatches (``{"t": ..., "d": ...}``) seen within a window of ``wait`` quiet seconds, and the state to resume from.
 
     ``state`` is what the previous call returned (``session_id``, ``seq``,
     ``resume_gateway_url``); with it the session is resumed, without it (or when Discord
-    refuses the resume) the bot identifies. The returned state also counts
-    ``identifies``, so a caller can see how often the fallback ran.
+    refuses the resume) the bot identifies, at most once per window and at most
+    ``max_identifies_per_day`` times a day per state (``identified_at`` keeps the times),
+    after which a retryable ``rate_limited`` error stands in for the identify. The window
+    does not end on silence before the session is ready (READY or RESUMED), up to
+    ``ready_timeout`` seconds, and it heartbeats on schedule while it waits.
     """
     state = dict(state or {})
     resuming = _resumable(state)
     base = state["resume_gateway_url"] if resuming else GATEWAY_URL
+    if not resuming:
+        _spend_identify(state, wall(), max_identifies_per_day)  # refuses before connecting
     connection = connect(base.rstrip("/") + "/" + GATEWAY_QUERY, timeout=wait)
     dispatches: list[dict] = []
     heartbeat_s = None
     next_beat = None
+    ready = False
+    identified = not resuming  # the identify spent above, sent on HELLO
+    started = clock()
+    quiet_until = started + wait
+
+    def beat():
+        connection.send(json.dumps({"op": OP_HEARTBEAT, "d": state.get("seq")}))
+
     try:
         while True:
-            try:
-                frame = json.loads(connection.recv())
-            except TimeoutError:
+            now = clock()
+            deadline = quiet_until if ready else max(quiet_until, started + ready_timeout)
+            if next_beat is not None and now >= next_beat:
+                beat()
+                next_beat = now + heartbeat_s
+            if now >= deadline:
                 break
+            timeout = deadline - now
+            if next_beat is not None:
+                timeout = min(timeout, max(next_beat - now, 0.01))
+            try:
+                frame = json.loads(_recv(connection, timeout))
+            except TimeoutError:
+                continue
             except ConnectionError as closed:
                 code = closed.args[0] if closed.args else None
                 if code in FATAL_CLOSE_CODES:
@@ -159,12 +191,13 @@ def gateway_window(
                         kind="auth" if code == 4004 else "permission",
                     ) from None
                 break  # the next window resumes
+            quiet_until = clock() + wait
             op, data = frame.get("op"), frame.get("d")
             if frame.get("s") is not None:
                 state["seq"] = frame["s"]
             if op == OP_HELLO:
-                heartbeat_s = (data or {}).get("heartbeat_interval", 0) / 1000
-                next_beat = clock() + heartbeat_s
+                heartbeat_s = (data or {}).get("heartbeat_interval", 0) / 1000 or None
+                next_beat = clock() + heartbeat_s if heartbeat_s else None
                 if resuming:
                     payload = {
                         "token": token,
@@ -174,37 +207,59 @@ def gateway_window(
                     connection.send(json.dumps({"op": OP_RESUME, "d": payload}))
                 else:
                     connection.send(json.dumps(_identify(token, intents)))
-                    state["identifies"] = state.get("identifies", 0) + 1
             elif op == OP_DISPATCH:
                 kind = frame.get("t")
                 if kind == "READY":
+                    ready = True
                     state["session_id"] = data["session_id"]
                     resume_url = data.get("resume_gateway_url")
-                    if _discord_gateway_url(resume_url):
-                        state["resume_gateway_url"] = resume_url
-                    else:
-                        state.pop("resume_gateway_url", None)
+                    # Anything else is never trusted with the token: resume on the main gateway.
+                    state["resume_gateway_url"] = (
+                        resume_url if _discord_gateway_url(resume_url) else GATEWAY_URL
+                    )
+                elif kind == "RESUMED":
+                    ready = True
                 elif kind in LISTENED_EVENTS:
                     dispatches.append({"t": kind, "d": data})
             elif op == OP_HEARTBEAT:
-                connection.send(json.dumps({"op": OP_HEARTBEAT, "d": state.get("seq")}))
+                beat()
             elif op == OP_INVALID_SESSION:
-                # d is whether the session may still be resumed; when it may not, identify.
-                if not data:
-                    for key in ("session_id", "resume_gateway_url", "seq"):
-                        state.pop(key, None)
-                resuming = bool(data) and _resumable(state)
-                if not resuming:
-                    connection.send(json.dumps(_identify(token, intents)))
-                    state["identifies"] = state.get("identifies", 0) + 1
+                if data:
+                    break  # resumable after a pause Discord asks for: the next window resumes
+                for key in ("session_id", "resume_gateway_url", "seq"):
+                    state.pop(key, None)
+                if identified:
+                    break  # at most one identify per window
+                _spend_identify(state, wall(), max_identifies_per_day)
+                identified, resuming = True, False
+                connection.send(json.dumps(_identify(token, intents)))
             elif op == OP_RECONNECT:
                 break  # the next window resumes at resume_gateway_url
-            if next_beat is not None and clock() >= next_beat:
-                connection.send(json.dumps({"op": OP_HEARTBEAT, "d": state.get("seq")}))
-                next_beat = clock() + heartbeat_s
     finally:
         connection.close()
     return dispatches, state
+
+
+def _recv(connection: Any, timeout: float) -> str:
+    """One frame, waiting at most ``timeout`` seconds when the connection can be told so."""
+    try:
+        return connection.recv(timeout=timeout)
+    except TypeError:  # a connection whose recv takes no timeout
+        return connection.recv()
+
+
+def _spend_identify(state: dict, now: float, cap: int) -> None:
+    """Record one identify in ``state``, or refuse it when today's budget is spent."""
+    recent = [t for t in state.get("identified_at", ()) if now - t < DAY_S]
+    if len(recent) >= cap:
+        raise ChannelError(
+            f"{len(recent)} gateway identifies in the last day for this listener; refusing more "
+            f"(Discord resets the token at 1,000): wait, or listen over REST",
+            kind="rate_limited",
+            retryable=True,
+        )
+    state["identified_at"] = [*recent, now]
+    state["identifies"] = state.get("identifies", 0) + 1
 
 
 def _identify(token: str, intents: int) -> dict:

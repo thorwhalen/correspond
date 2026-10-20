@@ -428,8 +428,10 @@ class Discord:
                     )
                 )
                 continue
-            message = self._message(ref, _from_api(data))
             updated = dispatch["t"] == "MESSAGE_UPDATE"
+            if updated and not (data.get("edited_timestamp") and data.get("author")):
+                continue  # a partial update (an embed unfurled, a pin): no edit to report
+            message = self._message(ref, _from_api(data))
             events.append(
                 Event(
                     kind="message.updated" if updated else "message.created",

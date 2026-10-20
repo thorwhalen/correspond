@@ -543,7 +543,8 @@ def test_gateway_listen_reports_created_edited_and_deleted_and_resumes(monkeypat
     monkeypatch.setenv("DISCORD_LISTEN_VIA", "gateway")
     monkeypatch.setenv("DISCORD_BOT_TOKEN", "example-token")
     monkeypatch.setenv("DISCORD_LISTEN_WAIT_S", "2")
-    gateway = FakeGateway([_GW_CREATE, _GW_ELSEWHERE, _GW_UPDATE, _GW_DELETE], [])
+    unfurl = {"t": "MESSAGE_UPDATE", "d": {"id": "3001", "channel_id": CHANNEL, "embeds": [{}]}}
+    gateway = FakeGateway([_GW_CREATE, _GW_ELSEWHERE, unfurl, _GW_UPDATE, _GW_DELETE], [])
     registry = {"discord": Discord(backend=object(), gateway=gateway)}
     cursors = {}
     events = list(correspond.listen(f"discord:{CHANNEL}", cursors=cursors, registry=registry))
