@@ -60,8 +60,8 @@ EVENT_HEADER = "x-github-event"
 DELIVERY_HEADER = "x-github-delivery"
 _DELIVERY_RE = re.compile(r"^[A-Za-z0-9-]{1,64}$")
 _REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$")
-#: A stored delivery's key: ``<arrival ns>-<delivery id>.json``.
-RECEIVED_KEY_RE = re.compile(r"^(?P<stamp>[0-9]{20})-[A-Za-z0-9-]{1,64}\.json$")
+#: A stored delivery's key: ``<delivery id>.json`` (a replayed delivery overwrites itself).
+RECEIVED_KEY_RE = re.compile(r"^[A-Za-z0-9-]{1,64}\.json$")
 
 
 def _signed(received: str, secret: str, body: bytes) -> bool:
@@ -110,8 +110,10 @@ def mk_webhook_app(
     refused (401) and nothing is read from it: the signature is the only gate, since behind
     a reverse proxy every connection comes from this machine. A signed ``ping`` (sent when
     the webhook is created) and any event not in ``events`` get 202 and are not stored. A
-    kept delivery is stored under ``<arrival time in ns>-<delivery id>.json`` as
-    ``{event, action, repository, discussion, comment}``: no comment text. ``deliveries``
+    kept delivery is stored under ``<delivery id>.json`` as ``{event, action,
+    repository, discussion, comment, received_ns}``: no comment text. Keyed by
+    GitHub's delivery id, a replayed request (GitHub signatures carry no timestamp)
+    overwrites its first copy instead of growing the store. ``deliveries``
     defaults to files under the data root (``github-webhook/``).
     """
     if not isinstance(secret, str) or not secret:
@@ -154,7 +156,7 @@ def mk_webhook_app(
         if record is None:
             return await respond(send, 400, {"error": "no repository or discussion"})
         last[0] = max(clock(), last[0] + 1)  # strictly increasing
-        deliveries[f"{last[0]:020d}-{delivery}.json"] = record
+        deliveries[f"{delivery}.json"] = {**record, "received_ns": last[0]}
         return await respond(send, 200, None)
 
     return app

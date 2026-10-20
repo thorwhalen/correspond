@@ -169,6 +169,10 @@ RECENT_DISCUSSIONS = 3
 DELIVERIES = ("poll", "webhook")
 #: How long the receiver's deliveries are kept.
 WEBHOOK_RETENTION = timedelta(days=7)
+#: How long a comment's webhook delivery may trail the comment: a discussion a
+#: delivery names is read from that much before the delivery arrived, so a reply
+#: created before a poll whose delivery came after it is still found.
+WEBHOOK_LAG = timedelta(minutes=10)
 CLOCK_SKEW = timedelta(seconds=5)
 SECONDARY_LIMIT_WAIT_S = 60.0
 GH_TIMEOUT_S = 120
@@ -689,7 +693,7 @@ def _read_discussions(github, scope):
         if scope.probe.status < 400:
             return None
         # Not an issue: read as a discussion, which raises not_found when it is not one.
-        return [scope.number], False, scope.probe.headers.get("date")
+        return [(scope.number, scope.position)], False, scope.probe.headers.get("date")
     try:
         numbers = github._active_discussions(
             scope.owner, scope.repo, scope.position, recent=github.recent_discussions
@@ -702,22 +706,20 @@ def _read_discussions(github, scope):
             "listen %s/%s: discussions skipped: %s", scope.owner, scope.repo, error
         )
         return None
+    since = dict.fromkeys(numbers, scope.position)
     if github._delivery() == "webhook":
-        numbers = list(
-            dict.fromkeys(
-                numbers
-                + github._webhook_discussions(scope.owner, scope.repo, scope.position)
-            )
-        )
-    return numbers, False, None
+        hinted = github._webhook_discussions(scope.owner, scope.repo, scope.position)
+        for number, received in hinted.items():
+            since[number] = min(since.get(number, scope.position), received - WEBHOOK_LAG)
+    return list(since.items()), False, None
 
 
 def _discussion_candidates(github, scope, numbers):
     found = []
-    for discussion_number in numbers:
+    for discussion_number, since in numbers:
         try:
             found += github._discussion_activity(
-                scope.owner, scope.repo, discussion_number, scope.position
+                scope.owner, scope.repo, discussion_number, since
             )
         except ChannelError as error:
             if scope.number is not None or error.kind != "not_found":
@@ -775,8 +777,10 @@ class GitHub:
             )
         return delivery
 
-    def _webhook_discussions(self, owner: str, repo: str, since: datetime) -> list[int]:
-        """The discussions of ``owner/repo`` the webhook receiver saw a comment on at or after ``since`` (less the clock skew).
+    def _webhook_discussions(
+        self, owner: str, repo: str, since: datetime
+    ) -> dict[int, datetime]:
+        """``{discussion: earliest arrival}`` of the ``owner/repo`` deliveries the receiver stored at or after ``since`` (less the clock skew).
 
         Deliveries older than ``WEBHOOK_RETENTION`` are deleted on the way.
         """
@@ -785,22 +789,28 @@ class GitHub:
         after = int((since - CLOCK_SKEW).timestamp() * 10**9)
         expired = self.clock() - int(WEBHOOK_RETENTION.total_seconds() * 10**9)
         wanted = f"{owner}/{repo}".lower()
-        numbers = []
-        for key in sorted(self.deliveries):
-            if not (match := RECEIVED_KEY_RE.match(key)):
+        found: dict[int, int] = {}
+        for key in list(self.deliveries):
+            if not RECEIVED_KEY_RE.match(key):
                 continue
-            stamp = int(match["stamp"])
+            record = self.deliveries.get(key) or {}
+            stamp = record.get("received_ns")
+            if isinstance(stamp, bool) or not isinstance(stamp, int):
+                continue
             if stamp < expired:
                 self.deliveries.pop(key, None)
                 continue
-            if stamp < after:
-                continue
-            record = self.deliveries.get(key) or {}
-            if str(record.get("repository", "")).lower() == wanted and isinstance(
-                record.get("discussion"), int
+            number = record.get("discussion")
+            if (
+                stamp >= after
+                and str(record.get("repository", "")).lower() == wanted
+                and isinstance(number, int)
             ):
-                numbers.append(record["discussion"])
-        return list(dict.fromkeys(numbers))
+                found[number] = min(found.get(number, stamp), stamp)
+        return {
+            number: datetime.fromtimestamp(stamp / 10**9, tz=timezone.utc)
+            for number, stamp in found.items()
+        }
 
     @property
     def capabilities(self) -> Capabilities:

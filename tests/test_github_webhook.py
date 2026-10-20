@@ -81,15 +81,18 @@ def test_the_receiver_stores_only_signed_discussion_comments_and_no_text():
     assert store == {}
     assert _deliver(app, _payload()) == 200
     ((key, record),) = store.items()
-    assert key == f"{NOW:020d}-d-1.json"
+    assert key == "d-1.json"
     assert record == {
         "event": "discussion_comment",
         "action": "created",
         "repository": REPO,
         "discussion": 7,
         "comment": 702,
+        "received_ns": NOW,
     }
     assert "a reply" not in json.dumps(record)
+    assert _deliver(app, _payload()) == 200  # a replay overwrites, never grows
+    assert len(store) == 1
 
 
 def test_the_receiver_refuses_malformed_deliveries():
@@ -123,8 +126,7 @@ def test_serve_webhook_binds_this_machine_unless_allowed():
     assert calls[-1]["host"] == "0.0.0.0"
 
 
-def _listen_setup(deliveries):
-    since = "2026-09-11T08:00:00Z"
+def _listen_setup(deliveries, since="2026-09-11T08:00:00Z"):
     date = {"Date": "Fri, 11 Sep 2026 12:00:00 GMT"}
     discussion = _numbered_discussion(
         7,
@@ -168,22 +170,26 @@ def test_webhook_delivery_makes_listen_read_the_discussion_it_named(monkeypatch)
     received = NOW - 30 * 10**9
     old = NOW - 8 * 24 * 3600 * 10**9
     deliveries = {
-        f"{received:020d}-d-1.json": {"repository": REPO, "discussion": 7},
-        f"{received:020d}-d-2.json": {"repository": "example/other", "discussion": 8},
-        f"{old:020d}-d-0.json": {"repository": REPO, "discussion": 7},
+        "d-1.json": {"repository": REPO, "discussion": 7, "received_ns": received},
+        "d-2.json": {
+            "repository": "example/other",
+            "discussion": 8,
+            "received_ns": received,
+        },
+        "d-0.json": {"repository": REPO, "discussion": 7, "received_ns": old},
     }
     monkeypatch.setenv("CORRESPOND_GITHUB_DELIVERY", "webhook")
     listen = _listen_setup(deliveries)
     assert listen() == ["discussioncomment-702"]
     assert listen() == []
-    assert f"{old:020d}-d-0.json" not in deliveries  # past the retention: deleted
+    assert "d-0.json" not in deliveries  # past the retention: deleted
 
 
 def test_poll_delivery_ignores_the_receiver(monkeypatch):
     monkeypatch.delenv("CORRESPOND_GITHUB_DELIVERY", raising=False)
     received = NOW - 30 * 10**9
     listen = _listen_setup(
-        {f"{received:020d}-d-1.json": {"repository": REPO, "discussion": 7}}
+        {"d-1.json": {"repository": REPO, "discussion": 7, "received_ns": received}}
     )
     assert listen() == []
 
@@ -192,3 +198,16 @@ def test_an_unknown_delivery_is_refused(monkeypatch):
     monkeypatch.setenv("CORRESPOND_GITHUB_DELIVERY", "push")
     with pytest.raises(ChannelError, match="github delivery is one of"):
         GitHub(deliveries={})._delivery()
+
+
+def test_a_delivery_arriving_after_the_cursor_passed_its_comment_still_delivers_it(
+    monkeypatch,
+):
+    """The comment (09:00) predates the cursor (09:02); its delivery came at 09:03."""
+    monkeypatch.setenv("CORRESPOND_GITHUB_DELIVERY", "webhook")
+    arrived = NOW - 57 * 60 * 10**9  # 09:03
+    listen = _listen_setup(
+        {"d-1.json": {"repository": REPO, "discussion": 7, "received_ns": arrived}},
+        since="2026-09-11T09:02:00Z",
+    )
+    assert listen() == ["discussioncomment-702"]
