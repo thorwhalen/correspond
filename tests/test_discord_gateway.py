@@ -12,7 +12,7 @@ from correspond.channels._discord_gateway import (
 from correspond.errors import ChannelError
 
 TOKEN = "example-token"
-RESUME_URL = "wss://resume.example.org"
+RESUME_URL = "wss://gateway-us-east1-b.discord.gg"
 
 
 class Script:
@@ -102,3 +102,11 @@ def test_a_fatal_close_is_an_error_not_a_retry(code, kind):
         gateway_window(TOKEN, None, wait=1, connect=script)
     assert raised.value.kind == kind and TOKEN not in str(raised.value)
     assert script.closed
+
+
+def test_a_tampered_resume_url_never_receives_the_token():
+    state = {"session_id": "s1", "resume_gateway_url": "wss://collector.example.org", "seq": 3}
+    script = Script(HELLO, READY)
+    gateway_window(TOKEN, state, wait=1, connect=script)
+    assert script.urls[0].startswith(GATEWAY_URL)
+    assert script.ops() == [2]  # identified on Discord's own gateway, no resume elsewhere

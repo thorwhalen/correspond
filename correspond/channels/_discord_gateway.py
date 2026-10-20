@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import time
+from urllib.parse import urlsplit
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -45,6 +46,8 @@ OP_RECONNECT = 7
 OP_INVALID_SESSION = 9
 OP_HELLO = 10
 OP_HEARTBEAT_ACK = 11
+#: Hosts a resume URL may name: the token is sent there, so a tampered cursor must not redirect it.
+GATEWAY_HOST_SUFFIX = ".discord.gg"
 #: Close codes after which reconnecting cannot help (bad token, bad intents, ...).
 FATAL_CLOSE_CODES = frozenset({4004, 4010, 4011, 4012, 4013, 4014})
 
@@ -94,11 +97,27 @@ def websocket_connect(url: str, *, timeout: float) -> Any:
     return Connection()
 
 
+def _discord_gateway_url(url: Any) -> bool:
+    """Whether ``url`` is a ``wss://`` URL on one of Discord's gateway hosts.
+
+    >>> _discord_gateway_url("wss://gateway-us-east1-b.discord.gg"), _discord_gateway_url("wss://discord.gg.example.org")
+    (True, False)
+    """
+    try:
+        parts = urlsplit(str(url))
+    except ValueError:
+        return False
+    host = (parts.hostname or "").lower()
+    return parts.scheme == "wss" and (
+        host == GATEWAY_HOST_SUFFIX[1:] or host.endswith(GATEWAY_HOST_SUFFIX)
+    )
+
+
 def _resumable(state: Mapping[str, Any] | None) -> bool:
     return bool(
         state
         and state.get("session_id")
-        and state.get("resume_gateway_url")
+        and _discord_gateway_url(state.get("resume_gateway_url"))
         and state.get("seq") is not None
     )
 
@@ -160,7 +179,11 @@ def gateway_window(
                 kind = frame.get("t")
                 if kind == "READY":
                     state["session_id"] = data["session_id"]
-                    state["resume_gateway_url"] = data["resume_gateway_url"]
+                    resume_url = data.get("resume_gateway_url")
+                    if _discord_gateway_url(resume_url):
+                        state["resume_gateway_url"] = resume_url
+                    else:
+                        state.pop("resume_gateway_url", None)
                 elif kind in LISTENED_EVENTS:
                     dispatches.append({"t": kind, "d": data})
             elif op == OP_HEARTBEAT:
