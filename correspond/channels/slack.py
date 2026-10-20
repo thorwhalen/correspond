@@ -229,9 +229,7 @@ def webhook_env(name: str) -> str:
     >>> webhook_env("team-alerts"), webhook_env("team_alerts")
     ('CORRESPOND_SLACK_WEBHOOK_TEAM_ALERTS', 'CORRESPOND_SLACK_WEBHOOK_TEAM__ALERTS')
     """
-    return "CORRESPOND_SLACK_WEBHOOK_" + name.upper().replace("_", "__").replace(
-        "-", "_"
-    )
+    return "CORRESPOND_SLACK_WEBHOOK_" + name.upper().replace("_", "__").replace("-", "_")
 
 
 def webhook_keychain_service(name: str) -> str:
@@ -488,9 +486,9 @@ class Slack:
                     "Authorization": f"Bearer {token}",
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
-                body=urlencode(
-                    {k: v for k, v in params.items() if v is not None}
-                ).encode("utf-8"),
+                body=urlencode({k: v for k, v in params.items() if v is not None}).encode(
+                    "utf-8"
+                ),
             )
         except ChannelError as error:
             raise ChannelError(
@@ -657,11 +655,7 @@ class Slack:
                     self.sleep(wait)
             found += list(data.get("messages") or ())
             cursor = (data.get("response_metadata") or {}).get("next_cursor")
-            if (
-                not cursor
-                or not data.get("has_more")
-                or (limit and len(found) >= limit)
-            ):
+            if not cursor or not data.get("has_more") or (limit and len(found) >= limit):
                 return found[:limit] if limit else found
 
     def _replies(
@@ -737,9 +731,7 @@ class Slack:
             )
         return with_final_cursor(events, position if position != started else None)
 
-    def _message(
-        self, conversation: ConversationRef, data: dict, token: str
-    ) -> Message:
+    def _message(self, conversation: ConversationRef, data: dict, token: str) -> Message:
         ts = str(data["ts"])
         thread = data.get("thread_ts")
         parent = thread if thread and thread != ts else None
