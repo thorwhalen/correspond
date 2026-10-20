@@ -87,6 +87,7 @@ ACTS_AS = ("bot", "user", "app", "service")
 EVENT_KINDS = (
     "message.created",
     "message.updated",
+    "message.deleted",
     "reaction.added",
     "identity.changed",
 )

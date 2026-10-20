@@ -500,3 +500,72 @@ def test_more_than_100_pinged_users_is_refused():
     text = " ".join(f"<@{i}>" for i in range(1, 102))
     result = correspond.send(f"discord:{CHANNEL}", text[:2000], registry=_registry(FakeBackend()))
     assert (result.ok, result.error_kind) == (False, "validation")
+
+
+# ------------------------------------------------------------------ listening over the gateway
+
+#: Recorded-shape gateway dispatches (Discord's API JSON; fictional ids).
+_GW_CREATE = {
+    "t": "MESSAGE_CREATE",
+    "d": {
+        "id": "3001",
+        "channel_id": CHANNEL,
+        "guild_id": "1",
+        "timestamp": "2026-09-11T12:00:00+00:00",
+        "edited_timestamp": None,
+        "author": {"id": "77", "username": "ada", "global_name": "Ada", "bot": False},
+        "member": {"roles": ["501"]},
+        "content": "via the gateway",
+        "message_reference": {"message_id": "1001"},
+    },
+}
+_GW_UPDATE = {
+    "t": "MESSAGE_UPDATE",
+    "d": {**_GW_CREATE["d"], "content": "edited", "edited_timestamp": "2026-09-11T12:05:00+00:00"},
+}
+_GW_DELETE = {"t": "MESSAGE_DELETE", "d": {"id": "3001", "channel_id": CHANNEL}}
+_GW_ELSEWHERE = {"t": "MESSAGE_CREATE", "d": {**_GW_CREATE["d"], "id": "3002", "channel_id": "99"}}
+
+
+class FakeGateway:
+    def __init__(self, *windows):
+        self.windows, self.calls = list(windows), []
+
+    def __call__(self, token, state, *, wait):
+        self.calls.append((token, state, wait))
+        dispatches = self.windows.pop(0) if self.windows else []
+        session = dict(state or {"session_id": "s1", "seq": 0, "identifies": 1})
+        session["seq"] += len(dispatches)
+        return dispatches, session
+
+
+def test_gateway_listen_reports_created_edited_and_deleted_and_resumes(monkeypatch):
+    monkeypatch.setenv("DISCORD_LISTEN_VIA", "gateway")
+    monkeypatch.setenv("DISCORD_BOT_TOKEN", "example-token")
+    monkeypatch.setenv("DISCORD_LISTEN_WAIT_S", "2")
+    gateway = FakeGateway([_GW_CREATE, _GW_ELSEWHERE, _GW_UPDATE, _GW_DELETE], [])
+    registry = {"discord": Discord(backend=object(), gateway=gateway)}
+    cursors = {}
+    events = list(correspond.listen(f"discord:{CHANNEL}", cursors=cursors, registry=registry))
+    assert [e.kind for e in events] == ["message.created", "message.updated", "message.deleted"]
+    created, updated, deleted = events
+    assert created.delivery_id == f"discord:{CHANNEL}:3001"  # the same id a REST poll gives
+    assert created.message.reply_to == "1001" and created.message.author.authority == "roles 501"
+    assert created.message.url.endswith(f"/1/{CHANNEL}/3001")
+    assert updated.message.text == "edited" and updated.delivery_id != created.delivery_id
+    assert deleted.payload["message_id"] == "3001"
+    assert gateway.calls[0] == ("example-token", None, 2.0)
+    # The next listen resumes the stored session instead of identifying.
+    list(correspond.listen(f"discord:{CHANNEL}", cursors=cursors, registry=registry))
+    assert gateway.calls[1][1]["session_id"] == "s1"
+    assert "gateway" in Discord().capabilities.listen_modes
+
+
+def test_gateway_listen_ignores_a_rest_cursor(monkeypatch):
+    monkeypatch.setenv("DISCORD_LISTEN_VIA", "gateway")
+    monkeypatch.setenv("DISCORD_BOT_TOKEN", "example-token")
+    gateway = FakeGateway([])
+    registry = {"discord": Discord(backend=object(), gateway=gateway)}
+    cursors = {f"discord:{CHANNEL}": "1001"}
+    assert list(correspond.listen(f"discord:{CHANNEL}", cursors=cursors, registry=registry)) == []
+    assert gateway.calls[0][1] is None
