@@ -1,6 +1,11 @@
 """State stores under the data root."""
 
+import os
 
+import pytest
+
+
+@pytest.mark.skipif(os.name == "nt", reason="Windows folders have no POSIX mode bits")
 def test_a_new_state_folder_is_the_owners_only(tmp_path):
     import stat
 
