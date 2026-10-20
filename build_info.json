@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-20T13:47:39Z",
+  "built_at": "2026-10-20T13:55:31Z",
   "package": {
     "name": "correspond",
-    "version": "0.0.41",
+    "version": "0.0.42",
     "display_name": "correspond",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "8e1c2ae2552134649d2ce5d44c8ca5dd5331da15",
-    "short_commit": "8e1c2ae",
+    "commit": "2c1be7d77c47c9ad509b8b9ffbed759257f78986",
+    "short_commit": "2c1be7d",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/thorwhalen/correspond",
-    "commit_url": "https://github.com/thorwhalen/correspond/commit/8e1c2ae2552134649d2ce5d44c8ca5dd5331da15",
+    "commit_url": "https://github.com/thorwhalen/correspond/commit/2c1be7d77c47c9ad509b8b9ffbed759257f78986",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "thorwhalen/correspond",
-    "sha": "8e1c2ae2552134649d2ce5d44c8ca5dd5331da15",
+    "sha": "2c1be7d77c47c9ad509b8b9ffbed759257f78986",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "39433251015",
-    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/39433251015",
+    "run_id": "39434368742",
+    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/39434368742",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -55,16 +55,16 @@
     "docs_dir": "docsrc"
   },
   "site": {
-    "modules_documented": 30,
-    "objects_documented": 467
+    "modules_documented": 31,
+    "objects_documented": 474
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.41",
+    "latest": "0.0.42",
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout 8e1c2ae2552134649d2ce5d44c8ca5dd5331da15\npip install \"epythet==0.2.20\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout 2c1be7d77c47c9ad509b8b9ffbed759257f78986\npip install \"epythet==0.2.20\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,

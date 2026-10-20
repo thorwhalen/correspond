@@ -20,5 +20,6 @@ correspond.channels
    ntfy
    signal
    slack
+   slack_events
    telegram
    webinbox

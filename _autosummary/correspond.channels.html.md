@@ -19,5 +19,6 @@ that channel.
 | [`ntfy`](correspond.channels.ntfy.html.md#module-correspond.channels.ntfy)                     | ntfy: push notifications to a phone or a desktop through an ntfy server (send only).                           |
 | [`signal`](correspond.channels.signal.html.md#module-correspond.channels.signal)                 | Signal through `signal-cli-rest-api` (JSON-RPC mode): listen, read what was logged, send.                      |
 | [`slack`](correspond.channels.slack.html.md#module-correspond.channels.slack)                   | Slack: drafts in Slack's own formatting; reading, polling and posting with a token; posting through a webhook. |
+| [`slack_events`](correspond.channels.slack_events.html.md#module-correspond.channels.slack_events)     | Slack Events API receiver: Slack pushes a channel's messages, edits and deletions, so listen need not poll.    |
 | [`telegram`](correspond.channels.telegram.html.md#module-correspond.channels.telegram)             | Telegram: a bot over the Bot API, with the standard library.                                                   |
 | [`webinbox`](correspond.channels.webinbox.html.md#module-correspond.channels.webinbox)             | The web inbox: a small ASGI collector web pages post reports to, and the channel that reads them.              |

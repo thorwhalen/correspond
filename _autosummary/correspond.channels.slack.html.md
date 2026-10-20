@@ -56,14 +56,14 @@ them itself. Neither the token nor a webhook URL appears in a plan or an error.
 
 ### Classes
 
-| [`Slack`](#correspond.channels.slack.Slack)(\*[, http, keychain, run, clock, sleep])   | Slack: drafts in Slack's own formatting; reading, polling and posting with a token; posting through a webhook.   |
-|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
+| [`Slack`](#correspond.channels.slack.Slack)(\*[, http, keychain, run, clock, ...])   | Slack: drafts in Slack's own formatting; reading, polling and posting with a token; posting through a webhook.   |
+|-------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------|
 
 ### correspond.channels.slack.MAX_TEXT_CHARS *= 40000*
 
 Slack truncates a message’s text past this many characters.
 
-### *class* correspond.channels.slack.Slack(\*, http=<function urllib_http>, keychain=None, run=<function run>, clock=<built-in function time>, sleep=<built-in function sleep>)
+### *class* correspond.channels.slack.Slack(\*, http=<function urllib_http>, keychain=None, run=<function run>, clock=<built-in function time>, sleep=<built-in function sleep>, events=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -84,6 +84,10 @@ post; with nothing: a draft.
   With a token
 * **Type:**
   read, poll, post and reply in threads; with a webhook
+
+#### *property* events *: [MutableMapping](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Any](https://docs.python.org/3/library/typing.html#typing.Any)]*
+
+What the Events API receiver stored (read when `delivery` is `events`).
 
 #### parse_ref(id)
 

@@ -1,0 +1,17 @@
+correspond.channels.slack\_events
+=================================
+
+.. automodule:: correspond.channels.slack_events
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      events_app_from_env
+      events_store
+      mk_events_app
+      prune_events
+      serve_events
+      serve_main
+   
