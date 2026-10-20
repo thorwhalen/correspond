@@ -463,6 +463,181 @@ def _reader(user: Mapping[str, Any]) -> ChannelIdentity:
     )
 
 
+@dataclass(frozen=True)
+class _PollScope:
+    """What ``GitHub.poll`` is listening to: a repository, or one issue/pull request/discussion."""
+
+    owner: str
+    repo: str
+    number: int | None
+    stamp: str  # the cursor's position as ``since``
+    position: datetime
+    openings_from: datetime
+    repository: ConversationRef
+    probe: Any = None  # the response for ``number`` as an issue, when there is a number
+
+
+@dataclass(frozen=True)
+class PollSource:
+    """One list ``GitHub.poll`` reads: the cursor logic is written once over these.
+
+    ``read(github, scope)`` returns ``(items, cut, server_date)``, or ``None`` when the
+    source does not apply to the scope. ``candidates(github, scope, items)`` returns
+    ``(moment, key, kind, message)`` tuples. ``changed(item)`` is the time a list item is
+    ordered by (for a list cut short). ``counts_openings``: while this list is read in
+    parts, the creation time from which an item still counts as new stays behind.
+    """
+
+    name: str
+    read: Callable[..., Any]
+    candidates: Callable[..., list]
+    changed: Callable[[dict], str] = lambda item: item.get("updated_at") or item["created_at"]
+    counts_openings: bool = False
+
+
+def _read_issue_comments(github, scope):
+    if scope.number is None:
+        return github._collect(
+            f"repos/{scope.owner}/{scope.repo}/issues/comments?sort=updated&direction=asc&since={scope.stamp}"
+        )
+    if scope.probe.status >= 400:
+        return None  # not an issue: a discussion
+    # One issue's comments come ordered by id, not by update, so a cut list would not be
+    # complete up to any time: read every page (an issue holds a bounded number).
+    return github._collect(
+        f"repos/{scope.owner}/{scope.repo}/issues/{scope.number}/comments?since={scope.stamp}",
+        bounded=False,
+    )
+
+
+def _issue_comment_candidates(github, scope, comments):
+    found = []
+    for comment in comments:
+        issue_number = str(comment.get("issue_url", "")).rstrip("/").rsplit("/", 1)[-1]
+        conversation = ConversationRef(
+            channel=NAME,
+            id=f"{scope.owner}/{scope.repo}#{issue_number}",
+            parent=scope.repository,
+        )
+        changed = comment.get("updated_at") or comment["created_at"]
+        is_new = parse_time(comment["created_at"]) >= scope.openings_from
+        found.append(
+            (
+                parse_time(changed),
+                f"issuecomment-{comment['id']}@{changed}",
+                "message.created" if is_new else "message.updated",
+                github._comment(conversation, comment),
+            )
+        )
+    return found
+
+
+def _read_issues(github, scope):
+    if scope.number is not None:
+        return None
+    return github._collect(
+        f"repos/{scope.owner}/{scope.repo}/issues?state=all&sort=updated&direction=asc&since={scope.stamp}"
+    )
+
+
+def _issue_candidates(github, scope, issues):
+    found = []
+    for issue in issues:
+        if parse_time(issue["created_at"]) < scope.openings_from:
+            continue  # an older issue that changed: its comments arrive as their own events
+        found.append(
+            (
+                parse_time(issue["created_at"]),
+                f"issue-{issue['number']}@{issue['created_at']}",
+                "message.created",
+                github._opening(
+                    github._issue_conversation(scope.owner, scope.repo, issue), issue
+                ),
+            )
+        )
+    return found
+
+
+def _read_review_comments(github, scope):
+    if scope.number is None:
+        return github._collect(
+            f"repos/{scope.owner}/{scope.repo}/pulls/comments?sort=updated&direction=asc&since={scope.stamp}"
+        )
+    if scope.probe.status < 400 and (scope.probe.json() or {}).get("pull_request"):
+        return github._collect(
+            f"repos/{scope.owner}/{scope.repo}/pulls/{scope.number}/comments?since={scope.stamp}",
+            bounded=False,
+        )
+    return None
+
+
+def _review_comment_candidates(github, scope, comments):
+    found = []
+    for comment in comments:
+        pull_number = (
+            str(comment.get("pull_request_url", "")).rstrip("/").rsplit("/", 1)[-1]
+        )
+        conversation = ConversationRef(
+            channel=NAME,
+            id=f"{scope.owner}/{scope.repo}#{pull_number}",
+            kind="pull_request",
+            parent=scope.repository,
+        )
+        changed = comment.get("updated_at") or comment["created_at"]
+        is_new = parse_time(comment["created_at"]) >= scope.openings_from
+        found.append(
+            (
+                parse_time(changed),
+                f"discussion_r{comment['id']}@{changed}",
+                "message.created" if is_new else "message.updated",
+                github._review_comment(conversation, comment),
+            )
+        )
+    return found
+
+
+def _read_discussions(github, scope):
+    if scope.number is not None:
+        if scope.probe.status < 400:
+            return None
+        # Not an issue: read as a discussion, which raises not_found when it is not one.
+        return [scope.number], False, scope.probe.headers.get("date")
+    try:
+        numbers = github._active_discussions(scope.owner, scope.repo, scope.position)
+    except ChannelError as error:
+        if error.kind not in _REFUSED_LISTING:
+            raise
+        # A token that may not read discussions still listens to everything else.
+        _log.warning(
+            "listen %s/%s: discussions skipped: %s", scope.owner, scope.repo, error
+        )
+        return None
+    return numbers, False, None
+
+
+def _discussion_candidates(github, scope, numbers):
+    found = []
+    for discussion_number in numbers:
+        try:
+            found += github._discussion_activity(
+                scope.owner, scope.repo, discussion_number, scope.position
+            )
+        except ChannelError as error:
+            if scope.number is not None or error.kind != "not_found":
+                raise
+            continue  # deleted between the walk and the read: nothing left to deliver
+    return found
+
+
+# Adding a poll source (label events, ...) is one entry here.
+POLL_SOURCES: tuple[PollSource, ...] = (
+    PollSource("issue comments", _read_issue_comments, _issue_comment_candidates),
+    PollSource("issues", _read_issues, _issue_candidates, counts_openings=True),
+    PollSource("review comments", _read_review_comments, _review_comment_candidates),
+    PollSource("discussions", _read_discussions, _discussion_candidates),
+)
+
+
 class GitHub:
     """GitHub through ``gh``: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation."""
 
@@ -1153,124 +1328,32 @@ class GitHub:
         repository = ConversationRef(
             channel=NAME, id=f"{owner}/{repo}", kind="repository"
         )
-        reviews: list[Any] = []
-        reviews_cut = False
-        discussions: list[int] = []
+        probe = None
+        if number is not None:
+            probe = self._api(f"repos/{owner}/{repo}/issues/{number}", allow=(404, 410))
+        scope = _PollScope(
+            owner, repo, number, stamp, position, openings_from, repository, probe
+        )
+
+        candidates: list[tuple[datetime, str, str, Message]] = []
+        horizons: list[datetime] = []
         # The server's Date on each list read: every list is complete up to its own, so the
         # earliest is how far this poll can vouch for, whatever is read after it.
         dates: list[str | None] = []
-        if number is None:
-            comments, comments_cut, date = self._collect(
-                f"repos/{owner}/{repo}/issues/comments?sort=updated&direction=asc&since={stamp}"
-            )
-            issues, issues_cut, issues_date = self._collect(
-                f"repos/{owner}/{repo}/issues?state=all&sort=updated&direction=asc&since={stamp}"
-            )
-            reviews, reviews_cut, reviews_date = self._collect(
-                f"repos/{owner}/{repo}/pulls/comments?sort=updated&direction=asc&since={stamp}"
-            )
-            dates += [date, issues_date, reviews_date]
-            try:
-                discussions = self._active_discussions(owner, repo, position)
-            except ChannelError as error:
-                if error.kind not in _REFUSED_LISTING:
-                    raise
-                # A token that may not read discussions still listens to everything else.
-                _log.warning("listen %s: discussions skipped: %s", ref.encoded, error)
-        else:
-            probe = self._api(f"repos/{owner}/{repo}/issues/{number}", allow=(404, 410))
-            issues, issues_cut = [], False
-            if probe.status >= 400:
-                # Not an issue: read as a discussion, which raises not_found when it is not one.
-                comments, comments_cut = [], False
-                dates.append(probe.headers.get("date"))
-                discussions = [number]
-            else:
-                # One issue's comments come ordered by id, not by update, so a cut list would
-                # not be complete up to any time: read every page (an issue holds a bounded
-                # number), and the same for a pull request's review comments.
-                comments, comments_cut, date = self._collect(
-                    f"repos/{owner}/{repo}/issues/{number}/comments?since={stamp}",
-                    bounded=False,
-                )
-                dates.append(date)
-                if (probe.json() or {}).get("pull_request"):
-                    reviews, reviews_cut, reviews_date = self._collect(
-                        f"repos/{owner}/{repo}/pulls/{number}/comments?since={stamp}",
-                        bounded=False,
-                    )
-                    dates.append(reviews_date)
-
-        candidates: list[tuple[datetime, str, str, Message]] = []
-        for comment in comments:
-            issue_number = (
-                str(comment.get("issue_url", "")).rstrip("/").rsplit("/", 1)[-1]
-            )
-            conversation = ConversationRef(
-                channel=NAME, id=f"{owner}/{repo}#{issue_number}", parent=repository
-            )
-            changed = comment.get("updated_at") or comment["created_at"]
-            is_new = parse_time(comment["created_at"]) >= openings_from
-            candidates.append(
-                (
-                    parse_time(changed),
-                    f"issuecomment-{comment['id']}@{changed}",
-                    "message.created" if is_new else "message.updated",
-                    self._comment(conversation, comment),
-                )
-            )
-        for comment in reviews:
-            pull_number = (
-                str(comment.get("pull_request_url", "")).rstrip("/").rsplit("/", 1)[-1]
-            )
-            conversation = ConversationRef(
-                channel=NAME,
-                id=f"{owner}/{repo}#{pull_number}",
-                kind="pull_request",
-                parent=repository,
-            )
-            changed = comment.get("updated_at") or comment["created_at"]
-            is_new = parse_time(comment["created_at"]) >= openings_from
-            candidates.append(
-                (
-                    parse_time(changed),
-                    f"discussion_r{comment['id']}@{changed}",
-                    "message.created" if is_new else "message.updated",
-                    self._review_comment(conversation, comment),
-                )
-            )
-        for issue in issues:
-            if parse_time(issue["created_at"]) < openings_from:
-                continue  # an older issue that changed: its comments arrive as their own events
-            candidates.append(
-                (
-                    parse_time(issue["created_at"]),
-                    f"issue-{issue['number']}@{issue['created_at']}",
-                    "message.created",
-                    self._opening(self._issue_conversation(owner, repo, issue), issue),
-                )
-            )
-        for discussion_number in discussions:
-            try:
-                candidates += self._discussion_activity(
-                    owner, repo, discussion_number, position
-                )
-            except ChannelError as error:
-                if number is not None or error.kind != "not_found":
-                    raise
-                continue  # deleted between the walk and the read: nothing left to deliver
+        issues_cut = False
+        for source in POLL_SOURCES:
+            read = source.read(self, scope)
+            if read is None:
+                continue  # this source does not apply to the scope
+            items, cut, date = read
+            dates.append(date)
+            candidates += source.candidates(self, scope, items)
+            issues_cut = issues_cut or (cut and source.counts_openings)
+            # A list cut short is complete only up to its last item: later events wait for
+            # the next poll, which starts from there.
+            if cut and items:
+                horizons.append(parse_time(source.changed(items[-1])))
         candidates = [c for c in candidates if not (c[0] <= position and c[1] in seen)]
-        # A list cut short is complete only up to its last item: later events wait for the
-        # next poll, which starts from there.
-        horizons = [
-            parse_time(items[-1].get("updated_at") or items[-1]["created_at"])
-            for items, cut in (
-                (comments, comments_cut),
-                (issues, issues_cut),
-                (reviews, reviews_cut),
-            )
-            if cut and items
-        ]
         # Nothing after the earliest list's server time (less the clock skew) is vouched for:
         # a later event would move the cursor past what that list could not yet hold.
         server_times = [t for t in map(_http_date, dates) if t is not None]
