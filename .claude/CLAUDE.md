@@ -15,7 +15,7 @@ Rationale and the provisional defaults: the "v0.1 architecture: seams and surfac
 | 5 | the check every write runs before it leaves: `before_send=` on `send` / `edit` / `react` / `upload` / `label` / `unlabel` / `close` / `reopen`, called as `(ref, draft, audience, *, operation, dry_run, message_id)` (added by liaise discussion 32, slice C3) | the config's top-level `before_send = "module:attr"`, imported lazily; unset → `correspond.outbound:notice` (lets it go, the audience in the plan); unloadable → every write stops (`before_send_unavailable`) | `liaise.vet:before_send` (liaise slice L4) |
 
 ```
-Surfaces for v0.1: CLI + shipped skill + MCP stdio (write tools only with --allow-send); since then the Claude Code channel server (correspond-channel: same tools, sender allowlist, grade-gated permission relay) and the Telegram webhook receiver (correspond-telegram-webhook); remote MCP/HTTP asked, not built
+Surfaces for v0.1: CLI + shipped skill + MCP stdio (write tools only with --allow-send); since then the Claude Code channel server (correspond-channel: same tools, sender allowlist, grade-gated permission relay) the Telegram webhook receiver (correspond-telegram-webhook) and the Slack Events API receiver (correspond-slack-events); remote MCP/HTTP asked, not built
 NOT seams: per-channel ref grammar, authenticity-grade and error-kind vocabularies, the operation names (audience joined them by design: liaise discussion 32), the built-in channel table format, config file format and env var names, data-root layout, web inbox payload and identity-token format, rate and size defaults (config values), CLI rendering, dry-run plan format
 ```
 

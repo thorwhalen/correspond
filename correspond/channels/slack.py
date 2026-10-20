@@ -49,7 +49,7 @@ import os
 import re
 import subprocess
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, MutableMapping
 from dataclasses import replace
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
@@ -298,6 +298,17 @@ USER_CACHE_TTL_S = 3600
 USER_RETRY_S = 60
 #: Pages of ``conversations.replies`` read for one thread at most.
 MAX_THREAD_PAGES = 20
+#: How listen learns of new messages: by polling the Web API, or from the Events API receiver.
+DELIVERIES = ("poll", "events")
+#: The data-root folder the Events API receiver stores events in.
+EVENTS_KIND = "slack-events"
+#: A stored event's key: ``<arrival ns, 20 digits>-<event id>.json``, so keys sort by arrival.
+RECEIVED_KEY_RE = re.compile(r"^(?P<stamp>[0-9]{20})-(?P<event>Ev[A-Za-z0-9]{1,40})\.json$")
+#: An events listen's cursor: ``e<arrival ns>`` of the last stored event it passed.
+EVENTS_CURSOR = "e"
+#: How far back a first events listen looks, and how long stored events are kept.
+EVENTS_LOOKBACK_NS = 24 * 3600 * 10**9
+EVENTS_RETENTION_NS = 7 * 24 * 3600 * 10**9
 #: A listen cursor: the ts reached, and the window width the walk was using.
 CURSOR_RE = re.compile(
     r"^(?P<ts>[0-9]{1,12}\.[0-9]{1,9})(?:/(?P<width>[0-9]{1,9}(?:\.[0-9]{1,6})?))?$"
@@ -305,6 +316,15 @@ CURSOR_RE = re.compile(
 _PLATFORM = Authenticity(
     grade=Grade.PLATFORM, evidence={"attested_by": "the Slack Web API"}
 )
+
+
+def received_key(stamp_ns: int, event_id: str) -> str:
+    """The store key of an event that arrived at ``stamp_ns``: sorts by arrival.
+
+    >>> received_key(5, "Ev01")
+    '00000000000000000005-Ev01.json'
+    """
+    return f"{stamp_ns:020d}-{event_id}.json"
 
 
 def _cursor(position: str, width: float) -> str:
@@ -349,8 +369,10 @@ class Slack:
         run: Callable[..., Any] = subprocess.run,
         clock: Callable[[], float] = time.time,
         sleep: Callable[[float], None] = time.sleep,
+        events: MutableMapping[str, Any] | None = None,
     ):
         self.http = http
+        self._events = events
         self.run = run
         self.clock = clock
         self.sleep = sleep
@@ -375,7 +397,7 @@ class Slack:
             initiate=Support.FULL,
             reply=Support.FULL,
             history_depth=HistoryDepth.FULL,
-            listen_modes=("poll",),
+            listen_modes=("poll", "push"),
             grades=(Grade.PLATFORM, Grade.CRYPTO, Grade.FORGED),
             max_text_length=MAX_TEXT_CHARS,
             formats=("mrkdwn",),
@@ -391,7 +413,7 @@ class Slack:
                 "the text cannot mention anyone: every < is escaped and only http, https and mailto targets become links, so <!channel>, <@U...> or [x](!here) arrive as text",
                 "read and listen see a channel's top-level messages, thread parents and replies also sent to the channel; the other replies are read through the thread's own reference, slack:<channel>/<thread ts> (conversations.replies), which listen polls and send replies in; Slack's own notices (someone joined, the topic changed) are left out; listen polls over the Web API and sees new messages, not edits",
                 "an author's handle and display name come from users.info (the token needs users:read), kept an hour; without the scope the author is the user id alone",
-                "push delivery (the Events API, Socket Mode) is not built: listen polls; verify is ready for a receiver of Slack's signed requests",
+                "with delivery = events, listen reads what the Events API receiver (correspond-slack-events, behind your HTTPS reverse proxy) stored instead of polling, and also reports edits (message.updated) and deletions (message.deleted); the receiver verifies every request's signature and answers Slack's url_verification; Socket Mode is not built",
                 "install the app in your own workspace (a commercially distributed app outside Slack's Marketplace gets one history request a minute); listen walks forward through time windows, delivering each whole before the next, so a poll a rate limit cuts short keeps what it delivered and the next one resumes there, and a backlog drains a little each poll; the newest minute waits for the next poll (this clock may run ahead of Slack's)",
                 "a file is fetched with the token only from Slack's own hosts (the token needs files:read); a file hosted elsewhere is not fetched",
                 "a channel named rather than given by id is looked up with conversations.list (the token needs channels:read, and groups:read for a private one); a name is trusted five minutes, so a renamed channel answers to its new name within them",
@@ -423,6 +445,24 @@ class Slack:
         return ConversationRef(channel=NAME, id=name, kind="channel")
 
     # ------------------------------------------------------------------ plumbing
+
+    @property
+    def events(self) -> MutableMapping[str, Any]:
+        """What the Events API receiver stored (read when ``delivery`` is ``events``)."""
+        if self._events is None:
+            from correspond.channels._webhook import configured_store
+
+            self._events = configured_store(NAME, EVENTS_KIND)
+        return self._events
+
+    def _delivery(self) -> str:
+        delivery = str(value(NAME, "delivery", run=self.run, keychain=False) or "poll").strip().lower()
+        if delivery not in DELIVERIES:
+            raise ChannelError(
+                f"slack delivery is one of {DELIVERIES}, not {delivery!r}",
+                kind="validation",
+            )
+        return delivery
 
     def _token(self, *, dry_run: bool = False) -> str | None:
         """The Web API token, or ``None``; a dry run reads only the environment."""
@@ -812,15 +852,17 @@ class Slack:
         """
         token = self._require_token("listen to a channel")
         match = CURSOR_RE.match(str(cursor)) if cursor else None
-        if cursor and not match:
+        if cursor and not match and not str(cursor).startswith(EVENTS_CURSOR):
             raise ChannelError(
                 f"a Slack cursor is <ts>/<width> or a message ts, not {cursor!r}",
                 kind="validation",
             )
         channel = self._channel_id(ref, token)
+        thread = self._where(ref)[1]
+        if self._delivery() == "events":
+            return self._poll_received(ref, channel, thread, token, cursor, limit)
         now = self.clock()
         position = match["ts"] if match else f"{now - LISTEN_LOOKBACK_S:.6f}"
-        thread = self._where(ref)[1]
         if thread:
             return self._poll_thread(
                 ref,
@@ -906,6 +948,106 @@ class Slack:
             break  # the limit stopped it inside a window
         moved = (float(position), width) != started
         return with_final_cursor(events, _cursor(position, width) if moved else None)
+
+    def _poll_received(
+        self,
+        ref: ConversationRef,
+        channel: str,
+        thread: str | None,
+        token: str,
+        cursor: str | None,
+        limit: int | None,
+    ):
+        """What the Events API receiver stored after ``cursor`` (``e<arrival ns>``) for this channel (or thread), in arrival order.
+
+        New messages are ``message.created``, edits ``message.updated`` and deletions
+        ``message.deleted``. A first listen, or one whose cursor came from polling, looks
+        back a day; stored events older than a week are deleted on the way.
+        """
+        now_ns = int(self.clock() * 10**9)
+        text = str(cursor or "")
+        if text.startswith(EVENTS_CURSOR) and text[1:].isdigit():
+            after = int(text[1:])
+        elif not text or CURSOR_RE.match(text):
+            after = now_ns - EVENTS_LOOKBACK_NS
+        else:
+            raise ChannelError(
+                f"a Slack events cursor is {EVENTS_CURSOR}<arrival ns>, not {cursor!r}",
+                kind="validation",
+            )
+        wanted = max(1, int(limit)) if limit else None
+        received = sorted(
+            (int(match["stamp"]), key)
+            for key in list(self.events)
+            if (match := RECEIVED_KEY_RE.match(key))
+        )
+        events: list[Event] = []
+        reached = None
+        for stamp, key in received:
+            if stamp <= after:
+                if stamp < now_ns - EVENTS_RETENTION_NS:
+                    self.events.pop(key, None)
+                continue
+            if wanted and len(events) >= wanted:
+                break
+            reached = stamp
+            record = self.events.get(key)
+            if not isinstance(record, Mapping) or record.get("channel") != channel:
+                continue
+            found = self._received_event(
+                ref, channel, thread, record.get("event") or {}, token
+            )
+            if found is not None:
+                events.append(replace(found, cursor=f"{EVENTS_CURSOR}{stamp}"))
+        return with_final_cursor(
+            events, f"{EVENTS_CURSOR}{reached}" if reached is not None else None
+        )
+
+    def _received_event(
+        self,
+        ref: ConversationRef,
+        channel: str,
+        thread: str | None,
+        event: Mapping[str, Any],
+        token: str,
+    ) -> Event | None:
+        """One stored ``message`` event as listen reports it, or ``None`` when it is not for ``ref``."""
+        subtype = event.get("subtype")
+        if subtype == "message_deleted":
+            previous = event.get("previous_message") or {}
+            deleted = str(event.get("deleted_ts") or previous.get("ts") or "")
+            if not deleted or (thread and thread not in (deleted, previous.get("thread_ts"))):
+                return None
+            return Event(
+                kind="message.deleted",
+                channel=NAME,
+                delivery_id=f"slack:{channel}:{deleted}:deleted",
+                payload={"message_id": deleted, "conversation": ref.encoded},
+            )
+        edited = subtype == "message_changed"
+        data = event.get("message") if edited else event
+        if not isinstance(data, Mapping) or not data.get("ts"):
+            return None
+        if not edited and subtype not in MESSAGE_SUBTYPES:
+            return None  # Slack's own notices
+        if edited and data.get("subtype") not in MESSAGE_SUBTYPES:
+            return None
+        if thread and thread not in (str(data["ts"]), data.get("thread_ts")):
+            return None
+        if not thread and data.get("thread_ts") not in (None, data["ts"]) and (
+            data.get("subtype") != "thread_broadcast"
+        ):
+            return None  # a reply inside a thread: its thread's reference reports it
+        ts = str(data["ts"])
+        edit_ts = (data.get("edited") or {}).get("ts") or event.get("event_ts")
+        return Event(
+            kind="message.updated" if edited else "message.created",
+            channel=NAME,
+            delivery_id=(
+                f"slack:{channel}:{ts}:edited:{edit_ts}" if edited else f"slack:{channel}:{ts}"
+            ),
+            message=self._message(ref, dict(data), token),
+        )
 
     def _window(
         self, channel: str, token: str, params: dict, first: list, data: dict
