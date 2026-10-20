@@ -432,3 +432,20 @@ def test_verify_without_a_usable_public_key_says_how_to_set_it(monkeypatch):
 
 def _no_keychain(*args, **kwargs):
     raise FileNotFoundError("no keychain here")
+
+
+def test_verify_fails_closed_on_odd_inputs(monkeypatch):
+    registry = _verifier(monkeypatch)
+    huge = "9" * 5000
+    cases = [
+        (_signed(_PING), _PING.decode(), "body is not bytes"),
+        (_signed(_PING), None, "body is not bytes"),
+        (None, _PING, "no headers"),
+        ({b"X-Signature-Ed25519": b"00"}, _PING, "no timestamp"),
+        (_signed(_PING, stamp=huge), _PING, "no timestamp"),
+        (_signed(_PING, stamp=_NOW + 600), _PING, "stale"),  # future-dated
+    ]
+    for headers, body, reason in cases:
+        verdict = correspond.verify("discord", headers, body, registry=registry)
+        assert verdict.grade.value == "forged" and reason in verdict.evidence["signature"], reason
+    assert correspond.verify("discord", _signed(_PING), bytearray(_PING), registry=registry).grade.value == "crypto"

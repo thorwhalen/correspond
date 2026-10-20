@@ -79,6 +79,8 @@ SIGNATURE_MAX_AGE_S = 300
 #: An Ed25519 signature is 64 bytes, its public key 32, both sent as hex.
 ED25519_SIGNATURE_HEX = 128
 ED25519_PUBLIC_KEY_HEX = 64
+#: Digits a Unix timestamp in seconds can plausibly have; longer is refused before parsing.
+TIMESTAMP_MAX_DIGITS = 12
 #: HTTP statuses, as correspond's error kinds (discord.py's HTTPException carries ``status``).
 _STATUS_KINDS = {
     400: "validation",
@@ -387,18 +389,29 @@ class Discord:
             ) from None
 
     def verify(self, headers: Mapping[str, str], body: bytes) -> Authenticity:
-        """``crypto`` when ``X-Signature-Ed25519`` checks over a fresh ``X-Signature-Timestamp`` + body, ``forged`` otherwise."""
-        from cryptography.exceptions import InvalidSignature
+        """``crypto`` when ``X-Signature-Ed25519`` checks over a fresh ``X-Signature-Timestamp`` + body, ``forged`` otherwise.
 
+        Raises :class:`~correspond.errors.MissingRequirement` when the public key is unset
+        or unusable (a configuration error, never a verdict on the request). Replay
+        protection is the five-minute window only: a captured request can be replayed
+        within it, so act idempotently on an interaction's id.
+        """
         key = self._public_key()
+        from cryptography.exceptions import InvalidSignature
 
         def forged(reason: str) -> Authenticity:
             return Authenticity(grade=Grade.FORGED, evidence={"signature": reason})
 
+        if not isinstance(headers, Mapping):
+            return forged("no headers")
+        if not isinstance(body, (bytes, bytearray, memoryview)):
+            return forged("body is not bytes")
         lowered = {str(k).lower(): str(v).strip() for k, v in headers.items()}
         stamp = lowered.get("x-signature-timestamp", "")
         signature = lowered.get("x-signature-ed25519", "")
-        if not (stamp.isascii() and stamp.isdigit()):
+        if not (
+            stamp.isascii() and stamp.isdigit() and len(stamp) <= TIMESTAMP_MAX_DIGITS
+        ):
             return forged("no timestamp")
         if not signature:
             return forged("missing")
