@@ -434,8 +434,21 @@ CHANNELS: tuple[ChannelInfo, ...] = (
             Setting(
                 key="delivery",
                 env="CORRESPOND_SLACK_DELIVERY",
-                what="where listen takes messages from: poll (conversations.history) or events (what the Events API receiver stored: new, edited and deleted messages)",
+                what="where listen takes messages from: poll (conversations.history), events (what the Events API receiver stored: new, edited and deleted messages) or socket (a short Socket Mode window, no public URL: the same events; needs app_token and the slack extra)",
                 default="poll",
+            ),
+            Setting(
+                key="app_token",
+                env="CORRESPOND_SLACK_APP_TOKEN",
+                what="an app-level token (xapp-) with connections:write, used only by delivery = socket to open Slack's Socket Mode",
+                where="api.slack.com/apps: your app, Socket Mode (turn it on), then Basic Information, App-Level Tokens, Generate Token and Scopes with connections:write; subscribe to the bot events message.channels (and message.groups) under Event Subscriptions",
+                secret=True,
+            ),
+            Setting(
+                key="listen_wait_s",
+                env="CORRESPOND_SLACK_LISTEN_WAIT_S",
+                what="with delivery = socket, how many quiet seconds a listen keeps Socket Mode open before it returns (at most 60; a window closes after 60 s in all)",
+                default="5",
             ),
             Setting(
                 key="webhook_store",
@@ -454,6 +467,7 @@ CHANNELS: tuple[ChannelInfo, ...] = (
             "create the webhook in your Slack app's settings (Incoming Webhooks), one per channel: https://api.slack.com/messaging/webhooks",
             "with CORRESPOND_SLACK_TOKEN, read, listen and send use the Web API (and send replies in threads); without one, send uses the webhook",
             "push delivery on a server: install correspond[server], run correspond-slack-events (127.0.0.1:8083, one worker) behind your HTTPS reverse proxy, give its URL as the app's Event Subscriptions Request URL with the bot events message.channels (and message.groups), and set delivery = events",
+            "push delivery without a public URL (local use; not for apps in Slack's Marketplace): install correspond[slack], turn Socket Mode on, put an app-level token (connections:write) in CORRESPOND_SLACK_APP_TOKEN, subscribe to message.channels (and message.groups), and set delivery = socket; a listen then opens the socket for listen_wait_s quiet seconds, so run listen often or messages sent between windows may be missed",
         ),
     ),
     ChannelInfo(

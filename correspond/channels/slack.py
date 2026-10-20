@@ -58,6 +58,7 @@ from urllib.parse import urlencode, urlsplit
 
 from correspond import settings as _settings
 from correspond.channels._http import retry_after_seconds, urllib_http
+from correspond.channels._slack_socket import socket_window
 from correspond.errors import ChannelError, InvalidRef, MissingRequirement, NotSupported
 from correspond.model import (
     Account,
@@ -304,8 +305,14 @@ THREAD_TAIL_MIN_WINDOW_S = 0.000001
 THREAD_TAIL_GROWTH = 8
 #: Workspaces (tokens) one adapter keeps caches for; the least recently used is dropped past it.
 MAX_WORKSPACES = 8
-#: How listen learns of new messages: by polling the Web API, or from the Events API receiver.
-DELIVERIES = ("poll", "events")
+#: How listen learns of new messages: by polling the Web API, from the Events API receiver, or over Socket Mode.
+DELIVERIES = ("poll", "events", "socket")
+#: With delivery = socket, how many quiet seconds a listen keeps the socket open by default, and at most.
+LISTEN_WAIT_S = 5.0
+MAX_LISTEN_WAIT_S = 60.0
+#: An app-level token, the only kind Socket Mode accepts.
+APP_TOKEN_PREFIX = "xapp-"
+EVENT_ID_RE = re.compile(r"^Ev[A-Za-z0-9]{1,40}$")
 #: The data-root folder the Events API receiver stores events in.
 EVENTS_KIND = "slack-events"
 #: A stored event's key: ``<arrival ns, 20 digits>-<event id>.json``, so keys sort by arrival.
@@ -355,6 +362,38 @@ def _posts_as(token: str) -> str:
     if "xoxp-" in token:
         return "the person whose token it is (a user token)"
     return "whoever the token belongs to (checked when sending)"
+
+
+def event_record(payload: Any) -> dict | None:
+    """What is kept of an ``event_callback``: its id, the channel, the ``message`` event. ``None`` for anything else.
+
+    The Events API receiver and a Socket Mode listen both store events in this shape.
+
+    >>> event_record({"event_id": "Ev1", "event": {"type": "message", "channel": "C0123ABCD"}})["channel"]
+    'C0123ABCD'
+    >>> event_record({"event_id": "Ev1", "event": {"type": "reaction_added", "channel": "C0123ABCD"}}) is None
+    True
+    """
+    if not isinstance(payload, dict):
+        return None
+    event = payload.get("event")
+    event_id = payload.get("event_id")
+    if (
+        not isinstance(event, dict)
+        or event.get("type") != "message"
+        or not isinstance(event_id, str)
+        or not EVENT_ID_RE.fullmatch(event_id)
+    ):
+        return None
+    channel = event.get("channel")
+    if not isinstance(channel, str) or not CHANNEL_ID_RE.fullmatch(channel):
+        return None
+    return {
+        "event_id": event_id,
+        "team_id": str(payload.get("team_id") or ""),
+        "channel": channel,
+        "event": event,
+    }
 
 
 def _token_key(token: str) -> str:
@@ -421,8 +460,10 @@ class Slack:
         clock: Callable[[], float] = time.time,
         sleep: Callable[[float], None] = time.sleep,
         events: MutableMapping[str, Any] | None = None,
+        socket: Callable[..., list[dict]] = socket_window,
     ):
         self.http = http
+        self.socket = socket
         self._events = events
         self.run = run
         self.clock = clock
@@ -460,7 +501,8 @@ class Slack:
                 "the text cannot mention anyone: every < is escaped and only http, https and mailto targets become links, so <!channel>, <@U...> or [x](!here) arrive as text",
                 "read and listen see a channel's top-level messages, thread parents and replies also sent to the channel; the other replies are read through the thread's own reference, slack:<channel>/<thread ts> (conversations.replies), which listen polls and send replies in; reading a thread too long for 20 pages of replies (about 4,000) returns its newest ones (it walks back from the latest reply); Slack's own notices (someone joined, the topic changed) are left out; listen polls over the Web API and sees new messages, not edits",
                 "an author's handle and display name come from users.info (the token needs users:read), kept an hour per token (as are channel names), so two workspaces never share them; without the scope the author is the user id alone",
-                "with delivery = events, listen reads what the Events API receiver (correspond-slack-events, behind your HTTPS reverse proxy) stored instead of polling, and also reports edits (message.updated) and deletions (message.deleted); the receiver verifies every request's signature and answers Slack's url_verification; Socket Mode is not built",
+                "with delivery = events, listen reads what the Events API receiver (correspond-slack-events, behind your HTTPS reverse proxy) stored instead of polling, and also reports edits (message.updated) and deletions (message.deleted); the receiver verifies every request's signature and answers Slack's url_verification",
+                "with delivery = socket (the slack extra, an app-level xapp- token in app_token, Socket Mode on in the app's settings), listen opens Slack's Socket Mode for a window of listen_wait_s quiet seconds (60 s at most), acknowledges what Slack pushes, stores every message event as the receiver does and reports this reference's: no public URL needed, but what arrives while no listen has the socket open reaches it only through Slack's own retries",
                 "install the app in your own workspace (a commercially distributed app outside Slack's Marketplace gets one history request a minute); listen walks forward through time windows, delivering each whole before the next, so a poll a rate limit cuts short keeps what it delivered and the next one resumes there, and a backlog drains a little each poll; the newest minute waits for the next poll (this clock may run ahead of Slack's)",
                 "a file is fetched with the token only from Slack's own hosts (the token needs files:read); a file hosted elsewhere is not fetched",
                 "a channel named rather than given by id is looked up with conversations.list (the token needs channels:read, and groups:read for a private one); a name is trusted five minutes, so a renamed channel answers to its new name within them",
@@ -1056,7 +1098,10 @@ class Slack:
             )
         channel = self._channel_id(ref, token)
         thread = self._where(ref)[1]
-        if self._delivery() == "events":
+        delivery = self._delivery()
+        if delivery == "socket":
+            self._receive_socket()
+        if delivery in ("events", "socket"):
             return self._poll_received(ref, channel, thread, token, cursor, limit)
         now = self.clock()
         position = match["ts"] if match else f"{now - LISTEN_LOOKBACK_S:.6f}"
@@ -1146,6 +1191,53 @@ class Slack:
             break  # the limit stopped it inside a window
         moved = (float(position), width) != started
         return with_final_cursor(events, _cursor(position, width) if moved else None)
+
+    def _receive_socket(self) -> int:
+        """One Socket Mode window: the ``message`` events Slack pushes, stored as the Events API receiver stores them.
+
+        Every event is stored, whichever channel it is in, so a listen to one channel never
+        loses another's (Slack counts an acknowledged event as delivered); each reference's
+        listen then reads the store from its own cursor. An event already stored (Slack's
+        retry) is not stored twice. Returns how many were stored.
+        """
+        app_token = require(NAME, "app_token", run=self.run)
+        if not app_token.startswith(APP_TOKEN_PREFIX):
+            raise ChannelError(
+                "slack app_token is the app-level token (xapp-...) made under Basic Information, App-Level Tokens, with connections:write; a bot or user token cannot open Socket Mode",
+                kind="validation",
+            )
+        raw = value(NAME, "listen_wait_s", run=self.run, keychain=False)
+        try:
+            wait = float(raw) if raw not in (None, "") else LISTEN_WAIT_S
+        except ValueError:
+            wait = -1.0
+        if not 0 < wait <= MAX_LISTEN_WAIT_S:
+            raise ChannelError(
+                f"slack listen_wait_s is a number of seconds above 0 and at most {MAX_LISTEN_WAIT_S:g}, not {raw!r}",
+                kind="validation",
+            )
+        payloads = self.socket(app_token, wait=wait)
+        events = self.events
+        stamps, seen = [0], set()
+        for key in list(events):
+            if match := RECEIVED_KEY_RE.match(key):
+                stamps.append(int(match["stamp"]))
+                seen.add(match["event"])
+        last = max(stamps)
+        stored = 0
+        for payload in payloads:
+            record = (
+                event_record(payload)
+                if isinstance(payload, Mapping) and payload.get("type") == "event_callback"
+                else None
+            )
+            if record is None or record["event_id"] in seen:
+                continue
+            last = max(int(self.clock() * 10**9), last + 1)  # strictly increasing
+            events[received_key(last, record["event_id"])] = {**record, "received_ns": last}
+            seen.add(record["event_id"])
+            stored += 1
+        return stored
 
     def _poll_received(
         self,

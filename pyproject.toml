@@ -65,6 +65,10 @@ gdrive = [
 apprise = [
     "apprise>=1.6",
 ]
+# Slack's Socket Mode (delivery = socket: push without a public URL) needs a websocket.
+slack = [
+    "websocket-client>=1.6",
+]
 # The Signal channel (listen over the REST API's WebSocket) is optional.
 signal = [
     "websocket-client>=1.6",

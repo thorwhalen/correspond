@@ -17,7 +17,6 @@ bot events ``message.channels`` (and ``message.groups`` for private channels).
 from __future__ import annotations
 
 import json
-import re
 import time
 from collections.abc import Awaitable, Callable, Mapping, MutableMapping
 from typing import Any
@@ -30,12 +29,12 @@ from correspond.channels._webhook import (
     serve_receiver,
 )
 from correspond.channels.slack import (
-    CHANNEL_ID_RE,
     EVENTS_KIND,
     EVENTS_RETENTION_NS,
     NAME,
     RECEIVED_KEY_RE,
     Slack,
+    event_record,
     received_key,
 )
 from correspond.errors import ChannelError
@@ -54,7 +53,6 @@ __all__ = [
 
 EVENTS_PORT = 8083
 MAX_EVENT_BODY_BYTES = 1_000_000
-_EVENT_ID_RE = re.compile(r"^Ev[A-Za-z0-9]{1,40}$")
 PRUNE_EVERY_NS = 3600 * 10**9  # how often (at most) the receiver prunes on a write
 
 
@@ -83,28 +81,7 @@ def prune_events(
     return pruned
 
 
-def _record(payload: Any) -> dict | None:
-    """What is kept of an ``event_callback``: its id, the channel, the ``message`` event. ``None`` for anything else."""
-    if not isinstance(payload, dict):
-        return None
-    event = payload.get("event")
-    event_id = payload.get("event_id")
-    if (
-        not isinstance(event, dict)
-        or event.get("type") != "message"
-        or not isinstance(event_id, str)
-        or not _EVENT_ID_RE.fullmatch(event_id)
-    ):
-        return None
-    channel = event.get("channel")
-    if not isinstance(channel, str) or not CHANNEL_ID_RE.fullmatch(channel):
-        return None
-    return {
-        "event_id": event_id,
-        "team_id": str(payload.get("team_id") or ""),
-        "channel": channel,
-        "event": event,
-    }
+_record = event_record  # kept for importers of the old private name
 
 
 def mk_events_app(
