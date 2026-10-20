@@ -43,7 +43,7 @@ The events the receiver keeps; any other signed event is acknowledged and droppe
 
 The data-root folder the receiver stores deliveries in.
 
-### correspond.channels.github_webhook.mk_webhook_app(\*, secret, deliveries=None, events=('discussion_comment', ), max_body_bytes=1000000, clock=<built-in function time_ns>)
+### correspond.channels.github_webhook.mk_webhook_app(\*, secret, deliveries=None, events=('discussion_comment', ), max_body_bytes=1000000, clock=<built-in function time_ns>, prune_every_ns=3600000000000)
 
 The receiver as an ASGI app: GitHub POSTs signed deliveries, the app stores the `events` ones in `deliveries`.
 
@@ -56,6 +56,10 @@ repository, discussion, comment, received_ns}`: no comment text. Keyed by
 GitHub’s delivery id, a replayed request (GitHub signatures carry no timestamp)
 overwrites its first copy instead of growing the store. `deliveries`
 defaults to files under the data root (`github-webhook/`).
+
+The receiver also deletes deliveries older than `WEBHOOK_RETENTION` itself
+(`prune_deliveries()`), on a write, at most once per `prune_every_ns`, so the
+store stays bounded in time even with no `delivery = webhook` listen to prune it.
 
 * **Return type:**
   [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`Awaitable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Awaitable)[[`None`](https://docs.python.org/3/builtins/constants.html#None)]]
