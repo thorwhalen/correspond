@@ -1416,3 +1416,42 @@ def test_an_adapter_keeps_caches_for_a_few_tokens_only():
     assert len(slack._workspaces) == MAX_WORKSPACES
     assert slack._workspace(f"xoxb-rotated-{MAX_WORKSPACES + 2}").channel_ids == {"x": str(MAX_WORKSPACES + 2)}
     assert slack._workspace("xoxb-rotated-0").channel_ids == {}  # dropped, started anew
+
+
+def test_a_read_counts_only_written_messages_toward_its_limit(token):
+    notices = [_msg(f"17600001{i:02d}.000100", "joined", subtype="channel_join") for i in range(5)]
+    written = [_msg(f"17600000{i:02d}.000100", f"m{i}") for i in range(5)]
+    api = FakeSlackApi(notices + written)
+    messages = correspond.read(f"slack:{CHANNEL}", limit=3, registry=_api_registry(api))
+    assert [m.text for m in messages] == ["m2", "m3", "m4"]
+
+
+def test_a_resumed_listing_takes_a_later_pages_channel_for_a_reused_name(token):
+    channels = [{"id": f"C0000000{i}", "name": f"c{i}"} for i in range(6)]
+    api = FakeSlackApi(HISTORY, channels=channels, channel_page=2)
+    registry = _api_registry(api)
+    correspond.read("slack:c0", registry=registry)  # stops after the first page
+    api.channels[4] = {"id": "C0000NEW0", "name": "c0"}  # the name is now another channel's
+    correspond.read("slack:c5", registry=registry)  # resumes, reading the later pages
+    correspond.read("slack:c0", registry=registry)
+    history = [p["channel"] for n, p in api.calls if n == "conversations.history"]
+    assert history[-1] == "C0000NEW0"
+
+
+def test_one_adapter_shared_across_threads_lists_channels_once(token):
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    channels = [{"id": f"C0000000{i}", "name": f"c{i}"} for i in range(6)]
+    api = FakeSlackApi(HISTORY, channels=channels, channel_page=2)
+
+    def http(method, url, *, headers=None, body=None, timeout=None):
+        if "conversations.list" in url:
+            time.sleep(0.02)  # widen the window two threads could list in at once
+        return api(method, url, headers=headers, body=body, timeout=timeout)
+
+    registry = {"slack": Slack(http=http, keychain=lambda s: "", clock=lambda: NOW)}
+    with ThreadPoolExecutor(4) as pool:
+        list(pool.map(lambda n: correspond.read(f"slack:c{n % 6}", registry=registry), range(24)))
+    listed = [p.get("cursor") for n, p in api.calls if n == "conversations.list"]
+    assert listed == [None, "2", "4"], listed
