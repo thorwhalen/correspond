@@ -42,7 +42,7 @@ Where the receiver keeps events: the `slack` `webhook_store` setting’s `module
 * **Return type:**
   [`MutableMapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)]
 
-### correspond.channels.slack_events.mk_events_app(\*, verify=None, events=None, max_body_bytes=1000000, clock=<built-in function time_ns>, prune_every_ns=3600000000000)
+### correspond.channels.slack_events.mk_events_app(\*, verify=None, events=None, max_body_bytes=1000000, clock=<built-in function time_ns>, prune_every_ns=3600000000000, keep=None, stamps=None)
 
 The receiver as an ASGI app: Slack POSTs signed requests, the app stores the `message` events in `events`.
 
@@ -56,6 +56,13 @@ dropped. A kept event is stored under `<arrival ns>-<event id>.json` as
 already stored (a retry, `X-Slack-Retry-Num`, or a replay within the signature’s
 window) is acknowledged and not stored twice.
 `events` defaults to files under the data root (`slack-events/`).
+
+`keep` says which channel ids’ events are stored (the others are acknowledged and
+dropped); it defaults to the `keep_channels` setting as the receiver starts (restart
+it after changing the setting), and to every channel when that is unset. `stamps` (an [`ArrivalStamps`](correspond.stores.html.md#correspond.stores.ArrivalStamps), by default the one
+Socket Mode listens share) stamps each event and holds its lock while the event is
+stored, so writers on one machine take turns and none stores an event below a cursor
+a listen already passed.
 
 The receiver deletes events older than the retention itself ([`prune_events()`](#correspond.channels.slack_events.prune_events)),
 on a write, at most once per `prune_every_ns`.

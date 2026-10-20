@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=4f34e5f2"></script>
+    <script src="../../../_static/documentation_options.js?v=a72e4630"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.47" />
+  <meta name="docsearch:version" content="0.0.48" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1117,6 +1117,31 @@ window.runMermaid = runMermaid;</script>
     <span class="p">}</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">kept_channels</span><span class="p">(</span><span class="n">raw</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The channel ids the ``keep_channels`` setting names, or ``None`` (unset: every channel's events are kept).</span>
+
+<span class="sd">    &gt;&gt;&gt; sorted(kept_channels("C0123ABCD, G0123ABCD"))</span>
+<span class="sd">    ['C0123ABCD', 'G0123ABCD']</span>
+<span class="sd">    &gt;&gt;&gt; kept_channels("") is None</span>
+<span class="sd">    True</span>
+<span class="sd">    """</span>
+    <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[\s,]+"</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">))</span> <span class="k">if</span> <span class="n">n</span><span class="p">]</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">names</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    <span class="n">wrong</span> <span class="o">=</span> <span class="p">[</span><span class="n">n</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">names</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">CHANNEL_ID_RE</span><span class="o">.</span><span class="n">fullmatch</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">wrong</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"slack keep_channels is a comma-separated list of channel ids (C..., G...: a channel's id is at the bottom of its details), not names such as </span><span class="si">{</span><span class="n">wrong</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">frozenset</span><span class="p">(</span><span class="n">names</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">configured_kept_channels</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">run</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The ``keep_channels`` setting, parsed (see :func:`kept_channels`)."""</span>
+    <span class="k">return</span> <span class="n">kept_channels</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"keep_channels"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="n">run</span><span class="p">,</span> <span class="n">keychain</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
+
+
 <span class="k">def</span><span class="w"> </span><span class="nf">_token_key</span><span class="p">(</span><span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""The key a token's caches are kept under: a digest, so no cache holds the token itself.</span>
 
@@ -1206,9 +1231,11 @@ window.runMermaid = runMermaid;</script>
         <span class="n">sleep</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="nb">float</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">,</span>
         <span class="n">events</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">socket</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]</span> <span class="o">=</span> <span class="n">socket_window</span><span class="p">,</span>
+        <span class="n">stamps</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">http</span> <span class="o">=</span> <span class="n">http</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">socket</span> <span class="o">=</span> <span class="n">socket</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span> <span class="o">=</span> <span class="n">stamps</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_socket_ended_at</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_events</span> <span class="o">=</span> <span class="n">events</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">run</span> <span class="o">=</span> <span class="n">run</span>
@@ -1249,7 +1276,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="s2">"read and listen see a channel's top-level messages, thread parents and replies also sent to the channel; the other replies are read through the thread's own reference, slack:&lt;channel&gt;/&lt;thread ts&gt; (conversations.replies), which listen polls and send replies in; reading a thread too long for 20 pages of replies (about 4,000) returns its newest ones (it walks back from the latest reply); Slack's own notices (someone joined, the topic changed) are left out; listen polls over the Web API and sees new messages, not edits"</span><span class="p">,</span>
                 <span class="s2">"an author's handle and display name come from users.info (the token needs users:read), kept an hour per token (as are channel names), so two workspaces never share them; without the scope the author is the user id alone"</span><span class="p">,</span>
                 <span class="s2">"with delivery = events, listen reads what the Events API receiver (correspond-slack-events, behind your HTTPS reverse proxy) stored instead of polling, and also reports edits (message.updated) and deletions (message.deleted); the receiver verifies every request's signature and answers Slack's url_verification"</span><span class="p">,</span>
-                <span class="s2">"with delivery = socket (the slack extra, an app-level xapp- token in app_token, Socket Mode on in the app's settings), listen opens Slack's Socket Mode for a window of listen_wait_s quiet seconds (60 s at most), stores every message event as the receiver does (every channel's, kept a week) before acknowledging it, and reports this reference's (listens to several references in a row share one window; one listening process per store): no public URL needed, but what arrives while no listen has the socket open reaches it only through Slack's own retries"</span><span class="p">,</span>
+                <span class="s2">"with delivery = socket (the slack extra, an app-level xapp- token in app_token, Socket Mode on in the app's settings), listen opens Slack's Socket Mode for a window of listen_wait_s quiet seconds (60 s at most), stores every message event as the receiver does (every channel's, or only those keep_channels names; kept a week) before acknowledging it, and reports this reference's (listens to several references in a row share one window; writers on one machine take turns through a lock, so several listening processes and the receiver may share the store): no public URL needed, but what arrives while no listen has the socket open reaches it only through Slack's own retries"</span><span class="p">,</span>
                 <span class="s2">"install the app in your own workspace (a commercially distributed app outside Slack's Marketplace gets one history request a minute); listen walks forward through time windows, delivering each whole before the next, so a poll a rate limit cuts short keeps what it delivered and the next one resumes there, and a backlog drains a little each poll; the newest minute waits for the next poll (this clock may run ahead of Slack's)"</span><span class="p">,</span>
                 <span class="s2">"a file is fetched with the token only from Slack's own hosts (the token needs files:read); a file hosted elsewhere is not fetched"</span><span class="p">,</span>
                 <span class="s2">"a channel named rather than given by id is looked up with conversations.list (the token needs channels:read, and groups:read for a private one); a name is trusted five minutes, so a renamed channel answers to its new name within them"</span><span class="p">,</span>
@@ -1293,6 +1320,15 @@ window.runMermaid = runMermaid;</script>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_events</span> <span class="o">=</span> <span class="n">configured_store</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="n">EVENTS_KIND</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_events</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">stamps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Where a Socket Mode listen takes arrival stamps: shared with the Events API receiver (:func:`correspond.stores.arrival_stamps`)."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">arrival_stamps</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span> <span class="o">=</span> <span class="n">arrival_stamps</span><span class="p">(</span><span class="n">EVENTS_KIND</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_stamps</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_delivery</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="n">delivery</span> <span class="o">=</span> <span class="p">(</span>
@@ -1877,6 +1913,13 @@ window.runMermaid = runMermaid;</script>
         <span class="n">channel</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_channel_id</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">token</span><span class="p">)</span>
         <span class="n">thread</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_where</span><span class="p">(</span><span class="n">ref</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">delivery</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_delivery</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">delivery</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"events"</span><span class="p">,</span> <span class="s2">"socket"</span><span class="p">):</span>
+            <span class="n">kept</span> <span class="o">=</span> <span class="n">configured_kept_channels</span><span class="p">(</span><span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">kept</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">channel</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kept</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"slack keep_channels does not name </span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">, so no event of it is kept: add it to listen to slack:</span><span class="si">{</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+                <span class="p">)</span>
         <span class="n">failed</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">delivery</span> <span class="o">==</span> <span class="s2">"socket"</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
@@ -1991,9 +2034,12 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        to one channel never loses another's; each reference's listen then reads the store</span>
 <span class="sd">        from its own cursor. An event already stored (Slack's retry) is not stored twice.</span>
 <span class="sd">        Listens to several references in a row share one window: a window that ended less</span>
-<span class="sd">        than ``listen_wait_s`` ago is not opened again. The store has one writer at a time</span>
-<span class="sd">        (one listening process, and not the Events API receiver too). Returns how many</span>
-<span class="sd">        events were stored.</span>
+<span class="sd">        than ``listen_wait_s`` ago is not opened again. With ``keep_channels`` set, only</span>
+<span class="sd">        those channels' events are stored (the others are acknowledged and dropped).</span>
+<span class="sd">        Writers take turns: each event is stamped and stored under the lock of</span>
+<span class="sd">        :func:`correspond.stores.arrival_stamps`, which the Events API receiver and other</span>
+<span class="sd">        listening processes on this machine share, so none stores an event below a cursor</span>
+<span class="sd">        another already passed. Returns how many events were stored.</span>
 <span class="sd">        """</span>
         <span class="n">app_token</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"app_token"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">app_token</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">APP_TOKEN_PREFIX</span><span class="p">):</span>
@@ -2016,6 +2062,7 @@ window.runMermaid = runMermaid;</script>
             <span class="ow">and</span> <span class="mi">0</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_socket_ended_at</span> <span class="o">&lt;</span> <span class="n">wait</span>
         <span class="p">):</span>
             <span class="k">return</span> <span class="mi">0</span>  <span class="c1"># the last window just closed: its events are in the store</span>
+        <span class="n">kept</span> <span class="o">=</span> <span class="n">configured_kept_channels</span><span class="p">(</span><span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">)</span>
         <span class="n">events</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">events</span>
         <span class="n">stamps</span><span class="p">,</span> <span class="n">seen</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">set</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">events</span><span class="p">):</span>
@@ -2031,11 +2078,14 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
             <span class="k">if</span> <span class="n">record</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">record</span><span class="p">[</span><span class="s2">"event_id"</span><span class="p">]</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
                 <span class="k">return</span>
-            <span class="n">stamp</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span><span class="p">),</span> <span class="n">last</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># strictly increasing</span>
-            <span class="n">events</span><span class="p">[</span><span class="n">received_key</span><span class="p">(</span><span class="n">stamp</span><span class="p">,</span> <span class="n">record</span><span class="p">[</span><span class="s2">"event_id"</span><span class="p">])]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="o">**</span><span class="n">record</span><span class="p">,</span>
-                <span class="s2">"received_ns"</span><span class="p">:</span> <span class="n">stamp</span><span class="p">,</span>
-            <span class="p">}</span>
+            <span class="k">if</span> <span class="n">kept</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">record</span><span class="p">[</span><span class="s2">"channel"</span><span class="p">]</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kept</span><span class="p">:</span>
+                <span class="k">return</span>  <span class="c1"># acknowledged, not kept</span>
+            <span class="c1"># strictly increasing, and stored before any other writer takes a stamp</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamps</span><span class="o">.</span><span class="n">issue</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span><span class="p">),</span> <span class="n">floor</span><span class="o">=</span><span class="n">last</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">as</span> <span class="n">stamp</span><span class="p">:</span>
+                <span class="n">events</span><span class="p">[</span><span class="n">received_key</span><span class="p">(</span><span class="n">stamp</span><span class="p">,</span> <span class="n">record</span><span class="p">[</span><span class="s2">"event_id"</span><span class="p">])]</span> <span class="o">=</span> <span class="p">{</span>
+                    <span class="o">**</span><span class="n">record</span><span class="p">,</span>
+                    <span class="s2">"received_ns"</span><span class="p">:</span> <span class="n">stamp</span><span class="p">,</span>
+                <span class="p">}</span>
             <span class="n">last</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">stamp</span>
             <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">record</span><span class="p">[</span><span class="s2">"event_id"</span><span class="p">])</span>
             <span class="n">stored</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
@@ -2073,9 +2123,11 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="n">wanted</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">limit</span><span class="p">))</span> <span class="k">if</span> <span class="n">limit</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">stamps</span><span class="o">.</span><span class="n">hold</span><span class="p">():</span>  <span class="c1"># no writer is midway: every listed event is whole</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="p">)</span>
         <span class="n">received</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
             <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">match</span><span class="p">[</span><span class="s2">"stamp"</span><span class="p">]),</span> <span class="n">key</span><span class="p">)</span>
-            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">events</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">keys</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">match</span> <span class="o">:=</span> <span class="n">RECEIVED_KEY_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
         <span class="p">)</span>
         <span class="n">events</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Event</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>

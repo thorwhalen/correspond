@@ -63,7 +63,7 @@ them itself. Neither the token nor a webhook URL appears in a plan or an error.
 
 Slack truncates a message’s text past this many characters.
 
-### *class* correspond.channels.slack.Slack(\*, http=<function urllib_http>, keychain=None, run=<function run>, clock=<built-in function time>, sleep=<built-in function sleep>, events=None, socket=<function socket_window>)
+### *class* correspond.channels.slack.Slack(\*, http=<function urllib_http>, keychain=None, run=<function run>, clock=<built-in function time>, sleep=<built-in function sleep>, events=None, socket=<function socket_window>, stamps=None)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -126,6 +126,13 @@ webhook, which cannot thread, it renders in a dry run for the operator to paste.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
+
+#### *property* stamps *: [Any](https://docs.python.org/3/library/typing.html#typing.Any)*
+
+shared with the Events API receiver ([`correspond.stores.arrival_stamps()`](correspond.stores.html.md#correspond.stores.arrival_stamps)).
+
+* **Type:**
+  Where a Socket Mode listen takes arrival stamps
 
 #### verify(headers, body)
 

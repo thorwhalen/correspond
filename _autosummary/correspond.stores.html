@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=4f34e5f2"></script>
+    <script src="../_static/documentation_options.js?v=a72e4630"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.47" />
+  <meta name="docsearch:version" content="0.0.48" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -439,17 +439,23 @@ outside the store’s folder:</p>
 <p class="rubric">Functions</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.bytes_store" title="correspond.stores.bytes_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bytes_store</span></code></a>(kind, *[, data_dir])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.arrival_stamps" title="correspond.stores.arrival_stamps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">arrival_stamps</span></code></a>(kind, *[, data_dir])</p></td>
+<td><p>The arrival stamps of the <code class="docutils literal notranslate"><span class="pre">kind</span></code> store: <code class="docutils literal notranslate"><span class="pre">&lt;data</span> <span class="pre">root&gt;/locks/&lt;kind&gt;.stamp</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.stores.bytes_store" title="correspond.stores.bytes_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">bytes_store</span></code></a>(kind, *[, data_dir])</p></td>
 <td><p>Binary files under <code class="docutils literal notranslate"><span class="pre">&lt;data</span> <span class="pre">root&gt;/&lt;kind&gt;/</span></code>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.stores.cursor_store" title="correspond.stores.cursor_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cursor_store</span></code></a>(*[, data_dir, kind])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.cursor_store" title="correspond.stores.cursor_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">cursor_store</span></code></a>(*[, data_dir, kind])</p></td>
 <td><p>Listen cursors, keyed by encoded conversation reference, under <code class="docutils literal notranslate"><span class="pre">&lt;data</span> <span class="pre">root&gt;/&lt;kind&gt;/</span></code>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.json_store" title="correspond.stores.json_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">json_store</span></code></a>(kind, *[, data_dir])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.stores.json_store" title="correspond.stores.json_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">json_store</span></code></a>(kind, *[, data_dir])</p></td>
 <td><p>JSON files under <code class="docutils literal notranslate"><span class="pre">&lt;data</span> <span class="pre">root&gt;/&lt;kind&gt;/</span></code> (keys end in <code class="docutils literal notranslate"><span class="pre">.json</span></code>).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.stores.kind_dir" title="correspond.stores.kind_dir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kind_dir</span></code></a>(kind, *[, data_dir])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.kind_dir" title="correspond.stores.kind_dir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">kind_dir</span></code></a>(kind, *[, data_dir])</p></td>
 <td><p>The folder for one kind of state under the data root.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.stores.private_dir" title="correspond.stores.private_dir"><code class="xref py py-obj docutils literal notranslate"><span class="pre">private_dir</span></code></a>(kind, *[, data_dir])</p></td>
+<td><p>The folder for one kind of state, created owner-only, and tightened to owner-only if it was not.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.send_store" title="correspond.stores.send_store"><code class="xref py py-obj docutils literal notranslate"><span class="pre">send_store</span></code></a>(*[, data_dir])</p></td>
 <td><p>What each idempotency key of <a class="reference internal" href="correspond.html#correspond.send" title="correspond.send"><code class="xref py py-func docutils literal notranslate"><span class="pre">correspond.send()</span></code></a> did, under <code class="docutils literal notranslate"><span class="pre">&lt;data</span> <span class="pre">root&gt;/sends/</span></code>.</p></td>
@@ -463,18 +469,73 @@ outside the store’s folder:</p>
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.QuotedKeys" title="correspond.stores.QuotedKeys"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QuotedKeys</span></code></a>(store, *[, suffix])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.ArrivalStamps" title="correspond.stores.ArrivalStamps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ArrivalStamps</span></code></a>(path)</p></td>
+<td><p>Strictly increasing arrival stamps (nanoseconds) shared by every process that opens one file.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.stores.QuotedKeys" title="correspond.stores.QuotedKeys"><code class="xref py py-obj docutils literal notranslate"><span class="pre">QuotedKeys</span></code></a>(store, *[, suffix])</p></td>
 <td><p>Any string key, kept under a percent-encoded file-safe name (plus <code class="docutils literal notranslate"><span class="pre">suffix</span></code>) in a flat mapping.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#correspond.stores.SafeKeys" title="correspond.stores.SafeKeys"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SafeKeys</span></code></a>(store)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.SafeKeys" title="correspond.stores.SafeKeys"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SafeKeys</span></code></a>(store)</p></td>
 <td><p>A mapping whose keys must be relative paths of plain names (no <code class="docutils literal notranslate"><span class="pre">..</span></code>, no absolute paths).</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.stores.SendStore" title="correspond.stores.SendStore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SendStore</span></code></a>(folder)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.stores.SendStore" title="correspond.stores.SendStore"><code class="xref py py-obj docutils literal notranslate"><span class="pre">SendStore</span></code></a>(folder)</p></td>
 <td><p>Idempotency records keyed by any key, each in <code class="docutils literal notranslate"><span class="pre">&lt;folder&gt;/&lt;sha256</span> <span class="pre">of</span> <span class="pre">the</span> <span class="pre">key&gt;.json</span></code>, with an exclusive <code class="xref py py-meth docutils literal notranslate"><span class="pre">claim()</span></code>.</p></td>
 </tr>
 </tbody>
 </table>
 </div>
+<dl class="py class">
+<dt class="sig sig-object py" id="correspond.stores.ArrivalStamps">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.stores.</span></span><span class="sig-name descname"><span class="pre">ArrivalStamps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#ArrivalStamps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.ArrivalStamps" title="Link to this definition">#</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Strictly increasing arrival stamps (nanoseconds) shared by every process that opens one file.</p>
+<p>Writers that put events in one store, keyed by arrival so readers can keep a cursor
+(the Slack Events API receiver and Socket Mode listens), take their stamps here.
+<a class="reference internal" href="#correspond.stores.ArrivalStamps.issue" title="correspond.stores.ArrivalStamps.issue"><code class="xref py py-meth docutils literal notranslate"><span class="pre">issue()</span></code></a> holds an exclusive lock on the file for the whole block, so the writer
+that took a stamp also stores its event before any other writer takes the next one,
+and a reader lists the store under <a class="reference internal" href="#correspond.stores.ArrivalStamps.hold" title="correspond.stores.ArrivalStamps.hold"><code class="xref py py-meth docutils literal notranslate"><span class="pre">hold()</span></code></a>: what it lists is whole, it has seen
+every event stamped below the last it saw, and no event lands below a cursor already
+handed out. The lock is the operating system’s (<code class="docutils literal notranslate"><span class="pre">flock</span></code>, or
+<code class="docutils literal notranslate"><span class="pre">msvcrt.locking</span></code> on Windows): it orders the processes of one machine, not a store
+shared between machines.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">stamps</span> <span class="o">=</span> <span class="n">ArrivalStamps</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">tempfile</span><span class="o">.</span><span class="n">mkdtemp</span><span class="p">())</span> <span class="o">/</span> <span class="s2">"demo.stamp"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">stamps</span><span class="o">.</span><span class="n">issue</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span> <span class="k">as</span> <span class="n">first</span><span class="p">:</span>  <span class="c1"># store the event here, under the lock</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">stamps</span><span class="o">.</span><span class="n">issue</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span> <span class="k">as</span> <span class="n">second</span><span class="p">:</span>  <span class="c1"># a clock behind the last stamp</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="n">stamps</span><span class="o">.</span><span class="n">issue</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="n">floor</span><span class="o">=</span><span class="mi">9</span><span class="p">)</span> <span class="k">as</span> <span class="n">third</span><span class="p">:</span>
+<span class="gp">... </span>    <span class="k">pass</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">first</span><span class="p">,</span> <span class="n">second</span><span class="p">,</span> <span class="n">third</span>
+<span class="go">(5, 6, 10)</span>
+</pre></div>
+</div>
+<dl class="field-list simple">
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.stores.ArrivalStamps.hold">
+<span class="sig-name descname"><span class="pre">hold</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#ArrivalStamps.hold"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.ArrivalStamps.hold" title="Link to this definition">#</a></dt>
+<dd><p>Hold the lock without taking a stamp: a reader lists the store here, so every event it lists is whole.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code></a>[<span class="highlight sphinx_autodoc_typehints-value"><a class="reference external" href="https://docs.python.org/3/builtins/constants.html#None" title="(in Python v3.15)"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></a></span>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.stores.ArrivalStamps.issue">
+<span class="sig-name descname"><span class="pre">issue</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">now_ns</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">floor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#ArrivalStamps.issue"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.ArrivalStamps.issue" title="Link to this definition">#</a></dt>
+<dd><p>Hold the lock and yield a stamp above <code class="docutils literal notranslate"><span class="pre">now_ns</span> <span class="pre">-</span> <span class="pre">1</span></code>, <code class="docutils literal notranslate"><span class="pre">floor</span></code> and every stamp issued before.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code></a>[<a class="reference external" href="https://docs.python.org/3/builtins/functions.html#int" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="correspond.stores.QuotedKeys">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.stores.</span></span><span class="sig-name descname"><span class="pre">QuotedKeys</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">store</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">suffix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#QuotedKeys"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.QuotedKeys" title="Link to this definition">#</a></dt>
@@ -551,6 +612,17 @@ checked, then set, which covers one process only.</p>
 </dd></dl>
 
 <dl class="py function">
+<dt class="sig sig-object py" id="correspond.stores.arrival_stamps">
+<span class="sig-prename descclassname"><span class="pre">correspond.stores.</span></span><span class="sig-name descname"><span class="pre">arrival_stamps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#arrival_stamps"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.arrival_stamps" title="Link to this definition">#</a></dt>
+<dd><p>The arrival stamps of the <code class="docutils literal notranslate"><span class="pre">kind</span></code> store: <code class="docutils literal notranslate"><span class="pre">&lt;data</span> <span class="pre">root&gt;/locks/&lt;kind&gt;.stamp</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#correspond.stores.ArrivalStamps" title="correspond.stores.ArrivalStamps"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrivalStamps</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt class="sig sig-object py" id="correspond.stores.bytes_store">
 <span class="sig-prename descclassname"><span class="pre">correspond.stores.</span></span><span class="sig-name descname"><span class="pre">bytes_store</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#bytes_store"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.bytes_store" title="Link to this definition">#</a></dt>
 <dd><p>Binary files under <code class="docutils literal notranslate"><span class="pre">&lt;data</span> <span class="pre">root&gt;/&lt;kind&gt;/</span></code>.</p>
@@ -590,6 +662,22 @@ to manual <code class="docutils literal notranslate"><span class="pre">correspon
 <span class="sig-prename descclassname"><span class="pre">correspond.stores.</span></span><span class="sig-name descname"><span class="pre">kind_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#kind_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.kind_dir" title="Link to this definition">#</a></dt>
 <dd><p>The folder for one kind of state under the data root.</p>
 <dl class="field-list simple">
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="correspond.stores.private_dir">
+<span class="sig-prename descclassname"><span class="pre">correspond.stores.</span></span><span class="sig-name descname"><span class="pre">private_dir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/stores.html#private_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.stores.private_dir" title="Link to this definition">#</a></dt>
+<dd><p>The folder for one kind of state, created owner-only, and tightened to owner-only if it was not.</p>
+<p>A folder made by an older correspond kept the mode the umask gave it; the first use
+since takes the group’s and others’ access away. A folder another user owns is left
+as it is, with a warning, and so is a symbolic link (and what it points to). Only the
+kind’s folder is tightened, not the data root above it. (Windows has no such modes:
+nothing changes there.)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code></a></span></p>
+</dd>
 </dl>
 </dd></dl>
 
@@ -664,6 +752,11 @@ to manual <code class="docutils literal notranslate"><span class="pre">correspon
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.ArrivalStamps"><code class="docutils literal notranslate"><span class="pre">ArrivalStamps</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.ArrivalStamps.hold"><code class="docutils literal notranslate"><span class="pre">ArrivalStamps.hold()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.ArrivalStamps.issue"><code class="docutils literal notranslate"><span class="pre">ArrivalStamps.issue()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.QuotedKeys"><code class="docutils literal notranslate"><span class="pre">QuotedKeys</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.SafeKeys"><code class="docutils literal notranslate"><span class="pre">SafeKeys</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.SafeKeys.check"><code class="docutils literal notranslate"><span class="pre">SafeKeys.check()</span></code></a></li>
@@ -674,10 +767,12 @@ to manual <code class="docutils literal notranslate"><span class="pre">correspon
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.SendStore.name"><code class="docutils literal notranslate"><span class="pre">SendStore.name()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.arrival_stamps"><code class="docutils literal notranslate"><span class="pre">arrival_stamps()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.bytes_store"><code class="docutils literal notranslate"><span class="pre">bytes_store()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.cursor_store"><code class="docutils literal notranslate"><span class="pre">cursor_store()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.json_store"><code class="docutils literal notranslate"><span class="pre">json_store()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.kind_dir"><code class="docutils literal notranslate"><span class="pre">kind_dir()</span></code></a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.private_dir"><code class="docutils literal notranslate"><span class="pre">private_dir()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.send_store"><code class="docutils literal notranslate"><span class="pre">send_store()</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.stores.text_store"><code class="docutils literal notranslate"><span class="pre">text_store()</span></code></a></li>
 </ul>

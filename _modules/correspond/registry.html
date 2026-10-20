@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=4f34e5f2"></script>
+    <script src="../../_static/documentation_options.js?v=a72e4630"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.47" />
+  <meta name="docsearch:version" content="0.0.48" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1172,6 +1172,11 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_SLACK_LISTEN_WAIT_S"</span><span class="p">,</span>
                 <span class="n">what</span><span class="o">=</span><span class="s2">"with delivery = socket, how many quiet seconds a listen keeps Socket Mode open before it returns (at most 60; a window closes after 60 s in all)"</span><span class="p">,</span>
                 <span class="n">default</span><span class="o">=</span><span class="s2">"5"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"keep_channels"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_SLACK_KEEP_CHANNELS"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"with delivery = events or socket, the channel ids (comma-separated) whose message events are stored; the others are acknowledged and dropped (default: every channel's, kept a week); a running receiver reads it when it starts"</span><span class="p">,</span>
             <span class="p">),</span>
             <span class="n">Setting</span><span class="p">(</span>
                 <span class="n">key</span><span class="o">=</span><span class="s2">"webhook_store"</span><span class="p">,</span>

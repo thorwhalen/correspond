@@ -8,10 +8,12 @@ correspond.stores
 
    .. autosummary::
    
+      arrival_stamps
       bytes_store
       cursor_store
       json_store
       kind_dir
+      private_dir
       send_store
       text_store
    
@@ -19,6 +21,7 @@ correspond.stores
 
    .. autosummary::
    
+      ArrivalStamps
       QuotedKeys
       SafeKeys
       SendStore

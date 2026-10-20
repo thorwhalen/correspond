@@ -23,20 +23,66 @@ KeyError: "store key '../elsewhere' must be /-separated names of letters, digits
 
 ### Functions
 
-| [`bytes_store`](#correspond.stores.bytes_store)(kind, \*[, data_dir])   | Binary files under `<data root>/<kind>/`.                                                                                                        |
-|--------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`cursor_store`](#correspond.stores.cursor_store)(\*[, data_dir, kind])  | Listen cursors, keyed by encoded conversation reference, under `<data root>/<kind>/`.                                                            |
-| [`json_store`](#correspond.stores.json_store)(kind, \*[, data_dir])    | JSON files under `<data root>/<kind>/` (keys end in `.json`).                                                                                    |
-| [`kind_dir`](#correspond.stores.kind_dir)(kind, \*[, data_dir])      | The folder for one kind of state under the data root.                                                                                            |
-| [`send_store`](#correspond.stores.send_store)(\*[, data_dir])          | What each idempotency key of [`correspond.send()`](correspond.html.md#correspond.send) did, under `<data root>/sends/`. |
-| [`text_store`](#correspond.stores.text_store)(kind, \*[, data_dir])    | Text files under `<data root>/<kind>/`.                                                                                                          |
+| [`arrival_stamps`](#correspond.stores.arrival_stamps)(kind, \*[, data_dir])   | The arrival stamps of the `kind` store: `<data root>/locks/<kind>.stamp`.                                                                        |
+|-----------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`bytes_store`](#correspond.stores.bytes_store)(kind, \*[, data_dir])      | Binary files under `<data root>/<kind>/`.                                                                                                        |
+| [`cursor_store`](#correspond.stores.cursor_store)(\*[, data_dir, kind])     | Listen cursors, keyed by encoded conversation reference, under `<data root>/<kind>/`.                                                            |
+| [`json_store`](#correspond.stores.json_store)(kind, \*[, data_dir])       | JSON files under `<data root>/<kind>/` (keys end in `.json`).                                                                                    |
+| [`kind_dir`](#correspond.stores.kind_dir)(kind, \*[, data_dir])         | The folder for one kind of state under the data root.                                                                                            |
+| [`private_dir`](#correspond.stores.private_dir)(kind, \*[, data_dir])      | The folder for one kind of state, created owner-only, and tightened to owner-only if it was not.                                                 |
+| [`send_store`](#correspond.stores.send_store)(\*[, data_dir])             | What each idempotency key of [`correspond.send()`](correspond.html.md#correspond.send) did, under `<data root>/sends/`. |
+| [`text_store`](#correspond.stores.text_store)(kind, \*[, data_dir])       | Text files under `<data root>/<kind>/`.                                                                                                          |
 
 ### Classes
 
-| [`QuotedKeys`](#correspond.stores.QuotedKeys)(store, \*[, suffix])   | Any string key, kept under a percent-encoded file-safe name (plus `suffix`) in a flat mapping.                  |
-|------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
-| [`SafeKeys`](#correspond.stores.SafeKeys)(store)                   | A mapping whose keys must be relative paths of plain names (no `..`, no absolute paths).                        |
-| [`SendStore`](#correspond.stores.SendStore)(folder)                 | Idempotency records keyed by any key, each in `<folder>/<sha256 of the key>.json`, with an exclusive `claim()`. |
+| [`ArrivalStamps`](#correspond.stores.ArrivalStamps)(path)             | Strictly increasing arrival stamps (nanoseconds) shared by every process that opens one file.                   |
+|----------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------|
+| [`QuotedKeys`](#correspond.stores.QuotedKeys)(store, \*[, suffix]) | Any string key, kept under a percent-encoded file-safe name (plus `suffix`) in a flat mapping.                  |
+| [`SafeKeys`](#correspond.stores.SafeKeys)(store)                 | A mapping whose keys must be relative paths of plain names (no `..`, no absolute paths).                        |
+| [`SendStore`](#correspond.stores.SendStore)(folder)               | Idempotency records keyed by any key, each in `<folder>/<sha256 of the key>.json`, with an exclusive `claim()`. |
+
+### *class* correspond.stores.ArrivalStamps(path)
+
+Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
+
+Strictly increasing arrival stamps (nanoseconds) shared by every process that opens one file.
+
+Writers that put events in one store, keyed by arrival so readers can keep a cursor
+(the Slack Events API receiver and Socket Mode listens), take their stamps here.
+[`issue()`](#correspond.stores.ArrivalStamps.issue) holds an exclusive lock on the file for the whole block, so the writer
+that took a stamp also stores its event before any other writer takes the next one,
+and a reader lists the store under [`hold()`](#correspond.stores.ArrivalStamps.hold): what it lists is whole, it has seen
+every event stamped below the last it saw, and no event lands below a cursor already
+handed out. The lock is the operating system’s (`flock`, or
+`msvcrt.locking` on Windows): it orders the processes of one machine, not a store
+shared between machines.
+
+```pycon
+>>> import tempfile
+>>> stamps = ArrivalStamps(Path(tempfile.mkdtemp()) / "demo.stamp")
+>>> with stamps.issue(5) as first:  # store the event here, under the lock
+...     pass
+>>> with stamps.issue(3) as second:  # a clock behind the last stamp
+...     pass
+>>> with stamps.issue(4, floor=9) as third:
+...     pass
+>>> first, second, third
+(5, 6, 10)
+```
+
+#### hold()
+
+Hold the lock without taking a stamp: a reader lists the store here, so every event it lists is whole.
+
+* **Return type:**
+  [`Iterator`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator)[[`None`](https://docs.python.org/3/builtins/constants.html#None)]
+
+#### issue(now_ns, , floor=0)
+
+Hold the lock and yield a stamp above `now_ns - 1`, `floor` and every stamp issued before.
+
+* **Return type:**
+  [`Iterator`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator)[[`int`](https://docs.python.org/3/builtins/functions.html#int)]
 
 ### *class* correspond.stores.QuotedKeys(store, , suffix='')
 
@@ -95,6 +141,13 @@ The file name that holds `key`’s record.
 * **Return type:**
   [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
+### correspond.stores.arrival_stamps(kind, , data_dir=None)
+
+The arrival stamps of the `kind` store: `<data root>/locks/<kind>.stamp`.
+
+* **Return type:**
+  [`ArrivalStamps`](#correspond.stores.ArrivalStamps)
+
 ### correspond.stores.bytes_store(kind, , data_dir=None)
 
 Binary files under `<data root>/<kind>/`.
@@ -122,6 +175,19 @@ JSON files under `<data root>/<kind>/` (keys end in `.json`).
 ### correspond.stores.kind_dir(kind, , data_dir=None)
 
 The folder for one kind of state under the data root.
+
+### correspond.stores.private_dir(kind, , data_dir=None)
+
+The folder for one kind of state, created owner-only, and tightened to owner-only if it was not.
+
+A folder made by an older correspond kept the mode the umask gave it; the first use
+since takes the group’s and others’ access away. A folder another user owns is left
+as it is, with a warning, and so is a symbolic link (and what it points to). Only the
+kind’s folder is tightened, not the data root above it. (Windows has no such modes:
+nothing changes there.)
+
+* **Return type:**
+  [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)
 
 ### correspond.stores.send_store(, data_dir=None)
 
