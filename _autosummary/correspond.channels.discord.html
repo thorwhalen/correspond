@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=aa2ad26f"></script>
+    <script src="../_static/documentation_options.js?v=423071ad"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.37" />
+  <meta name="docsearch:version" content="0.0.38" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -431,8 +431,11 @@ mentions it.</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">read</span></code> fetches the channel’s history (the latest 50 messages unless <code class="docutils literal notranslate"><span class="pre">limit</span></code> says).</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">listen</span></code> polls the channel for messages newer than the last one seen (the cursor is
-that message’s id; a first poll looks back a day). It does not open the gateway, so it
-sees new messages, not edits or deletions, and one channel per reference.</p></li>
+that message’s id; a first poll looks back a day): new messages, not edits or
+deletions. With <code class="docutils literal notranslate"><span class="pre">listen_via</span> <span class="pre">=</span> <span class="pre">&quot;gateway&quot;</span></code> it opens the gateway for a short window
+instead and reports new, edited and deleted messages; the cursor is the gateway session,
+which the next listen resumes (Discord replays what was missed) rather than identifying
+again, since 1,000 identifies in a day reset the bot token.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">send</span></code> posts a message (2,000 characters at most); a title is prepended in bold. With
 <code class="docutils literal notranslate"><span class="pre">reply_to</span></code> it is a Discord reply to that message (its author is not pinged). Only
 the users it mentions as <code class="docutils literal notranslate"><span class="pre">&lt;&#64;id&gt;</span></code> are pinged: <code class="docutils literal notranslate"><span class="pre">&#64;everyone</span></code>, <code class="docutils literal notranslate"><span class="pre">&#64;here</span></code> and role
@@ -454,7 +457,7 @@ first use, not when the channel is listed.</p>
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.discord.Discord" title="correspond.channels.discord.Discord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Discord</span></code></a>(*[, backend, http, run, clock])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.discord.Discord" title="correspond.channels.discord.Discord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Discord</span></code></a>(*[, backend, http, run, clock, gateway])</p></td>
 <td><p>A Discord bot over REST: read a channel, poll it for new messages, post to it.</p></td>
 </tr>
 </tbody>
@@ -462,7 +465,7 @@ first use, not when the channel is listed.</p>
 </div>
 <dl class="py class">
 <dt class="sig sig-object py" id="correspond.channels.discord.Discord">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.discord.</span></span><span class="sig-name descname"><span class="pre">Discord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">http</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">urllib_http&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">time&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/discord.html#Discord"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.discord.Discord" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.discord.</span></span><span class="sig-name descname"><span class="pre">Discord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">http</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">urllib_http&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">time&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gateway</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">gateway_window&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/discord.html#Discord"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.discord.Discord" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>A Discord bot over REST: read a channel, poll it for new messages, post to it.</p>
 <dl class="field-list simple">
@@ -505,6 +508,7 @@ first use, not when the channel is listed.</p>
 <dt class="sig sig-object py" id="correspond.channels.discord.Discord.poll">
 <span class="sig-name descname"><span class="pre">poll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">cursor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/discord.html#Discord.poll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.discord.Discord.poll" title="Link to this definition">#</a></dt>
 <dd><p>Messages newer than <code class="docutils literal notranslate"><span class="pre">cursor</span></code> (a message id), oldest first; a first poll looks back a day.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">listen_via</span> <span class="pre">=</span> <span class="pre">&quot;gateway&quot;</span></code>, one gateway window instead (see the module docstring).</p>
 <dl class="field-list simple">
 </dl>
 </dd></dl>

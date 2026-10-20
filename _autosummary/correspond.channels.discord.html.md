@@ -11,8 +11,11 @@ mentions it.
 
 - `read` fetches the channel’s history (the latest 50 messages unless `limit` says).
 - `listen` polls the channel for messages newer than the last one seen (the cursor is
-  that message’s id; a first poll looks back a day). It does not open the gateway, so it
-  sees new messages, not edits or deletions, and one channel per reference.
+  that message’s id; a first poll looks back a day): new messages, not edits or
+  deletions. With `listen_via = "gateway"` it opens the gateway for a short window
+  instead and reports new, edited and deleted messages; the cursor is the gateway session,
+  which the next listen resumes (Discord replays what was missed) rather than identifying
+  again, since 1,000 identifies in a day reset the bot token.
 - `send` posts a message (2,000 characters at most); a title is prepended in bold. With
   `reply_to` it is a Discord reply to that message (its author is not pinged). Only
   the users it mentions as `<@id>` are pinged: `@everyone`, `@here` and role
@@ -36,10 +39,10 @@ first use, not when the channel is listed.
 
 ### Classes
 
-| [`Discord`](#correspond.channels.discord.Discord)(\*[, backend, http, run, clock])   | A Discord bot over REST: read a channel, poll it for new messages, post to it.   |
-|---------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| [`Discord`](#correspond.channels.discord.Discord)(\*[, backend, http, run, clock, gateway])   | A Discord bot over REST: read a channel, poll it for new messages, post to it.   |
+|------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
 
-### *class* correspond.channels.discord.Discord(\*, backend=None, http=<function urllib_http>, run=<function run>, clock=<built-in function time>)
+### *class* correspond.channels.discord.Discord(\*, backend=None, http=<function urllib_http>, run=<function run>, clock=<built-in function time>, gateway=<function gateway_window>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -70,6 +73,8 @@ A channel or thread id.
 #### poll(ref, , cursor=None, limit=None)
 
 Messages newer than `cursor` (a message id), oldest first; a first poll looks back a day.
+
+With `listen_via = "gateway"`, one gateway window instead (see the module docstring).
 
 #### read(ref, , since=None, limit=None)
 

@@ -404,7 +404,7 @@ existed – it always had.
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.model.EVENT_KINDS *= ('message.created', 'message.updated', 'reaction.added', 'identity.changed')*
+### correspond.model.EVENT_KINDS *= ('message.created', 'message.updated', 'message.deleted', 'reaction.added', 'identity.changed')*
 
 What an [`Event`](#correspond.model.Event) reports.
 
