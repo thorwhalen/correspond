@@ -34,7 +34,6 @@ from __future__ import annotations
 
 import hashlib
 import hmac
-import ipaddress
 import json
 import re
 import subprocess
@@ -45,13 +44,19 @@ from datetime import datetime, timezone
 from typing import Any
 
 from correspond.channels._asgi import TOO_LARGE, lifespan, read_body, respond
+from correspond.channels._webhook import (
+    WEBHOOK_HOST,
+    configured_store,
+    serve_main as _serve_main,
+    serve_receiver,
+)
 from correspond.channels._http import (
     file_name,
     media_type as _media_type,
     multipart,
     urllib_http,
 )
-from correspond.errors import ChannelError, InvalidRef, MissingRequirement, NotSupported
+from correspond.errors import ChannelError, InvalidRef, NotSupported
 from correspond.model import (
     Attachment,
     Account,
@@ -71,7 +76,7 @@ from correspond.model import (
 )
 from correspond.notify import handle, missing_mentions, with_mentions
 from correspond.ops import window, with_final_cursor
-from correspond.registry import load_factory, require, value
+from correspond.registry import require, value
 
 __all__ = [
     "SECRET_HEADER",
@@ -122,12 +127,10 @@ MAX_UPDATE_ID = 2**63 - 1
 WEBHOOK_LOOKBACK_NS = 24 * 3600 * 10**9
 #: How long the receiver's updates are kept once a listen has passed them.
 WEBHOOK_RETENTION_NS = 7 * 24 * 3600 * 10**9
-WEBHOOK_HOST = "127.0.0.1"
 WEBHOOK_PORT = 8081
 #: The prefix of a webhook listen cursor (a getUpdates cursor is a bare offset).
 _WEBHOOK_CURSOR = "w"
 _RECEIVED_KEY_RE = re.compile(r"^(?P<stamp>[0-9]{20})-(?P<update>[0-9]{1,19})\.json$")
-_TRUE = ("1", "true", "yes", "on")
 
 
 def _as_document(native: Mapping[str, Any]) -> bool:
@@ -231,44 +234,12 @@ def webhook_store() -> MutableMapping[str, Any]:
     ``s3dol`` one, needs a JSON codec around it. The receiver and ``listen`` read the same
     setting, so they meet in the same store.
     """
-    reference = value(NAME, "webhook_store")
-    if not reference:
-        from correspond.stores import json_store
-
-        return json_store(WEBHOOK_KIND)
-    if ":" not in str(reference):
-        raise ChannelError(
-            f'webhook_store is a "module:attr" reference, not {reference!r}',
-            kind="validation",
-        )
-    try:
-        found = load_factory(str(reference))
-    except (ImportError, AttributeError) as error:
-        raise ChannelError(
-            f"webhook_store {reference!r} could not be loaded: {error}",
-            kind="validation",
-        ) from None
-    store = found() if callable(found) and not isinstance(found, Mapping) else found
-    if not isinstance(store, MutableMapping):
-        raise ChannelError(
-            f"webhook_store {reference!r} gave a {type(store).__name__}, not a mutable mapping",
-            kind="validation",
-        )
-    return store
+    return configured_store(NAME, WEBHOOK_KIND)
 
 
 def webhook_app_from_env() -> Callable[..., Awaitable[None]]:
     """:func:`mk_webhook_app` configured from the settings, for ``uvicorn --factory``."""
     return mk_webhook_app(secret=require(NAME, "webhook_secret"), updates=webhook_store())
-
-
-def _is_loopback(host: str) -> bool:
-    if host == "localhost":
-        return True
-    try:
-        return ipaddress.ip_address(host).is_loopback
-    except ValueError:
-        return False
 
 
 def serve_webhook(
@@ -285,58 +256,26 @@ def serve_webhook(
     reverse proxy in front: Telegram reaches only public HTTPS addresses. Proxy headers are
     ignored, since the receiver needs no client address, and one worker keeps the order.
     """
-    if allow_remote is None:
-        allow_remote = (
-            str(value(NAME, "webhook_allow_remote") or "").strip().lower() in _TRUE
-        )
-    if not allow_remote and not _is_loopback(host):
-        raise ChannelError(
-            f"the webhook receiver binds to this machine only ({WEBHOOK_HOST}), not {host!r}, "
-            "unless webhook_allow_remote is set",
-            kind="validation",
-        )
-    if run is None:
-        try:
-            import uvicorn
-        except ImportError:
-            raise MissingRequirement(
-                NAME,
-                "uvicorn, to serve the webhook receiver",
-                fix="pip install 'correspond[server]'",
-            ) from None
-        run = uvicorn.run
-    run(
-        app or webhook_app_from_env(),
+    serve_receiver(
+        webhook_app_from_env,
+        name=NAME,
         host=host,
         port=port,
-        workers=1,
-        proxy_headers=False,
+        allow_remote=allow_remote,
+        app=app,
+        run=run,
     )
 
 
 def serve_main(argv: list[str] | None = None) -> None:
     """``correspond-telegram-webhook``: run the webhook receiver (:func:`serve_webhook`)."""
-    import argparse
-
-    parser = argparse.ArgumentParser(
+    _serve_main(
+        serve_webhook,
         prog="correspond-telegram-webhook",
         description="Run correspond's Telegram webhook receiver behind your HTTPS reverse proxy.",
+        port=WEBHOOK_PORT,
+        argv=argv,
     )
-    parser.add_argument("--host", default=WEBHOOK_HOST, help=f"default {WEBHOOK_HOST}")
-    parser.add_argument(
-        "--port", type=int, default=WEBHOOK_PORT, help=f"default {WEBHOOK_PORT}"
-    )
-    parser.add_argument(
-        "--allow-remote",
-        action=argparse.BooleanOptionalAction,
-        default=None,
-        help="bind to an address other machines reach, or --no-allow-remote to refuse (else the webhook_allow_remote setting decides)",
-    )
-    args = parser.parse_args(argv)
-    try:
-        serve_webhook(host=args.host, port=args.port, allow_remote=args.allow_remote)
-    except ChannelError as error:
-        parser.exit(1, f"correspond-telegram-webhook: {error}\n")
 
 
 def _log_key(message: Message) -> str:

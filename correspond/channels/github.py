@@ -58,7 +58,7 @@ import logging
 import re
 import subprocess
 import time
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, MutableMapping
 from dataclasses import dataclass, field, replace
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
@@ -93,7 +93,7 @@ from correspond.model import (
 )
 from correspond.notify import handle, missing_mentions, with_mentions
 from correspond.ops import window, with_final_cursor
-from correspond.registry import require
+from correspond.registry import require, value
 
 __all__ = [
     "APPS_AND_WEBHOOKS",
@@ -164,6 +164,15 @@ LISTEN_LOOKBACK = timedelta(hours=24)
 #: A repository listen re-reads this many most recently active discussions whole on every
 #: poll, whatever their ``updatedAt``: some replies move neither it nor the activity order.
 RECENT_DISCUSSIONS = 3
+#: Where listen takes discussion activity from: the poll alone, or the poll plus the
+#: discussions the webhook receiver (:mod:`correspond.channels.github_webhook`) saw.
+DELIVERIES = ("poll", "webhook")
+#: How long the receiver's deliveries are kept.
+WEBHOOK_RETENTION = timedelta(days=7)
+#: How long a comment's webhook delivery may trail the comment: a discussion a
+#: delivery names is read from that much before the delivery arrived, so a reply
+#: created before a poll whose delivery came after it is still found.
+WEBHOOK_LAG = timedelta(minutes=10)
 CLOCK_SKEW = timedelta(seconds=5)
 SECONDARY_LIMIT_WAIT_S = 60.0
 GH_TIMEOUT_S = 120
@@ -684,7 +693,7 @@ def _read_discussions(github, scope):
         if scope.probe.status < 400:
             return None
         # Not an issue: read as a discussion, which raises not_found when it is not one.
-        return [scope.number], False, scope.probe.headers.get("date")
+        return [(scope.number, scope.position)], False, scope.probe.headers.get("date")
     try:
         numbers = github._active_discussions(
             scope.owner, scope.repo, scope.position, recent=github.recent_discussions
@@ -697,15 +706,20 @@ def _read_discussions(github, scope):
             "listen %s/%s: discussions skipped: %s", scope.owner, scope.repo, error
         )
         return None
-    return numbers, False, None
+    since = dict.fromkeys(numbers, scope.position)
+    if github._delivery() == "webhook":
+        hinted = github._webhook_discussions(scope.owner, scope.repo, scope.position)
+        for number, received in hinted.items():
+            since[number] = min(since.get(number, scope.position), received - WEBHOOK_LAG)
+    return list(since.items()), False, None
 
 
 def _discussion_candidates(github, scope, numbers):
     found = []
-    for discussion_number in numbers:
+    for discussion_number, since in numbers:
         try:
             found += github._discussion_activity(
-                scope.owner, scope.repo, discussion_number, scope.position
+                scope.owner, scope.repo, discussion_number, since
             )
         except ChannelError as error:
             if scope.number is not None or error.kind != "not_found":
@@ -735,11 +749,68 @@ class GitHub:
         run: Callable[..., Any] = subprocess.run,
         gh: str = "gh",
         recent_discussions: int = RECENT_DISCUSSIONS,
+        deliveries: MutableMapping[str, Any] | None = None,
+        clock: Callable[[], int] = time.time_ns,
     ):
         self.run = run
         self.gh = gh
         self.recent_discussions = recent_discussions
+        self._deliveries = deliveries
+        self.clock = clock
         self._login: str | None = None
+
+    @property
+    def deliveries(self) -> MutableMapping[str, Any]:
+        """What the webhook receiver stored (read when ``delivery`` is ``webhook``)."""
+        if self._deliveries is None:
+            from correspond.channels.github_webhook import webhook_store
+
+            self._deliveries = webhook_store()
+        return self._deliveries
+
+    def _delivery(self) -> str:
+        delivery = str(value(NAME, "delivery") or "poll").strip().lower()
+        if delivery not in DELIVERIES:
+            raise ChannelError(
+                f"github delivery is one of {DELIVERIES}, not {delivery!r}",
+                kind="validation",
+            )
+        return delivery
+
+    def _webhook_discussions(
+        self, owner: str, repo: str, since: datetime
+    ) -> dict[int, datetime]:
+        """``{discussion: earliest arrival}`` of the ``owner/repo`` deliveries the receiver stored at or after ``since`` (less the clock skew).
+
+        Deliveries older than ``WEBHOOK_RETENTION`` are deleted on the way.
+        """
+        from correspond.channels.github_webhook import RECEIVED_KEY_RE
+
+        after = int((since - CLOCK_SKEW).timestamp() * 10**9)
+        expired = self.clock() - int(WEBHOOK_RETENTION.total_seconds() * 10**9)
+        wanted = f"{owner}/{repo}".lower()
+        found: dict[int, int] = {}
+        for key in list(self.deliveries):
+            if not RECEIVED_KEY_RE.match(key):
+                continue
+            record = self.deliveries.get(key) or {}
+            stamp = record.get("received_ns")
+            if isinstance(stamp, bool) or not isinstance(stamp, int):
+                continue
+            if stamp < expired:
+                self.deliveries.pop(key, None)
+                continue
+            number = record.get("discussion")
+            if (
+                stamp >= after
+                and str(record.get("repository", "")).lower() == wanted
+                and isinstance(number, int)
+            ):
+                found[number] = min(found.get(number, stamp), stamp)
+        return {
+            number: datetime.fromtimestamp(stamp / 10**9, tz=timezone.utc)
+            for number, stamp in found.items()
+        }
 
     @property
     def capabilities(self) -> Capabilities:
@@ -792,6 +863,7 @@ class GitHub:
             notes=(
                 "listen polls the issue, comment, pull request review comment and discussion activity of a repository, or of one issue, pull request or discussion",
                 f"listen is partial on a repository's discussions: GitHub has no since filter for them, so listen walks them by GitHub's latest-activity order and reads each one active since the cursor, and the {self.recent_discussions} most recently active whatever their update time (one extra call each, recent_discussions= sets how many); a post GitHub does not count as activity on its discussion (seen on some replies) is delivered only when its discussion is among those, listening to one discussion reads it whole on every poll and misses none of its posts",
+                "delivery = webhook closes that gap: listen also reads whole every discussion a discussion_comment webhook delivery named since the cursor (correspond.channels.github_webhook: mk_webhook_app verifies X-Hub-Signature-256 and stores only the repository and discussion number; serve_webhook binds 127.0.0.1:8082 unless webhook_allow_remote is set); deliveries are kept a week",
                 "a gh token that may not read discussions listens to a repository's issues, comments and review comments only (logged as a warning)",
                 "GitHub moves a review comment's updated_at when its review is submitted and when a push outdates it, so listen reports those as message.updated with the text unchanged, and a review comment carries no edited_at",
                 "reply_to works in discussions and in pull request review threads (a reply to a reply joins its thread); issue and pull request conversation comments are flat",

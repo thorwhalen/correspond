@@ -106,9 +106,27 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 where="the secret set on the repository or organization webhook (Settings, Webhooks)",
                 secret=True,
             ),
+            Setting(
+                key="delivery",
+                env="CORRESPOND_GITHUB_DELIVERY",
+                what="where listen takes discussion activity from: poll (the activity walk alone) or webhook (the walk plus every discussion the discussion_comment webhook receiver saw)",
+                default="poll",
+            ),
+            Setting(
+                key="webhook_store",
+                env="CORRESPOND_GITHUB_WEBHOOK_STORE",
+                what='where the webhook receiver keeps deliveries, as "module:attr" naming a MutableMapping of JSON-ready dicts, or a callable returning one (default: files under the data root)',
+            ),
+            Setting(
+                key="webhook_allow_remote",
+                env="CORRESPOND_GITHUB_WEBHOOK_ALLOW_REMOTE",
+                what="true to let serve_webhook bind the webhook receiver to an address other machines reach (it binds 127.0.0.1 otherwise; put your HTTPS reverse proxy in front)",
+                default="false",
+            ),
         ),
         notes=(
             "log in once with `gh auth login` (https://cli.github.com/); check with `gh auth status`",
+            "webhook delivery of discussion comments on a server: install correspond[server], run correspond-github-webhook (127.0.0.1:8082, one worker) behind your HTTPS reverse proxy, add a repository or organization webhook (application/json, the webhook_secret, the Discussion comments event) pointing at it, and set delivery = webhook",
         ),
     ),
     ChannelInfo(
