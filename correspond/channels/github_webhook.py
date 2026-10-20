@@ -35,7 +35,7 @@ from correspond.channels._webhook import (
     serve_main as _serve_main,
     serve_receiver,
 )
-from correspond.channels.github import NAME, signature
+from correspond.channels.github import NAME, WEBHOOK_RETENTION, signature
 from correspond.registry import require
 
 __all__ = [
@@ -62,6 +62,37 @@ _DELIVERY_RE = re.compile(r"^[A-Za-z0-9-]{1,64}$")
 _REPOSITORY_RE = re.compile(r"^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$")
 #: A stored delivery's key: ``<delivery id>.json`` (a replayed delivery overwrites itself).
 RECEIVED_KEY_RE = re.compile(r"^[A-Za-z0-9-]{1,64}\.json$")
+PRUNE_EVERY_NS = 3600 * 10**9  # how often (at most) the receiver prunes on a write
+
+
+def prune_deliveries(
+    deliveries: MutableMapping[str, Any],
+    *,
+    now_ns: int,
+    retention_ns: int = int(WEBHOOK_RETENTION.total_seconds() * 10**9),
+) -> int:
+    """Delete the deliveries received more than ``retention_ns`` before ``now_ns``; return how many.
+
+    Only delivery keys with an integer ``received_ns`` are considered: anything else in
+    the store is left alone.
+
+    >>> store = {"old.json": {"received_ns": 1}, "new.json": {"received_ns": 9}, "x": 0}
+    >>> prune_deliveries(store, now_ns=10, retention_ns=5)
+    1
+    >>> sorted(store)
+    ['new.json', 'x']
+    """
+    expired = now_ns - retention_ns
+    pruned = 0
+    for key in list(deliveries):
+        if not RECEIVED_KEY_RE.match(key):
+            continue
+        record = deliveries.get(key)
+        stamp = record.get("received_ns") if isinstance(record, dict) else None
+        if isinstance(stamp, int) and not isinstance(stamp, bool) and stamp < expired:
+            deliveries.pop(key, None)
+            pruned += 1
+    return pruned
 
 
 def _signed(received: str, secret: str, body: bytes) -> bool:
@@ -103,6 +134,7 @@ def mk_webhook_app(
     events: tuple[str, ...] = EVENTS,
     max_body_bytes: int = MAX_WEBHOOK_BODY_BYTES,
     clock: Callable[[], int] = time.time_ns,
+    prune_every_ns: int = PRUNE_EVERY_NS,
 ) -> Callable[..., Awaitable[None]]:
     """The receiver as an ASGI app: GitHub POSTs signed deliveries, the app stores the ``events`` ones in ``deliveries``.
 
@@ -115,12 +147,17 @@ def mk_webhook_app(
     GitHub's delivery id, a replayed request (GitHub signatures carry no timestamp)
     overwrites its first copy instead of growing the store. ``deliveries``
     defaults to files under the data root (``github-webhook/``).
+
+    The receiver also deletes deliveries older than ``WEBHOOK_RETENTION`` itself
+    (:func:`prune_deliveries`), on a write, at most once per ``prune_every_ns``, so the
+    store stays bounded in time even with no ``delivery = webhook`` listen to prune it.
     """
     if not isinstance(secret, str) or not secret:
         raise ValueError("the GitHub webhook secret is a non-empty string")
     if deliveries is None:
         deliveries = configured_store(NAME, WEBHOOK_KIND)
     last = [0]
+    pruned_at = [None]
 
     async def app(scope, receive, send):
         if scope["type"] == "lifespan":
@@ -157,7 +194,15 @@ def mk_webhook_app(
             return await respond(send, 400, {"error": "no repository or discussion"})
         last[0] = max(clock(), last[0] + 1)  # strictly increasing
         deliveries[f"{delivery}.json"] = {**record, "received_ns": last[0]}
-        return await respond(send, 200, None)
+        await respond(send, 200, None)
+        # after the response: the delivery is stored, a failing prune must not undo that
+        if pruned_at[0] is None or last[0] - pruned_at[0] >= prune_every_ns:
+            pruned_at[0] = last[0]
+            try:
+                prune_deliveries(deliveries, now_ns=last[0])
+            except Exception:  # an unreadable entry; the next prune (or listen) retries
+                pass
+        return None
 
     return app
 

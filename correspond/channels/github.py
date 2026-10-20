@@ -784,10 +784,10 @@ class GitHub:
 
         Deliveries older than ``WEBHOOK_RETENTION`` are deleted on the way.
         """
-        from correspond.channels.github_webhook import RECEIVED_KEY_RE
+        from correspond.channels.github_webhook import RECEIVED_KEY_RE, prune_deliveries
 
         after = int((since - CLOCK_SKEW).timestamp() * 10**9)
-        expired = self.clock() - int(WEBHOOK_RETENTION.total_seconds() * 10**9)
+        prune_deliveries(self.deliveries, now_ns=self.clock())
         wanted = f"{owner}/{repo}".lower()
         found: dict[int, int] = {}
         for key in list(self.deliveries):
@@ -796,9 +796,6 @@ class GitHub:
             record = self.deliveries.get(key) or {}
             stamp = record.get("received_ns")
             if isinstance(stamp, bool) or not isinstance(stamp, int):
-                continue
-            if stamp < expired:
-                self.deliveries.pop(key, None)
                 continue
             number = record.get("discussion")
             if (

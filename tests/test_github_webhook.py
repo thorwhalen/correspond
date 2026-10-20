@@ -211,3 +211,24 @@ def test_a_delivery_arriving_after_the_cursor_passed_its_comment_still_delivers_
         since="2026-09-11T09:02:00Z",
     )
     assert listen() == ["discussioncomment-702"]
+
+
+def test_the_receiver_prunes_old_deliveries_itself_at_most_once_per_interval():
+    # #84: with no `delivery = webhook` listen, the store stays bounded in time
+    week_and_a_day = 8 * 24 * 3600 * 10**9
+    store = {
+        "d-old.json": {"repository": REPO, "discussion": 7, "received_ns": NOW - week_and_a_day},
+        "unrelated": {"received_ns": 0},
+    }
+    clock = [NOW]
+    app = mk_webhook_app(
+        secret=SECRET, deliveries=store, clock=lambda: clock[0], prune_every_ns=10**9
+    )
+    assert _deliver(app, _payload()) == 200
+    assert sorted(store) == ["d-1.json", "unrelated"]  # pruned on the first write
+    store["d-old.json"] = {"received_ns": NOW - week_and_a_day}
+    assert _deliver(app, _payload()) == 200  # within the interval: no prune yet
+    assert "d-old.json" in store
+    clock[0] = NOW + 2 * 10**9
+    assert _deliver(app, _payload()) == 200
+    assert "d-old.json" not in store
