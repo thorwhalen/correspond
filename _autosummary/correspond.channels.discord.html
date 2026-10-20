@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../_static/documentation_options.js?v=39aadc1c"></script>
+    <script src="../_static/documentation_options.js?v=0e525676"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.35" />
+  <meta name="docsearch:version" content="0.0.36" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -434,6 +434,11 @@ mentions it.</p>
 that message’s id; a first poll looks back a day). It does not open the gateway, so it
 sees new messages, not edits or deletions, and one channel per reference.</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">send</span></code> posts a message (2,000 characters at most); a title is prepended in bold.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">verify</span></code> grades an HTTP interaction Discord posted to your endpoint: <code class="docutils literal notranslate"><span class="pre">crypto</span></code> when
+its Ed25519 signature (<code class="docutils literal notranslate"><span class="pre">X-Signature-Ed25519</span></code> over <code class="docutils literal notranslate"><span class="pre">X-Signature-Timestamp</span></code> + body)
+checks against the application’s public key, <code class="docutils literal notranslate"><span class="pre">forged</span></code> otherwise. Discord sends
+deliberately invalid signatures to test the endpoint; those must come back <code class="docutils literal notranslate"><span class="pre">forged</span></code>
+(answer them 401).</p></li>
 </ul>
 <p>Senders are <code class="docutils literal notranslate"><span class="pre">platform</span></code>: Discord authenticated the account, and correspond fetched the
 message from the API itself. The bot token never appears in an error or a plan.</p>
@@ -446,7 +451,7 @@ first use, not when the channel is listed.</p>
 <p class="rubric">Classes</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.discord.Discord" title="correspond.channels.discord.Discord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Discord</span></code></a>(*[, backend, http, run])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.discord.Discord" title="correspond.channels.discord.Discord"><code class="xref py py-obj docutils literal notranslate"><span class="pre">Discord</span></code></a>(*[, backend, http, run, clock])</p></td>
 <td><p>A Discord bot over REST: read a channel, poll it for new messages, post to it.</p></td>
 </tr>
 </tbody>
@@ -454,7 +459,7 @@ first use, not when the channel is listed.</p>
 </div>
 <dl class="py class">
 <dt class="sig sig-object py" id="correspond.channels.discord.Discord">
-<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.discord.</span></span><span class="sig-name descname"><span class="pre">Discord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">http</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">urllib_http&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/discord.html#Discord"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.discord.Discord" title="Link to this definition">#</a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.discord.</span></span><span class="sig-name descname"><span class="pre">Discord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">backend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">http</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">urllib_http&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">time&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/discord.html#Discord"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.discord.Discord" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
 <p>A Discord bot over REST: read a channel, poll it for new messages, post to it.</p>
 <dl class="field-list simple">
@@ -523,6 +528,21 @@ first use, not when the channel is listed.</p>
 </dl>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.discord.Discord.verify">
+<span class="sig-name descname"><span class="pre">verify</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">headers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">body</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/discord.html#Discord.verify"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.discord.Discord.verify" title="Link to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">crypto</span></code> when <code class="docutils literal notranslate"><span class="pre">X-Signature-Ed25519</span></code> checks over a fresh <code class="docutils literal notranslate"><span class="pre">X-Signature-Timestamp</span></code> + body, <code class="docutils literal notranslate"><span class="pre">forged</span></code> otherwise.</p>
+<p>Raises <a class="reference internal" href="correspond.errors.html#correspond.errors.MissingRequirement" title="correspond.errors.MissingRequirement"><code class="xref py py-class docutils literal notranslate"><span class="pre">MissingRequirement</span></code></a> when the public key is unset
+or unusable (a configuration error, never a verdict on the request). Replay
+protection is the five-minute window only: a captured request can be replayed
+within it, so act idempotently on an interaction’s id.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.Authenticity" title="correspond.model.Authenticity"><code class="xref py py-class docutils literal notranslate"><span class="pre">Authenticity</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
 </dd></dl>
 
 </section>
@@ -582,6 +602,7 @@ first use, not when the channel is listed.</p>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.discord.Discord.poll"><code class="docutils literal notranslate"><span class="pre">Discord.poll()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.discord.Discord.read"><code class="docutils literal notranslate"><span class="pre">Discord.read()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.discord.Discord.send"><code class="docutils literal notranslate"><span class="pre">Discord.send()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.discord.Discord.verify"><code class="docutils literal notranslate"><span class="pre">Discord.verify()</span></code></a></li>
 </ul>
 </li>
 </ul>

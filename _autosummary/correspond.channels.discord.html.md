@@ -14,6 +14,11 @@ mentions it.
   that message’s id; a first poll looks back a day). It does not open the gateway, so it
   sees new messages, not edits or deletions, and one channel per reference.
 - `send` posts a message (2,000 characters at most); a title is prepended in bold.
+- `verify` grades an HTTP interaction Discord posted to your endpoint: `crypto` when
+  its Ed25519 signature (`X-Signature-Ed25519` over `X-Signature-Timestamp` + body)
+  checks against the application’s public key, `forged` otherwise. Discord sends
+  deliberately invalid signatures to test the endpoint; those must come back `forged`
+  (answer them 401).
 
 Senders are `platform`: Discord authenticated the account, and correspond fetched the
 message from the API itself. The bot token never appears in an error or a plan.
@@ -28,10 +33,10 @@ first use, not when the channel is listed.
 
 ### Classes
 
-| [`Discord`](#correspond.channels.discord.Discord)(\*[, backend, http, run])   | A Discord bot over REST: read a channel, poll it for new messages, post to it.   |
-|--------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
+| [`Discord`](#correspond.channels.discord.Discord)(\*[, backend, http, run, clock])   | A Discord bot over REST: read a channel, poll it for new messages, post to it.   |
+|---------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------|
 
-### *class* correspond.channels.discord.Discord(\*, backend=None, http=<function urllib_http>, run=<function run>)
+### *class* correspond.channels.discord.Discord(\*, backend=None, http=<function urllib_http>, run=<function run>, clock=<built-in function time>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -76,3 +81,15 @@ Post `draft.text` (the title, if any, prepended in bold) to the channel.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
+
+#### verify(headers, body)
+
+`crypto` when `X-Signature-Ed25519` checks over a fresh `X-Signature-Timestamp` + body, `forged` otherwise.
+
+Raises [`MissingRequirement`](correspond.errors.html.md#correspond.errors.MissingRequirement) when the public key is unset
+or unusable (a configuration error, never a verdict on the request). Replay
+protection is the five-minute window only: a captured request can be replayed
+within it, so act idempotently on an interaction’s id.
+
+* **Return type:**
+  [`Authenticity`](correspond.model.html.md#correspond.model.Authenticity)
