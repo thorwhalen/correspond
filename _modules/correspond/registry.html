@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../_static/documentation_options.js?v=828725f0"></script>
+    <script src="../../_static/documentation_options.js?v=61a342a2"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.29" />
+  <meta name="docsearch:version" content="0.0.30" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -726,8 +726,8 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">&gt;&gt;&gt; info("telegram").setting("token").env</span>
 <span class="sd">'TELEGRAM_BOT_TOKEN'</span>
-<span class="sd">&gt;&gt;&gt; info("signal").planned</span>
-<span class="sd">'https://github.com/thorwhalen/correspond/issues/4'</span>
+<span class="sd">&gt;&gt;&gt; info("signal").setting("number").env</span>
+<span class="sd">'CORRESPOND_SIGNAL_NUMBER'</span>
 <span class="sd">"""</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
@@ -1127,9 +1127,37 @@ window.runMermaid = runMermaid;</script>
     <span class="p">),</span>
     <span class="n">ChannelInfo</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">"signal"</span><span class="p">,</span>
-        <span class="n">summary</span><span class="o">=</span><span class="s2">"Signal through signal-cli-rest-api"</span><span class="p">,</span>
+        <span class="n">summary</span><span class="o">=</span><span class="s2">"Signal through signal-cli-rest-api in JSON-RPC mode: listen over its WebSocket, read what was logged, send"</span><span class="p">,</span>
+        <span class="n">factory</span><span class="o">=</span><span class="s2">"correspond.channels.signal:Signal"</span><span class="p">,</span>
         <span class="n">extra</span><span class="o">=</span><span class="s2">"signal"</span><span class="p">,</span>
-        <span class="n">planned</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">ISSUES</span><span class="si">}</span><span class="s2">/4"</span><span class="p">,</span>
+        <span class="n">check</span><span class="o">=</span><span class="s2">"correspond.channels.signal:requirements_problems"</span><span class="p">,</span>
+        <span class="n">settings</span><span class="o">=</span><span class="p">(</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"number"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_SIGNAL_NUMBER"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the number of the Signal account signal-cli is registered or linked to"</span><span class="p">,</span>
+                <span class="n">where</span><span class="o">=</span><span class="s2">"link signal-cli to your account (signal-cli link) or register a number, then run the signal-cli-rest-api server (see its README)"</span><span class="p">,</span>
+                <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"url"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_SIGNAL_URL"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"the signal-cli-rest-api server"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"http://127.0.0.1:8080"</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">Setting</span><span class="p">(</span>
+                <span class="n">key</span><span class="o">=</span><span class="s2">"listen_wait_s"</span><span class="p">,</span>
+                <span class="n">env</span><span class="o">=</span><span class="s2">"CORRESPOND_SIGNAL_LISTEN_WAIT_S"</span><span class="p">,</span>
+                <span class="n">what</span><span class="o">=</span><span class="s2">"how many quiet seconds a listen waits on the WebSocket before it returns"</span><span class="p">,</span>
+                <span class="n">default</span><span class="o">=</span><span class="s2">"3"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">),</span>
+        <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+            <span class="s2">"signal-cli needs a registered or linked number; a signal-cli release older than about three months stops working against Signal's servers, so update it when listening goes quiet"</span><span class="p">,</span>
+            <span class="s2">"run signal-cli-rest-api with MODE=json-rpc: listen receives over its WebSocket (pip install 'correspond[signal]' adds the client)"</span><span class="p">,</span>
+            <span class="s2">"there is no history before linking: read returns only what correspond logged"</span><span class="p">,</span>
+            <span class="s2">"the server's trust-new-identities setting is an authenticity policy; a changed safety number arrives as an identity.changed event"</span><span class="p">,</span>
+        <span class="p">),</span>
     <span class="p">),</span>
     <span class="n">ChannelInfo</span><span class="p">(</span>
         <span class="n">name</span><span class="o">=</span><span class="s2">"gdrive"</span><span class="p">,</span>

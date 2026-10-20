@@ -1,0 +1,19 @@
+correspond.channels.signal
+==========================
+
+.. automodule:: correspond.channels.signal
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      requirements_problems
+      websocket_frames
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Signal
+   

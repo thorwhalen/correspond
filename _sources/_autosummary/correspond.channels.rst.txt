@@ -17,6 +17,7 @@ correspond.channels
    macos
    mail
    ntfy
+   signal
    slack
    telegram
    webinbox

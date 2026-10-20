@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="alternate" type="text/markdown" href="signal.html.md">
+<link rel="describedby" href="../../../llms.txt" type="text/markdown">
+    <title>correspond.channels.signal &#8212; correspond</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  <!--
+    this give us a css class that will be invisible only if js is disabled
+  -->
+  <noscript>
+    <style>
+      .pst-js-only { display: none !important; }
+
+    </style>
+  </noscript>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=18bd87630a240e9c25be" rel="stylesheet" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=d75fae25" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx_autodoc_typehints.css?v=057ac668" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/epythet.css?v=c6155191" />
+  
+  <!-- So that users can add custom icons -->
+  <script defer src="../../../_static/scripts/fontawesome.js?digest=18bd87630a240e9c25be"></script>
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
+
+    <script src="../../../_static/documentation_options.js?v=61a342a2"></script>
+    <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+    <script src="../../../_static/copybutton.js?v=fd10adb8"></script>
+    <script type="module">import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11.12.1/dist/mermaid.esm.min.mjs";
+
+
+
+
+
+const initStyles = () => {
+    const defaultStyle = document.createElement('style');
+    defaultStyle.textContent = "pre.mermaid {\n    /* Same as .mermaid-container > pre */\n    display: block;\n    width: 100%;\n}\n\npre.mermaid > svg {\n    /* Same as .mermaid-container > pre > svg */\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}";
+    document.head.appendChild(defaultStyle);
+
+    const fullscreenStyle = document.createElement('style');
+    fullscreenStyle.textContent = ".mermaid-container {\n    position: relative;\n    display: flex;\n    flex-direction: row;\n    width: 100%;\n}\n\n.mermaid-container > pre {\n    display: block;\n    width: 100%;\n}\n\n.mermaid-container > pre > svg {\n    height: 500px;\n    width: 100%;\n    max-width: 100% !important;\n}\n\n.mermaid-fullscreen-btn {\n    position: absolute;\n    width: 28px;\n    height: 28px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.3);\n    border-radius: 4px;\n    cursor: pointer;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    transition: all 0.2s;\n    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);\n    font-size: 14px;\n    line-height: 1;\n    padding: 0;\n    color: #333;\n}\n\n.mermaid-fullscreen-btn:hover {\n    opacity: 100% !important;\n    background: rgba(255, 255, 255, 1);\n    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-btn.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.3);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-btn.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 3px 10px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal {\n    display: none;\n    position: fixed !important;\n    top: 0 !important;\n    left: 0 !important;\n    width: 95vw;\n    height: 100vh;\n    background: rgba(255, 255, 255, 0.98);\n    z-index: 9999;\n    padding: 20px;\n    overflow: auto;\n}\n\n.mermaid-fullscreen-modal.dark-theme {\n    background: rgba(0, 0, 0, 0.98);\n}\n\n.mermaid-fullscreen-modal.active {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen {\n    position: relative;\n    width: 95vw;\n    height: 90vh;\n    max-width: 95vw;\n    max-height: 90vh;\n    background: white;\n    border-radius: 8px;\n    padding: 20px;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);\n    overflow: auto;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen.dark-theme {\n    background: #1a1a1a;\n    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);\n}\n\n.mermaid-container-fullscreen pre.mermaid {\n    width: 100%;\n    height: 100%;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n}\n\n.mermaid-container-fullscreen .mermaid svg {\n    height: 100% !important;\n    width: 100% !important;\n    cursor: grab;\n}\n\n.mermaid-fullscreen-close {\n    position: fixed !important;\n    top: 20px !important;\n    right: 20px !important;\n    width: 40px;\n    height: 40px;\n    background: rgba(255, 255, 255, 0.95);\n    border: 1px solid rgba(0, 0, 0, 0.2);\n    border-radius: 50%;\n    cursor: pointer;\n    z-index: 10000;\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);\n    transition: all 0.2s;\n    font-size: 24px;\n    line-height: 1;\n    color: #333;\n}\n\n.mermaid-fullscreen-close:hover {\n    background: white;\n    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);\n    transform: scale(1.1);\n}\n\n.mermaid-fullscreen-close.dark-theme {\n    background: rgba(50, 50, 50, 0.95);\n    border: 1px solid rgba(255, 255, 255, 0.2);\n    color: #e0e0e0;\n}\n\n.mermaid-fullscreen-close.dark-theme:hover {\n    background: rgba(60, 60, 60, 1);\n    box-shadow: 0 6px 16px rgba(255, 255, 255, 0.2);\n}\n\n.mermaid-fullscreen-modal .mermaid-fullscreen-btn {\n    display: none !important;\n}";
+    document.head.appendChild(fullscreenStyle);
+}
+
+// Detect if page has dark background
+const isDarkTheme = () => {
+    // We use a set of heuristics:
+    // 1. Check for common dark mode classes or attributes
+    // 2. Check computed background color brightness
+    if (document.documentElement.classList.contains('dark') ||
+        document.documentElement.getAttribute('data-theme') === 'dark' ||
+        document.body.classList.contains('dark') ||
+        document.body.getAttribute('data-theme') === 'dark') {
+        // console.log("Dark theme detected via class/attribute");
+        return true;
+    }
+    if (document.documentElement.classList.contains('light') ||
+        document.documentElement.getAttribute('data-theme') === 'light' ||
+        document.body.classList.contains('light') ||
+        document.body.getAttribute('data-theme') === 'light') {
+        // console.log("Light theme detected via class/attribute");
+        return false;
+    }
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // console.log("Dark theme detected via prefers-color-scheme");
+        return true;
+    }
+    const bgColor = window.getComputedStyle(document.body).backgroundColor;
+    const match = bgColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        // console.log("Background color brightness:", brightness);
+        return brightness < 128;
+    }
+    // console.log("No dark or light theme detected, defaulting to light theme");
+    return false;
+};
+
+let darkTheme = isDarkTheme();
+let modal = null;
+let modalContent = null;
+let previousScrollOffset = [window.scrollX, window.scrollY];
+let _lazyObserver = null;
+let _renderQueue = Promise.resolve();
+let closeModal = () => {};
+
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal?.classList.contains('active')) {
+        closeModal();
+    }
+});
+
+// Apply d3 zoom to each SVG. Idempotent: an SVG already wrapped is skipped,
+// so this is safe to call both for the initial batch and for diagrams that
+// render lazily once they become visible.
+const addZoomToSvgs = (svgs) => {
+    svgs.each(function() {
+        if (this.getAttribute('data-zoom-applied') === 'true') return;
+        var svg = d3.select(this);
+        svg.html("<g class='wrapper'>" + svg.html() + "</g>");
+        var inner = svg.select("g");
+        var zoom = d3.zoom().on("zoom", function(event) {
+            inner.attr("transform", event.transform);
+        });
+        svg.call(zoom);
+        this.setAttribute('data-zoom-applied', 'true');
+    });
+};
+
+const runMermaid = async (rerun) => {
+    console.log("Running mermaid diagrams, rerun =", rerun);
+    // clear all existing mermaid charts
+    let all_mermaids = document.querySelectorAll(".mermaid");
+
+    if (rerun) {
+        // Disconnect any previous lazy rendering observer
+        if (_lazyObserver) {
+            _lazyObserver.disconnect();
+            _lazyObserver = null;
+        }
+
+        all_mermaids.forEach((el) => {
+            el.removeAttribute('data-mermaid-deferred');
+            el.removeAttribute('data-mermaid-render-failed');
+            if(!el.hasAttribute("data-original-code")) {
+                // store original code
+                // console.log(`Storing original code for first run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+            if(el.getAttribute("data-processed") === "true") {
+                // remove and restore original
+                el.removeAttribute("data-processed");
+                // console.log(`Restoring original code for re-run: `, el.getAttribute('data-original-code'));
+                el.innerHTML = el.getAttribute('data-original-code');
+            } else {
+                // store original code
+                // console.log(`Storing original code for re-run: `, el.innerHTML);
+                el.setAttribute('data-original-code', el.innerHTML);
+            }
+        });
+
+        // Separate visible and hidden elements. Mermaid's layout engine measures
+        // text dimensions via the DOM, which fails for elements hidden by a parent
+        // (e.g., Reveal.js non-active slides, sphinx-design unopened tabs),
+        // producing broken SVGs. Render visible elements now, defer hidden ones.
+        const visible = [];
+        const hidden = [];
+        all_mermaids.forEach((el) => {
+            // offsetParent is null for display:none ancestors.
+            // getClientRects().length > 0 catches position:fixed elements
+            // (which also have null offsetParent but are still visible).
+            if (el.offsetParent !== null || el.getClientRects().length > 0) {
+                visible.push(el);
+            } else {
+                hidden.push(el);
+                el.setAttribute('data-mermaid-deferred', 'true');
+            }
+        });
+
+        if (visible.length > 0) {
+            try {
+                await mermaid.run({ nodes: visible });
+            } catch (e) {
+                console.error("Mermaid rendering failed:", e);
+            }
+        }
+
+        // Lazily render hidden elements when they become visible.
+        // Uses a promise chain (_renderQueue) to serialize rendering,
+        // since IntersectionObserver may report multiple entries at once
+        // and mermaid.run() is not safe to call concurrently.
+        if (hidden.length > 0) {
+            if (typeof IntersectionObserver === 'undefined') {
+                console.warn("IntersectionObserver not available; hidden mermaid diagrams will not render.");
+            } else {
+                _renderQueue = Promise.resolve();
+                _lazyObserver = new IntersectionObserver((entries) => {
+                    for (const entry of entries) {
+                        if (entry.isIntersecting && entry.target.getAttribute("data-processed") !== "true") {
+                            _lazyObserver.unobserve(entry.target);
+                            const el = entry.target;
+                            _renderQueue = _renderQueue.then(async () => {
+                                try {
+                                    await mermaid.run({ nodes: [el] });
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    // Apply zoom to the now-rendered diagram, matching
+                                    // the decoration visible diagrams receive.
+                                    if (false) {
+                                        addZoomToSvgs(d3.selectAll("").select(function() {
+                                            return this.querySelector("svg");
+                                        }));
+                                    }
+                                } catch (e) {
+                                    console.error("Mermaid deferred rendering failed:", e);
+                                    el.removeAttribute('data-mermaid-deferred');
+                                    el.setAttribute('data-mermaid-render-failed', 'true');
+                                }
+                            });
+                        }
+                    }
+                });
+                hidden.forEach((el) => _lazyObserver.observe(el));
+            }
+        }
+    }
+
+    all_mermaids = document.querySelectorAll(".mermaid");
+    // Exclude deferred (hidden) and render-failed elements from completion checks
+    const mermaids_active = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])");
+    const mermaids_processed = document.querySelectorAll(".mermaid:not([data-mermaid-deferred]):not([data-mermaid-render-failed])[data-processed='true']");
+
+    if (false) {
+        const mermaids_to_add_zoom = 0 === -1 ? mermaids_active.length : 0;
+        if(mermaids_to_add_zoom > 0) {
+            var svgs = d3.selectAll("").select(function() {
+                return this.querySelector("svg");
+            });
+            // Wait until every active (visible) diagram has rendered. Deferred
+            // diagrams are excluded, so a fixed d3_node_count that counts a
+            // hidden diagram no longer loops forever waiting for its SVG.
+            if(mermaids_active.length !== mermaids_processed.length) {
+                setTimeout(() => runMermaid(false), 200);
+                return;
+            }
+            addZoomToSvgs(svgs);
+        }
+    } else if(mermaids_active.length !== mermaids_processed.length) {
+        // Wait for mermaid to process all diagrams
+        setTimeout(() => runMermaid(false), 200);
+        return;
+    }
+
+    // Stop here if not adding fullscreen capability
+    if (!true) return;
+
+    if (modal !== null ) {
+        // Destroy existing modal
+        modal.remove();
+        modal = null;
+        modalContent = null;
+    }
+
+    modal = document.createElement('div');
+    modal.className = 'mermaid-fullscreen-modal' + (darkTheme ? ' dark-theme' : '');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Fullscreen diagram viewer');
+    modal.innerHTML = `
+        <button class="mermaid-fullscreen-close${darkTheme ? ' dark-theme' : ''}" aria-label="Close fullscreen">✕</button>
+        <div class="mermaid-container-fullscreen${darkTheme ? ' dark-theme' : ''}"></div>
+    `;
+    document.body.appendChild(modal);
+
+    modalContent = modal.querySelector('.mermaid-container-fullscreen');
+    const closeBtn = modal.querySelector('.mermaid-fullscreen-close');
+
+    closeModal = () => {
+        modal.classList.remove('active');
+        modalContent.innerHTML = '';
+        document.body.style.overflow = ''
+        window.scrollTo({left: previousScrollOffset[0], top: previousScrollOffset[1], behavior: 'instant'});
+    };
+
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+    document.querySelectorAll('.mermaid').forEach((mermaidDiv) => {
+        if (mermaidDiv.parentNode.classList.contains('mermaid-container') ||
+            mermaidDiv.closest('.mermaid-fullscreen-modal')) {
+            // Already processed, adjust button class if needed
+            const existingBtn = mermaidDiv.parentNode.querySelector('.mermaid-fullscreen-btn');
+            if (existingBtn) {
+                existingBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+            }
+            return;
+        }
+
+        const container = document.createElement('div');
+        container.className = 'mermaid-container';
+        mermaidDiv.parentNode.insertBefore(container, mermaidDiv);
+        container.appendChild(mermaidDiv);
+
+        const fullscreenBtn = document.createElement('button');
+        fullscreenBtn.className = 'mermaid-fullscreen-btn' + (darkTheme ? ' dark-theme' : '');
+        fullscreenBtn.setAttribute('aria-label', 'View diagram in fullscreen');
+        fullscreenBtn.textContent = "\u26f6";
+        fullscreenBtn.style.opacity = "50%";
+
+        // Calculate dynamic position based on diagram's margin and padding
+        const diagramStyle = window.getComputedStyle(mermaidDiv);
+        const marginTop = parseFloat(diagramStyle.marginTop) || 0;
+        const marginRight = parseFloat(diagramStyle.marginRight) || 0;
+        const paddingTop = parseFloat(diagramStyle.paddingTop) || 0;
+        const paddingRight = parseFloat(diagramStyle.paddingRight) || 0;
+        fullscreenBtn.style.top = `${marginTop + paddingTop + 4}px`;
+        fullscreenBtn.style.right = `${marginRight + paddingRight + 4}px`;
+
+        fullscreenBtn.addEventListener('click', () => {
+            previousScrollOffset = [window.scrollX, window.scrollY];
+            const clone = mermaidDiv.cloneNode(true);
+            modalContent.innerHTML = '';
+            modalContent.appendChild(clone);
+
+            const svg = clone.querySelector('svg');
+            if (svg) {
+                svg.removeAttribute('width');
+                svg.removeAttribute('height');
+                svg.style.width = '100%';
+                svg.style.height = 'auto';
+                svg.style.maxWidth = '100%';
+                svg.style.display = 'block';
+
+                if (false) {
+                    setTimeout(() => {
+                        const g = svg.querySelector('g');
+                        if (g) {
+                            var svgD3 = d3.select(svg);
+                            svgD3.html("<g class='wrapper'>" + svgD3.html() + "</g>");
+                            var inner = svgD3.select("g");
+                            var zoom = d3.zoom().on("zoom", function(event) {
+                                inner.attr("transform", event.transform);
+                            });
+                            svgD3.call(zoom);
+                        }
+                    }, 100);
+                }
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        container.appendChild(fullscreenBtn);
+    });
+};
+
+
+
+const load = async () => {
+    initStyles();
+
+
+    await runMermaid(true);
+
+    const reRunIfThemeChanges = async () => {
+        const newDarkTheme = isDarkTheme();
+        if (newDarkTheme !== darkTheme) {
+            darkTheme = newDarkTheme;
+            console.log("Theme change detected, re-running mermaid with", darkTheme ? "dark" : "default", "theme");
+            await mermaid.initialize(
+                {...{"startOnLoad": false},
+                ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
+                }
+            );
+            await runMermaid(true);
+        }
+    };
+
+    // Update theme classes when theme changes
+    const themeObserver = new MutationObserver(reRunIfThemeChanges);
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+    themeObserver.observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class', 'style', 'data-theme']
+    });
+};
+
+
+
+
+
+console.log("Initializing mermaid with", darkTheme ? "dark" : "default", "theme");
+mermaid.initialize(
+    {...{"startOnLoad": false},
+    ...{ darkMode: darkTheme, theme: darkTheme ? "dark" : "default" },
+    }
+);
+
+window.addEventListener("load", load);
+window.runMermaid = runMermaid;</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/correspond/channels/signal';</script>
+    <script>DOCUMENTATION_OPTIONS.search_as_you_type = false;</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="color-scheme" content="light dark"/>
+  <meta name="docsearch:language" content="en"/>
+  <meta name="docsearch:version" content="0.0.30" />
+  
+    
+    <script src="../../../_static/searchtools.js"></script>
+    <script src="../../../_static/language_data.js"></script>
+    <script src="../../../searchindex.js"></script>
+  
+  </head>
+  <body data-default-mode="">
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+  
+  
+  
+  
+  <dialog id="pst-search-dialog">
+    
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+  </dialog>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header id="pst-header" class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+<div class="bd-header__inner bd-page-width">
+  <button type="button" class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+  
+  
+  <div class="col-lg-3 navbar-header-items__start">
+    
+      <div class="navbar-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../index.html">
+  
+  
+  
+  
+  
+  
+    <p class="title logo__title">correspond</p>
+  
+</a></div>
+    
+  </div>
+  
+  <div class="col-lg-9 navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+        <div class="navbar-item navbar-persistent--container">
+          
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+        </div>
+      
+      
+        <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/correspond" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+    <div class="navbar-persistent--mobile">
+
+<button type="button" class="btn search-button-field search-button__button pst-js-only" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+ <i class="fa-solid fa-magnifying-glass"></i>
+ <span class="search-button__default-text">Search</span>
+ <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+</button>
+    </div>
+  
+
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <dialog id="pst-primary-sidebar-modal"></dialog>
+      <div id="pst-primary-sidebar" class="bd-sidebar-primary bd-sidebar hide-on-wide">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../api.html">
+    API reference
+  </a>
+</li>
+
+
+<li class="nav-item ">
+  <a class="nav-link nav-internal" href="../../../ai-agents.html">
+    For AI agents
+  </a>
+</li>
+
+  </ul>
+</nav></div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+          <div class="navbar-item">
+
+<div class="theme-switch-container dropdown pst-js-only" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Color mode">
+  <button type="button" class="btn btn-sm nav-link pst-navbar-icon theme-switch-button dropdown-toggle" aria-label="Color mode" data-bs-toggle="dropdown">
+    <i class="theme-switch fa-solid fa-sun fa-lg fa-fw" data-mode="light" title="Light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg fa-fw" data-mode="dark" title="Dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg fa-fw" data-mode="auto" title="System Settings"></i>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="auto"><i class="fa-solid fa-circle-half-stroke fa-lg fa-fw me-1"></i>System Settings</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="light"><i class="fa-solid fa-sun fa-lg fa-fw me-1"></i>Light</button></li>
+    <li><button type="button" class="dropdown-item d-flex align-items-center theme-change-button" data-mode="dark"><i class="fa-solid fa-moon fa-lg fa-fw me-1"></i>Dark</button></li>
+  </ul>
+</div></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/thorwhalen/correspond" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-square-github fa-lg" aria-hidden="true"></i><span class="visually-hidden">GitHub</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+      <div class="sidebar-primary-item">
+<div id="ethical-ad-placement"
+      class="flat"
+      data-ea-publisher="readthedocs"
+      data-ea-type="readthedocs-sidebar"
+      data-ea-manual="true">
+</div></div>
+  </div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../../index.html" class="nav-link">Module code</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page"><span class="ellipsis">correspond.channels.signal</span></li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+</div>
+</div>
+              
+              
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for correspond.channels.signal</h1><div class="highlight"><pre>
+<span></span><span class="sd">"""Signal through ``signal-cli-rest-api`` (JSON-RPC mode): listen, read what was logged, send.</span>
+
+<span class="sd">References: ``signal:`` (the linked account's receive stream, for ``listen``),</span>
+<span class="sd">``signal:+&lt;number&gt;`` (a person, by international phone number or Signal uuid) and</span>
+<span class="sd">``signal:group.&lt;id&gt;`` (a group, by the REST API's group id).</span>
+
+<span class="sd">Signal has no bot API. ``signal-cli`` runs as a *linked device* (or a registered number) of</span>
+<span class="sd">an account you control, and the REST wrapper exposes it: ``POST /v2/send`` to send,</span>
+<span class="sd">``GET /v1/receive/&lt;number&gt;`` (a WebSocket in JSON-RPC mode) to receive. The WebSocket client</span>
+<span class="sd">is the optional ``websocket-client`` (extra ``signal``); tests and other transports pass</span>
+<span class="sd">``ws=``.</span>
+
+<span class="sd">Three facts shape the adapter:</span>
+
+<span class="sd">- There is no history before linking: ``read`` returns only what ``listen`` and ``send``</span>
+<span class="sd">  logged on this machine (``history_depth = since_link``).</span>
+<span class="sd">- ``signal-cli`` releases older than about three months stop working against Signal's</span>
+<span class="sd">  servers, so a silent channel may just be an old release (``requirements signal`` says so).</span>
+<span class="sd">- Whether to trust a changed safety number is an authenticity policy of the server</span>
+<span class="sd">  (``--trust-new-identities``). ``listen`` compares the account's known identities on every</span>
+<span class="sd">  poll and reports a changed safety number as an ``identity.changed`` event.</span>
+
+<span class="sd">&gt;&gt;&gt; Signal().parse_ref("group.ZXhhbXBsZQ==").kind</span>
+<span class="sd">'group'</span>
+<span class="sd">"""</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">base64</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">MutableMapping</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">replace</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timezone</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">urllib.parse</span><span class="w"> </span><span class="kn">import</span> <span class="n">quote</span><span class="p">,</span> <span class="n">urlsplit</span><span class="p">,</span> <span class="n">urlunsplit</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.channels._http</span><span class="w"> </span><span class="kn">import</span> <span class="n">classify</span><span class="p">,</span> <span class="n">urllib_http</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelError</span><span class="p">,</span> <span class="n">InvalidRef</span><span class="p">,</span> <span class="n">MissingRequirement</span><span class="p">,</span> <span class="n">NotSupported</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">Account</span><span class="p">,</span>
+    <span class="n">Audience</span><span class="p">,</span>
+    <span class="n">Authenticity</span><span class="p">,</span>
+    <span class="n">Capabilities</span><span class="p">,</span>
+    <span class="n">ChannelIdentity</span><span class="p">,</span>
+    <span class="n">ConversationRef</span><span class="p">,</span>
+    <span class="n">Draft</span><span class="p">,</span>
+    <span class="n">Event</span><span class="p">,</span>
+    <span class="n">Grade</span><span class="p">,</span>
+    <span class="n">HistoryDepth</span><span class="p">,</span>
+    <span class="n">Message</span><span class="p">,</span>
+    <span class="n">Scope</span><span class="p">,</span>
+    <span class="n">SendResult</span><span class="p">,</span>
+    <span class="n">Support</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">window</span><span class="p">,</span> <span class="n">with_final_cursor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">require</span><span class="p">,</span> <span class="n">value</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">correspond.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">mask</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"Signal"</span><span class="p">,</span> <span class="s2">"requirements_problems"</span><span class="p">,</span> <span class="s2">"websocket_frames"</span><span class="p">]</span>
+
+<span class="n">NAME</span> <span class="o">=</span> <span class="s2">"signal"</span>
+<span class="n">DEFAULT_URL</span> <span class="o">=</span> <span class="s2">"http://127.0.0.1:8080"</span>
+<span class="n">DEFAULT_LISTEN_WAIT_S</span> <span class="o">=</span> <span class="mf">3.0</span>
+<span class="n">PERSON_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">r</span><span class="s2">"^(\+\d{7,15}|[0-9a-fA-F]</span><span class="si">{8}</span><span class="s2">-[0-9a-fA-F]</span><span class="si">{4}</span><span class="s2">-[0-9a-fA-F]</span><span class="si">{4}</span><span class="s2">-[0-9a-fA-F]</span><span class="si">{4}</span><span class="s2">-[0-9a-fA-F]</span><span class="si">{12}</span><span class="s2">)$"</span>
+<span class="p">)</span>
+<span class="n">GROUP_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^group\.[A-Za-z0-9+/=_-]{4,}$"</span><span class="p">)</span>
+<span class="n">_PLATFORM</span> <span class="o">=</span> <span class="n">Authenticity</span><span class="p">(</span><span class="n">grade</span><span class="o">=</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,</span> <span class="n">evidence</span><span class="o">=</span><span class="p">{</span><span class="s2">"method"</span><span class="p">:</span> <span class="s2">"signal-protocol"</span><span class="p">})</span>
+
+
+<div class="viewcode-block" id="websocket_frames">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.signal.html#correspond.channels.signal.websocket_frames">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">websocket_frames</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""Text frames of the WebSocket at ``url`` until it has been quiet for ``timeout`` seconds (the default ``ws=``)."""</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">websocket</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingRequirement</span><span class="p">(</span>
+            <span class="n">NAME</span><span class="p">,</span>
+            <span class="s2">"listening needs the websocket-client package"</span><span class="p">,</span>
+            <span class="n">fix</span><span class="o">=</span><span class="s2">"pip install 'correspond[signal]'"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"unavailable"</span><span class="p">,</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">connection</span> <span class="o">=</span> <span class="n">websocket</span><span class="o">.</span><span class="n">create_connection</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="n">timeout</span><span class="p">)</span>
+    <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="n">websocket</span><span class="o">.</span><span class="n">WebSocketException</span><span class="p">)</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"cannot reach the signal-cli-rest-api WebSocket at </span><span class="si">{</span><span class="n">urlsplit</span><span class="p">(</span><span class="n">url</span><span class="p">)</span><span class="o">.</span><span class="n">netloc</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"network"</span><span class="p">,</span>
+            <span class="n">retryable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
+    <span class="n">frames</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">frame</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">recv</span><span class="p">()</span>
+            <span class="k">except</span> <span class="n">websocket</span><span class="o">.</span><span class="n">WebSocketTimeoutException</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">except</span> <span class="n">websocket</span><span class="o">.</span><span class="n">WebSocketConnectionClosedException</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="n">frame</span><span class="p">:</span>
+                <span class="n">frames</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">frame</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">frame</span><span class="o">.</span><span class="n">decode</span><span class="p">())</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">frames</span></div>
+
+
+
+<div class="viewcode-block" id="requirements_problems">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.signal.html#correspond.channels.signal.requirements_problems">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">requirements_problems</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""What stops Signal working from this configuration; the signal-cli age caveat is a note, not a problem."""</span>
+    <span class="k">if</span> <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">[]</span>
+    <span class="k">return</span> <span class="p">[</span><span class="s2">"the linked account's number is not set (CORRESPOND_SIGNAL_NUMBER)"</span><span class="p">]</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_ws_url</span><span class="p">(</span><span class="n">base</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">number</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">urlsplit</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+    <span class="n">scheme</span> <span class="o">=</span> <span class="s2">"wss"</span> <span class="k">if</span> <span class="n">parts</span><span class="o">.</span><span class="n">scheme</span> <span class="o">==</span> <span class="s2">"https"</span> <span class="k">else</span> <span class="s2">"ws"</span>
+    <span class="k">return</span> <span class="n">urlunsplit</span><span class="p">((</span><span class="n">scheme</span><span class="p">,</span> <span class="n">parts</span><span class="o">.</span><span class="n">netloc</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">parts</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)</span><span class="si">}</span><span class="s2">/v1/receive/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">number</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_group_ref</span><span class="p">(</span><span class="n">internal_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""The REST API's group id: ``group.`` and the base64 of the id signal-cli reports."""</span>
+    <span class="k">return</span> <span class="s2">"group."</span> <span class="o">+</span> <span class="n">base64</span><span class="o">.</span><span class="n">b64encode</span><span class="p">(</span><span class="n">internal_id</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">decode</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_at</span><span class="p">(</span><span class="n">millis</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">datetime</span><span class="o">.</span><span class="n">fromtimestamp</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">millis</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1000</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="n">timezone</span><span class="o">.</span><span class="n">utc</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_log_key</span><span class="p">(</span><span class="n">conversation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">conversation</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">message_id</span><span class="si">}</span><span class="s2">.json"</span>
+
+
+<div class="viewcode-block" id="Signal">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.signal.html#correspond.channels.signal.Signal">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Signal</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A Signal account linked to a ``signal-cli-rest-api`` server."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="n">NAME</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">http</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">urllib_http</span><span class="p">,</span>
+        <span class="n">ws</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="n">websocket_frames</span><span class="p">,</span>
+        <span class="n">log</span><span class="p">:</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">http</span> <span class="o">=</span> <span class="n">http</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ws</span> <span class="o">=</span> <span class="n">ws</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="o">=</span> <span class="n">log</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">log</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MutableMapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""Every message received or sent, as JSON, keyed ``&lt;conversation id&gt;/&lt;message id&gt;.json``; identities seen sit under ``identities/``."""</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.stores</span><span class="w"> </span><span class="kn">import</span> <span class="n">json_store</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">_log</span> <span class="o">=</span> <span class="n">json_store</span><span class="p">(</span><span class="n">NAME</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_log</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">capabilities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Capabilities</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""A linked device's view of Signal."""</span>
+        <span class="k">return</span> <span class="n">Capabilities</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="n">read</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
+            <span class="n">listen</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">send</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">audience</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
+            <span class="n">initiate</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
+            <span class="n">reply</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">PARTIAL</span><span class="p">,</span>
+            <span class="n">history_depth</span><span class="o">=</span><span class="n">HistoryDepth</span><span class="o">.</span><span class="n">SINCE_LINK</span><span class="p">,</span>
+            <span class="n">grades</span><span class="o">=</span><span class="p">(</span><span class="n">Grade</span><span class="o">.</span><span class="n">PLATFORM</span><span class="p">,),</span>
+            <span class="n">native_fields</span><span class="o">=</span><span class="p">(</span><span class="s2">"group"</span><span class="p">,</span> <span class="s2">"quote"</span><span class="p">),</span>
+            <span class="n">formats</span><span class="o">=</span><span class="p">(</span><span class="s2">"plain"</span><span class="p">,),</span>
+            <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
+                <span class="s2">"read returns only what listen and send logged on this machine: Signal gives no history before the device was linked"</span><span class="p">,</span>
+                <span class="s2">"listen is account-wide (signal:); narrow to a conversation when routing; it connects to the WebSocket, collects what arrives within listen_wait_s and disconnects"</span><span class="p">,</span>
+                <span class="s2">"signal-cli needs a registered or linked number, and a release older than about three months stops working: update it first when listening goes quiet"</span><span class="p">,</span>
+                <span class="s2">"a changed safety number is an identity.changed event (found by comparing GET /v1/identities on each listen); whether such an identity is trusted is the server's trust-new-identities setting, an authenticity policy"</span><span class="p">,</span>
+                <span class="s2">"a reply needs the quoted message's author: it is found in the log, so only messages this machine saw can be answered"</span><span class="p">,</span>
+                <span class="s2">"audience: a group's members come from the REST API; a person's conversation is named"</span><span class="p">,</span>
+                <span class="s2">"group references use the REST API's group id (group.&lt;base64&gt;)"</span><span class="p">,</span>
+            <span class="p">),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="Signal.parse_ref">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.signal.html#correspond.channels.signal.Signal.parse_ref">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse_ref</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ConversationRef</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``""`` (the account's stream), a phone number or uuid, or ``group.&lt;id&gt;``."""</span>
+        <span class="k">if</span> <span class="nb">id</span> <span class="o">==</span> <span class="s2">""</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"account"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">PERSON_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"person"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">GROUP_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="nb">id</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">ConversationRef</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"group"</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"signal references are signal:, signal:+&lt;number&gt;, signal:&lt;uuid&gt; or signal:group.&lt;id&gt;, not signal:</span><span class="si">{</span><span class="nb">id</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span></div>
+
+
+    <span class="c1"># ------------------------------------------------------------------ plumbing</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_base</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"url"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">DEFAULT_URL</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">body</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="p">(</span>
+            <span class="n">method</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_base</span><span class="p">()</span><span class="si">}{</span><span class="n">path</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="s2">"Content-Type"</span><span class="p">:</span> <span class="s2">"application/json"</span><span class="p">}</span> <span class="k">if</span> <span class="n">body</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">body</span><span class="o">=</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">body</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span> <span class="k">if</span> <span class="n">body</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">300</span><span class="p">:</span>
+            <span class="n">detail</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"error"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">raise</span> <span class="n">classify</span><span class="p">(</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"signal-cli-rest-api refused </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="mi">3</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}{</span><span class="s1">': '</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nb">str</span><span class="p">(</span><span class="n">detail</span><span class="p">)</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="n">detail</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="s1">''</span><span class="si">}</span><span class="s2">)"</span><span class="p">,</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_remember</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="p">:</span> <span class="n">Message</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">[</span><span class="n">_log_key</span><span class="p">(</span><span class="n">message</span><span class="o">.</span><span class="n">conversation</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">message</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+
+    <span class="c1"># --------------------------------------------------------------- listening</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">envelope</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">account</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sourceNumber"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sourceUuid"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"groupInfo"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"groupId"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">group</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">source</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span><span class="s2">"the envelope names no sender"</span><span class="p">)</span>
+        <span class="n">conversation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="n">_group_ref</span><span class="p">(</span><span class="n">group</span><span class="p">))</span> <span class="k">if</span> <span class="n">group</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+        <span class="n">quote_</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"quote"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="k">return</span> <span class="n">Message</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">)),</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">conversation</span><span class="p">,</span>
+            <span class="n">author</span><span class="o">=</span><span class="n">ChannelIdentity</span><span class="p">(</span>
+                <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                <span class="n">native_id</span><span class="o">=</span><span class="n">source</span><span class="p">,</span>
+                <span class="n">handle</span><span class="o">=</span><span class="n">source</span> <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"+"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">display_name</span><span class="o">=</span><span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sourceName"</span><span class="p">)</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">is_self</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">account</span><span class="p">)</span> <span class="ow">and</span> <span class="n">source</span> <span class="o">==</span> <span class="n">account</span><span class="p">,</span>
+            <span class="p">),</span>
+            <span class="n">authenticity</span><span class="o">=</span><span class="n">_PLATFORM</span><span class="p">,</span>
+            <span class="n">sent_at</span><span class="o">=</span><span class="n">_at</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">)),</span>
+            <span class="n">text</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
+            <span class="n">reply_to</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">quote_</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span> <span class="k">if</span> <span class="n">quote_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">native</span><span class="o">=</span><span class="p">{</span><span class="s2">"group"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">group</span><span class="p">),</span> <span class="s2">"quote"</span><span class="p">:</span> <span class="n">quote_</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="n">raw</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">envelope</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frames</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">account</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">Event</span><span class="p">],</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+        <span class="n">events</span><span class="p">,</span> <span class="n">last</span> <span class="o">=</span> <span class="p">[],</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">item</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">json</span><span class="o">.</span><span class="n">JSONDecodeError</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">envelope</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"envelope"</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">envelope</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">stamp</span> <span class="o">=</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">)</span>
+            <span class="n">edit</span> <span class="o">=</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"editMessage"</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataMessage"</span><span class="p">)</span>
+            <span class="n">kind</span><span class="p">,</span> <span class="n">payload</span> <span class="o">=</span> <span class="s2">"message.created"</span><span class="p">,</span> <span class="p">{}</span>
+            <span class="k">if</span> <span class="n">edit</span> <span class="ow">and</span> <span class="n">edit</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataMessage"</span><span class="p">):</span>
+                <span class="n">data</span><span class="p">,</span> <span class="n">kind</span> <span class="o">=</span> <span class="n">edit</span><span class="p">[</span><span class="s2">"dataMessage"</span><span class="p">],</span> <span class="s2">"message.updated"</span>
+                <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"target_sent_timestamp"</span><span class="p">:</span> <span class="n">edit</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"targetSentTimestamp"</span><span class="p">)}</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">last</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">stamp</span><span class="p">)</span> <span class="k">if</span> <span class="n">stamp</span> <span class="k">else</span> <span class="n">last</span>
+            <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"reaction"</span><span class="p">):</span>
+                <span class="n">reaction</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s2">"reaction"</span><span class="p">]</span>
+                <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">Event</span><span class="p">(</span>
+                        <span class="n">kind</span><span class="o">=</span><span class="s2">"reaction.added"</span><span class="p">,</span>
+                        <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                        <span class="n">delivery_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"signal:</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                        <span class="n">cursor</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">stamp</span><span class="p">),</span>
+                        <span class="n">payload</span><span class="o">=</span><span class="p">{</span>
+                            <span class="s2">"emoji"</span><span class="p">:</span> <span class="n">reaction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"emoji"</span><span class="p">),</span>
+                            <span class="s2">"remove"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"isRemove"</span><span class="p">)),</span>
+                            <span class="s2">"target_author"</span><span class="p">:</span> <span class="n">reaction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"targetAuthor"</span><span class="p">),</span>
+                            <span class="s2">"target_sent_timestamp"</span><span class="p">:</span> <span class="n">reaction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"targetSentTimestamp"</span><span class="p">),</span>
+                            <span class="s2">"from"</span><span class="p">:</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sourceNumber"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source"</span><span class="p">),</span>
+                        <span class="p">},</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+                <span class="k">continue</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">envelope</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">account</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">InvalidRef</span><span class="p">:</span>  <span class="c1"># sealed sender or an odd source: nothing to attribute it to</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"message.updated"</span><span class="p">:</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="n">replace</span><span class="p">(</span>
+                    <span class="n">message</span><span class="p">,</span>
+                    <span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">payload</span><span class="p">[</span><span class="s2">"target_sent_timestamp"</span><span class="p">]</span> <span class="ow">or</span> <span class="n">message</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
+                    <span class="n">edited_at</span><span class="o">=</span><span class="n">_at</span><span class="p">(</span><span class="n">stamp</span><span class="p">),</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_remember</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+            <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">Event</span><span class="p">(</span>
+                    <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span>
+                    <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                    <span class="n">delivery_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"signal:</span><span class="si">{</span><span class="n">stamp</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">cursor</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">stamp</span><span class="p">),</span>
+                    <span class="n">message</span><span class="o">=</span><span class="n">message</span><span class="p">,</span>
+                    <span class="n">payload</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">events</span><span class="p">,</span> <span class="n">last</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_identity_changes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">account</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Event</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""``identity.changed`` for every contact whose safety number differs from the one last seen; the first sight is a baseline, not a change."""</span>
+        <span class="n">known</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"/v1/identities/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">account</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">identity</span> <span class="ow">in</span> <span class="n">known</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">known</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]:</span>
+            <span class="n">who</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"number"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"uuid"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+            <span class="n">safety</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"safety_number"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fingerprint"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">who</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">safety</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"identities/</span><span class="si">{</span><span class="n">who</span><span class="si">}</span><span class="s2">.json"</span>
+            <span class="n">before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"safety_number"</span><span class="p">:</span> <span class="n">safety</span><span class="p">,</span> <span class="s2">"trust_level"</span><span class="p">:</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"trust_level"</span><span class="p">)}</span>
+            <span class="k">if</span> <span class="n">before</span> <span class="ow">and</span> <span class="n">before</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"safety_number"</span><span class="p">)</span> <span class="o">!=</span> <span class="n">safety</span><span class="p">:</span>
+                <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">Event</span><span class="p">(</span>
+                        <span class="n">kind</span><span class="o">=</span><span class="s2">"identity.changed"</span><span class="p">,</span>
+                        <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+                        <span class="n">delivery_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"signal:identity-</span><span class="si">{</span><span class="n">who</span><span class="si">}</span><span class="s2">-</span><span class="si">{</span><span class="n">safety</span><span class="p">[:</span><span class="mi">12</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+                        <span class="n">payload</span><span class="o">=</span><span class="p">{</span>
+                            <span class="s2">"who"</span><span class="p">:</span> <span class="n">who</span><span class="p">,</span>
+                            <span class="s2">"trust_level"</span><span class="p">:</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"trust_level"</span><span class="p">),</span>
+                            <span class="s2">"previous_trust_level"</span><span class="p">:</span> <span class="n">before</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"trust_level"</span><span class="p">),</span>
+                        <span class="p">},</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">return</span> <span class="n">events</span>
+
+<div class="viewcode-block" id="Signal.poll">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.signal.html#correspond.channels.signal.Signal.poll">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">poll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""What the WebSocket delivered within ``listen_wait_s``, then any safety-number changes.</span>
+
+<span class="sd">        Signal hands each message to the receiver once, so the cursor (the last envelope</span>
+<span class="sd">        timestamp) only marks progress; ``delivery_id`` is what dedupes.</span>
+<span class="sd">        """</span>
+        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">NotSupported</span><span class="p">(</span>
+                <span class="s2">"listen to one conversation"</span><span class="p">,</span>
+                <span class="n">NAME</span><span class="p">,</span>
+                <span class="n">alternatives</span><span class="o">=</span><span class="p">(</span><span class="s2">"listen to signal: and route by conversation"</span><span class="p">,),</span>
+            <span class="p">)</span>
+        <span class="n">account</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">)</span>
+        <span class="n">wait</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"listen_wait_s"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">DEFAULT_LISTEN_WAIT_S</span><span class="p">)</span>
+        <span class="n">frames</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ws</span><span class="p">(</span><span class="n">_ws_url</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_base</span><span class="p">(),</span> <span class="n">account</span><span class="p">),</span> <span class="n">timeout</span><span class="o">=</span><span class="n">wait</span><span class="p">)</span>
+        <span class="n">events</span><span class="p">,</span> <span class="n">last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_events</span><span class="p">(</span><span class="n">frames</span><span class="p">,</span> <span class="n">account</span><span class="p">)</span>
+        <span class="c1"># ``limit`` is not applied: Signal delivers each message once, so cutting the</span>
+        <span class="c1"># batch here would lose the rest for good.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">events</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_identity_changes</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">ChannelError</span><span class="p">:</span>  <span class="c1"># a failed identity lookup must not lose the messages in hand</span>
+            <span class="k">pass</span>
+        <span class="k">return</span> <span class="n">with_final_cursor</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">last</span> <span class="ow">or</span> <span class="n">cursor</span><span class="p">)</span></div>
+
+
+    <span class="c1"># --------------------------------------------------------------- operations</span>
+
+<div class="viewcode-block" id="Signal.read">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.signal.html#correspond.channels.signal.Signal.read">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">"""What the log holds for a conversation, oldest first."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="s2">"read one conversation: signal:+&lt;number&gt; or signal:group.&lt;id&gt;"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">)</span>
+        <span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">Message</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"identities/"</span><span class="p">)</span> <span class="ow">and</span> <span class="n">k</span><span class="o">.</span><span class="n">rpartition</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span>
+        <span class="p">]</span>
+        <span class="n">messages</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">m</span><span class="p">:</span> <span class="p">(</span><span class="n">m</span><span class="o">.</span><span class="n">sent_at</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">id</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">window</span><span class="p">(</span><span class="n">messages</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="n">since</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="n">limit</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Signal.audience">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.signal.html#correspond.channels.signal.Signal.audience">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">audience</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Audience</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Who reads a conversation: a person's is ``named``; a group's members are listed by the REST API."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Audience</span><span class="o">.</span><span class="n">unknown</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="s2">"signal: is the account's receive stream, not a conversation: name one"</span><span class="p">)</span>
+        <span class="n">common</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">retractable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">durability</span><span class="o">=</span><span class="p">(</span><span class="s2">"copies_pushed"</span><span class="p">,),</span> <span class="n">widening</span><span class="o">=</span><span class="p">(</span><span class="s2">"forwarding"</span><span class="p">,))</span>
+        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"person"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Audience</span><span class="p">(</span>
+                <span class="n">scope</span><span class="o">=</span><span class="n">Scope</span><span class="o">.</span><span class="n">NAMED</span><span class="p">,</span>
+                <span class="n">readers</span><span class="o">=</span><span class="p">(</span><span class="n">ChannelIdentity</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">native_id</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">),),</span>
+                <span class="n">complete</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">external</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">evidence</span><span class="o">=</span><span class="p">(</span><span class="s2">"a one-to-one Signal conversation: the account and this contact"</span><span class="p">,),</span>
+                <span class="o">**</span><span class="n">common</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">account</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">)</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"/v1/groups/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">account</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="n">group</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="n">members</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"members"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]]</span>
+        <span class="n">link</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"invite_link"</span><span class="p">)</span>
+        <span class="n">evidence</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"GET groups: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">members</span><span class="p">)</span><span class="si">}</span><span class="s2"> members listed"</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">link</span><span class="p">:</span>
+            <span class="n">evidence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"the group has an invite link: anyone holding it can join and read what follows"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Audience</span><span class="p">(</span>
+            <span class="n">scope</span><span class="o">=</span><span class="n">Scope</span><span class="o">.</span><span class="n">PUBLIC</span> <span class="k">if</span> <span class="n">link</span> <span class="k">else</span> <span class="n">Scope</span><span class="o">.</span><span class="n">GROUP</span><span class="p">,</span>
+            <span class="n">readers</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">ChannelIdentity</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">native_id</span><span class="o">=</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">members</span><span class="p">),</span>
+            <span class="n">complete</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">members</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">link</span><span class="p">,</span>
+            <span class="n">classes</span><span class="o">=</span><span class="p">(</span><span class="s2">"anyone with the invite link"</span><span class="p">,)</span> <span class="k">if</span> <span class="n">link</span> <span class="k">else</span> <span class="p">(),</span>
+            <span class="n">external</span><span class="o">=</span><span class="kc">True</span> <span class="k">if</span> <span class="n">link</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">evidence</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">evidence</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">common</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_quote_author</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">reply_to</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">found</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">_log_key</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">reply_to</span><span class="p">))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"message </span><span class="si">{</span><span class="n">reply_to</span><span class="si">}</span><span class="s2"> was not seen on this machine, so its author is unknown: Signal quotes need one"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">found</span><span class="p">[</span><span class="s2">"author"</span><span class="p">][</span><span class="s2">"native_id"</span><span class="p">])</span>
+
+<div class="viewcode-block" id="Signal.send">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.signal.html#correspond.channels.signal.Signal.send">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""``POST /v2/send`` to a person or group, the title (if any) prepended; a reply quotes a logged message."""</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="s2">"name a recipient: signal:+&lt;number&gt; or signal:group.&lt;id&gt;"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">attachments</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="s2">"signal sends text only here: attachments are not supported"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">)</span>
+        <span class="n">account</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span> <span class="k">else</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span>
+        <span class="n">body</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"message"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">:</span> <span class="n">account</span><span class="p">,</span> <span class="s2">"recipients"</span><span class="p">:</span> <span class="p">[</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">]}</span>
+        <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
+                <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">"Signal message ids are timestamps, not </span><span class="si">{</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="si">!r}</span><span class="s2">"</span><span class="p">,</span>
+                    <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">body</span><span class="p">[</span><span class="s2">"quote_timestamp"</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">)</span>
+            <span class="n">body</span><span class="p">[</span><span class="s2">"quote_author"</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_quote_author</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">)</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"send"</span><span class="p">,</span>
+            <span class="s2">"server"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">_base</span><span class="p">(),</span>
+            <span class="s2">"from"</span><span class="p">:</span> <span class="n">mask</span><span class="p">(</span><span class="n">account</span><span class="p">),</span>
+            <span class="s2">"to"</span><span class="p">:</span> <span class="n">mask</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"person"</span> <span class="k">else</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="s2">"reply_to"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+            <span class="s2">"title_prepended"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">),</span>
+            <span class="s2">"text"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span><span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">)</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"POST"</span><span class="p">,</span> <span class="s2">"/v2/send"</span><span class="p">,</span> <span class="n">body</span><span class="p">)</span>
+        <span class="n">stamp</span> <span class="o">=</span> <span class="nb">str</span><span class="p">((</span><span class="n">result</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">stamp</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_remember</span><span class="p">(</span>
+                <span class="n">Message</span><span class="p">(</span>
+                    <span class="nb">id</span><span class="o">=</span><span class="n">stamp</span><span class="p">,</span>
+                    <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="p">,</span>
+                    <span class="n">author</span><span class="o">=</span><span class="n">ChannelIdentity</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">native_id</span><span class="o">=</span><span class="n">account</span><span class="p">,</span> <span class="n">handle</span><span class="o">=</span><span class="n">account</span><span class="p">,</span> <span class="n">is_self</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                    <span class="n">authenticity</span><span class="o">=</span><span class="n">_PLATFORM</span><span class="p">,</span>
+                    <span class="n">sent_at</span><span class="o">=</span><span class="n">_at</span><span class="p">(</span><span class="n">stamp</span><span class="p">),</span>
+                    <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
+                    <span class="n">reply_to</span><span class="o">=</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+                    <span class="n">native</span><span class="o">=</span><span class="p">{</span><span class="s2">"group"</span><span class="p">:</span> <span class="n">ref</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"group"</span><span class="p">,</span> <span class="s2">"quote"</span><span class="p">:</span> <span class="kc">None</span><span class="p">},</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">message_id</span><span class="o">=</span><span class="n">stamp</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">account</span><span class="o">=</span><span class="n">Account</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">mask</span><span class="p">(</span><span class="n">account</span><span class="p">),</span> <span class="n">acts_as</span><span class="o">=</span><span class="s2">"user"</span><span class="p">),</span>
+            <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+                </article>
+              
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script defer src="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be"></script>
+<script defer src="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be"></script>
+
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  <!-- # L10n: Setting the PST URL as an argument as this does not need to be localized -->
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.23.0.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  </body>
+</html>
