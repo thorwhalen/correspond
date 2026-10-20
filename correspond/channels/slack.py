@@ -25,7 +25,9 @@ Three uses, one channel, each needing a little more set up:
   once with ``conversations.list``. Install the app in your own workspace: Slack limits a
   commercially distributed app outside its Marketplace to one history request a minute.
   :meth:`Slack.verify` checks a request Slack sends (``X-Slack-Signature``, with the
-  signing secret), graded ``crypto``.
+  signing secret), graded ``crypto``. A GovSlack workspace sets ``api_base`` to
+  ``https://slack-gov.com/api`` (``CORRESPOND_SLACK_API_BASE``); the token then goes only
+  to ``*.slack-gov.com`` hosts, Socket Mode included.
 
 Slack's ``mrkdwn`` is not Markdown: ``*bold*``, ``_italic_``, ``~strike~``, ``<url|text>``
 links, no headings, no tables, and ``&``, ``<`` and ``>`` escaped. :func:`to_mrkdwn`
@@ -59,6 +61,7 @@ from urllib.parse import urlencode, urlsplit
 
 from correspond import settings as _settings
 from correspond.channels._http import retry_after_seconds, urllib_http
+from correspond.channels._slack_hosts import API_BASE, api_base, on_slack_host
 from correspond.channels._slack_socket import socket_window
 from correspond.errors import ChannelError, InvalidRef, MissingRequirement, NotSupported
 from correspond.model import (
@@ -265,7 +268,6 @@ _API_ERRORS = {
     "invalid_cursor": "validation",
     "invalid_ts_oldest": "validation",
 }
-API_BASE = "https://slack.com/api"
 PAGE_SIZE = 200
 READ_DEFAULT = 50
 LISTEN_LOOKBACK_S = 24 * 3600
@@ -281,8 +283,6 @@ MAX_REQUESTS_PER_POLL = 24
 #: How long a poll waits out a rate limit met partway through its pages, and how many times.
 RATE_WAIT_MAX_S = 60
 RATE_WAIT_TRIES = 3
-#: Hosts a file's link may name for the token to go with it.
-FILE_HOST_RE = re.compile(r"^(?:[a-z0-9-]+\.)*slack\.com$")
 #: Message subtypes that are someone writing (others, like channel_join, are Slack's own notices).
 MESSAGE_SUBTYPES = (None, "bot_message", "thread_broadcast", "file_share", "me_message")
 #: How old a signed request may be before :meth:`Slack.verify` calls it a replay.
@@ -559,6 +559,7 @@ class Slack:
                 "with delivery = socket (the slack extra, an app-level xapp- token in app_token, Socket Mode on in the app's settings), listen opens Slack's Socket Mode for a window of listen_wait_s quiet seconds (60 s at most), stores every message event as the receiver does (every channel's, or only those keep_channels names; kept a week) before acknowledging it, and reports this reference's (listens to several references in a row share one window; writers on one machine take turns through a lock, so several listening processes and the receiver may share the store): no public URL needed, but what arrives while no listen has the socket open reaches it only through Slack's own retries",
                 "install the app in your own workspace (a commercially distributed app outside Slack's Marketplace gets one history request a minute); listen walks forward through time windows, delivering each whole before the next, so a poll a rate limit cuts short keeps what it delivered and the next one resumes there, and a backlog drains a little each poll; the newest minute waits for the next poll (this clock may run ahead of Slack's)",
                 "a file is fetched with the token only from Slack's own hosts (the token needs files:read); a file hosted elsewhere is not fetched",
+                "GovSlack: set api_base = https://slack-gov.com/api; the Web API, Socket Mode and file fetches then go to slack-gov.com hosts only (and slack.com ones are refused), and incoming webhooks on hooks.slack-gov.com work either way",
                 "a channel named rather than given by id is looked up with conversations.list (the token needs channels:read, and groups:read for a private one); a name is trusted five minutes, so a renamed channel answers to its new name within them",
                 "verify checks a request's X-Slack-Signature with the signing secret, and refuses one older than 5 minutes",
             ),
@@ -620,6 +621,10 @@ class Slack:
             )
         return delivery
 
+    def _api_base(self) -> str:
+        """The Web API base the ``api_base`` setting names: commercial Slack's, or GovSlack's."""
+        return api_base(value(NAME, "api_base", run=self.run, keychain=False))
+
     def _token(self, *, dry_run: bool = False) -> str | None:
         """The Web API token, or ``None``; a dry run reads only the environment."""
         if dry_run:
@@ -631,7 +636,7 @@ class Slack:
         try:
             reply = self.http(
                 "POST",
-                f"{API_BASE}/{method}",
+                f"{self._api_base()}/{method}",
                 headers={
                     "Authorization": f"Bearer {token}",
                     "Content-Type": "application/x-www-form-urlencoded",
@@ -1051,11 +1056,11 @@ class Slack:
         def loader(url: str, mime: str):
             def load() -> bytes:
                 parts = urlsplit(url)
-                if parts.scheme != "https" or not FILE_HOST_RE.match(
-                    parts.hostname or ""
+                if parts.scheme != "https" or not on_slack_host(
+                    parts.hostname, self._api_base()
                 ):
                     raise ChannelError(
-                        f"this file is hosted outside Slack ({parts.hostname}); open its link: the token is never sent there",
+                        f"this file is hosted outside Slack, or on another Slack cloud than api_base names ({parts.hostname}); open its link: the token is never sent there",
                         kind="permission",
                     )
                 reply = self.http(
@@ -1361,8 +1366,11 @@ class Slack:
             seen.add(record["event_id"])
             stored[0] += 1
 
+        base = self._api_base()
+        # GovSlack's base only when set, so a socket= taking (token, *, wait, sink) still fits
+        extra = {} if base == API_BASE else {"api_base": base}
         try:
-            self.socket(app_token, wait=wait, sink=keep)
+            self.socket(app_token, wait=wait, sink=keep, **extra)
         finally:
             self._socket_ended_at = self.clock()
         return stored[0]
