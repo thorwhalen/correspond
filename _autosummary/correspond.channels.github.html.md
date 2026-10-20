@@ -63,10 +63,10 @@ from its visibility, and its collaborators when the account may list them.
 
 ### Classes
 
-| [`GitHub`](#correspond.channels.github.GitHub)(\*[, run, gh, recent_discussions])   | GitHub through `gh`: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.   |
-|----------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| [`GitHub`](#correspond.channels.github.GitHub)(\*[, run, gh, recent_discussions, ...])   | GitHub through `gh`: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.   |
+|---------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
 
-### *class* correspond.channels.github.GitHub(\*, run=<function run>, gh='gh', recent_discussions=3)
+### *class* correspond.channels.github.GitHub(\*, run=<function run>, gh='gh', recent_discussions=3, deliveries=None, clock=<built-in function time_ns>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
@@ -119,6 +119,10 @@ conversation is visible as such.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
+
+#### *property* deliveries *: [MutableMapping](https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping)[[str](https://docs.python.org/3/builtins/stdtypes.html#str), [Any](https://docs.python.org/3/library/typing.html#typing.Any)]*
+
+What the webhook receiver stored (read when `delivery` is `webhook`).
 
 #### edit(ref, message_id, draft, , dry_run=False)
 

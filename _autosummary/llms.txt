@@ -13,6 +13,7 @@
 - [correspond.channels.discord](correspond.channels.discord.html.md): Discord: a bot reading and posting in channels over REST, through discorddol.
 - [correspond.channels.gdrive](correspond.channels.gdrive.html.md): Google Drive: a shared folder, read only, where files that a conversation announces arrive.
 - [correspond.channels.github](correspond.channels.github.html.md): GitHub: issues, pull request conversations and discussions, through the &#96;gh&#96; CLI.
+- [correspond.channels.github_webhook](correspond.channels.github_webhook.html.md): GitHub webhook receiver: &#96;discussion_comment&#96; deliveries, so listen sees every discussion reply.
 - [correspond.channels.macos](correspond.channels.macos.html.md): macOS Notification Centre: a banner on this Mac (send only).
 - [correspond.channels.mail](correspond.channels.mail.html.md): Email: IMAP to read and listen, SMTP to send, with the standard library.
 - [correspond.channels.ntfy](correspond.channels.ntfy.html.md): ntfy: push notifications to a phone or a desktop through an ntfy server (send only).

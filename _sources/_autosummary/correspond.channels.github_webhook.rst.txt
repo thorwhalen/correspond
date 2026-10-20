@@ -1,0 +1,23 @@
+correspond.channels.github\_webhook
+===================================
+
+.. automodule:: correspond.channels.github_webhook
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      EVENTS
+      WEBHOOK_KIND
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      mk_webhook_app
+      serve_main
+      serve_webhook
+      webhook_app_from_env
+      webhook_store
+   
