@@ -9,8 +9,11 @@ mentions it.
 
 - ``read`` fetches the channel's history (the latest 50 messages unless ``limit`` says).
 - ``listen`` polls the channel for messages newer than the last one seen (the cursor is
-  that message's id; a first poll looks back a day). It does not open the gateway, so it
-  sees new messages, not edits or deletions, and one channel per reference.
+  that message's id; a first poll looks back a day): new messages, not edits or
+  deletions. With ``listen_via = "gateway"`` it opens the gateway for a short window
+  instead and reports new, edited and deleted messages; the cursor is the gateway session,
+  which the next listen resumes (Discord replays what was missed) rather than identifying
+  again, since 1,000 identifies in a day reset the bot token.
 - ``send`` posts a message (2,000 characters at most); a title is prepended in bold. With
   ``reply_to`` it is a Discord reply to that message (its author is not pinged). Only
   the users it mentions as ``<@id>`` are pinged: ``@everyone``, ``@here`` and role
@@ -33,6 +36,7 @@ first use, not when the channel is listed.
 
 from __future__ import annotations
 
+import json
 import mimetypes
 import re
 import subprocess
@@ -41,6 +45,7 @@ from collections.abc import Callable, Mapping
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+from correspond.channels._discord_gateway import gateway_window
 from correspond.channels._http import urllib_http
 from correspond.errors import ChannelError, InvalidRef, MissingRequirement, NotSupported
 from correspond.model import (
@@ -61,7 +66,7 @@ from correspond.model import (
     parse_time,
 )
 from correspond.ops import window, with_final_cursor
-from correspond.registry import require
+from correspond.registry import require, value
 
 __all__ = ["Discord", "MAX_TEXT_CHARS"]
 
@@ -135,6 +140,33 @@ def _bold(title: str) -> str:
     return "**" + re.sub(r"([\\*_~`|>])", r"\\\1", flat) + "**"
 
 
+def _from_api(data: Mapping[str, Any]) -> dict:
+    """A message as the gateway sends it (Discord's API shape), in discorddol's dict shape."""
+    author = data.get("author") or {}
+    reference = data.get("message_reference") or {}
+    guild = data.get("guild_id") or "@me"
+    return {
+        "id": str(data.get("id")),
+        "channel_id": str(data.get("channel_id")),
+        "created_at": data.get("timestamp"),
+        "edited_at": data.get("edited_timestamp"),
+        "author": {
+            "id": author.get("id"),
+            "name": author.get("username"),
+            "display_name": author.get("global_name") or author.get("username"),
+            "bot": bool(author.get("bot")),
+            "role_ids": list((data.get("member") or {}).get("roles") or ()),
+        },
+        "content": data.get("content") or "",
+        "attachments": list(data.get("attachments") or ()),
+        "embeds": list(data.get("embeds") or ()),
+        "reply_to": str(reference["message_id"]) if reference.get("message_id") else None,
+        "pinned": bool(data.get("pinned")),
+        "type": data.get("type"),
+        "jump_url": f"https://discord.com/channels/{guild}/{data.get('channel_id')}/{data.get('id')}",
+    }
+
+
 class Discord:
     """A Discord bot over REST: read a channel, poll it for new messages, post to it."""
 
@@ -147,9 +179,11 @@ class Discord:
         http: Callable[..., Any] = urllib_http,
         run: Callable[..., Any] = subprocess.run,
         clock: Callable[[], float] = time.time,
+        gateway: Callable[..., Any] = gateway_window,
     ):
         self.run = run
         self.clock = clock
+        self.gateway = gateway
         self.http = http
         self._backend = backend
 
@@ -182,7 +216,7 @@ class Discord:
             reply=Support.FULL,
             verify=Support.FULL,
             history_depth=HistoryDepth.FULL,
-            listen_modes=("poll",),
+            listen_modes=("poll", "gateway"),
             grades=(Grade.PLATFORM, Grade.CRYPTO),
             max_text_length=MAX_TEXT_CHARS,
             formats=("markdown",),
@@ -201,7 +235,8 @@ class Discord:
             ),
             notes=(
                 "a bot reads message text only with the Message Content intent (Developer Portal; Discord's approval above 100 servers) or when the message mentions it; otherwise the text is empty",
-                "listen polls one channel over REST for messages newer than the cursor: it sees new messages, not edits or deletions; the gateway is not used",
+                "listen polls one channel over REST for messages newer than the cursor: it sees new messages, not edits or deletions",
+                "with listen_via = gateway, listen opens the gateway for a window of listen_wait_s quiet seconds and reports new, edited (message.updated) and deleted (message.deleted) messages of the channel; each reference keeps its own gateway session and resumes it, identifying only when Discord refuses the resume (a session left idle too long); the bot needs the Message Content intent",
                 "send posts to a channel the bot may write to; a title is prepended in bold; with reply_to it is a Discord reply (the replied-to author is not pinged: mention them as <@id> to ping them)",
                 "only user mentions <@id> ping (listed in the plan); @everyone, @here and role mentions stay text through Discord's allowed mentions (listed in the plan as suppressed)",
                 "an author's authority is the server role ids the message carried (none in a DM or from a webhook)",
@@ -327,7 +362,12 @@ class Discord:
     def poll(
         self, ref: ConversationRef, *, cursor: str | None = None, limit: int | None = None
     ):
-        """Messages newer than ``cursor`` (a message id), oldest first; a first poll looks back a day."""
+        """Messages newer than ``cursor`` (a message id), oldest first; a first poll looks back a day.
+
+        With ``listen_via = "gateway"``, one gateway window instead (see the module docstring).
+        """
+        if (value(NAME, "listen_via", run=self.run) or "rest").strip().lower() == "gateway":
+            return self._gateway_poll(ref, cursor)
         if cursor is not None and str(cursor).strip():
             after: Any = _snowflake(cursor, "message")
         else:
@@ -359,6 +399,50 @@ class Discord:
         else:
             final = None
         return with_final_cursor(events, final)
+
+    def _gateway_poll(self, ref: ConversationRef, cursor: str | None):
+        """One gateway window: the channel's message events, and the session to resume next time."""
+        try:
+            state = json.loads(cursor) if cursor and cursor.lstrip().startswith("{") else None
+        except ValueError:
+            state = None  # a REST cursor, or a damaged one: identify afresh
+        wait = float(value(NAME, "listen_wait_s", run=self.run) or 5)
+        token = require(NAME, "token", run=self.run)
+        dispatches, state = self._call(
+            "gateway", lambda: self.gateway(token, state, wait=wait)
+        )
+        events = []
+        for dispatch in dispatches:
+            data = dispatch.get("d") or {}
+            if str(data.get("channel_id")) != ref.id or not data.get("id"):
+                continue
+            message_id = str(data["id"])
+            base = f"discord:{ref.id}:{message_id}"
+            if dispatch["t"] == "MESSAGE_DELETE":
+                events.append(
+                    Event(
+                        kind="message.deleted",
+                        channel=NAME,
+                        delivery_id=f"{base}:deleted",
+                        payload={"message_id": message_id, "conversation": ref.encoded},
+                    )
+                )
+                continue
+            updated = dispatch["t"] == "MESSAGE_UPDATE"
+            if updated and not (data.get("edited_timestamp") and data.get("author")):
+                continue  # a partial update (an embed unfurled, a pin): no edit to report
+            message = self._message(ref, _from_api(data))
+            events.append(
+                Event(
+                    kind="message.updated" if updated else "message.created",
+                    channel=NAME,
+                    delivery_id=(
+                        f"{base}:edited:{data.get('edited_timestamp')}" if updated else base
+                    ),
+                    message=message,
+                )
+            )
+        return with_final_cursor(events, json.dumps(state, sort_keys=True))
 
     # ----------------------------------------------------------------- audience
 

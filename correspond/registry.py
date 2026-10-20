@@ -395,6 +395,18 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 what="the application's public key (64 hex characters), which checks the Ed25519 signature on an HTTP interaction; needed by verify only",
                 where="Discord Developer Portal (https://discord.com/developers/applications): your application, General Information, Public Key",
             ),
+            Setting(
+                key="listen_via",
+                env="DISCORD_LISTEN_VIA",
+                what="how listen reaches Discord: rest (poll a channel's history: new messages only) or gateway (a short gateway window that resumes its session: new, edited and deleted messages)",
+                default="rest",
+            ),
+            Setting(
+                key="listen_wait_s",
+                env="DISCORD_LISTEN_WAIT_S",
+                what="with listen_via = gateway, how many quiet seconds a listen waits on the gateway before it returns",
+                default="5",
+            ),
         ),
         notes=(
             "enable the Message Content intent (Developer Portal, Bot, Privileged Gateway Intents) or the bot reads empty text for messages that do not mention it",
