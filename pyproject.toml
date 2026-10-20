@@ -39,6 +39,7 @@ correspond-mcp = "correspond.mcp:main"
 correspond-channel = "correspond.channel:main"
 correspond-telegram-webhook = "correspond.channels.telegram:serve_main"
 correspond-github-webhook = "correspond.channels.github_webhook:serve_main"
+correspond-slack-events = "correspond.channels.slack_events:serve_main"
 
 [project.optional-dependencies]
 # MCP over stdio (correspond-mcp) and the Claude Code channel (correspond-channel) are

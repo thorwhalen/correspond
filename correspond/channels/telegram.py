@@ -199,7 +199,7 @@ def mk_webhook_app(
         if not _secret_matches(headers.get(SECRET_HEADER, ""), secret):
             return await respond(send, 401, {"error": "wrong or missing secret token"})
         declared = headers.get("content-length", "")
-        if declared.isdigit() and int(declared) > max_body_bytes:
+        if declared.isascii() and declared.isdigit() and int(declared) > max_body_bytes:
             return await respond(send, 413, {"error": "the update is too large"})
         body = await read_body(receive, max_body_bytes)
         if body is None:

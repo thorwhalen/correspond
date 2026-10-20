@@ -431,11 +431,29 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 where="api.slack.com/apps: your app, Basic Information, App Credentials",
                 secret=True,
             ),
+            Setting(
+                key="delivery",
+                env="CORRESPOND_SLACK_DELIVERY",
+                what="where listen takes messages from: poll (conversations.history) or events (what the Events API receiver stored: new, edited and deleted messages)",
+                default="poll",
+            ),
+            Setting(
+                key="webhook_store",
+                env="CORRESPOND_SLACK_WEBHOOK_STORE",
+                what='where the Events API receiver keeps events, as "module:attr" naming a MutableMapping of JSON-ready dicts, or a callable returning one (a bytes store needs a JSON codec; default: files under the data root)',
+            ),
+            Setting(
+                key="webhook_allow_remote",
+                env="CORRESPOND_SLACK_WEBHOOK_ALLOW_REMOTE",
+                what="true to let serve_events bind the Events API receiver to an address other machines reach (it binds 127.0.0.1 otherwise; put your HTTPS reverse proxy in front)",
+                default="false",
+            ),
         ),
         notes=(
             "slack:<name> needs nothing for a dry run, which renders the draft as mrkdwn to paste; a real send needs the name's incoming webhook in CORRESPOND_SLACK_WEBHOOK_<NAME> (upper case, - and . as _) or the Keychain item correspond-slack-webhook-<name>",
             "create the webhook in your Slack app's settings (Incoming Webhooks), one per channel: https://api.slack.com/messaging/webhooks",
             "with CORRESPOND_SLACK_TOKEN, read, listen and send use the Web API (and send replies in threads); without one, send uses the webhook",
+            "push delivery on a server: install correspond[server], run correspond-slack-events (127.0.0.1:8083, one worker) behind your HTTPS reverse proxy, give its URL as the app's Event Subscriptions Request URL with the bot events message.channels (and message.groups), and set delivery = events",
         ),
     ),
     ChannelInfo(
