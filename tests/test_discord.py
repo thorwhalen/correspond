@@ -63,7 +63,7 @@ class FakeBackend:
     def __init__(self, messages=(), error=None):
         self.stored = list(messages)
         self.error = error
-        self.calls, self.sent = [], []
+        self.calls, self.sent, self.options = [], [], []
 
     def messages(
         self, channel_id, *, limit=None, after=None, before=None, oldest_first=True
@@ -87,10 +87,11 @@ class FakeBackend:
             found.reverse()
         return found if limit is None else found[:limit]
 
-    def send_message(self, channel_id, text):
+    def send_message(self, channel_id, text, *, allowed_mentions=None, reply_to=None):
         if self.error:
             raise self.error
         self.sent.append((channel_id, text))
+        self.options.append({"allowed_mentions": allowed_mentions, "reply_to": reply_to})
         return _message(
             2001,
             created="2026-09-11T11:00:00+00:00",
@@ -174,8 +175,6 @@ def test_what_discord_cannot_do_is_refused_by_name():
     registry = _registry(FakeBackend())
     too_long = correspond.send(f"discord:{CHANNEL}", "x" * 2001, registry=registry)
     assert (too_long.ok, too_long.error_kind) == (False, "validation")
-    with pytest.raises(NotSupported, match="reply"):
-        correspond.send(f"discord:{CHANNEL}", "x", reply_to="1001", registry=registry)
     with pytest.raises(NotSupported):
         correspond.react(f"discord:{CHANNEL}", "1001", "eyes", registry=registry)
 
@@ -317,12 +316,21 @@ def test_a_failure_that_is_not_discords_answer_is_not_retryable():
         assert caught.value.retryable is False
 
 
-def test_mass_mentions_are_refused_and_user_mentions_listed():
+def test_only_listed_users_are_pinged_mass_mentions_stay_text():
     backend = FakeBackend()
-    for text in ("ping @everyone", "@here look", "for <@&4242> only"):
-        result = correspond.send(f"discord:{CHANNEL}", text, registry=_registry(backend))
-        assert (result.ok, result.error_kind) == (False, "validation"), text
-    assert backend.sent == []
+    text = "ping @everyone, @here and <@&4242>, thanks <@!42>"
+    result = correspond.send(f"discord:{CHANNEL}", text, registry=_registry(backend))
+    assert result.ok and backend.sent == [(CHANNEL, text)]
+    assert backend.options[-1] == {
+        "allowed_mentions": {
+            "everyone": False,
+            "roles": False,
+            "users": ["42"],
+            "replied_user": False,
+        },
+        "reply_to": None,
+    }
+    assert result.plan["suppressed_mentions"] == ["<@&4242>", "@everyone", "@here"]
     planned = correspond.send(
         f"discord:{CHANNEL}",
         "thanks <@!42> and <@7>",
@@ -449,3 +457,46 @@ def test_verify_fails_closed_on_odd_inputs(monkeypatch):
         verdict = correspond.verify("discord", headers, body, registry=registry)
         assert verdict.grade.value == "forged" and reason in verdict.evidence["signature"], reason
     assert correspond.verify("discord", _signed(_PING), bytearray(_PING), registry=registry).grade.value == "crypto"
+
+
+def test_reply_to_a_message_is_a_discord_reply():
+    backend = FakeBackend()
+    registry = _registry(backend)
+    planned = correspond.send(f"discord:{CHANNEL}", "agreed", reply_to="1001", dry_run=True, registry=registry)
+    assert planned.plan["action"] == "reply to a message" and planned.plan["reply_to"] == "1001"
+    sent = correspond.send(f"discord:{CHANNEL}", "agreed", reply_to="1001", registry=registry)
+    assert sent.ok and backend.options[-1]["reply_to"] == "1001"
+    assert Discord().capabilities.reply.value == "full"
+    with pytest.raises(InvalidRef):
+        correspond.send(f"discord:{CHANNEL}", "x", reply_to="not-an-id", registry=registry)
+
+
+def test_a_members_roles_are_its_authority():
+    with_roles = _message(1009, created="2026-09-11T12:00:00+00:00")
+    with_roles["author"]["role_ids"] = ["501", "502"]
+    discord = Discord(backend=object())
+    ref = discord.parse_ref(CHANNEL)
+    member = discord._message(ref, with_roles)
+    assert member.author.authority == "roles 501, 502"
+    assert member.native["role_ids"] == ["501", "502"]
+    plain = discord._message(ref, _message(1010, created="2026-09-11T12:00:00+00:00"))
+    assert plain.author.authority is None and plain.native["role_ids"] == []
+
+
+def test_allowed_mentions_reach_discord_as_no_mass_pings():
+    pytest.importorskip("discord")
+    from discorddol.base import _allowed_mentions
+
+    backend = FakeBackend()
+    registry = _registry(backend)
+    for text, users in (("@everyone <@&4242>", []), ("**hi <@7>**", [7])):
+        correspond.send(f"discord:{CHANNEL}", text, reply_to="1001", registry=registry)
+        wire = _allowed_mentions(backend.options[-1]["allowed_mentions"]).to_dict()
+        assert wire["parse"] == [] and not wire.get("replied_user")
+        assert [int(u) for u in wire.get("users", [])] == users
+
+
+def test_more_than_100_pinged_users_is_refused():
+    text = " ".join(f"<@{i}>" for i in range(1, 102))
+    result = correspond.send(f"discord:{CHANNEL}", text[:2000], registry=_registry(FakeBackend()))
+    assert (result.ok, result.error_kind) == (False, "validation")

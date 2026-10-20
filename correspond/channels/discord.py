@@ -11,7 +11,10 @@ mentions it.
 - ``listen`` polls the channel for messages newer than the last one seen (the cursor is
   that message's id; a first poll looks back a day). It does not open the gateway, so it
   sees new messages, not edits or deletions, and one channel per reference.
-- ``send`` posts a message (2,000 characters at most); a title is prepended in bold.
+- ``send`` posts a message (2,000 characters at most); a title is prepended in bold. With
+  ``reply_to`` it is a Discord reply to that message (its author is not pinged). Only
+  the users it mentions as ``<@id>`` are pinged: ``@everyone``, ``@here`` and role
+  mentions stay text, through Discord's allowed mentions.
 - ``verify`` grades an HTTP interaction Discord posted to your endpoint: ``crypto`` when
   its Ed25519 signature (``X-Signature-Ed25519`` over ``X-Signature-Timestamp`` + body)
   checks against the application's public key, ``forged`` otherwise. Discord sends
@@ -19,7 +22,7 @@ mentions it.
   (answer them 401).
 
 Senders are ``platform``: Discord authenticated the account, and correspond fetched the
-message from the API itself. The bot token never appears in an error or a plan.
+message from the API itself. A server member's role ids are its ``authority``. The bot token never appears in an error or a plan.
 
 Needs the ``discord`` extra (discorddol, over discord.py in REST-only mode), imported on
 first use, not when the channel is listed.
@@ -66,13 +69,15 @@ NAME = "discord"
 #: A Discord snowflake: a channel, thread, message or user id.
 SNOWFLAKE_MAX_DIGITS = 20
 MAX_TEXT_CHARS = 2000
+#: Discord's cap on the users one message may ping (allowed_mentions.users).
+MAX_PINGED_USERS = 100
 READ_DEFAULT = 50
 LISTEN_LOOKBACK = timedelta(days=1)
 #: How far behind the clock a quiet first poll sets its cursor.
 CLOCK_SKEW = timedelta(seconds=5)
 #: Discord's epoch, in milliseconds since 1970: a snowflake's top bits count from it.
 DISCORD_EPOCH_MS = 1_420_070_400_000
-#: What makes Discord notify a whole server or a role, which discorddol cannot yet suppress.
+#: What would notify a whole server or a role: kept as text, never a ping.
 MASS_MENTION_RE = re.compile(r"@(?:everyone|here)\b|<@&[0-9]+>")
 #: How old an interaction's timestamp may be before its signature counts as a replay.
 SIGNATURE_MAX_AGE_S = 300
@@ -174,14 +179,21 @@ class Discord:
             send=Support.FULL,
             audience=Support.PARTIAL,
             initiate=Support.FULL,
-            reply=Support.NONE,
+            reply=Support.FULL,
             verify=Support.FULL,
             history_depth=HistoryDepth.FULL,
             listen_modes=("poll",),
             grades=(Grade.PLATFORM, Grade.CRYPTO),
             max_text_length=MAX_TEXT_CHARS,
             formats=("markdown",),
-            native_fields=("channel_id", "jump_url", "pinned", "type", "embeds"),
+            native_fields=(
+                "channel_id",
+                "jump_url",
+                "pinned",
+                "type",
+                "embeds",
+                "role_ids",
+            ),
             rate_limits=(
                 "about 5 messages per 5 seconds per channel; discord.py waits out a 429 itself",
                 "10,000 invalid requests (401, 403, 429) in 10 minutes gets the bot's address banned for a while: do not poll a channel the bot may not read in a loop",
@@ -190,8 +202,9 @@ class Discord:
             notes=(
                 "a bot reads message text only with the Message Content intent (Developer Portal; Discord's approval above 100 servers) or when the message mentions it; otherwise the text is empty",
                 "listen polls one channel over REST for messages newer than the cursor: it sees new messages, not edits or deletions; the gateway is not used",
-                "send posts to a channel the bot may write to; a title is prepended in bold; replying to a message is not supported yet",
-                "send refuses @everyone, @here and role mentions: Discord would notify the whole server or role, and the bot cannot yet turn mention parsing off; a user mention <@id> goes through and is listed in the plan",
+                "send posts to a channel the bot may write to; a title is prepended in bold; with reply_to it is a Discord reply (the replied-to author is not pinged: mention them as <@id> to ping them)",
+                "only user mentions <@id> ping (listed in the plan); @everyone, @here and role mentions stay text through Discord's allowed mentions (listed in the plan as suppressed)",
+                "an author's authority is the server role ids the message carried (none in a DM or from a webhook)",
                 "an attachment is fetched from Discord's CDN by its signed link, which expires after about a day: read the message again for a fresh one",
                 "audience is the channel's server members who can view it, never listed",
                 "verify grades an HTTP interaction crypto when its Ed25519 signature checks against the application's public key (DISCORD_PUBLIC_KEY), forged otherwise, including Discord's deliberate invalid-signature probes and timestamps older than five minutes",
@@ -259,6 +272,7 @@ class Discord:
 
     def _message(self, conversation: ConversationRef, data: Mapping[str, Any]) -> Message:
         author = data.get("author") or {}
+        role_ids = [str(r) for r in author.get("role_ids") or ()]
         return Message(
             id=str(data["id"]),
             conversation=conversation,
@@ -268,6 +282,7 @@ class Discord:
                 handle=author.get("name") or None,
                 display_name=author.get("display_name") or None,
                 is_bot=bool(author.get("bot")),
+                authority=("roles " + ", ".join(role_ids)) if role_ids else None,
             ),
             authenticity=_PLATFORM,
             sent_at=parse_time(data.get("created_at")),
@@ -283,6 +298,7 @@ class Discord:
                 "pinned": bool(data.get("pinned")),
                 "type": data.get("type"),
                 "embeds": list(data.get("embeds") or ()),
+                "role_ids": role_ids,
             },
             raw=dict(data),
         )
@@ -436,12 +452,7 @@ class Discord:
         self, ref: ConversationRef, draft: Draft, *, dry_run: bool = False
     ) -> SendResult:
         """Post ``draft.text`` (the title, if any, prepended in bold) to the channel."""
-        if draft.reply_to:
-            raise NotSupported(
-                "reply",
-                NAME,
-                alternatives=("post to the channel and quote the message you answer",),
-            )
+        reply_to = _snowflake(draft.reply_to, "message") if draft.reply_to else None
         if draft.notify:
             raise NotSupported(
                 "notify",
@@ -449,24 +460,32 @@ class Discord:
                 alternatives=("mention the user in the text as <@user id>",),
             )
         text = f"{_bold(draft.title)}\n\n{draft.text}" if draft.title else draft.text
-        mass = sorted(set(MASS_MENTION_RE.findall(text)))
-        if mass:
-            raise ChannelError(
-                f"the text mentions {', '.join(mass)}, which would notify the whole server or a role; "
-                "write it without, e.g. as @\u200beveryone, or tag people one by one",
-                kind="validation",
-            )
         if len(text) > MAX_TEXT_CHARS:
             raise ChannelError(
                 f"the text is {len(text)} characters; Discord accepts {MAX_TEXT_CHARS}",
                 kind="validation",
             )
+        mentions = sorted(set(re.findall(r"<@!?([0-9]+)>", text)))
         plan = {
-            "action": "post a message",
+            "action": "reply to a message" if reply_to else "post a message",
             "channel_id": ref.id,
             "text": text,
             "title_prepended": bool(draft.title),
-            "mentions": sorted(set(re.findall(r"<@!?([0-9]+)>", text))),
+            "mentions": mentions,
+            "suppressed_mentions": sorted(set(MASS_MENTION_RE.findall(text))),
+        }
+        if reply_to:
+            plan["reply_to"] = reply_to
+        if len(mentions) > MAX_PINGED_USERS:
+            raise ChannelError(
+                f"the text mentions {len(mentions)} users; Discord pings at most {MAX_PINGED_USERS} per message",
+                kind="validation",
+            )
+        allowed = {
+            "everyone": False,
+            "roles": False,
+            "users": mentions,
+            "replied_user": False,
         }
         if dry_run:
             return SendResult(
@@ -474,7 +493,9 @@ class Discord:
             )
         posted = self._call(
             f"post to channel {ref.id}",
-            lambda: self.backend.send_message(ref.id, text),
+            lambda: self.backend.send_message(
+                ref.id, text, allowed_mentions=allowed, reply_to=reply_to
+            ),
         )
         return SendResult(
             ok=True,
