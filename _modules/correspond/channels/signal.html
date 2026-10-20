@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=18bd87630a240e9c25be" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=18bd87630a240e9c25be" />
 
-    <script src="../../../_static/documentation_options.js?v=61a342a2"></script>
+    <script src="../../../_static/documentation_options.js?v=c5dbc6bb"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.30" />
+  <meta name="docsearch:version" content="0.0.31" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -834,7 +834,15 @@ window.runMermaid = runMermaid;</script>
 <span class="k">def</span><span class="w"> </span><span class="nf">_ws_url</span><span class="p">(</span><span class="n">base</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">number</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
     <span class="n">parts</span> <span class="o">=</span> <span class="n">urlsplit</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
     <span class="n">scheme</span> <span class="o">=</span> <span class="s2">"wss"</span> <span class="k">if</span> <span class="n">parts</span><span class="o">.</span><span class="n">scheme</span> <span class="o">==</span> <span class="s2">"https"</span> <span class="k">else</span> <span class="s2">"ws"</span>
-    <span class="k">return</span> <span class="n">urlunsplit</span><span class="p">((</span><span class="n">scheme</span><span class="p">,</span> <span class="n">parts</span><span class="o">.</span><span class="n">netloc</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">parts</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)</span><span class="si">}</span><span class="s2">/v1/receive/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">number</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">""</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">urlunsplit</span><span class="p">(</span>
+        <span class="p">(</span>
+            <span class="n">scheme</span><span class="p">,</span>
+            <span class="n">parts</span><span class="o">.</span><span class="n">netloc</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">parts</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">'/'</span><span class="p">)</span><span class="si">}</span><span class="s2">/v1/receive/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">number</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span>
+            <span class="s2">""</span><span class="p">,</span>
+            <span class="s2">""</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_group_ref</span><span class="p">(</span><span class="n">internal_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -945,12 +953,44 @@ window.runMermaid = runMermaid;</script>
 
     <span class="c1"># --------------------------------------------------------------- listening</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_message</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">envelope</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="n">account</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
-        <span class="n">source</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sourceNumber"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sourceUuid"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_message</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">envelope</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+        <span class="n">account</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">synced</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Message</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""The :class:`Message` of one envelope.</span>
+
+<span class="sd">        ``synced``: ``data`` is a ``syncMessage.sentMessage``, which the user sent from another</span>
+<span class="sd">        device of the account. The author is then the account itself, and a one-to-one</span>
+<span class="sd">        conversation is the recipient's, not the sender's.</span>
+<span class="sd">        """</span>
+        <span class="n">source</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+            <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sourceNumber"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sourceUuid"</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="s2">""</span>
+        <span class="p">)</span>
         <span class="n">group</span> <span class="o">=</span> <span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"groupInfo"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"groupId"</span><span class="p">)</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">group</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">source</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">synced</span><span class="p">:</span>
+            <span class="n">source</span> <span class="o">=</span> <span class="n">account</span> <span class="ow">or</span> <span class="n">source</span>
+            <span class="n">peer</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"destinationNumber"</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"destination"</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"destinationUuid"</span><span class="p">)</span>
+                <span class="ow">or</span> <span class="s2">""</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">group</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">peer</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span><span class="s2">"the synced message names no recipient"</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">peer</span> <span class="o">=</span> <span class="n">source</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">group</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">peer</span><span class="p">:</span>
             <span class="k">raise</span> <span class="n">InvalidRef</span><span class="p">(</span><span class="s2">"the envelope names no sender"</span><span class="p">)</span>
-        <span class="n">conversation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="n">_group_ref</span><span class="p">(</span><span class="n">group</span><span class="p">))</span> <span class="k">if</span> <span class="n">group</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+        <span class="n">conversation</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="n">_group_ref</span><span class="p">(</span><span class="n">group</span><span class="p">))</span> <span class="k">if</span> <span class="n">group</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="n">peer</span><span class="p">)</span>
+        <span class="p">)</span>
         <span class="n">quote_</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"quote"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
         <span class="k">return</span> <span class="n">Message</span><span class="p">(</span>
             <span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">)),</span>
@@ -966,11 +1006,17 @@ window.runMermaid = runMermaid;</script>
             <span class="n">sent_at</span><span class="o">=</span><span class="n">_at</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">)),</span>
             <span class="n">text</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">,</span>
             <span class="n">reply_to</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">quote_</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span> <span class="k">if</span> <span class="n">quote_</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
-            <span class="n">native</span><span class="o">=</span><span class="p">{</span><span class="s2">"group"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">group</span><span class="p">),</span> <span class="s2">"quote"</span><span class="p">:</span> <span class="n">quote_</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">},</span>
+            <span class="n">native</span><span class="o">=</span><span class="p">{</span>
+                <span class="s2">"group"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">group</span><span class="p">),</span>
+                <span class="s2">"quote"</span><span class="p">:</span> <span class="n">quote_</span> <span class="ow">or</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="o">**</span><span class="p">({</span><span class="s2">"synced"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span> <span class="k">if</span> <span class="n">synced</span> <span class="k">else</span> <span class="p">{}),</span>
+            <span class="p">},</span>
             <span class="n">raw</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">envelope</span><span class="p">),</span>
         <span class="p">)</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_events</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">frames</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">account</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">Event</span><span class="p">],</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_events</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">frames</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">account</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">list</span><span class="p">[</span><span class="n">Event</span><span class="p">],</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
         <span class="n">events</span><span class="p">,</span> <span class="n">last</span> <span class="o">=</span> <span class="p">[],</span> <span class="kc">None</span>
         <span class="k">for</span> <span class="n">frame</span> <span class="ow">in</span> <span class="n">frames</span><span class="p">:</span>
             <span class="k">try</span><span class="p">:</span>
@@ -983,6 +1029,11 @@ window.runMermaid = runMermaid;</script>
             <span class="n">stamp</span> <span class="o">=</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">)</span>
             <span class="n">edit</span> <span class="o">=</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"editMessage"</span><span class="p">)</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataMessage"</span><span class="p">)</span>
+            <span class="n">synced</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>  <span class="c1"># sent from the user's other device</span>
+                <span class="n">sent</span> <span class="o">=</span> <span class="p">(</span><span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"syncMessage"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sentMessage"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">sent</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                    <span class="n">data</span><span class="p">,</span> <span class="n">synced</span> <span class="o">=</span> <span class="n">sent</span><span class="p">,</span> <span class="kc">True</span>
             <span class="n">kind</span><span class="p">,</span> <span class="n">payload</span> <span class="o">=</span> <span class="s2">"message.created"</span><span class="p">,</span> <span class="p">{}</span>
             <span class="k">if</span> <span class="n">edit</span> <span class="ow">and</span> <span class="n">edit</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"dataMessage"</span><span class="p">):</span>
                 <span class="n">data</span><span class="p">,</span> <span class="n">kind</span> <span class="o">=</span> <span class="n">edit</span><span class="p">[</span><span class="s2">"dataMessage"</span><span class="p">],</span> <span class="s2">"message.updated"</span>
@@ -1003,14 +1054,17 @@ window.runMermaid = runMermaid;</script>
                             <span class="s2">"remove"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">reaction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"isRemove"</span><span class="p">)),</span>
                             <span class="s2">"target_author"</span><span class="p">:</span> <span class="n">reaction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"targetAuthor"</span><span class="p">),</span>
                             <span class="s2">"target_sent_timestamp"</span><span class="p">:</span> <span class="n">reaction</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"targetSentTimestamp"</span><span class="p">),</span>
-                            <span class="s2">"from"</span><span class="p">:</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sourceNumber"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source"</span><span class="p">),</span>
+                            <span class="s2">"from"</span><span class="p">:</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sourceNumber"</span><span class="p">)</span>
+                            <span class="ow">or</span> <span class="n">envelope</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"source"</span><span class="p">),</span>
                         <span class="p">},</span>
                     <span class="p">)</span>
                 <span class="p">)</span>
                 <span class="k">continue</span>
             <span class="k">try</span><span class="p">:</span>
-                <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">envelope</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">account</span><span class="p">)</span>
-            <span class="k">except</span> <span class="n">InvalidRef</span><span class="p">:</span>  <span class="c1"># sealed sender or an odd source: nothing to attribute it to</span>
+                <span class="n">message</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">envelope</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">account</span><span class="p">,</span> <span class="n">synced</span><span class="o">=</span><span class="n">synced</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span>
+                <span class="n">InvalidRef</span>
+            <span class="p">):</span>  <span class="c1"># sealed sender or an odd source: nothing to attribute it to</span>
                 <span class="k">continue</span>
             <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"message.updated"</span><span class="p">:</span>
                 <span class="n">message</span> <span class="o">=</span> <span class="n">replace</span><span class="p">(</span>
@@ -1037,12 +1091,17 @@ window.runMermaid = runMermaid;</script>
         <span class="n">events</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">identity</span> <span class="ow">in</span> <span class="n">known</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">known</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="k">else</span> <span class="p">[]:</span>
             <span class="n">who</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"number"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"uuid"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
-            <span class="n">safety</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"safety_number"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fingerprint"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+            <span class="n">safety</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"safety_number"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"fingerprint"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
+            <span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">who</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">safety</span><span class="p">:</span>
                 <span class="k">continue</span>
             <span class="n">key</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"identities/</span><span class="si">{</span><span class="n">who</span><span class="si">}</span><span class="s2">.json"</span>
             <span class="n">before</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"safety_number"</span><span class="p">:</span> <span class="n">safety</span><span class="p">,</span> <span class="s2">"trust_level"</span><span class="p">:</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"trust_level"</span><span class="p">)}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">"safety_number"</span><span class="p">:</span> <span class="n">safety</span><span class="p">,</span>
+                <span class="s2">"trust_level"</span><span class="p">:</span> <span class="n">identity</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"trust_level"</span><span class="p">),</span>
+            <span class="p">}</span>
             <span class="k">if</span> <span class="n">before</span> <span class="ow">and</span> <span class="n">before</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"safety_number"</span><span class="p">)</span> <span class="o">!=</span> <span class="n">safety</span><span class="p">:</span>
                 <span class="n">events</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
                     <span class="n">Event</span><span class="p">(</span>
@@ -1060,7 +1119,9 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="Signal.poll">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.signal.html#correspond.channels.signal.Signal.poll">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">poll</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">poll</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">cursor</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
 <span class="w">        </span><span class="sd">"""What the WebSocket delivered within ``listen_wait_s``, then any safety-number changes.</span>
 
 <span class="sd">        Signal hands each message to the receiver once, so the cursor (the last envelope</span>
@@ -1080,7 +1141,9 @@ window.runMermaid = runMermaid;</script>
         <span class="c1"># batch here would lose the rest for good.</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">events</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_identity_changes</span><span class="p">(</span><span class="n">account</span><span class="p">)</span>
-        <span class="k">except</span> <span class="n">ChannelError</span><span class="p">:</span>  <span class="c1"># a failed identity lookup must not lose the messages in hand</span>
+        <span class="k">except</span> <span class="p">(</span>
+            <span class="n">ChannelError</span>
+        <span class="p">):</span>  <span class="c1"># a failed identity lookup must not lose the messages in hand</span>
             <span class="k">pass</span>
         <span class="k">return</span> <span class="n">with_final_cursor</span><span class="p">(</span><span class="n">events</span><span class="p">,</span> <span class="n">last</span> <span class="ow">or</span> <span class="n">cursor</span><span class="p">)</span></div>
 
@@ -1092,7 +1155,10 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">read</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">since</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Message</span><span class="p">]:</span>
 <span class="w">        </span><span class="sd">"""What the log holds for a conversation, oldest first."""</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="s2">"read one conversation: signal:+&lt;number&gt; or signal:group.&lt;id&gt;"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="s2">"read one conversation: signal:+&lt;number&gt; or signal:group.&lt;id&gt;"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="n">messages</span> <span class="o">=</span> <span class="p">[</span>
             <span class="n">Message</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
             <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">log</span><span class="p">)</span>
@@ -1107,25 +1173,39 @@ window.runMermaid = runMermaid;</script>
     <span class="k">def</span><span class="w"> </span><span class="nf">audience</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Audience</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""Who reads a conversation: a person's is ``named``; a group's members are listed by the REST API."""</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">Audience</span><span class="o">.</span><span class="n">unknown</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="s2">"signal: is the account's receive stream, not a conversation: name one"</span><span class="p">)</span>
-        <span class="n">common</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">retractable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">durability</span><span class="o">=</span><span class="p">(</span><span class="s2">"copies_pushed"</span><span class="p">,),</span> <span class="n">widening</span><span class="o">=</span><span class="p">(</span><span class="s2">"forwarding"</span><span class="p">,))</span>
+            <span class="k">return</span> <span class="n">Audience</span><span class="o">.</span><span class="n">unknown</span><span class="p">(</span>
+                <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+                <span class="s2">"signal: is the account's receive stream, not a conversation: name one"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">common</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+            <span class="n">ref</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+            <span class="n">retractable</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+            <span class="n">durability</span><span class="o">=</span><span class="p">(</span><span class="s2">"copies_pushed"</span><span class="p">,),</span>
+            <span class="n">widening</span><span class="o">=</span><span class="p">(</span><span class="s2">"forwarding"</span><span class="p">,),</span>
+        <span class="p">)</span>
         <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"person"</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">Audience</span><span class="p">(</span>
                 <span class="n">scope</span><span class="o">=</span><span class="n">Scope</span><span class="o">.</span><span class="n">NAMED</span><span class="p">,</span>
                 <span class="n">readers</span><span class="o">=</span><span class="p">(</span><span class="n">ChannelIdentity</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">native_id</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">),),</span>
                 <span class="n">complete</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                 <span class="n">external</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                <span class="n">evidence</span><span class="o">=</span><span class="p">(</span><span class="s2">"a one-to-one Signal conversation: the account and this contact"</span><span class="p">,),</span>
+                <span class="n">evidence</span><span class="o">=</span><span class="p">(</span>
+                    <span class="s2">"a one-to-one Signal conversation: the account and this contact"</span><span class="p">,</span>
+                <span class="p">),</span>
                 <span class="o">**</span><span class="n">common</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="n">account</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">)</span>
-        <span class="n">group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"GET"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"/v1/groups/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">account</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">group</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span>
+            <span class="s2">"GET"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"/v1/groups/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">account</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">quote</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span><span class="w"> </span><span class="n">safe</span><span class="o">=</span><span class="s1">''</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="p">)</span>
         <span class="n">group</span> <span class="o">=</span> <span class="n">group</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">group</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="k">else</span> <span class="p">{}</span>
         <span class="n">members</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">group</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"members"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[]]</span>
         <span class="n">link</span> <span class="o">=</span> <span class="n">group</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"invite_link"</span><span class="p">)</span>
         <span class="n">evidence</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">"GET groups: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">members</span><span class="p">)</span><span class="si">}</span><span class="s2"> members listed"</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">link</span><span class="p">:</span>
-            <span class="n">evidence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">"the group has an invite link: anyone holding it can join and read what follows"</span><span class="p">)</span>
+            <span class="n">evidence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s2">"the group has an invite link: anyone holding it can join and read what follows"</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="n">Audience</span><span class="p">(</span>
             <span class="n">scope</span><span class="o">=</span><span class="n">Scope</span><span class="o">.</span><span class="n">PUBLIC</span> <span class="k">if</span> <span class="n">link</span> <span class="k">else</span> <span class="n">Scope</span><span class="o">.</span><span class="n">GROUP</span><span class="p">,</span>
             <span class="n">readers</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">ChannelIdentity</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">native_id</span><span class="o">=</span><span class="n">m</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">members</span><span class="p">),</span>
@@ -1148,15 +1228,27 @@ window.runMermaid = runMermaid;</script>
 
 <div class="viewcode-block" id="Signal.send">
 <a class="viewcode-back" href="../../../_autosummary/correspond.channels.signal.html#correspond.channels.signal.Signal.send">[docs]</a>
-    <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">send</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">draft</span><span class="p">:</span> <span class="n">Draft</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">"""``POST /v2/send`` to a person or group, the title (if any) prepended; a reply quotes a logged message."""</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="s2">"name a recipient: signal:+&lt;number&gt; or signal:group.&lt;id&gt;"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="s2">"name a recipient: signal:+&lt;number&gt; or signal:group.&lt;id&gt;"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">attachments</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span><span class="s2">"signal sends text only here: attachments are not supported"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="s2">"signal sends text only here: attachments are not supported"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="n">account</span> <span class="o">=</span> <span class="n">require</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">)</span>
         <span class="n">text</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="si">}</span><span class="se">\n\n</span><span class="si">{</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">title</span> <span class="k">else</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span>
-        <span class="n">body</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"message"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span> <span class="s2">"number"</span><span class="p">:</span> <span class="n">account</span><span class="p">,</span> <span class="s2">"recipients"</span><span class="p">:</span> <span class="p">[</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">]}</span>
+        <span class="n">body</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"message"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
+            <span class="s2">"number"</span><span class="p">:</span> <span class="n">account</span><span class="p">,</span>
+            <span class="s2">"recipients"</span><span class="p">:</span> <span class="p">[</span><span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">],</span>
+        <span class="p">}</span>
         <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">:</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">str</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">reply_to</span><span class="p">)</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
                 <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
@@ -1175,7 +1267,9 @@ window.runMermaid = runMermaid;</script>
             <span class="s2">"text"</span><span class="p">:</span> <span class="n">text</span><span class="p">,</span>
         <span class="p">}</span>
         <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span><span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+                <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="n">plan</span>
+            <span class="p">)</span>
         <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_call</span><span class="p">(</span><span class="s2">"POST"</span><span class="p">,</span> <span class="s2">"/v2/send"</span><span class="p">,</span> <span class="n">body</span><span class="p">)</span>
         <span class="n">stamp</span> <span class="o">=</span> <span class="nb">str</span><span class="p">((</span><span class="n">result</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"timestamp"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">stamp</span><span class="p">:</span>
@@ -1183,7 +1277,9 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">Message</span><span class="p">(</span>
                     <span class="nb">id</span><span class="o">=</span><span class="n">stamp</span><span class="p">,</span>
                     <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="p">,</span>
-                    <span class="n">author</span><span class="o">=</span><span class="n">ChannelIdentity</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">native_id</span><span class="o">=</span><span class="n">account</span><span class="p">,</span> <span class="n">handle</span><span class="o">=</span><span class="n">account</span><span class="p">,</span> <span class="n">is_self</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                    <span class="n">author</span><span class="o">=</span><span class="n">ChannelIdentity</span><span class="p">(</span>
+                        <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">native_id</span><span class="o">=</span><span class="n">account</span><span class="p">,</span> <span class="n">handle</span><span class="o">=</span><span class="n">account</span><span class="p">,</span> <span class="n">is_self</span><span class="o">=</span><span class="kc">True</span>
+                    <span class="p">),</span>
                     <span class="n">authenticity</span><span class="o">=</span><span class="n">_PLATFORM</span><span class="p">,</span>
                     <span class="n">sent_at</span><span class="o">=</span><span class="n">_at</span><span class="p">(</span><span class="n">stamp</span><span class="p">),</span>
                     <span class="n">text</span><span class="o">=</span><span class="n">text</span><span class="p">,</span>
