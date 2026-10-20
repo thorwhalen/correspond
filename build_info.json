@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-10-20T10:48:54Z",
+  "built_at": "2026-10-20T11:46:04Z",
   "package": {
     "name": "correspond",
-    "version": "0.0.32",
+    "version": "0.0.33",
     "display_name": "correspond",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "e2434f74f23d6f44801c4434d26af5d4e2616808",
-    "short_commit": "e2434f7",
+    "commit": "79a24d9d613fe15ffb6a963726942a95155ff56d",
+    "short_commit": "79a24d9",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/thorwhalen/correspond",
-    "commit_url": "https://github.com/thorwhalen/correspond/commit/e2434f74f23d6f44801c4434d26af5d4e2616808",
+    "commit_url": "https://github.com/thorwhalen/correspond/commit/79a24d9d613fe15ffb6a963726942a95155ff56d",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "thorwhalen/correspond",
-    "sha": "e2434f74f23d6f44801c4434d26af5d4e2616808",
+    "sha": "79a24d9d613fe15ffb6a963726942a95155ff56d",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "39410406168",
-    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/39410406168",
+    "run_id": "39417118169",
+    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/39417118169",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -60,11 +60,11 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.32",
+    "latest": "0.0.33",
     "relation": "same",
     "error": null
   },
-  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout e2434f74f23d6f44801c4434d26af5d4e2616808\npip install \"epythet==0.2.19\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout 79a24d9d613fe15ffb6a963726942a95155ff56d\npip install \"epythet==0.2.19\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": true,

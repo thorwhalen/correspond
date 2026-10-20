@@ -1,4 +1,4 @@
-> built 2026-10-20 10:48 UTC from e2434f7 (main) · correspond 0.0.32. Details: build_info.json
+> built 2026-10-20 11:46 UTC from 79a24d9 (main) · correspond 0.0.33. Details: build_info.json
 
 # index.html.md
 
@@ -5479,7 +5479,7 @@ Where a channel’s platform delivers its updates now (Telegram: none means list
 
 # About this build
 
-This documentation was built on **2026-10-20 10:48 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/e2434f74f23d6f44801c4434d26af5d4e2616808"><code>e2434f7</code></a> on branch <code>main</code>, for **correspond 0.0.32** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-10-20 11:46 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/79a24d9d613fe15ffb6a963726942a95155ff56d"><code>79a24d9</code></a> on branch <code>main</code>, for **correspond 0.0.33** (from <code>pyproject.toml</code>).
 
 #### NOTE
 Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
@@ -5488,7 +5488,7 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/e2434f74f23d6f44801c4434d26af5d4e2616808"><code>e2434f74f23d6f44801c4434d26af5d4e2616808</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/79a24d9d613fe15ffb6a963726942a95155ff56d"><code>79a24d9d613fe15ffb6a963726942a95155ff56d</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -5499,9 +5499,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39410406168">39410406168</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/39417118169">39417118169</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>e2434f74f23d6f44801c4434d26af5d4e2616808</code> (in the history of the built commit)  |
+| Event commit | <code>79a24d9d613fe15ffb6a963726942a95155ff56d</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -5526,13 +5526,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.32/">0.0.32</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.33/">0.0.33</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout e2434f74f23d6f44801c4434d26af5d4e2616808
+git checkout 79a24d9d613fe15ffb6a963726942a95155ff56d
 pip install "epythet==0.2.19"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
