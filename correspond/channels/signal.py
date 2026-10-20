@@ -229,8 +229,19 @@ class Signal:
     # --------------------------------------------------------------- listening
 
     def _message(
-        self, envelope: Mapping[str, Any], data: Mapping[str, Any], account: str
+        self,
+        envelope: Mapping[str, Any],
+        data: Mapping[str, Any],
+        account: str,
+        *,
+        synced: bool = False,
     ) -> Message:
+        """The :class:`Message` of one envelope.
+
+        ``synced``: ``data`` is a ``syncMessage.sentMessage``, which the user sent from another
+        device of the account. The author is then the account itself, and a one-to-one
+        conversation is the recipient's, not the sender's.
+        """
         source = str(
             envelope.get("sourceNumber")
             or envelope.get("source")
@@ -238,10 +249,22 @@ class Signal:
             or ""
         )
         group = (data.get("groupInfo") or {}).get("groupId")
-        if not group and not source:
+        if synced:
+            source = account or source
+            peer = str(
+                data.get("destinationNumber")
+                or data.get("destination")
+                or data.get("destinationUuid")
+                or ""
+            )
+            if not group and not peer:
+                raise InvalidRef("the synced message names no recipient")
+        else:
+            peer = source
+        if not group and not peer:
             raise InvalidRef("the envelope names no sender")
         conversation = (
-            self.parse_ref(_group_ref(group)) if group else self.parse_ref(source)
+            self.parse_ref(_group_ref(group)) if group else self.parse_ref(peer)
         )
         quote_ = data.get("quote") or {}
         return Message(
@@ -258,7 +281,11 @@ class Signal:
             sent_at=_at(data.get("timestamp") or envelope.get("timestamp")),
             text=data.get("message") or "",
             reply_to=str(quote_["id"]) if quote_.get("id") else None,
-            native={"group": bool(group), "quote": quote_ or None},
+            native={
+                "group": bool(group),
+                "quote": quote_ or None,
+                **({"synced": True} if synced else {}),
+            },
             raw=dict(envelope),
         )
 
@@ -277,6 +304,11 @@ class Signal:
             stamp = envelope.get("timestamp")
             edit = envelope.get("editMessage")
             data = envelope.get("dataMessage")
+            synced = False
+            if not isinstance(data, dict):  # sent from the user's other device
+                sent = (envelope.get("syncMessage") or {}).get("sentMessage")
+                if isinstance(sent, dict):
+                    data, synced = sent, True
             kind, payload = "message.created", {}
             if edit and edit.get("dataMessage"):
                 data, kind = edit["dataMessage"], "message.updated"
@@ -304,7 +336,7 @@ class Signal:
                 )
                 continue
             try:
-                message = self._message(envelope, data, account)
+                message = self._message(envelope, data, account, synced=synced)
             except (
                 InvalidRef
             ):  # sealed sender or an odd source: nothing to attribute it to

@@ -215,3 +215,49 @@ def test_one_unattributable_frame_does_not_lose_the_others_and_groups_do_not_ble
     assert adapter.read(adapter.parse_ref(short)) == []
     with pytest.raises(ChannelError, match="timestamps"):
         adapter.send(adapter.parse_ref(FRIEND), Draft(text="x", reply_to="abc"))
+
+
+def _sync_frame(stamp, text, *, destination=FRIEND, **data):
+    return json.dumps(
+        {
+            "envelope": {
+                "sourceNumber": ME,
+                "timestamp": stamp,
+                "syncMessage": {
+                    "sentMessage": {"timestamp": stamp, "message": text, "destinationNumber": destination, **data}
+                },
+            },
+            "account": ME,
+        }
+    )
+
+
+def test_a_message_sent_from_the_users_other_device_is_logged_in_the_recipients_conversation():
+    adapter = _signal(
+        frames=[
+            _frame(1700000000001, "question"),
+            _sync_frame(1700000000002, "typed on my phone"),
+            _sync_frame(1700000000003, "to the group", destination="", groupInfo={"groupId": "example-internal-id"}),
+            json.dumps({"envelope": {"sourceNumber": ME, "syncMessage": {"readMessages": []}}}),
+            json.dumps({"envelope": {"sourceNumber": ME, "syncMessage": {"sentMessage": {"timestamp": 5}}}}),
+        ]
+    )
+    events = list(adapter.poll(adapter.parse_ref("")))
+    assert [e.kind for e in events] == ["message.created"] * 3  # the unaddressed sync frame is skipped
+    mine = events[1].message
+    assert (mine.text, mine.author.native_id, mine.author.is_self) == ("typed on my phone", ME, True)
+    assert mine.conversation.id == adapter.parse_ref(FRIEND).id and mine.native["synced"] is True
+    assert events[2].message.conversation.kind == "group"
+    assert [m.text for m in adapter.read(adapter.parse_ref(FRIEND))] == ["question", "typed on my phone"]
+    assert [m.text for m in adapter.read(adapter.parse_ref(GROUP_ID))] == ["to the group"]
+
+
+def test_a_reply_to_a_message_sent_from_another_device_finds_its_quote_author():
+    adapter = _signal(
+        frames=[_sync_frame(1700000000002, "typed on my phone")],
+        routes={("POST", "v2/send"): {"timestamp": "1700000000100"}},
+    )
+    list(adapter.poll(adapter.parse_ref("")))
+    adapter.send(adapter.parse_ref(FRIEND), Draft(text="follow-up", reply_to="1700000000002"))
+    body = adapter.server.calls[-1][2]
+    assert (body["quote_timestamp"], body["quote_author"]) == (1700000000002, ME)
