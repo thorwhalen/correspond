@@ -45,6 +45,7 @@ HELLO_TIMEOUT_S = 15.0
 #: The longest one window stays open, however busy the workspace.
 MAX_WINDOW_S = 60.0
 
+
 def websocket_connect(url: str, *, timeout: float) -> Any:
     """A websocket-client connection for Socket Mode (the default ``connect=``; the ``slack`` extra)."""
     return _websocket_connect(
@@ -94,7 +95,12 @@ def socket_url(app_token: str, *, http: Callable[..., Any] = urllib_http) -> str
         )
     if not data.get("ok"):
         error = str(data.get("error") or "unknown_error")
-        auth = error in ("invalid_auth", "not_authed", "token_revoked", "account_inactive")
+        auth = error in (
+            "invalid_auth",
+            "not_authed",
+            "token_revoked",
+            "account_inactive",
+        )
         raise ChannelError(
             f"Slack apps.connections.open: {error}"
             + (
@@ -102,7 +108,11 @@ def socket_url(app_token: str, *, http: Callable[..., Any] = urllib_http) -> str
                 if auth or error in ("not_allowed_token_type", "missing_scope")
                 else ""
             ),
-            kind="auth" if auth else "permission" if error == "missing_scope" else "validation",
+            kind="auth"
+            if auth
+            else "permission"
+            if error == "missing_scope"
+            else "validation",
         )
     url = str(data.get("url") or "")
     if not _slack_socket_url(url):
@@ -179,7 +189,9 @@ def socket_window(
             except TimeoutError:
                 if not greeted:
                     raise ChannelError(
-                        "Slack's Socket Mode never said hello", kind="network", retryable=True
+                        "Slack's Socket Mode never said hello",
+                        kind="network",
+                        retryable=True,
                     ) from None
                 break
             except ConnectionError:
@@ -205,7 +217,9 @@ def socket_window(
                 if sink is not None:
                     try:
                         sink(payload)
-                    except Exception:  # not kept: leave it unacknowledged, Slack sends it again
+                    except (
+                        Exception
+                    ):  # not kept: leave it unacknowledged, Slack sends it again
                         continue
                 payloads.append(payload)
             envelope_id = envelope.get("envelope_id")

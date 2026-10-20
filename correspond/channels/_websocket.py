@@ -74,7 +74,10 @@ def websocket_connect(
                     opcode, frame = self._ws.recv_data(control_frame=True)
                     if opcode == websocket.ABNF.OPCODE_CLOSE:
                         raise ConnectionError(getattr(self._ws, "status", None))
-                    if opcode not in (websocket.ABNF.OPCODE_TEXT, websocket.ABNF.OPCODE_BINARY):
+                    if opcode not in (
+                        websocket.ABNF.OPCODE_TEXT,
+                        websocket.ABNF.OPCODE_BINARY,
+                    ):
                         return ""  # a ping (answered) or a pong: alive, nothing to read
                 else:
                     frame = self._ws.recv()
