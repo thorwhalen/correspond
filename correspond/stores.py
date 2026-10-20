@@ -46,6 +46,10 @@ _KIND_RE = re.compile(r"^[a-z][a-z0-9_-]*$")
 _SEGMENT_RE = re.compile(r"^[A-Za-z0-9._@+=%-]+$")
 
 
+#: A new state folder is the owner's only: it holds messages, tokens' cursors and reports.
+PRIVATE_DIR_MODE = 0o700
+
+
 def kind_dir(kind: str, *, data_dir: str | os.PathLike | None = None):
     """The folder for one kind of state under the data root."""
     if not _KIND_RE.match(kind):
@@ -141,7 +145,9 @@ class QuotedKeys(MutableMapping):
 def _files(kind: str, cls_name: str, data_dir) -> MutableMapping:
     import dol
 
-    root = str(kind_dir(kind, data_dir=data_dir)) + os.sep
+    folder = kind_dir(kind, data_dir=data_dir)
+    folder.mkdir(mode=PRIVATE_DIR_MODE, parents=True, exist_ok=True)
+    root = str(folder) + os.sep
     return SafeKeys(dol.mk_dirs_if_missing(getattr(dol, cls_name)(root)))
 
 

@@ -62,6 +62,48 @@ def _lowered(headers: Any) -> dict[str, str]:
     return {k.lower(): v for k, v in headers.items()} if headers else {}
 
 
+#: Request headers that carry a credential: never sent on to another host by a redirect.
+CREDENTIAL_HEADERS = ("authorization", "proxy-authorization", "cookie")
+
+
+class _CredentialSafeRedirects(urllib.request.HTTPRedirectHandler):
+    """Follow redirects as urllib does, but drop credentials when one leaves the host.
+
+    urllib re-sends every request header to the redirect target, so a token in
+    ``Authorization`` would reach whatever host a redirect names. A redirect to another
+    host, port or scheme goes on without :data:`CREDENTIAL_HEADERS`.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        following = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if following is not None and not _same_origin(req.full_url, following.full_url):
+            for name in list(following.headers):
+                if name.lower() in CREDENTIAL_HEADERS:
+                    following.remove_header(name)
+        return following
+
+
+def _same_origin(url: str, other: str) -> bool:
+    """Whether two URLs share scheme, host and port.
+
+    >>> _same_origin("https://slack.com/api/a", "https://slack.com/api/b")
+    True
+    >>> _same_origin("https://slack.com/api/a", "https://example.org/a")
+    False
+    >>> _same_origin("https://slack.com/a", "http://slack.com/a")
+    False
+    """
+    first, second = urlsplit(url), urlsplit(other)
+    return (first.scheme, first.hostname, first.port) == (
+        second.scheme,
+        second.hostname,
+        second.port,
+    )
+
+
+_OPENER = urllib.request.build_opener(_CredentialSafeRedirects)
+
+
 def urllib_http(
     method: str,
     url: str,
@@ -79,7 +121,7 @@ def urllib_http(
             method=method,
             headers={"User-Agent": USER_AGENT, **(headers or {})},
         )
-        with urllib.request.urlopen(request, timeout=timeout) as reply:
+        with _OPENER.open(request, timeout=timeout) as reply:
             return Response(reply.status, _lowered(reply.headers), reply.read())
     except urllib.error.HTTPError as error:
         try:

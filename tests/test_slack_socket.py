@@ -375,3 +375,33 @@ def test_the_websocket_wrapper_answers_pings_and_normalises_failures(monkeypatch
         connection.recv(timeout=1)  # any other failure
     with pytest.raises(ConnectionError):
         connection.send("{}")
+
+
+def test_a_failed_socket_still_reports_what_the_store_holds(socket_mode):
+    store = {}
+
+    def socket(app_token, *, wait, sink):
+        raise ChannelError("could not reach slack.com: down", kind="network", retryable=True)
+
+    slack = Slack(http=_users_unknown, keychain=lambda s: "", clock=lambda: NOW_S, events=store, socket=socket)
+    registry = {"slack": slack}
+    with pytest.raises(ChannelError) as caught:  # nothing stored: the failure is the answer
+        list(correspond.listen(f"slack:{CHANNEL}", cursors={}, registry=registry))
+    assert caught.value.kind == "network"
+    payload = _envelope(_message("1760000000.000100", "kept"))["payload"]
+    from correspond.channels.slack import event_record
+
+    store[received_key(NOW_S * 10**9 - 10, "Ev0001")] = {**event_record(payload), "received_ns": 0}
+    slack._socket_ended_at = None  # a new window is due
+    got = list(correspond.listen(f"slack:{CHANNEL}", cursors={}, registry=registry))
+    assert [e.message.text for e in got] == ["kept"]
+
+
+def test_a_socket_failure_that_is_not_retryable_is_raised(socket_mode):
+    def socket(app_token, *, wait, sink):
+        raise ChannelError("invalid_auth", kind="auth")
+
+    slack = Slack(http=_users_unknown, keychain=lambda s: "", clock=lambda: NOW_S, events={}, socket=socket)
+    with pytest.raises(ChannelError) as caught:
+        list(correspond.listen(f"slack:{CHANNEL}", cursors={}, registry={"slack": slack}))
+    assert caught.value.kind == "auth"
