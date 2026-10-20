@@ -87,7 +87,8 @@ def prune_deliveries(
     for key in list(deliveries):
         if not RECEIVED_KEY_RE.match(key):
             continue
-        stamp = (deliveries.get(key) or {}).get("received_ns")
+        record = deliveries.get(key)
+        stamp = record.get("received_ns") if isinstance(record, dict) else None
         if isinstance(stamp, int) and not isinstance(stamp, bool) and stamp < expired:
             deliveries.pop(key, None)
             pruned += 1
@@ -193,10 +194,15 @@ def mk_webhook_app(
             return await respond(send, 400, {"error": "no repository or discussion"})
         last[0] = max(clock(), last[0] + 1)  # strictly increasing
         deliveries[f"{delivery}.json"] = {**record, "received_ns": last[0]}
+        await respond(send, 200, None)
+        # after the response: the delivery is stored, a failing prune must not undo that
         if pruned_at[0] is None or last[0] - pruned_at[0] >= prune_every_ns:
             pruned_at[0] = last[0]
-            prune_deliveries(deliveries, now_ns=last[0])
-        return await respond(send, 200, None)
+            try:
+                prune_deliveries(deliveries, now_ns=last[0])
+            except Exception:  # an unreadable entry; the next prune (or listen) retries
+                pass
+        return None
 
     return app
 
