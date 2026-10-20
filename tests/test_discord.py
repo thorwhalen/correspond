@@ -359,3 +359,76 @@ def test_an_attachment_is_fetched_from_its_link():
     (attachment,) = message.attachments
     assert attachment.media_type == "image/png" and attachment.content() == b"PNG"
     assert fetched == [("GET", "https://example.org/a")]
+
+
+# ------------------------------------------------------------------ verifying HTTP interactions
+
+ed25519 = pytest.importorskip("cryptography.hazmat.primitives.asymmetric.ed25519")
+#: A fixed test key (never a real application's): the recorded payload below is signed by it.
+_SEED = bytes(range(32))
+_KEY = ed25519.Ed25519PrivateKey.from_private_bytes(_SEED)
+_PUBLIC_HEX = _KEY.public_key().public_bytes_raw().hex()
+_NOW = 1_700_000_000
+#: A PING interaction as Discord posts it when you save the endpoint URL (fictional ids).
+_PING = b'{"application_id":"100000000000000001","id":"100000000000000002","token":"example-token","type":1,"user":{"id":"100000000000000003","username":"example"},"version":1}'
+
+
+def _signed(body, *, stamp=_NOW, key=_KEY):
+    return {
+        "X-Signature-Ed25519": key.sign(str(stamp).encode() + body).hex(),
+        "X-Signature-Timestamp": str(stamp),
+    }
+
+
+def _verifier(monkeypatch, public_hex=_PUBLIC_HEX):
+    monkeypatch.setenv("DISCORD_PUBLIC_KEY", public_hex)
+    return {"discord": Discord(backend=object(), clock=lambda: _NOW + 10)}
+
+
+def test_verify_grades_a_signed_interaction_crypto(monkeypatch):
+    registry = _verifier(monkeypatch)
+    good = correspond.verify("discord", _signed(_PING), _PING, registry=registry)
+    assert good.grade.value == "crypto" and good.evidence == {"signature": "valid"}
+    lower = {k.lower(): v for k, v in _signed(_PING).items()}
+    assert correspond.verify("discord", lower, _PING, registry=registry).grade.value == "crypto"
+    assert "crypto" in [g.value for g in Discord().capabilities.grades]
+
+
+def test_verify_rejects_discords_invalid_signature_probes_and_replays(monkeypatch):
+    registry = _verifier(monkeypatch)
+    other = ed25519.Ed25519PrivateKey.from_private_bytes(bytes(32))
+    flipped = bytearray(bytes.fromhex(_signed(_PING)["X-Signature-Ed25519"]))
+    flipped[0] ^= 1
+    cases = [
+        (_signed(_PING, key=other), _PING, "mismatch"),  # Discord's probe: a valid-looking wrong signature
+        ({**_signed(_PING), "X-Signature-Ed25519": flipped.hex()}, _PING, "mismatch"),
+        (_signed(_PING), _PING + b" ", "mismatch"),  # body tampered
+        ({**_signed(_PING), "X-Signature-Timestamp": str(_NOW + 1)}, _PING, "mismatch"),
+        (_signed(_PING, stamp=_NOW - 600), _PING, "stale"),
+        ({"X-Signature-Ed25519": "ab" * 64}, _PING, "no timestamp"),
+        ({"X-Signature-Timestamp": str(_NOW)}, _PING, "missing"),
+        ({**_signed(_PING), "X-Signature-Ed25519": "zz" * 64}, _PING, "malformed"),
+        ({**_signed(_PING), "X-Signature-Ed25519": "ab" * 10}, _PING, "malformed"),
+        ({**_signed(_PING), "X-Signature-Timestamp": "-5"}, _PING, "no timestamp"),
+        ({**_signed(_PING), "X-Signature-Timestamp": "١٢"}, _PING, "no timestamp"),
+        ({}, _PING, "no timestamp"),
+    ]
+    for headers, body, reason in cases:
+        verdict = correspond.verify("discord", headers, body, registry=registry)
+        assert verdict.grade.value == "forged", (headers, reason)
+        assert reason in verdict.evidence["signature"]
+
+
+def test_verify_without_a_usable_public_key_says_how_to_set_it(monkeypatch):
+    monkeypatch.delenv("DISCORD_PUBLIC_KEY", raising=False)
+    monkeypatch.setenv("CORRESPOND_CONFIG", "/nonexistent/correspond.toml")
+    registry = {"discord": Discord(backend=object(), run=_no_keychain)}
+    with pytest.raises(MissingRequirement):
+        correspond.verify("discord", _signed(_PING), _PING, registry=registry)
+    for bad in ("not-hex", "ab" * 31):
+        with pytest.raises(MissingRequirement, match="Public Key|64 hex"):
+            correspond.verify("discord", _signed(_PING), _PING, registry=_verifier(monkeypatch, bad))
+
+
+def _no_keychain(*args, **kwargs):
+    raise FileNotFoundError("no keychain here")

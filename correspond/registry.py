@@ -389,6 +389,12 @@ CHANNELS: tuple[ChannelInfo, ...] = (
                 secret=True,
                 required=True,
             ),
+            Setting(
+                key="public_key",
+                env="DISCORD_PUBLIC_KEY",
+                what="the application's public key (64 hex characters), which checks the Ed25519 signature on an HTTP interaction; needed by verify only",
+                where="Discord Developer Portal (https://discord.com/developers/applications): your application, General Information, Public Key",
+            ),
         ),
         notes=(
             "enable the Message Content intent (Developer Portal, Bot, Privileged Gateway Intents) or the bot reads empty text for messages that do not mention it",
