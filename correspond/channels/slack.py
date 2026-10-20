@@ -378,7 +378,9 @@ class _Workspace:
     channel_ids: dict[str, str] = field(default_factory=dict)
     channels_listed_at: float | None = None
     channels_next: str | None = None
-    users: dict[str, tuple[float, dict | None]] = field(default_factory=dict)  # id: (until, user)
+    users: dict[str, tuple[float, dict | None]] = field(
+        default_factory=dict
+    )  # id: (until, user)
     users_refused_until: float = 0.0
     account: Account | None = None
 
@@ -824,7 +826,9 @@ class Slack:
         parent = _parent_of(head, thread)
         top = str(parent.get("latest_reply") or "") if parent else ""
         if not TS_RE.match(top) or float(top) <= floor:
-            top = f"{max(self.clock(), self._server_now or 0.0, floor) + CLOCK_SKEW_S:.6f}"
+            top = (
+                f"{max(self.clock(), self._server_now or 0.0, floor) + CLOCK_SKEW_S:.6f}"
+            )
         replies = parent.get("reply_count") if parent else None
         if isinstance(replies, int) and replies > 0:
             pace = (float(top) - float(thread)) / replies  # seconds per reply, on average
@@ -855,7 +859,8 @@ class Slack:
             page = [
                 m
                 for m in data.get("messages") or ()
-                if float(low) < float(m["ts"]) <= float(high) and m is not parent
+                if float(low) < float(m["ts"]) <= float(high)
+                and m is not parent
                 and float(m["ts"]) != float(thread)
             ]
             if data.get("has_more") and page:
