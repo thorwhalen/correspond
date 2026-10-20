@@ -171,7 +171,7 @@ def mk_webhook_app(
             for name, text in scope.get("headers") or ()
         }
         declared = headers.get("content-length", "")
-        if declared.isdigit() and int(declared) > max_body_bytes:
+        if declared.isascii() and declared.isdigit() and int(declared) > max_body_bytes:
             return await respond(send, 413, {"error": "the delivery is too large"})
         body = await read_body(receive, max_body_bytes)
         if body is None:

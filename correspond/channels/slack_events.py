@@ -93,11 +93,11 @@ def _record(payload: Any) -> dict | None:
         not isinstance(event, dict)
         or event.get("type") != "message"
         or not isinstance(event_id, str)
-        or not _EVENT_ID_RE.match(event_id)
+        or not _EVENT_ID_RE.fullmatch(event_id)
     ):
         return None
     channel = event.get("channel")
-    if not isinstance(channel, str) or not CHANNEL_ID_RE.match(channel):
+    if not isinstance(channel, str) or not CHANNEL_ID_RE.fullmatch(channel):
         return None
     return {
         "event_id": event_id,
@@ -124,7 +124,8 @@ def mk_events_app(
     other verified request that is not a ``message`` event is acknowledged (200) and
     dropped. A kept event is stored under ``<arrival ns>-<event id>.json`` as
     ``{event_id, team_id, channel, event, received_ns}``; a retry Slack sends for an event
-    already stored (``X-Slack-Retry-Num``) is acknowledged and not stored twice.
+    already stored (a retry, ``X-Slack-Retry-Num``, or a replay within the signature's
+    window) is acknowledged and not stored twice.
     ``events`` defaults to files under the data root (``slack-events/``).
 
     The receiver deletes events older than the retention itself (:func:`prune_events`),
@@ -136,10 +137,19 @@ def mk_events_app(
         events = configured_store(NAME, EVENTS_KIND)
     last = [0]
     pruned_at = [None]
+    seen: set[str] = set()
+    scanned = [False]
 
     def stored(event_id: str) -> bool:
-        suffix = f"-{event_id}.json"
-        return any(key.endswith(suffix) for key in list(events))
+        """Whether this event was stored already: the store is scanned once, then remembered."""
+        if not scanned[0]:
+            seen.update(
+                match["event"]
+                for key in list(events)
+                if (match := RECEIVED_KEY_RE.match(key))
+            )
+            scanned[0] = True
+        return event_id in seen
 
     async def app(scope, receive, send):
         if scope["type"] == "lifespan":
@@ -153,7 +163,7 @@ def mk_events_app(
             for name, text in scope.get("headers") or ()
         }
         declared = headers.get("content-length", "")
-        if declared.isdigit() and int(declared) > max_body_bytes:
+        if declared.isascii() and declared.isdigit() and int(declared) > max_body_bytes:
             return await respond(send, 413, {"error": "the request is too large"})
         body = await read_body(receive, max_body_bytes)
         if body is None:
@@ -165,7 +175,9 @@ def mk_events_app(
         except ChannelError:  # no signing secret: a configuration error, not a verdict
             return await respond(send, 503, {"error": "the receiver is not configured"})
         if verdict.grade is not Grade.CRYPTO:
-            return await respond(send, 401, {"error": "wrong, stale or missing signature"})
+            return await respond(
+                send, 401, {"error": "wrong, stale or missing signature"}
+            )
         try:
             payload = json.loads(body)
         except ValueError:  # not JSON, not UTF-8
@@ -179,13 +191,14 @@ def mk_events_app(
         record = _record(payload) if kind == "event_callback" else None
         if record is None:
             return await respond(send, 200, None)
-        if headers.get("x-slack-retry-num") and stored(record["event_id"]):
+        if stored(record["event_id"]):  # Slack's retry, or a replay within the window
             return await respond(send, 200, None)
         last[0] = max(clock(), last[0] + 1)  # strictly increasing
         events[received_key(last[0], record["event_id"])] = {
             **record,
             "received_ns": last[0],
         }
+        seen.add(record["event_id"])
         await respond(send, 200, None)
         # after the response: the event is stored, a failing prune must not undo that
         if pruned_at[0] is None or last[0] - pruned_at[0] >= prune_every_ns:

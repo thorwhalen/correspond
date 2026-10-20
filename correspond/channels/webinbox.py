@@ -509,7 +509,7 @@ def mk_app(
                 {**cors, "retry-after": str(max(1, math.ceil(wait)))},
             )
         declared = headers.get("content-length", "")
-        if declared.isdigit() and int(declared) > max_body_bytes:
+        if declared.isascii() and declared.isdigit() and int(declared) > max_body_bytes:
             return await respond(
                 send,
                 413,

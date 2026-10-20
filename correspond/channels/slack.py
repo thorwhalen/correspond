@@ -229,7 +229,9 @@ def webhook_env(name: str) -> str:
     >>> webhook_env("team-alerts"), webhook_env("team_alerts")
     ('CORRESPOND_SLACK_WEBHOOK_TEAM_ALERTS', 'CORRESPOND_SLACK_WEBHOOK_TEAM__ALERTS')
     """
-    return "CORRESPOND_SLACK_WEBHOOK_" + name.upper().replace("_", "__").replace("-", "_")
+    return "CORRESPOND_SLACK_WEBHOOK_" + name.upper().replace("_", "__").replace(
+        "-", "_"
+    )
 
 
 def webhook_keychain_service(name: str) -> str:
@@ -303,7 +305,9 @@ DELIVERIES = ("poll", "events")
 #: The data-root folder the Events API receiver stores events in.
 EVENTS_KIND = "slack-events"
 #: A stored event's key: ``<arrival ns, 20 digits>-<event id>.json``, so keys sort by arrival.
-RECEIVED_KEY_RE = re.compile(r"^(?P<stamp>[0-9]{20})-(?P<event>Ev[A-Za-z0-9]{1,40})\.json$")
+RECEIVED_KEY_RE = re.compile(
+    r"^(?P<stamp>[0-9]{20})-(?P<event>Ev[A-Za-z0-9]{1,40})\.json$"
+)
 #: An events listen's cursor: ``e<arrival ns>`` of the last stored event it passed.
 EVENTS_CURSOR = "e"
 #: How far back a first events listen looks, and how long stored events are kept.
@@ -456,7 +460,11 @@ class Slack:
         return self._events
 
     def _delivery(self) -> str:
-        delivery = str(value(NAME, "delivery", run=self.run, keychain=False) or "poll").strip().lower()
+        delivery = (
+            str(value(NAME, "delivery", run=self.run, keychain=False) or "poll")
+            .strip()
+            .lower()
+        )
         if delivery not in DELIVERIES:
             raise ChannelError(
                 f"slack delivery is one of {DELIVERIES}, not {delivery!r}",
@@ -480,9 +488,9 @@ class Slack:
                     "Authorization": f"Bearer {token}",
                     "Content-Type": "application/x-www-form-urlencoded",
                 },
-                body=urlencode({k: v for k, v in params.items() if v is not None}).encode(
-                    "utf-8"
-                ),
+                body=urlencode(
+                    {k: v for k, v in params.items() if v is not None}
+                ).encode("utf-8"),
             )
         except ChannelError as error:
             raise ChannelError(
@@ -649,7 +657,11 @@ class Slack:
                     self.sleep(wait)
             found += list(data.get("messages") or ())
             cursor = (data.get("response_metadata") or {}).get("next_cursor")
-            if not cursor or not data.get("has_more") or (limit and len(found) >= limit):
+            if (
+                not cursor
+                or not data.get("has_more")
+                or (limit and len(found) >= limit)
+            ):
                 return found[:limit] if limit else found
 
     def _replies(
@@ -725,7 +737,9 @@ class Slack:
             )
         return with_final_cursor(events, position if position != started else None)
 
-    def _message(self, conversation: ConversationRef, data: dict, token: str) -> Message:
+    def _message(
+        self, conversation: ConversationRef, data: dict, token: str
+    ) -> Message:
         ts = str(data["ts"])
         thread = data.get("thread_ts")
         parent = thread if thread and thread != ts else None
@@ -791,11 +805,14 @@ class Slack:
                     media_type=f.get("mimetype") or "application/octet-stream",
                     name=f.get("name"),
                     size=f.get("size"),
-                    loader=loader(
-                        f["url_private"], f.get("mimetype") or "application/octet-stream"
-                    )
-                    if f.get("url_private")
-                    else None,
+                    loader=(
+                        loader(
+                            f["url_private"],
+                            f.get("mimetype") or "application/octet-stream",
+                        )
+                        if f.get("url_private")
+                        else None
+                    ),
                 )
                 for f in data.get("files") or ()
             ),
@@ -836,7 +853,11 @@ class Slack:
         return window(messages, since=since, limit=count)
 
     def poll(
-        self, ref: ConversationRef, *, cursor: str | None = None, limit: int | None = None
+        self,
+        ref: ConversationRef,
+        *,
+        cursor: str | None = None,
+        limit: int | None = None,
     ):
         """Top-level messages newer than ``cursor``, oldest first; a first poll looks back a day.
 
@@ -921,7 +942,8 @@ class Slack:
                         raise
                     break
             found = sorted(
-                (m for m in found if deliverable(m, latest)), key=lambda m: float(m["ts"])
+                (m for m in found if deliverable(m, latest)),
+                key=lambda m: float(m["ts"]),
             )
             for item in found:
                 if wanted and len(events) >= wanted:
@@ -994,9 +1016,13 @@ class Slack:
             record = self.events.get(key)
             if not isinstance(record, Mapping) or record.get("channel") != channel:
                 continue
-            found = self._received_event(
-                ref, channel, thread, record.get("event") or {}, token
-            )
+            event = record.get("event")
+            if not isinstance(event, Mapping):
+                continue
+            try:
+                found = self._received_event(ref, channel, thread, event, token)
+            except (AttributeError, TypeError, ValueError, KeyError):
+                continue  # a record this receiver never writes (a foreign store): passed
             if found is not None:
                 events.append(replace(found, cursor=f"{EVENTS_CURSOR}{stamp}"))
         return with_final_cursor(
@@ -1016,7 +1042,9 @@ class Slack:
         if subtype == "message_deleted":
             previous = event.get("previous_message") or {}
             deleted = str(event.get("deleted_ts") or previous.get("ts") or "")
-            if not deleted or (thread and thread not in (deleted, previous.get("thread_ts"))):
+            if not deleted or (
+                thread and thread not in (deleted, previous.get("thread_ts"))
+            ):
                 return None
             return Event(
                 kind="message.deleted",
@@ -1034,8 +1062,10 @@ class Slack:
             return None
         if thread and thread not in (str(data["ts"]), data.get("thread_ts")):
             return None
-        if not thread and data.get("thread_ts") not in (None, data["ts"]) and (
-            data.get("subtype") != "thread_broadcast"
+        if (
+            not thread
+            and data.get("thread_ts") not in (None, data["ts"])
+            and (data.get("subtype") != "thread_broadcast")
         ):
             return None  # a reply inside a thread: its thread's reference reports it
         ts = str(data["ts"])
@@ -1044,7 +1074,9 @@ class Slack:
             kind="message.updated" if edited else "message.created",
             channel=NAME,
             delivery_id=(
-                f"slack:{channel}:{ts}:edited:{edit_ts}" if edited else f"slack:{channel}:{ts}"
+                f"slack:{channel}:{ts}:edited:{edit_ts}"
+                if edited
+                else f"slack:{channel}:{ts}"
             ),
             message=self._message(ref, dict(data), token),
         )
@@ -1187,11 +1219,15 @@ class Slack:
         # A channel's own webhook is the operator's explicit choice for it, a reply excepted.
         via_webhook = webhook_set and not draft.reply_to
         plan: dict[str, Any] = {
-            "action": "post through the channel's incoming webhook"
-            if via_webhook
-            else "post with the token (chat.postMessage)"
-            if token
-            else "post with the token if one is found when sending, else through the channel's incoming webhook",
+            "action": (
+                "post through the channel's incoming webhook"
+                if via_webhook
+                else (
+                    "post with the token (chat.postMessage)"
+                    if token
+                    else "post with the token if one is found when sending, else through the channel's incoming webhook"
+                )
+            ),
             "channel": name,
             "format": "mrkdwn",
             "text": text,
@@ -1228,7 +1264,12 @@ class Slack:
         return self._post_webhook(ref, text, plan)
 
     def _post(
-        self, ref: ConversationRef, text: str, thread: str | None, token: str, plan: dict
+        self,
+        ref: ConversationRef,
+        text: str,
+        thread: str | None,
+        token: str,
+        plan: dict,
     ) -> SendResult:
         channel = self._channel_id(ref, token)
         data = self._api(

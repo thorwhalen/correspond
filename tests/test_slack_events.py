@@ -169,3 +169,25 @@ def test_an_unknown_delivery_is_refused(monkeypatch):
     registry = {"slack": Slack(keychain=lambda s: "", events={})}
     with pytest.raises(correspond.ChannelError):
         list(correspond.listen(f"slack:{CHANNEL}", cursors={}, registry=registry))
+
+
+def test_a_non_ascii_content_length_is_not_a_crash(monkeypatch):
+    raw = json.dumps(_callback(_message("1760000000.000100"))).encode()
+    scope = {
+        "type": "http",
+        "method": "POST",
+        "path": "/slack/events",
+        "headers": [*_headers(raw), (b"content-length", b"\xb2")],
+    }
+    incoming = [{"type": "http.request", "body": raw, "more_body": False}]
+    sent = []
+
+    async def receive():
+        return incoming.pop(0) if incoming else {"type": "http.disconnect"}
+
+    async def send(message):
+        sent.append(message)
+
+    app = mk_events_app(verify=_verifier(monkeypatch), events={})
+    asyncio.run(app(scope, receive, send))
+    assert sent[0]["status"] == 200
