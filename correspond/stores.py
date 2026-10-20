@@ -227,7 +227,7 @@ class SendStore(MutableMapping):
         return self._read(self._path(key), key)
 
     def __setitem__(self, key, value):
-        os.makedirs(self.folder, exist_ok=True)
+        os.makedirs(self.folder, mode=PRIVATE_DIR_MODE, exist_ok=True)
         path = self._path(key)
         temporary = f"{path}.{os.getpid()}.tmp"
         with open(temporary, "w", encoding="utf-8") as file:
@@ -260,7 +260,7 @@ class SendStore(MutableMapping):
 
     def claim(self, key: str, record: Any) -> bool:
         """Store ``record`` for ``key`` unless a record holds it (one saying ``failed`` does not); False, storing nothing, if one does."""
-        os.makedirs(self.folder, exist_ok=True)
+        os.makedirs(self.folder, mode=PRIVATE_DIR_MODE, exist_ok=True)
         path = self._path(key)
         try:
             handle = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
