@@ -25,7 +25,11 @@ from urllib.parse import urlsplit
 
 from correspond.channels._http import urllib_http
 from correspond.channels._http import retry_after_seconds
-from correspond.channels._slack_hosts import API_BASE, api_base as _api_base, on_slack_host
+from correspond.channels._slack_hosts import (
+    API_BASE,
+    api_base as _api_base,
+    on_slack_host,
+)
 from correspond.channels._websocket import require_websocket
 from correspond.channels._websocket import websocket_connect as _websocket_connect
 from correspond.errors import ChannelError
