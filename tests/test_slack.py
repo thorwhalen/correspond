@@ -1103,3 +1103,31 @@ def test_a_plain_ts_cursor_from_before_still_works(token):
                 registry=_walker(api),
             )
         )
+
+
+def test_without_users_read_authors_are_asked_about_once(token):
+    api = FakeSlackApi(HISTORY, errors={"users.info": "missing_scope"})
+    correspond.read(f"slack:{CHANNEL}", registry=_api_registry(api))
+    assert [name for name, _ in api.calls].count("users.info") == 1
+
+
+def test_a_thread_reference_refuses_a_reply_to_another_thread(token):
+    refused = correspond.send(
+        f"slack:{CHANNEL}/{THREAD}",
+        "noted",
+        reply_to="1760000099.000100",
+        dry_run=True,
+        registry=_api_registry(FakeSlackApi()),
+    )
+    assert not refused.ok and refused.error_kind == "validation"
+
+
+def test_a_thread_listen_leaves_the_newest_minute_for_the_next_poll(token):
+    late = float(REPLIES[THREAD][-1]["ts"]) + 55  # the third reply is 55 s old
+    api = FakeSlackApi(replies=REPLIES)
+    registry = {"slack": Slack(http=api, keychain=lambda s: "", clock=lambda: late)}
+    ref = f"slack:{CHANNEL}/{THREAD}"
+    cursors = {ref: "1760000015.000100"}
+    got = list(correspond.listen(ref, cursors=cursors, registry=registry))
+    assert [e.message.text for e in got] == ["another reply"]
+    assert cursors[ref] == "1760000025.000100"

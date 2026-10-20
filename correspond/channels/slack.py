@@ -294,6 +294,8 @@ USER_ID_RE = re.compile(r"^[UW][A-Z0-9]{2,20}$")
 CHANNEL_CACHE_TTL_S = 300
 #: How long a user's handle and display name are trusted before ``users.info`` is asked again.
 USER_CACHE_TTL_S = 3600
+#: How long a failed ``users.info`` (other than a refusal or an unknown user) waits before it is asked again.
+USER_RETRY_S = 60
 #: Pages of ``conversations.replies`` read for one thread at most.
 MAX_THREAD_PAGES = 20
 #: A listen cursor: the ts reached, and the window width the walk was using.
@@ -355,7 +357,8 @@ class Slack:
         self._keychain = keychain
         self._channel_ids: dict[str, str] = {}
         self._channels_listed_at: float | None = None
-        self._users: dict[str, tuple[float, dict | None]] = {}
+        self._users: dict[str, tuple[float, dict | None]] = {}  # id: (until, user)
+        self._users_refused_until = 0.0
         self._whoami: dict[str, Account] = {}
         self._server_now: float | None = None
 
@@ -539,24 +542,34 @@ class Slack:
     def _user(self, user_id: str, token: str) -> dict | None:
         """``users.info`` for one user, kept :data:`USER_CACHE_TTL_S` seconds; ``None`` when Slack will not say.
 
-        A refusal (the token lacks ``users:read``, an unknown user) is remembered as
-        ``None`` for as long, so it is not asked again for every message; a rate limit is
-        not remembered.
+        An unknown user is remembered as ``None`` for as long. A refused token (no
+        ``users:read``) stops every lookup for as long, so a read costs one failed call,
+        not one per author. Any other failure (a rate limit, a 5xx) is remembered for
+        :data:`USER_RETRY_S` seconds (or the rate limit's own wait), so a read does not
+        repeat it for every message.
         """
         if not USER_ID_RE.match(user_id):
             return None
         now = self.clock()
+        if now < self._users_refused_until:
+            return None
         known = self._users.get(user_id)
-        if known and now - known[0] < USER_CACHE_TTL_S:
+        if known and now < known[0]:
             return known[1]
         try:
             found = self._api("users.info", {"user": user_id}, token=token).get("user")
         except ChannelError as error:
-            if error.kind in ("rate_limited", "network"):
-                return known[1] if known else None
+            if error.kind in ("auth", "permission"):
+                self._users_refused_until = now + USER_CACHE_TTL_S
+                return None
+            if error.kind != "not_found":
+                wait = min(USER_CACHE_TTL_S, error.retry_after or USER_RETRY_S)
+                stale = known[1] if known else None
+                self._users[user_id] = (now + wait, stale)
+                return stale
             found = None
         user = found if isinstance(found, dict) else None
-        self._users[user_id] = (now, user)
+        self._users[user_id] = (now + USER_CACHE_TTL_S, user)
         return user
 
     def _history(
@@ -641,14 +654,26 @@ class Slack:
         position: str,
         wanted: int | None,
     ):
-        """New replies in one thread after ``position`` (a ts), oldest first; the cursor is the last one delivered."""
+        """New replies in one thread after ``position`` (a ts), oldest first; the cursor is the last one passed.
+
+        As in a channel's poll, the newest minute (by Slack's clock when it gave one)
+        waits for the next poll, so a reply that shows up late is not passed over.
+        """
         events = []
-        for item in self._replies(channel, thread, token, oldest=position):
+        started = position
+        self._server_now = None
+        found = self._replies(channel, thread, token, oldest=position)
+        now = self.clock()
+        if self._server_now is not None:
+            now = min(now, self._server_now)
+        for item in found:
             if wanted and len(events) >= wanted:
                 break
-            if item.get("subtype") not in MESSAGE_SUBTYPES:
-                continue
+            if float(item["ts"]) > now - CLOCK_SKEW_S:
+                break
             position = str(item["ts"])
+            if item.get("subtype") not in MESSAGE_SUBTYPES:
+                continue  # Slack's own notices: passed, not reported
             events.append(
                 Event(
                     kind="message.created",
@@ -658,7 +683,7 @@ class Slack:
                     message=self._message(ref, item, token),
                 )
             )
-        return with_final_cursor(events, position if events else None)
+        return with_final_cursor(events, position if position != started else None)
 
     def _message(self, conversation: ConversationRef, data: dict, token: str) -> Message:
         ts = str(data["ts"])
@@ -987,7 +1012,12 @@ class Slack:
                 alternatives=("the text cannot mention anyone; name them in it",),
             )
         name, thread = self._where(ref)
-        if thread and not draft.reply_to:
+        if thread and draft.reply_to and draft.reply_to != thread:
+            raise ChannelError(
+                f"slack:{ref.id} names thread {thread}; reply_to {draft.reply_to!r} names another (leave it out, or send to the channel)",
+                kind="validation",
+            )
+        if thread:
             draft = replace(draft, reply_to=thread)
         if draft.reply_to and not TS_RE.match(draft.reply_to):
             raise ChannelError(
@@ -1094,15 +1124,15 @@ class Slack:
         return self._whoami[token]
 
     def _post_webhook(self, ref: ConversationRef, text: str, plan: dict) -> SendResult:
-        url = self._webhook(ref.id)
+        url = self._webhook(self._where(ref)[0])
         if url is None:
             raise MissingRequirement(
                 NAME,
-                f"no Slack token and no incoming webhook for slack:{ref.id}",
+                f"no Slack token and no incoming webhook for slack:{self._where(ref)[0]}",
                 fix=(
                     f"set CORRESPOND_SLACK_TOKEN, or create an incoming webhook for the channel (Slack app settings, "
-                    f"Incoming Webhooks) and set {webhook_env(ref.id)} or the Keychain item "
-                    f"{webhook_keychain_service(ref.id)}; without either, a dry run gives the text to paste"
+                    f"Incoming Webhooks) and set {webhook_env(self._where(ref)[0])} or the Keychain item "
+                    f"{webhook_keychain_service(self._where(ref)[0])}; without either, a dry run gives the text to paste"
                 ),
                 kind="validation",
             )
@@ -1115,7 +1145,7 @@ class Slack:
             )
         except ChannelError as error:  # the transport's message names only the host
             raise ChannelError(
-                f"could not post to slack:{ref.id}: {error}",
+                f"could not post to slack:{self._where(ref)[0]}: {error}",
                 kind=error.kind,
                 retryable=error.retryable,
             ) from None
@@ -1125,7 +1155,7 @@ class Slack:
                 reply.status, "unavailable" if reply.status >= 500 else "validation"
             )
             raise ChannelError(
-                f"Slack refused the post to slack:{ref.id} ({reply.status}: {answer or 'no reason given'})",
+                f"Slack refused the post to slack:{self._where(ref)[0]} ({reply.status}: {answer or 'no reason given'})",
                 kind=kind,
                 retryable=kind == "rate_limited" or reply.status >= 500,
             )
