@@ -125,7 +125,13 @@ def test_tools_take_flat_serialisable_arguments_and_every_write_can_dry_run():
             )
 
 
-def test_results_are_json_ready_and_failures_are_results_with_a_kind(fake):
+def test_results_are_json_ready_and_failures_are_results_with_a_kind(fake, monkeypatch):
+    from correspond import registry
+
+    entry = registry.ChannelInfo(name="pigeon", summary="", planned=f"{registry.ISSUES}/999")
+    monkeypatch.setattr(registry, "CHANNELS", (*registry.CHANNELS, entry))
+    monkeypatch.setattr(tools, "CHANNELS", registry.CHANNELS)
+    monkeypatch.setitem(registry._INFO, "pigeon", entry)
     successes = [
         tools.channels(),
         tools.capabilities("github"),
@@ -153,7 +159,7 @@ def test_results_are_json_ready_and_failures_are_results_with_a_kind(fake):
     )
     assert fake.sent == [], "a dry run sends nothing"
     listed = {row["name"]: row["status"] for row in successes[0]["channels"]}
-    assert listed["fake"] == "available" and listed["signal"] == "planned"
+    assert listed["fake"] == "available" and listed["pigeon"] == "planned"
     for report in (tools.requirements("telegram"), tools.requirements("discord")):
         assert report["ok"] is False and report["problems"]
         json.dumps(report)

@@ -30,7 +30,7 @@ def test_every_built_channel_registers_lazily_and_planned_ones_do_not():
         if all(importlib.util.find_spec(m) is not None for m in c.modules)
     }
     assert set(built) == {c.name for c in registry.CHANNELS if not c.planned} & importable
-    assert {"signal"}.isdisjoint(built)
+    assert {c.name for c in registry.CHANNELS if c.planned}.isdisjoint(built)
     # apprise is built, but registers only when its extra is installed
     assert ("apprise" in built) == (importlib.util.find_spec("apprise") is not None)
 
@@ -58,9 +58,13 @@ def test_a_channel_registers_only_when_its_optional_modules_import():
         built["broken"]  # lazy: the factory is imported only when the channel is used
 
 
-def test_planned_and_unknown_channels_explain_themselves():
-    signal = check_requirements("signal")
-    assert not signal["ok"] and signal["planned"].endswith("/issues/4")
+def test_planned_and_unknown_channels_explain_themselves(monkeypatch):
+    entry = ChannelInfo(
+        name="pigeon", summary="", planned=f"{registry.ISSUES}/999"
+    )
+    monkeypatch.setitem(registry._INFO, "pigeon", entry)
+    pigeon = check_requirements("pigeon")
+    assert not pigeon["ok"] and pigeon["planned"].endswith("/issues/999")
     unknown = check_requirements("carrier-pigeon")
     assert not unknown["ok"] and "built in:" in unknown["summary"]
     with pytest.raises(UnknownChannel):

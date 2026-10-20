@@ -157,15 +157,26 @@ def test_unknown_resolves_to_public_whatever_went_wrong(
     _assert_defaulted(ops.audience(ref, registry=channels), expected_ref, reason)
 
 
-def test_a_planned_channel_says_it_is_planned_and_where():
-    signal = next(c for c in CHANNELS if c.name == "signal")
-    found = ops.audience("signal:example-channel")
-    _assert_defaulted(found, "signal:example-channel", "signal is planned, not built")
-    assert signal.planned in found.evidence[0]
+@pytest.fixture
+def planned_channel(monkeypatch):
+    """A channel that is on the roadmap but not built (every built-in channel is built now)."""
+    entry = registry.ChannelInfo(
+        name="pigeon", summary="Carrier pigeon", planned=f"{registry.ISSUES}/999"
+    )
+    monkeypatch.setattr(registry, "CHANNELS", (*registry.CHANNELS, entry))
+    monkeypatch.setitem(registry._INFO, "pigeon", entry)
+    return entry
+
+
+
+def test_a_planned_channel_says_it_is_planned_and_where(planned_channel):
+    found = ops.audience("pigeon:example-channel")
+    _assert_defaulted(found, "pigeon:example-channel", "pigeon is planned, not built")
+    assert planned_channel.planned in found.evidence[0]
     _assert_defaulted(
-        ops.audience(ConversationRef.parse("signal:example"), registry={}),
-        "signal:example",
-        "signal is planned",
+        ops.audience(ConversationRef.parse("pigeon:example"), registry={}),
+        "pigeon:example",
+        "pigeon is planned",
     )
 
 
@@ -181,6 +192,7 @@ AUDIENCE_GRADES = {
     "gdrive": "partial",
     "discord": "partial",
     "slack": "partial",
+    "signal": "partial",
 }
 
 
@@ -265,7 +277,7 @@ def _cli_here(capsys, *args):
     return exited.value.code, capsys.readouterr().out
 
 
-def test_the_acceptance_lines_on_the_command_line(capsys):
+def test_the_acceptance_lines_on_the_command_line(capsys, planned_channel):
     code, out = _cli_here(
         capsys, "audience", "email:ada@example.org", "--cc", "list@example.org"
     )
@@ -308,7 +320,7 @@ def test_the_acceptance_lines_on_the_command_line(capsys):
         record = json.loads(out)["audience"]
         assert (code, record["scope"], record["retractable"]) == (0, "operator", True)
 
-    code, out = _cli_here(capsys, "audience", "signal:123", "--json")
+    code, out = _cli_here(capsys, "audience", "pigeon:123", "--json")
     record = json.loads(out)["audience"]
     assert (record["scope"], record["defaulted"]) == ("public", True)
     assert any("channel not built" in line for line in record["evidence"])
