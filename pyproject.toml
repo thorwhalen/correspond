@@ -53,6 +53,7 @@ server = [
 # The Discord channel (a bot over REST) is optional.
 discord = [
     "discorddol>=0.0.3",
+    "cryptography>=41",  # Ed25519 signatures on HTTP interactions (verify)
 ]
 # The Google Drive folder reader (read only) is optional.
 gdrive = [

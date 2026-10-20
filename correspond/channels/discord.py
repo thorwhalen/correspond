@@ -12,6 +12,11 @@ mentions it.
   that message's id; a first poll looks back a day). It does not open the gateway, so it
   sees new messages, not edits or deletions, and one channel per reference.
 - ``send`` posts a message (2,000 characters at most); a title is prepended in bold.
+- ``verify`` grades an HTTP interaction Discord posted to your endpoint: ``crypto`` when
+  its Ed25519 signature (``X-Signature-Ed25519`` over ``X-Signature-Timestamp`` + body)
+  checks against the application's public key, ``forged`` otherwise. Discord sends
+  deliberately invalid signatures to test the endpoint; those must come back ``forged``
+  (answer them 401).
 
 Senders are ``platform``: Discord authenticated the account, and correspond fetched the
 message from the API itself. The bot token never appears in an error or a plan.
@@ -28,6 +33,7 @@ from __future__ import annotations
 import mimetypes
 import re
 import subprocess
+import time
 from collections.abc import Callable, Mapping
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -68,6 +74,13 @@ CLOCK_SKEW = timedelta(seconds=5)
 DISCORD_EPOCH_MS = 1_420_070_400_000
 #: What makes Discord notify a whole server or a role, which discorddol cannot yet suppress.
 MASS_MENTION_RE = re.compile(r"@(?:everyone|here)\b|<@&[0-9]+>")
+#: How old an interaction's timestamp may be before its signature counts as a replay.
+SIGNATURE_MAX_AGE_S = 300
+#: An Ed25519 signature is 64 bytes, its public key 32, both sent as hex.
+ED25519_SIGNATURE_HEX = 128
+ED25519_PUBLIC_KEY_HEX = 64
+#: Digits a Unix timestamp in seconds can plausibly have; longer is refused before parsing.
+TIMESTAMP_MAX_DIGITS = 12
 #: HTTP statuses, as correspond's error kinds (discord.py's HTTPException carries ``status``).
 _STATUS_KINDS = {
     400: "validation",
@@ -128,8 +141,10 @@ class Discord:
         backend: Any = None,
         http: Callable[..., Any] = urllib_http,
         run: Callable[..., Any] = subprocess.run,
+        clock: Callable[[], float] = time.time,
     ):
         self.run = run
+        self.clock = clock
         self.http = http
         self._backend = backend
 
@@ -160,9 +175,10 @@ class Discord:
             audience=Support.PARTIAL,
             initiate=Support.FULL,
             reply=Support.NONE,
+            verify=Support.FULL,
             history_depth=HistoryDepth.FULL,
             listen_modes=("poll",),
-            grades=(Grade.PLATFORM,),
+            grades=(Grade.PLATFORM, Grade.CRYPTO),
             max_text_length=MAX_TEXT_CHARS,
             formats=("markdown",),
             native_fields=("channel_id", "jump_url", "pinned", "type", "embeds"),
@@ -178,6 +194,7 @@ class Discord:
                 "send refuses @everyone, @here and role mentions: Discord would notify the whole server or role, and the bot cannot yet turn mention parsing off; a user mention <@id> goes through and is listed in the plan",
                 "an attachment is fetched from Discord's CDN by its signed link, which expires after about a day: read the message again for a fresh one",
                 "audience is the channel's server members who can view it, never listed",
+                "verify grades an HTTP interaction crypto when its Ed25519 signature checks against the application's public key (DISCORD_PUBLIC_KEY), forged otherwise, including Discord's deliberate invalid-signature probes and timestamps older than five minutes",
             ),
         )
 
@@ -345,6 +362,73 @@ class Discord:
                 "a Discord channel is read by the members of its server its permission overwrites allow; correspond does not list them",
             ),
         )
+
+    # ----------------------------------------------------------------- verifying
+
+    def _public_key(self) -> Any:
+        hex_key = require(NAME, "public_key", run=self.run).strip()
+        try:
+            from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+                Ed25519PublicKey,
+            )
+        except ImportError:
+            raise MissingRequirement(
+                NAME,
+                "cryptography is not installed (it checks Ed25519 signatures)",
+                fix="pip install 'correspond[discord]'",
+            ) from None
+        try:
+            if len(hex_key) != ED25519_PUBLIC_KEY_HEX:
+                raise ValueError
+            return Ed25519PublicKey.from_public_bytes(bytes.fromhex(hex_key))
+        except ValueError:
+            raise MissingRequirement(
+                NAME,
+                f"the application public key is not {ED25519_PUBLIC_KEY_HEX} hex characters",
+                fix="copy it again from the Developer Portal, General Information, Public Key",
+            ) from None
+
+    def verify(self, headers: Mapping[str, str], body: bytes) -> Authenticity:
+        """``crypto`` when ``X-Signature-Ed25519`` checks over a fresh ``X-Signature-Timestamp`` + body, ``forged`` otherwise.
+
+        Raises :class:`~correspond.errors.MissingRequirement` when the public key is unset
+        or unusable (a configuration error, never a verdict on the request). Replay
+        protection is the five-minute window only: a captured request can be replayed
+        within it, so act idempotently on an interaction's id.
+        """
+        key = self._public_key()
+        from cryptography.exceptions import InvalidSignature
+
+        def forged(reason: str) -> Authenticity:
+            return Authenticity(grade=Grade.FORGED, evidence={"signature": reason})
+
+        if not isinstance(headers, Mapping):
+            return forged("no headers")
+        if not isinstance(body, (bytes, bytearray, memoryview)):
+            return forged("body is not bytes")
+        lowered = {str(k).lower(): str(v).strip() for k, v in headers.items()}
+        stamp = lowered.get("x-signature-timestamp", "")
+        signature = lowered.get("x-signature-ed25519", "")
+        if not (
+            stamp.isascii() and stamp.isdigit() and len(stamp) <= TIMESTAMP_MAX_DIGITS
+        ):
+            return forged("no timestamp")
+        if not signature:
+            return forged("missing")
+        try:
+            if len(signature) != ED25519_SIGNATURE_HEX or not signature.isascii():
+                raise ValueError
+            raw = bytes.fromhex(signature)
+        except ValueError:
+            return forged("malformed")
+        try:
+            key.verify(raw, stamp.encode() + bytes(body))
+        except InvalidSignature:
+            return forged("mismatch")
+        # Checked after the signature, so a stale verdict is never given to a forgery.
+        if abs(self.clock() - int(stamp)) > SIGNATURE_MAX_AGE_S:
+            return forged("stale (a replay?)")
+        return Authenticity(grade=Grade.CRYPTO, evidence={"signature": "valid"})
 
     # ------------------------------------------------------------------ writing
 
