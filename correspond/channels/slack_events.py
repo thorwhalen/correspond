@@ -16,6 +16,7 @@ bot events ``message.channels`` (and ``message.groups`` for private channels).
 
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 from collections.abc import Awaitable, Callable, Mapping, MutableMapping
@@ -109,8 +110,8 @@ def mk_events_app(
     ``events`` defaults to files under the data root (``slack-events/``).
 
     ``keep`` says which channel ids' events are stored (the others are acknowledged and
-    dropped); it defaults to the ``keep_channels`` setting, and to every channel when that
-    is unset. ``stamps`` (an :class:`~correspond.stores.ArrivalStamps`, by default the one
+    dropped); it defaults to the ``keep_channels`` setting as the receiver starts (restart
+    it after changing the setting), and to every channel when that is unset. ``stamps`` (an :class:`~correspond.stores.ArrivalStamps`, by default the one
     Socket Mode listens share) stamps each event and holds its lock while the event is
     stored, so writers on one machine take turns and none stores an event below a cursor
     a listen already passed.
@@ -137,11 +138,10 @@ def mk_events_app(
     def stored(event_id: str) -> bool:
         """Whether this event was stored already: the store is scanned once, then remembered."""
         if not scanned[0]:
-            seen.update(
-                match["event"]
-                for key in list(events)
-                if (match := RECEIVED_KEY_RE.match(key))
-            )
+            for key in list(events):
+                if match := RECEIVED_KEY_RE.match(key):
+                    seen.add(match["event"])
+                    last[0] = max(last[0], int(match["stamp"]))  # stamps go on from there
             scanned[0] = True
         return event_id in seen
 
@@ -189,13 +189,18 @@ def mk_events_app(
             return await respond(send, 200, None)
         if not keep(record["channel"]):  # a channel nobody listens to
             return await respond(send, 200, None)
-        # strictly increasing, and stored before any other writer takes a stamp
-        with stamps.issue(clock(), floor=last[0]) as stamp:
-            events[received_key(stamp, record["event_id"])] = {
-                **record,
-                "received_ns": stamp,
-            }
-        last[0] = stamp
+
+        def store() -> int:
+            # strictly increasing, and stored before any other writer takes a stamp
+            with stamps.issue(clock(), floor=last[0]) as stamp:
+                events[received_key(stamp, record["event_id"])] = {
+                    **record,
+                    "received_ns": stamp,
+                }
+            return stamp
+
+        # off the event loop: the lock may wait for another writer's store
+        last[0] = await asyncio.to_thread(store)
         seen.add(record["event_id"])
         await respond(send, 200, None)
         # after the response: the event is stored, a failing prune must not undo that

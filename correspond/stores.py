@@ -157,19 +157,30 @@ def private_dir(kind: str, *, data_dir: str | os.PathLike | None = None) -> Path
     """The folder for one kind of state, created owner-only, and tightened to owner-only if it was not.
 
     A folder made by an older correspond kept the mode the umask gave it; the first use
-    since takes the group's and others' access away. A folder this user does not own is
-    left as it is, with a warning. (Windows has no such modes: nothing changes there.)
+    since takes the group's and others' access away. A folder another user owns is left
+    as it is, with a warning, and so is a symbolic link (and what it points to). Only the
+    kind's folder is tightened, not the data root above it. (Windows has no such modes:
+    nothing changes there.)
     """
     folder = kind_dir(kind, data_dir=data_dir)
     folder.mkdir(mode=PRIVATE_DIR_MODE, parents=True, exist_ok=True)
     if os.name == "posix":
-        mode = stat.S_IMODE(folder.stat().st_mode)
-        if mode & ~PRIVATE_DIR_MODE:
-            try:
-                folder.chmod(mode & PRIVATE_DIR_MODE)
-            except OSError as error:
+        info = os.lstat(folder)
+        mode = stat.S_IMODE(info.st_mode)
+        if stat.S_ISDIR(info.st_mode) and mode & ~PRIVATE_DIR_MODE:
+            reason = (
+                "it belongs to another user"
+                if info.st_uid != os.getuid()
+                else None
+            )
+            if reason is None:
+                try:
+                    folder.chmod(mode & PRIVATE_DIR_MODE)
+                except OSError as error:
+                    reason = str(error)
+            if reason is not None:
                 warnings.warn(
-                    f"the state folder {folder} is open to others (mode {mode:o}) and could not be made owner-only: {error}",
+                    f"the state folder {folder} is open to others (mode {mode:o}) and was not made owner-only: {reason}",
                     stacklevel=2,
                 )
     return folder
@@ -221,9 +232,10 @@ class ArrivalStamps:
     Writers that put events in one store, keyed by arrival so readers can keep a cursor
     (the Slack Events API receiver and Socket Mode listens), take their stamps here.
     :meth:`issue` holds an exclusive lock on the file for the whole block, so the writer
-    that took a stamp also stores its event before any other writer takes the next one:
-    a reader that saw a stamp has seen every event stamped below it, and no event lands
-    below a cursor already handed out. The lock is the operating system's (``flock``, or
+    that took a stamp also stores its event before any other writer takes the next one,
+    and a reader lists the store under :meth:`hold`: what it lists is whole, it has seen
+    every event stamped below the last it saw, and no event lands below a cursor already
+    handed out. The lock is the operating system's (``flock``, or
     ``msvcrt.locking`` on Windows): it orders the processes of one machine, not a store
     shared between machines.
 
@@ -243,31 +255,53 @@ class ArrivalStamps:
         self.path = Path(path)
 
     @contextmanager
-    def issue(self, now_ns: int, *, floor: int = 0) -> Iterator[int]:
-        """Hold the lock and yield a stamp above ``now_ns - 1``, ``floor`` and every stamp issued before."""
+    def _locked(self) -> Iterator[Any]:
+        """The stamp file, open and exclusively locked for the block."""
         fd = os.open(self.path, os.O_RDWR | os.O_CREAT, 0o600)
         with os.fdopen(fd, "r+b") as file:
             release = _lock(file)
             try:
-                file.seek(0)
-                text = file.read(STAMP_DIGITS).decode("ascii", "replace")
-                last = int(text) if text.isdigit() else 0
-                stamp = max(int(now_ns), last + 1, floor + 1)
-                file.seek(0)
-                file.write(f"{stamp:0{STAMP_DIGITS}d}".encode("ascii"))
-                file.flush()
-                yield stamp
+                yield file
             finally:
                 release()
 
+    @contextmanager
+    def issue(self, now_ns: int, *, floor: int = 0) -> Iterator[int]:
+        """Hold the lock and yield a stamp above ``now_ns - 1``, ``floor`` and every stamp issued before."""
+        with self._locked() as file:
+            file.seek(0)
+            text = file.read(STAMP_DIGITS).decode("ascii", "replace")
+            last = int(text) if text.isdigit() else 0
+            stamp = max(int(now_ns), last + 1, floor + 1)
+            file.seek(0)
+            file.write(f"{stamp:0{STAMP_DIGITS}d}".encode("ascii"))
+            file.flush()
+            yield stamp
+
+    @contextmanager
+    def hold(self) -> Iterator[None]:
+        """Hold the lock without taking a stamp: a reader lists the store here, so every event it lists is whole."""
+        with self._locked():
+            yield
+
+
+#: How long a Windows writer waits between tries for the lock.
+_LOCK_RETRY_S = 0.05
+
 
 def _lock(file) -> Any:
-    """Take an exclusive lock on ``file`` (waiting for it); return the function that releases it."""
+    """Take an exclusive lock on ``file``, waiting as long as it takes; return the function that releases it."""
     if os.name == "nt":
         import msvcrt
+        import time
 
-        file.seek(0)
-        msvcrt.locking(file.fileno(), msvcrt.LK_LOCK, 1)
+        while True:  # LK_LOCK gives up after ten seconds: keep trying instead
+            file.seek(0)
+            try:
+                msvcrt.locking(file.fileno(), msvcrt.LK_NBLCK, 1)
+                break
+            except OSError:
+                time.sleep(_LOCK_RETRY_S)
 
         def release():
             file.seek(0)

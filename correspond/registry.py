@@ -453,7 +453,7 @@ CHANNELS: tuple[ChannelInfo, ...] = (
             Setting(
                 key="keep_channels",
                 env="CORRESPOND_SLACK_KEEP_CHANNELS",
-                what="with delivery = events or socket, the channel ids (comma-separated) whose message events are stored; the others are acknowledged and dropped (default: every channel's, kept a week)",
+                what="with delivery = events or socket, the channel ids (comma-separated) whose message events are stored; the others are acknowledged and dropped (default: every channel's, kept a week); a running receiver reads it when it starts",
             ),
             Setting(
                 key="webhook_store",

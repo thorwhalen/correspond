@@ -1392,9 +1392,11 @@ class Slack:
                 kind="validation",
             )
         wanted = max(1, int(limit)) if limit else None
+        with self.stamps.hold():  # no writer is midway: every listed event is whole
+            keys = list(self.events)
         received = sorted(
             (int(match["stamp"]), key)
-            for key in list(self.events)
+            for key in keys
             if (match := RECEIVED_KEY_RE.match(key))
         )
         events: list[Event] = []
