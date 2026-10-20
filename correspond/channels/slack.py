@@ -283,6 +283,8 @@ FILE_HOST_RE = re.compile(r"^(?:[a-z0-9-]+\.)*slack\.com$")
 MESSAGE_SUBTYPES = (None, "bot_message", "thread_broadcast", "file_share", "me_message")
 #: How old a signed request may be before :meth:`Slack.verify` calls it a replay.
 SIGNATURE_MAX_AGE_S = 300
+#: Digits a Unix timestamp in seconds can plausibly have; longer is refused before parsing.
+TIMESTAMP_MAX_DIGITS = 12
 TS_RE = re.compile(r"^[0-9]{1,12}\.[0-9]{1,9}$")
 #: A listen cursor: the ts reached, and the window width the walk was using.
 CURSOR_RE = re.compile(
@@ -770,27 +772,44 @@ class Slack:
     # ----------------------------------------------------------------- verifying
 
     def verify(self, headers: Mapping[str, str], body: bytes) -> Authenticity:
-        """``crypto`` when ``X-Slack-Signature`` matches the signing secret over a fresh timestamp, ``forged`` otherwise."""
+        """``crypto`` when ``X-Slack-Signature`` matches the signing secret over a fresh timestamp, ``forged`` otherwise.
+
+        Raises :class:`~correspond.errors.MissingRequirement` when the signing secret is
+        unset (a configuration error, never a verdict on the request). Anything that is not
+        a well-formed signed request (headers that are not a mapping, a body that is not
+        bytes, a timestamp that is not a short run of digits) is graded ``forged``, never
+        raised. Replay protection is the five-minute window only: act idempotently on an
+        event's id.
+        """
         secret = require(NAME, "signing_secret", run=self.run)
-        lowered = {str(k).lower(): str(v) for k, v in headers.items()}
+
+        def forged(reason: str) -> Authenticity:
+            return Authenticity(grade=Grade.FORGED, evidence={"signature": reason})
+
+        if not isinstance(headers, Mapping):
+            return forged("no headers")
+        if not isinstance(body, (bytes, bytearray, memoryview)):
+            return forged("body is not bytes")
+        try:
+            lowered = {str(k).lower(): str(v).strip() for k, v in headers.items()}
+        except Exception:  # a hostile mapping or value: never a valid request
+            return forged("no headers")
         stamp = lowered.get("x-slack-request-timestamp", "")
         received = lowered.get("x-slack-signature", "")
-        if not stamp.isdigit():
-            return Authenticity(
-                grade=Grade.FORGED, evidence={"signature": "no timestamp"}
-            )
-        if abs(self.clock() - int(stamp)) > SIGNATURE_MAX_AGE_S:
-            return Authenticity(
-                grade=Grade.FORGED, evidence={"signature": "stale (a replay?)"}
-            )
-        base = b"v0:" + stamp.encode() + b":" + body
+        if not (
+            stamp.isascii() and stamp.isdigit() and len(stamp) <= TIMESTAMP_MAX_DIGITS
+        ):
+            return forged("no timestamp")
+        if not received:
+            return forged("missing")
+        base = b"v0:" + stamp.encode() + b":" + bytes(body)
         expected = "v0=" + hmac.new(secret.encode(), base, hashlib.sha256).hexdigest()
-        if received.isascii() and received and hmac.compare_digest(received, expected):
-            return Authenticity(grade=Grade.CRYPTO, evidence={"signature": "valid"})
-        return Authenticity(
-            grade=Grade.FORGED,
-            evidence={"signature": "mismatch" if received else "missing"},
-        )
+        if not (received.isascii() and hmac.compare_digest(received, expected)):
+            return forged("mismatch")
+        # Checked after the signature, so a stale verdict is never given to a forgery.
+        if abs(self.clock() - int(stamp)) > SIGNATURE_MAX_AGE_S:
+            return forged("stale (a replay?)")
+        return Authenticity(grade=Grade.CRYPTO, evidence={"signature": "valid"})
 
     # ------------------------------------------------------------------ writing
 
