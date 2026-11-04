@@ -99,7 +99,9 @@ _MEDIA = {
     "Contact card omitted": "contact",
     "<Media omitted>": "media",
 }
-_ATTACHED_RE = re.compile(r"^<attached:\s*(?P<name>[^>]+)>$|^(?P<name2>\S+) \(file attached\)$")
+_ATTACHED_RE = re.compile(
+    r"^<attached:\s*(?P<name>[^>]+)>$|^(?P<name2>\S+) \(file attached\)$"
+)
 _DELETED = ("This message was deleted.", "You deleted this message.")
 _CALL_RE = re.compile(r"^(Missed )?(voice|video) call(, .*)?$", re.I)
 
@@ -278,7 +280,12 @@ REDACTED = "[redacted: credential]"
 
 def _looks_secret(token: str) -> bool:
     """One token that could be a password: 8 to 128 characters, not a URL or an address, with letters and digits (or three character classes)."""
-    if not 8 <= len(token) <= 128 or "://" in token or "@" in token or token.startswith("www."):
+    if (
+        not 8 <= len(token) <= 128
+        or "://" in token
+        or "@" in token
+        or token.startswith("www.")
+    ):
         return False
     lower, upper, digit, other = (
         bool(re.search(p, token)) for p in (r"[a-z]", r"[A-Z]", r"\d", r"[^\w\s]")
@@ -308,11 +315,17 @@ def redact_credentials(rows: list[dict], *, lookback: int = 5) -> list[dict]:
         new = _KEY_SHAPES.sub(REDACTED, new)
         token = new.strip()
         if " " not in token and "\n" not in token and _looks_secret(token):
-            recent = [r.get("text") or "" for r in rows[max(0, index - lookback) : index + 1]]
+            recent = [
+                r.get("text") or "" for r in rows[max(0, index - lookback) : index + 1]
+            ]
             if any(_CREDENTIAL_WORDS.search(t) for t in recent):
                 new = REDACTED
         if new != text:
-            row = {**row, "text": new, "native": {**(row.get("native") or {}), "redacted": True}}
+            row = {
+                **row,
+                "text": new,
+                "native": {**(row.get("native") or {}), "redacted": True},
+            }
         out.append(row)
     return out
 
@@ -411,7 +424,9 @@ class WhatsAppExport:
             from correspond.registry import value
 
             configured = value(NAME, "self_name") or ""
-            self._self_names = tuple(n.strip() for n in configured.split(",") if n.strip())
+            self._self_names = tuple(
+                n.strip() for n in configured.split(",") if n.strip()
+            )
         return self._self_names
 
     @property
@@ -471,7 +486,8 @@ class WhatsAppExport:
             readers=readers,
             external=bool(others) if senders else None,
             durability=("copies_pushed",),
-            widening=("forwarding",) + (("joiners_read_history",) if len(senders) > 2 else ()),
+            widening=("forwarding",)
+            + (("joiners_read_history",) if len(senders) > 2 else ()),
             evidence=(
                 f"{len(senders)} sender(s) in the imported exports of {ref.encoded}; a member who never wrote is not listed",
             ),
@@ -517,7 +533,11 @@ class WhatsAppExport:
         ``export_span`` (first and last time in the export). An export whose messages are
         all archived adds nothing and changes nothing but the import log.
         """
-        raw = source if isinstance(source, bytes) else Path(source).expanduser().read_bytes()
+        raw = (
+            source
+            if isinstance(source, bytes)
+            else Path(source).expanduser().read_bytes()
+        )
         parsed = parse_export(export_text(raw), dayfirst=dayfirst, tz=tz)
         if redact is not None:
             parsed = redact(parsed)
