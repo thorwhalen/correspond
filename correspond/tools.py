@@ -796,6 +796,7 @@ def import_export(
                 f"archived before: up to {found['previous_last'] or '(nothing)'}",
                 f"new: {found['added']} ({span})",
                 f"archived now: {found['total']}",
+                f"redacted as credentials: {found['redacted']} message(s) of the export",
                 *( [f"transcript: {transcript}"] if transcript else [] ),
                 f"read what is new: correspond read {canonical.encoded} --since {found['first_added'] or found['previous_last'] or ''}".rstrip(),
             ]

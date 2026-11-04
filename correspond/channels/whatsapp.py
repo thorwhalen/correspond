@@ -43,7 +43,7 @@ import json
 import re
 import zipfile
 from collections import Counter
-from collections.abc import Iterable, Mapping, MutableMapping
+from collections.abc import Callable, Iterable, Mapping, MutableMapping
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -72,6 +72,7 @@ __all__ = [
     "export_text",
     "message_id",
     "parse_export",
+    "redact_credentials",
 ]
 
 NAME = "whatsapp"
@@ -258,6 +259,64 @@ def parse_export(
     return rows
 
 
+# ----------------------------------------------------------------------- redaction
+
+#: Words that announce a credential, in the message itself or in one shortly before.
+_CREDENTIAL_WORDS = re.compile(
+    r"(?i)\b(pass(?:word|wd|code|phrase)?|pwd|pin|login|log-in|sign[- ]?in|credentials?|api[ _-]?key|token|secret|2fa|otp|verification code)\b"
+)
+#: ``password: hunter2``, ``pwd=…``, ``api key - …``: the value after the label.
+_LABELLED = re.compile(
+    r"(?i)\b(pass(?:word|wd|code|phrase)?|pwd|pin|api[ _-]?key|token|secret)\b(\s*(?:is|[:=\-–])\s*)(\S+)"
+)
+#: Keys that look like keys wherever they appear.
+_KEY_SHAPES = re.compile(
+    r"\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|xox[abprs]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{30,})\b"
+)
+REDACTED = "[redacted: credential]"
+
+
+def _looks_secret(token: str) -> bool:
+    """One token that could be a password: 8 to 128 characters, not a URL or an address, with letters and digits (or three character classes)."""
+    if not 8 <= len(token) <= 128 or "://" in token or "@" in token or token.startswith("www."):
+        return False
+    lower, upper, digit, other = (
+        bool(re.search(p, token)) for p in (r"[a-z]", r"[A-Z]", r"\d", r"[^\w\s]")
+    )
+    return (digit and (lower or upper)) or (lower + upper + digit + other) >= 3
+
+
+def redact_credentials(rows: list[dict], *, lookback: int = 5) -> list[dict]:
+    """The rows with credential-looking text replaced by ``[redacted: credential]``, and ``native.redacted`` set.
+
+    Redacted: the value after a label (``password: …``, ``pwd=…``, ``api key is …``); a
+    known key shape anywhere (``sk-…``, ``ghp_…``, ``xoxb-…``, ``AKIA…``, ``AIza…``); and a
+    message that is one secret-looking token (8 to 128 characters, letters and digits or
+    three character classes, not a URL or address) when it, or one of the ``lookback`` messages before it,
+    mentions a password, a login, a key or a code. Redaction happens before anything is
+    stored, so the archive never holds what it removed.
+
+    >>> rows = [{"text": "the password for the account", "native": {}}, {"text": "Tr0ub4dor&3x", "native": {}},
+    ...         {"text": "pwd: s3cret!Value", "native": {}}, {"text": "see https://example.org/Page_1?x=Y2", "native": {}}]
+    >>> [r["text"] for r in redact_credentials(rows)]
+    ['the password for the account', '[redacted: credential]', 'pwd: [redacted: credential]', 'see https://example.org/Page_1?x=Y2']
+    """
+    out: list[dict] = []
+    for index, row in enumerate(rows):
+        text = row.get("text") or ""
+        new = _LABELLED.sub(lambda m: m.group(1) + m.group(2) + REDACTED, text)
+        new = _KEY_SHAPES.sub(REDACTED, new)
+        token = new.strip()
+        if " " not in token and "\n" not in token and _looks_secret(token):
+            recent = [r.get("text") or "" for r in rows[max(0, index - lookback) : index + 1]]
+            if any(_CREDENTIAL_WORDS.search(t) for t in recent):
+                new = REDACTED
+        if new != text:
+            row = {**row, "text": new, "native": {**(row.get("native") or {}), "redacted": True}}
+        out.append(row)
+    return out
+
+
 def message_id(row: Mapping[str, Any], occurrence: int = 0) -> str:
     """A stable id from the time, sender, text and media kind: the same message in two overlapping exports gets the same id.
 
@@ -372,9 +431,11 @@ class WhatsAppExport:
                 "call",
                 "system",
                 "line",
+                "redacted",
             ),
             notes=(
                 "read serves only what was imported from chat exports (correspond import-export whatsapp:<chat> <export>); import the newest export first to see recent messages",
+                "credential-looking text (a labelled password, a key shape, a lone secret-looking token near a mention of a password or login) is redacted at import, before it is stored",
                 "authors are the names the export gives, graded claimed: an export is a text file, and nothing in it is verified",
                 "an export carries no time zone: times are read in the zone given at import, else this machine's",
                 "an edited message's earlier text is not in an export, and an edit made between two exports appears as a new message",
@@ -442,8 +503,13 @@ class WhatsAppExport:
         dayfirst: bool | None = None,
         tz: str | None = None,
         now: datetime | None = None,
+        redact: Callable[[list[dict]], list[dict]] | None = redact_credentials,
     ) -> dict:
         """Merge an export into the chat's archive; say what was new.
+
+        ``redact`` runs on the parsed messages before anything is stored (default
+        :func:`redact_credentials`; ``None`` keeps the text as exported). The result's
+        ``redacted`` counts the messages it changed.
 
         Returns ``parsed`` (messages in the export), ``added``, ``total`` (archived now),
         ``previous_last`` (the newest archived message before this import, ``None`` on the
@@ -452,7 +518,10 @@ class WhatsAppExport:
         all archived adds nothing and changes nothing but the import log.
         """
         raw = source if isinstance(source, bytes) else Path(source).expanduser().read_bytes()
-        rows = _with_ids(parse_export(export_text(raw), dayfirst=dayfirst, tz=tz))
+        parsed = parse_export(export_text(raw), dayfirst=dayfirst, tz=tz)
+        if redact is not None:
+            parsed = redact(parsed)
+        rows = _with_ids(parsed)
         archived = self.archived(ref)
         known = {r["id"] for r in archived}
         new = [r for r in rows if r["id"] not in known]
@@ -471,6 +540,7 @@ class WhatsAppExport:
             "last_added": new_sorted[-1]["sent_at"] if new_sorted else None,
             "export_span": [rows[0]["sent_at"], rows[-1]["sent_at"]] if rows else None,
             "senders": dict(Counter(r["sender"] for r in rows if r["sender"])),
+            "redacted": sum(1 for r in rows if (r.get("native") or {}).get("redacted")),
         }
         if new:
             self.store[f"{ref.id}.jsonl"] = _jsonl(merged)

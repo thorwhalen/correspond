@@ -125,3 +125,26 @@ def test_a_zone_is_utc_an_offset_or_a_name_and_an_unknown_one_is_refused():
 
     with pytest.raises(CorrespondError, match="offset"):
         parse_export(line, tz="Nowhere/Atlantis")
+
+
+def test_credentials_are_redacted_before_anything_is_stored():
+    text = (
+        "[2/11/26, 12:00:00] Ada Example: here is the login for the shared account\n"
+        "[2/11/26, 12:00:05] Ada Example: Zq7#mWp2xLv9\n"
+        "[2/11/26, 12:00:09] Ada Example: examplepass4821\n"
+        "[2/11/26, 12:01:00] Bram: api key = sk-abcdefghijklmnopqrstu\n"
+        "[2/11/26, 12:02:00] Bram: Version2.0beta is out\n"
+    )
+    store = {}
+    adapter = WhatsAppExport(store=store)
+    ref = adapter.parse_ref("ada-example")
+    report = adapter.import_export(ref, text.encode(), tz="UTC")
+    assert report["redacted"] == 3
+    archived = "".join(store.values())
+    assert "Zq7#mWp2xLv9" not in archived and "sk-abcdefghijklmnopqrstu" not in archived
+    texts = [m.text for m in adapter.read(ref)]
+    assert texts[1] == texts[2] == "[redacted: credential]" and texts[3].endswith("[redacted: credential]")
+    assert "examplepass4821" not in archived
+    assert texts[4] == "Version2.0beta is out"  # no credential mentioned nearby: kept
+    kept = WhatsAppExport(store={})
+    assert kept.import_export(kept.parse_ref("raw"), text.encode(), tz="UTC", redact=None)["redacted"] == 0
