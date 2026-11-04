@@ -98,7 +98,7 @@ def test_the_tool_imports_and_reports_through_the_registry(tmp_path, monkeypatch
     export.write_text(IOS, encoding="utf-8")
     result = tools.import_export(str(export), "whatsapp:ada-example", tz="UTC")
     assert result["ok"] and result["added"] == 6, result
-    assert result["transcript"].endswith("whatsapp/ada-example.txt")
+    assert result["transcript"] == str(tmp_path / "data" / "whatsapp" / "ada-example.txt")
     assert (tmp_path / "data" / "whatsapp" / "ada-example.txt").exists()
     read = tools.read("whatsapp:ada-example", since="2026-02-13T00:00:00Z")
     assert read["ok"] and read["count"] == 3
