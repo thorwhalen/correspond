@@ -193,6 +193,7 @@ AUDIENCE_GRADES = {
     "discord": "partial",
     "slack": "partial",
     "signal": "partial",
+    "whatsapp": "partial",
 }
 
 

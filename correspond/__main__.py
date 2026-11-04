@@ -34,6 +34,12 @@ HELP = {
         "since": {"help": "only messages sent or edited at or after this ISO 8601 time"},
         "limit": {"help": "keep the most recent N messages"},
     },
+    "import-export": {
+        "path": {"help": "the export: the .zip from Export chat, or its _chat.txt"},
+        "ref": {"help": "the chat's archive, whatsapp:<chat> (a name you choose, e.g. whatsapp:ada-lovelace)"},
+        "date-order": {"help": "dmy or mdy, when the export's dates are ambiguous (default: decided from the export)"},
+        "tz": {"help": "the IANA time zone of the phone that exported it, e.g. Europe/London (default: this machine's)"},
+    },
     "listen": {
         "ref": _REF,
         "limit": {"help": "at most N events"},

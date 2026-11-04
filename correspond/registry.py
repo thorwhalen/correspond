@@ -516,6 +516,23 @@ CHANNELS: tuple[ChannelInfo, ...] = (
         ),
     ),
     ChannelInfo(
+        name="whatsapp",
+        summary="WhatsApp chats, read only, from the exports you make on the phone (Export chat): imported into a local archive, no API, nothing sent",
+        factory="correspond.channels.whatsapp:WhatsAppExport",
+        settings=(
+            Setting(
+                key="self_name",
+                env="CORRESPOND_WHATSAPP_SELF_NAME",
+                what="your own name as your exports write it (comma-separated if it varies), so your messages are marked as yours",
+                where="the sender name on your own messages in an exported _chat.txt",
+            ),
+        ),
+        notes=(
+            "import an export with `correspond import-export <zip or _chat.txt> whatsapp:<chat>`, choosing the chat's name; import again whenever you export again, and only new messages are added",
+            "the archive is under the data root (<data root>/whatsapp/): <chat>.jsonl, <chat>.imports.jsonl and a grep-able transcript <chat>.txt",
+        ),
+    ),
+    ChannelInfo(
         name="gdrive",
         summary="A Google Drive folder, read only: the files a conversation announces, each as a message with the file attached",
         factory="correspond.channels.gdrive:GoogleDrive",

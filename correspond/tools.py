@@ -58,6 +58,7 @@ __all__ = [
     "channels",
     "close",
     "edit",
+    "import_export",
     "label",
     "listen",
     "react",
@@ -756,6 +757,52 @@ def authored_thread(path: str, *, author: str | None = None) -> dict:
     }
 
 
+@_as_result
+def import_export(
+    path: str,
+    ref: str,
+    *,
+    date_order: str | None = None,
+    tz: str | None = None,
+) -> dict:
+    """Import a chat export (WhatsApp: the .zip or _chat.txt from Export chat) into the local archive of `ref` (whatsapp:<chat>, a name you choose). Exports overlap, so only messages not yet archived are added; the result says how many, and the time span they cover, so `read <ref> --since <time>` gives what is new. `date_order` is dmy or mdy when the export's dates are ambiguous (default: decided from the export); `tz` the IANA zone of the phone that exported it (default: this machine's). Sends nothing; writes only under the data root."""
+    canonical = ops.parse_ref(ref)
+    adapter = ops.get_channel(canonical.channel)
+    if not hasattr(adapter, "import_export"):
+        raise NotSupported("import_export", canonical.channel)
+    if date_order not in (None, "dmy", "mdy"):
+        raise CorrespondError(f"date_order is dmy or mdy, not {date_order!r}")
+    found = adapter.import_export(
+        adapter.parse_ref(canonical.id),
+        path,
+        dayfirst=None if date_order is None else date_order == "dmy",
+        tz=tz,
+    )
+    transcript = adapter.transcript_path(canonical)
+    span = (
+        f"{found['first_added']} to {found['last_added']}"
+        if found["added"]
+        else "nothing new"
+    )
+    return {
+        "ok": True,
+        "ref": canonical.encoded,
+        **found,
+        "transcript": transcript,
+        "summary": f"{found['added']} new of {found['parsed']} message(s) in the export ({span}); {found['total']} archived in {canonical.encoded}",
+        "text": "\n".join(
+            [
+                f"export: {found['parsed']} message(s), {found['export_span'][0] if found['export_span'] else '-'} to {found['export_span'][1] if found['export_span'] else '-'}",
+                f"archived before: up to {found['previous_last'] or '(nothing)'}",
+                f"new: {found['added']} ({span})",
+                f"archived now: {found['total']}",
+                *( [f"transcript: {transcript}"] if transcript else [] ),
+                f"read what is new: correspond read {canonical.encoded} --since {found['first_added'] or found['previous_last'] or ''}".rstrip(),
+            ]
+        ),
+    }
+
+
 #: Every tool, in the order surfaces list them.
 TOOLS = [
     channels,
@@ -778,10 +825,11 @@ TOOLS = [
     delete_webhook,
     authored,
     authored_thread,
+    import_export,
 ]
 
 #: What each tool touches, for surfaces deciding what to expose. ``read`` stays on this
-#: machine; ``external-read`` reads a remote service (``listen`` also stores its cursor
+#: machine (``import_export`` writes only the local archive under the data root); ``external-read`` reads a remote service (``listen`` also stores its cursor
 #: locally); ``external`` writes to a remote service, where people see it.
 SIDE_EFFECTS = {
     "channels": "read",
@@ -804,4 +852,5 @@ SIDE_EFFECTS = {
     "delete_webhook": "external",
     "authored": "read",
     "authored_thread": "read",
+    "import_export": "read",
 }
