@@ -28,6 +28,7 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 | [`channels`](#correspond.tools.channels)()                                      | List the channels correspond knows: available, missing a module, planned (with its tracking issue), or registered from outside.                                                                                |
 | [`close`](#correspond.tools.close)(ref, \*[, reason, dry_run])               | Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it).                                                                                      |
 | [`edit`](#correspond.tools.edit)(ref, message_id, text, \*[, dry_run])      | Replace the text of a message this account wrote (`message_id` as `read` shows it).                                                                                                                            |
+| [`import_export`](#correspond.tools.import_export)(path, ref, \*[, date_order, tz])  | Import a chat export (WhatsApp: the .zip or \_chat.txt from Export chat) into the local archive of `ref` (whatsapp:<chat>, a name you choose).                                                                 |
 | [`label`](#correspond.tools.label)(ref, labels, \*[, dry_run])               | Add labels (comma-separated; a label name may not itself contain a comma) to a conversation (`capabilities` says whether a channel supports it).                                                               |
 | [`listen`](#correspond.tools.listen)(ref, \*[, limit, peek, data_dir])        | New activity on a conversation since the last listen (a first listen looks back a little).                                                                                                                     |
 | [`react`](#correspond.tools.react)(ref, message_id, reaction, \*[, dry_run]) | Add a reaction to a message (`capabilities` lists the reactions a channel accepts).                                                                                                                            |
@@ -42,13 +43,13 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 | [`set_webhook`](#correspond.tools.set_webhook)(channel, url, \*[, dry_run])        | Have a channel's platform POST every update to `url` (HTTPS) instead of being polled (Telegram: with the configured webhook_secret, one connection at a time).                                                 |
 | [`delete_webhook`](#correspond.tools.delete_webhook)(channel, \*[, ...])              | Stop a channel's webhook delivery, so it can be polled again (listen then needs delivery = poll).                                                                                                              |
 
-### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'authored': 'read', 'authored_thread': 'read', 'capabilities': 'read', 'channels': 'read', 'close': 'external', 'delete_webhook': 'external', 'edit': 'external', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'reopen': 'external', 'requirements': 'read', 'send': 'external', 'set_webhook': 'external', 'unlabel': 'external', 'upload': 'external', 'webhook_info': 'external-read'}*
+### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'authored': 'read', 'authored_thread': 'read', 'capabilities': 'read', 'channels': 'read', 'close': 'external', 'delete_webhook': 'external', 'edit': 'external', 'import_export': 'read', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'reopen': 'external', 'requirements': 'read', 'send': 'external', 'set_webhook': 'external', 'unlabel': 'external', 'upload': 'external', 'webhook_info': 'external-read'}*
 
 What each tool touches, for surfaces deciding what to expose. `read` stays on this
-machine; `external-read` reads a remote service (`listen` also stores its cursor
+machine (`import_export` writes only the local archive under the data root); `external-read` reads a remote service (`listen` also stores its cursor
 locally); `external` writes to a remote service, where people see it.
 
-### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function upload>, <function label>, <function unlabel>, <function close>, <function reopen>, <function webhook_info>, <function set_webhook>, <function delete_webhook>, <function authored>, <function authored_thread>]*
+### correspond.tools.TOOLS *= [<function channels>, <function requirements>, <function capabilities>, <function ref>, <function read>, <function listen>, <function audience>, <function send>, <function edit>, <function react>, <function upload>, <function label>, <function unlabel>, <function close>, <function reopen>, <function webhook_info>, <function set_webhook>, <function delete_webhook>, <function authored>, <function authored_thread>, <function import_export>]*
 
 Every tool, in the order surfaces list them.
 
@@ -104,6 +105,13 @@ Stop a channel’s webhook delivery, so it can be polled again (listen then need
 ### correspond.tools.edit(ref, message_id, text, , dry_run=False)
 
 Replace the text of a message this account wrote (`message_id` as `read` shows it). Run it with `dry_run` first. The new text passes the before_send check, as for `send`.
+
+* **Return type:**
+  [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
+
+### correspond.tools.import_export(path, ref, , date_order=None, tz=None)
+
+Import a chat export (WhatsApp: the .zip or \_chat.txt from Export chat) into the local archive of `ref` (whatsapp:<chat>, a name you choose). Exports overlap, so only messages not yet archived are added; the result says how many, and the time span they cover, so `read <ref> --since <time>` gives what is new. `date_order` is dmy or mdy when the export’s dates are ambiguous (default: decided from the export); `tz` the IANA zone of the phone that exported it (default: this machine’s). Sends nothing; writes only under the data root.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)

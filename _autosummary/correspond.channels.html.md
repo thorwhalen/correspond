@@ -22,3 +22,4 @@ that channel.
 | [`slack_events`](correspond.channels.slack_events.html.md#module-correspond.channels.slack_events)     | Slack Events API receiver: Slack pushes a channel's messages, edits and deletions, so listen need not poll.    |
 | [`telegram`](correspond.channels.telegram.html.md#module-correspond.channels.telegram)             | Telegram: a bot over the Bot API, with the standard library.                                                   |
 | [`webinbox`](correspond.channels.webinbox.html.md#module-correspond.channels.webinbox)             | The web inbox: a small ASGI collector web pages post reports to, and the channel that reads them.              |
+| [`whatsapp`](correspond.channels.whatsapp.html.md#module-correspond.channels.whatsapp)             | WhatsApp, from the chat exports you make on the phone: read only, no API, nothing sent.                        |

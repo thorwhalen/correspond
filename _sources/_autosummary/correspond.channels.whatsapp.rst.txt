@@ -1,0 +1,27 @@
+correspond.channels.whatsapp
+============================
+
+.. automodule:: correspond.channels.whatsapp
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      ARCHIVE_KIND
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      export_text
+      message_id
+      parse_export
+      redact_credentials
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      WhatsAppExport
+   
