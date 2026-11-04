@@ -115,3 +115,13 @@ def test_audience_is_the_senders_seen():
     seen = adapter.audience(ref)
     assert seen.scope.value == "named" and seen.external is True
     assert {r.display_name for r in seen.readers} == {"Ada Example", "Bram"}
+
+
+def test_a_zone_is_utc_an_offset_or_a_name_and_an_unknown_one_is_refused():
+    line = "[2/11/26, 12:00:00] Ada: hi\n"
+    assert parse_export(line, tz="+01:00")[0]["sent_at"] == "2026-02-11T12:00:00+01:00"
+    assert parse_export(line, tz="Z")[0]["sent_at"] == "2026-02-11T12:00:00+00:00"
+    from correspond.errors import CorrespondError
+
+    with pytest.raises(CorrespondError, match="offset"):
+        parse_export(line, tz="Nowhere/Atlantis")

@@ -44,7 +44,7 @@ import re
 import zipfile
 from collections import Counter
 from collections.abc import Iterable, Mapping, MutableMapping
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -168,11 +168,25 @@ def _guess_dayfirst(headers: list[tuple[int, re.Match]]) -> bool:
 
 
 def _zone(tz: str | None):
+    """``None`` (this machine's zone), UTC, a fixed offset (``+01:00``) or an IANA name (needs a time-zone database: ``tzdata`` on Windows)."""
     if tz is None:
         return None
-    from zoneinfo import ZoneInfo
+    if tz.upper() in ("UTC", "Z", "GMT"):
+        return timezone.utc
+    offset = re.fullmatch(r"([+-])(\d{2}):?(\d{2})", tz)
+    if offset:
+        sign = -1 if offset.group(1) == "-" else 1
+        return timezone(
+            sign * timedelta(hours=int(offset.group(2)), minutes=int(offset.group(3)))
+        )
+    from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-    return ZoneInfo(tz)
+    try:
+        return ZoneInfo(tz)
+    except (ZoneInfoNotFoundError, ValueError):
+        raise CorrespondError(
+            f"no time zone {tz!r} here: give an IANA name this machine knows (on Windows, pip install tzdata), or an offset such as +01:00"
+        ) from None
 
 
 def _when(match: re.Match, dayfirst: bool, zone) -> datetime:
