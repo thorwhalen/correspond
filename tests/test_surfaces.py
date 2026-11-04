@@ -33,6 +33,7 @@ TOOL_NAMES = [
     "delete_webhook",
     "authored",
     "authored_thread",
+    "import_export",
 ]
 WRITES = {
     "send",
