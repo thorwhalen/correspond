@@ -418,14 +418,13 @@ async def serve_streams(
 
     if gate.relay_to and not allow_send:
         raise ValueError("the permission relay sends prompts, so it needs allow_send")
-    if server is not None:
-        fastmcp_internals(server)  # fail before anything starts, not mid-run
     refs = list(dict.fromkeys([*refs, *([gate.relay_to] if gate.relay_to else [])]))
     if server is None:
         server = mk_server(
             allow_send=allow_send, instructions=f"{INSTRUCTIONS} {CHANNEL_INSTRUCTIONS}"
         )
-    # FastMCP's low-level server, as its own run_stdio_async uses it, and its lifespan
+    # FastMCP's low-level server, as its own run_stdio_async uses it, and its lifespan;
+    # fetched before anything starts, so a renamed internal fails here, not mid-run
     low_level, lifespan_manager = fastmcp_internals(server)
     server.experimental_capabilities[CHANNEL_CAPABILITY] = {}
     if gate.relay_to:
