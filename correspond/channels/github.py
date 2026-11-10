@@ -22,6 +22,13 @@ References:
   takes its own close reasons (issue: ``completed``, ``not_planned``, ``duplicate``;
   discussion: ``resolved``, ``outdated``, ``duplicate``, with ``completed`` accepted as
   ``resolved``).
+- ``github:notifications``: the ``gh`` account's notifications inbox, its unread threads
+  across every repository (``GET /notifications``). ``read`` only: one message per
+  thread (id ``thread-ID``), in the conversation the thread is about (``owner/repo#N``,
+  or the repository when the subject has no number), its ``url`` the subject's web page,
+  and ``repository``, ``title``, ``type``, ``reason``, ``unread`` and ``updated_at`` in
+  ``native``. Nothing is marked read. An empty inbox is an empty list; an inbox that
+  could not be read raises :class:`~correspond.errors.ChannelError`.
 
 Opening an issue takes ``Draft.native`` keys ``labels``, ``assignees`` and ``milestone``,
 set in the creating request so watchers are notified once. GitHub silently drops an
@@ -159,6 +166,26 @@ DISCUSSION_CLOSE_REASONS = ("resolved", "outdated", "duplicate")
 DISCUSSION_REASON_ALIASES = {"completed": "resolved"}
 PAGE_SIZE = 100
 MAX_PAGES = 20
+#: The reference id of the account's notifications inbox: ``github:notifications``. A
+#: repository reference always has a ``/``, so the two never collide.
+INBOX = "notifications"
+#: ``GET /notifications`` serves at most 50 threads a page.
+NOTIFICATIONS_PAGE_SIZE = 50
+#: The web host a thread's links fall back to when its repository carries no ``html_url``.
+WEB_URL = "https://github.com"
+#: A notification subject's API URL: ``.../repos/{owner}/{repo}/{kind}/{id}``.
+SUBJECT_URL_RE = re.compile(
+    r"/repos/[^/]+/[^/]+/(?P<kind>pulls|issues|discussions|commits|releases)/(?P<id>[^/?#]+)/?$"
+)
+#: Per API collection: the web page's path under the repository, and the conversation's
+#: kind. A release's API id is not its tag, so a release links to the releases page.
+SUBJECT_PAGES = {
+    "pulls": ("pull/{id}", "pull_request"),
+    "issues": ("issues/{id}", "issue"),
+    "discussions": ("discussions/{id}", "discussion"),
+    "commits": ("commit/{id}", "repository"),
+    "releases": ("releases", "repository"),
+}
 READ_REPOSITORY_DEFAULT = 30
 LISTEN_LOOKBACK = timedelta(hours=24)
 #: A repository listen re-reads this many most recently active discussions whole on every
@@ -254,6 +281,14 @@ _GRAPHQL_ERRORS = {
 _PLATFORM = Authenticity(
     grade=Grade.PLATFORM, evidence={"attested_by": "the GitHub API, through gh"}
 )
+#: Who a notification thread comes from: GitHub itself, not any account. Its id has a
+#: ``[bot]`` suffix without being an app's login, so no real account can have its address.
+_NOTIFIER = ChannelIdentity(
+    channel=NAME,
+    native_id="notifications[bot]",
+    display_name="GitHub notifications",
+    is_bot=True,
+)
 
 #: Reader classes of a repository that cannot be listed, as :meth:`GitHub.audience` words them.
 WATCHERS = "watchers and participants receive the body by email"
@@ -280,6 +315,40 @@ def signature(secret: str | bytes, body: bytes) -> str:
     """The ``X-Hub-Signature-256`` value GitHub sends for ``body`` under ``secret``."""
     key = secret.encode("utf-8") if isinstance(secret, str) else secret
     return "sha256=" + hmac.new(key, body, hashlib.sha256).hexdigest()
+
+
+def _subject_link(
+    subject_url: str | None, *, repository_url: str
+) -> tuple[str, str, int | None]:
+    """``(web URL, conversation kind, number)`` for a notification subject's API URL.
+
+    The API names a subject in its own form (``.../repos/owner/repo/pulls/7``); the web page is
+    ``.../owner/repo/pull/7`` under ``repository_url``, the thread's repository page (so a GitHub
+    Enterprise host stays itself). A release links to the releases page (its API id is not
+    its tag); a subject with no URL, or of another kind (a check suite), to the repository.
+
+    >>> repo = "https://github.com/owner/repo"
+    >>> _subject_link("https://api.github.com/repos/owner/repo/pulls/7", repository_url=repo)
+    ('https://github.com/owner/repo/pull/7', 'pull_request', 7)
+    >>> _subject_link("https://api.github.com/repos/owner/repo/issues/12", repository_url=repo)
+    ('https://github.com/owner/repo/issues/12', 'issue', 12)
+    >>> _subject_link("https://api.github.com/repos/owner/repo/discussions/5", repository_url=repo)
+    ('https://github.com/owner/repo/discussions/5', 'discussion', 5)
+    >>> _subject_link("https://api.github.com/repos/owner/repo/commits/a1b2c3", repository_url=repo)
+    ('https://github.com/owner/repo/commit/a1b2c3', 'repository', None)
+    >>> _subject_link("https://api.github.com/repos/owner/repo/releases/991", repository_url=repo)
+    ('https://github.com/owner/repo/releases', 'repository', None)
+    >>> _subject_link(None, repository_url=repo)
+    ('https://github.com/owner/repo', 'repository', None)
+    """
+    match = SUBJECT_URL_RE.search(subject_url or "")
+    if not match:
+        return repository_url, "repository", None
+    page, kind = SUBJECT_PAGES[match["kind"]]
+    url = f"{repository_url.rstrip('/')}/{page.format(id=match['id'])}"
+    if kind == "repository" or not match["id"].isdigit():
+        return url, "repository", None
+    return url, kind, int(match["id"])
 
 
 @dataclass(frozen=True)
@@ -739,7 +808,7 @@ POLL_SOURCES: tuple[PollSource, ...] = (
 
 
 class GitHub:
-    """GitHub through ``gh``: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation."""
+    """GitHub through ``gh``: read (conversations and the notifications inbox), listen, send, edit, react, verify webhook deliveries, and say who reads a conversation."""
 
     name = NAME
 
@@ -811,7 +880,7 @@ class GitHub:
 
     @property
     def capabilities(self) -> Capabilities:
-        """Issues, pull request conversations and discussions."""
+        """Issues, pull request conversations, discussions, and the notifications inbox (read only)."""
         return Capabilities(
             channel=NAME,
             read=Support.FULL,
@@ -852,6 +921,14 @@ class GitHub:
                 "original_line",
                 "review_id",
                 "diff_hunk",
+                "repository",
+                "type",
+                "reason",
+                "unread",
+                "updated_at",
+                "last_read_at",
+                "thread_id",
+                "subject_url",
             ),
             rate_limits=(
                 "80 content-creating requests per minute and 500 per hour (secondary limits)",
@@ -874,16 +951,19 @@ class GitHub:
                 "native draft fields (labels, assignees, milestone) apply when opening an issue; on a comment they are refused",
                 "native category (a discussion category's name or slug) on github:owner/repo opens a discussion instead of an issue; it takes no other native field, and a dry run does not check that the category exists",
                 "close and reopen apply to issues, pull requests and discussions; close reasons are per kind: an issue takes completed, not_planned or duplicate, a discussion resolved, outdated or duplicate (completed is accepted as resolved), a pull request none",
+                f"github:notifications reads the gh account's notifications inbox: its unread threads across every repository, one message per thread (id thread-ID) in the conversation it is about, url the subject's web page, and repository, title, type, reason, unread and updated_at in native; read only (nothing is marked read, every other verb is refused), {NOTIFICATIONS_PAGE_SIZE} a page up to {MAX_PAGES * NOTIFICATIONS_PAGE_SIZE} threads; the gh token needs the notifications or repo scope",
                 "a dry run of close or reopen reads nothing, so it plans for whichever kind the number turns out to be, and a reason the kind does not take is refused only by the real call",
             ),
         )
 
     def parse_ref(self, id: str) -> ConversationRef:
-        """``owner/repo`` or ``owner/repo#N``, lower-cased (GitHub names are case-insensitive)."""
+        """``owner/repo`` or ``owner/repo#N``, lower-cased (GitHub names are case-insensitive); ``notifications`` is the inbox."""
+        if (id or "").lower() == INBOX:
+            return ConversationRef(channel=NAME, id=INBOX, kind="inbox")
         match = REF_RE.match(id or "")
         if not match:
             raise InvalidRef(
-                f"github references are github:owner/repo or github:owner/repo#number, not github:{id}"
+                f"github references are github:owner/repo, github:owner/repo#number or github:{INBOX}, not github:{id}"
             )
         repository = ConversationRef(
             channel=NAME,
@@ -898,6 +978,8 @@ class GitHub:
 
     @staticmethod
     def _parts(ref: ConversationRef) -> tuple[str, str, int | None]:
+        if ref.id == INBOX:
+            raise NotSupported(f"anything but read on github:{INBOX}", NAME)
         repository, _, number = ref.id.partition("#")
         owner, _, repo = repository.partition("/")
         return owner, repo, int(number) if number else None
@@ -967,18 +1049,38 @@ class GitHub:
         return data.get("data") or {}
 
     def _collect(
-        self, path: str, *, bounded: bool = True
+        self,
+        path: str,
+        *,
+        bounded: bool = True,
+        page_size: int | None = None,
+        enough: int | None = None,
     ) -> tuple[list[Any], bool, str | None]:
-        """Every item of a paginated list: ``(items, truncated, the server's Date on the last page)``; ``bounded`` stops after ``MAX_PAGES``."""
+        """Every item of a paginated list: ``(items, truncated, the server's Date on the last page)``; ``bounded`` stops after ``MAX_PAGES``.
+
+        ``page_size`` is the endpoint's largest page (``PAGE_SIZE`` unless it serves fewer):
+        a page shorter than that is the last. ``enough`` stops after the page that brings
+        the items to that many (for a list served in the order the caller keeps). A page
+        that is not a JSON list raises, so a list that could not be read is never taken for
+        an empty one.
+        """
+        size = page_size or PAGE_SIZE
         separator = "&" if "?" in path else "?"
         items: list[Any] = []
         date = None
         for page in range(1, MAX_PAGES + 1) if bounded else itertools.count(1):
-            reply = self._api(f"{path}{separator}per_page={PAGE_SIZE}&page={page}")
+            reply = self._api(f"{path}{separator}per_page={size}&page={page}")
             date = reply.headers.get("date", date)
-            batch = reply.json() or []
+            batch = reply.json()
+            if batch is None and not reply.text.strip():
+                batch = []
+            if not isinstance(batch, list):
+                raise ChannelError(
+                    f"GitHub answered GET {path.split('?', 1)[0]} with something other than a list",
+                    kind="unavailable",
+                )
             items.extend(batch)
-            if len(batch) < PAGE_SIZE:
+            if len(batch) < size or (enough and len(items) >= enough):
                 return items, False, date
         return items, True, date
 
@@ -1026,7 +1128,9 @@ class GitHub:
         since: datetime | None = None,
         limit: int | None = None,
     ) -> list[Message]:
-        """An issue, pull request or discussion with its comments; for a repository, recent open issues and pull requests."""
+        """An issue, pull request or discussion with its comments; for a repository, recent open issues and pull requests; for ``notifications``, the inbox's unread threads."""
+        if ref.id == INBOX:
+            return self._read_notifications(since, limit)
         owner, repo, number = self._parts(ref)
         self._whoami()
         if number is None:
@@ -1215,6 +1319,87 @@ class GitHub:
             (self._opening(self._issue_conversation(owner, repo, i), i) for i in issues),
             since=since,
             limit=limit,
+        )
+
+    def _read_notifications(
+        self, since: datetime | None, limit: int | None
+    ) -> list[Message]:
+        """The inbox's unread threads, every page of them (``GET /notifications``), oldest first.
+
+        ``since`` is GitHub's own (threads updated after it). Reading marks nothing read.
+        GitHub serves the newest first, so ``limit`` stops paging once that many are read.
+        More than ``MAX_PAGES`` pages keeps the first ones and logs a warning.
+        """
+        path = INBOX if since is None else f"{INBOX}?since={format_time(since)}"
+        threads, truncated, _ = self._collect(
+            path,
+            page_size=NOTIFICATIONS_PAGE_SIZE,
+            enough=limit if limit and limit > 0 else None,
+        )
+        if truncated:
+            _log.warning(
+                "the notifications inbox has more than %d threads; read the first %d",
+                MAX_PAGES * NOTIFICATIONS_PAGE_SIZE,
+                len(threads),
+            )
+        return window(
+            [self._notification(thread) for thread in threads], since=since, limit=limit
+        )
+
+    def _notification(self, thread: Any) -> Message:
+        """One inbox thread as a message in the conversation it is about; an item that is not one raises ``unavailable``."""
+        not_a_thread = ChannelError(
+            "GitHub answered GET notifications with an item that is not a thread",
+            kind="unavailable",
+        )
+        if not isinstance(thread, Mapping) or not thread.get("id"):
+            raise not_a_thread
+        try:
+            updated = parse_time(thread.get("updated_at"))
+        except (CorrespondError, ValueError, TypeError):
+            raise not_a_thread from None
+        repository = thread.get("repository")
+        subject = thread.get("subject") or {}
+        if not isinstance(repository, Mapping) or not isinstance(subject, Mapping):
+            raise not_a_thread
+        full_name = str(repository.get("full_name") or "")
+        if updated is None or "/" not in full_name:
+            raise not_a_thread
+        url, kind, number = _subject_link(
+            subject.get("url"),
+            repository_url=repository.get("html_url") or f"{WEB_URL}/{full_name}",
+        )
+        repo_ref = ConversationRef(channel=NAME, id=full_name.lower(), kind="repository")
+        conversation = (
+            repo_ref
+            if number is None
+            else ConversationRef(
+                channel=NAME, id=f"{repo_ref.id}#{number}", kind=kind, parent=repo_ref
+            )
+        )
+        title = str(subject.get("title") or "")
+        return Message(
+            id=f"thread-{thread['id']}",
+            conversation=conversation,
+            author=_NOTIFIER,
+            authenticity=_PLATFORM,
+            sent_at=updated,
+            text=title,
+            url=url,
+            native={
+                "repository": full_name,
+                "title": title,
+                "type": subject.get("type"),
+                "number": number,
+                "kind": kind,
+                "reason": thread.get("reason"),
+                "unread": bool(thread.get("unread")),
+                "updated_at": thread.get("updated_at"),
+                "last_read_at": thread.get("last_read_at"),
+                "thread_id": str(thread["id"]),
+                "subject_url": subject.get("url"),
+            },
+            raw=thread,
         )
 
     def _discussion(self, owner: str, repo: str, number: int) -> tuple[dict, list[dict]]:
