@@ -175,14 +175,16 @@ NOTIFICATIONS_PAGE_SIZE = 50
 WEB_URL = "https://github.com"
 #: A notification subject's API URL: ``.../repos/{owner}/{repo}/{kind}/{id}``.
 SUBJECT_URL_RE = re.compile(
-    r"/repos/[^/]+/[^/]+/(?P<kind>pulls|issues|discussions|commits)/(?P<id>[^/?#]+)/?$"
+    r"/repos/[^/]+/[^/]+/(?P<kind>pulls|issues|discussions|commits|releases)/(?P<id>[^/?#]+)/?$"
 )
-#: Per API collection: the web page's path segment and the conversation's kind.
+#: Per API collection: the web page's path under the repository, and the conversation's
+#: kind. A release's API id is not its tag, so a release links to the releases page.
 SUBJECT_PAGES = {
-    "pulls": ("pull", "pull_request"),
-    "issues": ("issues", "issue"),
-    "discussions": ("discussions", "discussion"),
-    "commits": ("commit", "repository"),
+    "pulls": ("pull/{id}", "pull_request"),
+    "issues": ("issues/{id}", "issue"),
+    "discussions": ("discussions/{id}", "discussion"),
+    "commits": ("commit/{id}", "repository"),
+    "releases": ("releases", "repository"),
 }
 READ_REPOSITORY_DEFAULT = 30
 LISTEN_LOOKBACK = timedelta(hours=24)
@@ -279,9 +281,13 @@ _GRAPHQL_ERRORS = {
 _PLATFORM = Authenticity(
     grade=Grade.PLATFORM, evidence={"attested_by": "the GitHub API, through gh"}
 )
-#: Who a notification thread comes from: GitHub itself, not any account.
+#: Who a notification thread comes from: GitHub itself, not any account. Its id has a
+#: ``[bot]`` suffix without being an app's login, so no real account can have its address.
 _NOTIFIER = ChannelIdentity(
-    channel=NAME, native_id="", display_name="GitHub notifications", is_bot=True
+    channel=NAME,
+    native_id="notifications[bot]",
+    display_name="GitHub notifications",
+    is_bot=True,
 )
 
 #: Reader classes of a repository that cannot be listed, as :meth:`GitHub.audience` words them.
@@ -318,22 +324,28 @@ def _subject_link(
 
     The API names a subject in its own form (``.../repos/owner/repo/pulls/7``); the web page is
     ``.../owner/repo/pull/7`` under ``repository_url``, the thread's repository page (so a GitHub
-    Enterprise host stays itself). A subject with no URL, or one of a kind without a page of
-    its own here (a release, a check suite), links to the repository.
+    Enterprise host stays itself). A release links to the releases page (its API id is not
+    its tag); a subject with no URL, or of another kind (a check suite), to the repository.
 
     >>> repo = "https://github.com/owner/repo"
     >>> _subject_link("https://api.github.com/repos/owner/repo/pulls/7", repository_url=repo)
     ('https://github.com/owner/repo/pull/7', 'pull_request', 7)
     >>> _subject_link("https://api.github.com/repos/owner/repo/issues/12", repository_url=repo)
     ('https://github.com/owner/repo/issues/12', 'issue', 12)
+    >>> _subject_link("https://api.github.com/repos/owner/repo/discussions/5", repository_url=repo)
+    ('https://github.com/owner/repo/discussions/5', 'discussion', 5)
+    >>> _subject_link("https://api.github.com/repos/owner/repo/commits/a1b2c3", repository_url=repo)
+    ('https://github.com/owner/repo/commit/a1b2c3', 'repository', None)
+    >>> _subject_link("https://api.github.com/repos/owner/repo/releases/991", repository_url=repo)
+    ('https://github.com/owner/repo/releases', 'repository', None)
     >>> _subject_link(None, repository_url=repo)
     ('https://github.com/owner/repo', 'repository', None)
     """
     match = SUBJECT_URL_RE.search(subject_url or "")
     if not match:
         return repository_url, "repository", None
-    segment, kind = SUBJECT_PAGES[match["kind"]]
-    url = f"{repository_url.rstrip('/')}/{segment}/{match['id']}"
+    page, kind = SUBJECT_PAGES[match["kind"]]
+    url = f"{repository_url.rstrip('/')}/{page.format(id=match['id'])}"
     if kind == "repository" or not match["id"].isdigit():
         return url, "repository", None
     return url, kind, int(match["id"])
@@ -1037,13 +1049,20 @@ class GitHub:
         return data.get("data") or {}
 
     def _collect(
-        self, path: str, *, bounded: bool = True, page_size: int | None = None
+        self,
+        path: str,
+        *,
+        bounded: bool = True,
+        page_size: int | None = None,
+        enough: int | None = None,
     ) -> tuple[list[Any], bool, str | None]:
         """Every item of a paginated list: ``(items, truncated, the server's Date on the last page)``; ``bounded`` stops after ``MAX_PAGES``.
 
         ``page_size`` is the endpoint's largest page (``PAGE_SIZE`` unless it serves fewer):
-        a page shorter than that is the last. A page that is not a JSON list raises, so a
-        list that could not be read is never taken for an empty one.
+        a page shorter than that is the last. ``enough`` stops after the page that brings
+        the items to that many (for a list served in the order the caller keeps). A page
+        that is not a JSON list raises, so a list that could not be read is never taken for
+        an empty one.
         """
         size = page_size or PAGE_SIZE
         separator = "&" if "?" in path else "?"
@@ -1061,7 +1080,7 @@ class GitHub:
                     kind="unavailable",
                 )
             items.extend(batch)
-            if len(batch) < size:
+            if len(batch) < size or (enough and len(items) >= enough):
                 return items, False, date
         return items, True, date
 
@@ -1308,10 +1327,15 @@ class GitHub:
         """The inbox's unread threads, every page of them (``GET /notifications``), oldest first.
 
         ``since`` is GitHub's own (threads updated after it). Reading marks nothing read.
+        GitHub serves the newest first, so ``limit`` stops paging once that many are read.
         More than ``MAX_PAGES`` pages keeps the first ones and logs a warning.
         """
         path = INBOX if since is None else f"{INBOX}?since={format_time(since)}"
-        threads, truncated, _ = self._collect(path, page_size=NOTIFICATIONS_PAGE_SIZE)
+        threads, truncated, _ = self._collect(
+            path,
+            page_size=NOTIFICATIONS_PAGE_SIZE,
+            enough=limit if limit and limit > 0 else None,
+        )
         if truncated:
             _log.warning(
                 "the notifications inbox has more than %d threads; read the first %d",
@@ -1323,19 +1347,24 @@ class GitHub:
         )
 
     def _notification(self, thread: Any) -> Message:
-        """One inbox thread as a message in the conversation it is about."""
-        if (
-            not isinstance(thread, Mapping)
-            or not thread.get("id")
-            or not parse_time(thread.get("updated_at"))
-        ):
-            raise ChannelError(
-                "GitHub answered GET notifications with an item that is not a thread",
-                kind="unavailable",
-            )
-        repository = thread.get("repository") or {}
+        """One inbox thread as a message in the conversation it is about; an item that is not one raises ``unavailable``."""
+        not_a_thread = ChannelError(
+            "GitHub answered GET notifications with an item that is not a thread",
+            kind="unavailable",
+        )
+        if not isinstance(thread, Mapping) or not thread.get("id"):
+            raise not_a_thread
+        try:
+            updated = parse_time(thread.get("updated_at"))
+        except (CorrespondError, ValueError, TypeError):
+            raise not_a_thread from None
+        repository = thread.get("repository")
         subject = thread.get("subject") or {}
+        if not isinstance(repository, Mapping) or not isinstance(subject, Mapping):
+            raise not_a_thread
         full_name = str(repository.get("full_name") or "")
+        if updated is None or "/" not in full_name:
+            raise not_a_thread
         url, kind, number = _subject_link(
             subject.get("url"),
             repository_url=repository.get("html_url") or f"{WEB_URL}/{full_name}",
@@ -1354,7 +1383,7 @@ class GitHub:
             conversation=conversation,
             author=_NOTIFIER,
             authenticity=_PLATFORM,
-            sent_at=parse_time(thread["updated_at"]),
+            sent_at=updated,
             text=title,
             url=url,
             native={

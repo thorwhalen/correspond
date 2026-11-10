@@ -2704,9 +2704,32 @@ def test_the_inbox_is_read_past_fifty_threads():
     ]
 
 
+def test_a_limit_stops_paging_once_enough_threads_are_read():
+    gh = ScriptedGh(
+        (
+            "GET",
+            r"notifications\?per_page=50&page=1",
+            (200, [_thread(n) for n in range(1, 51)]),
+        ),
+    )
+    messages = _read(gh, "github:notifications", limit=5)
+    assert len(messages) == 5 and len(gh.calls) == 1
+
+
 def test_an_empty_inbox_is_an_empty_list():
     gh = ScriptedGh(("GET", r"notifications\?per_page=50&page=1", (200, [])))
     assert _read(gh, "github:notifications") == []
+
+
+def test_a_thread_comes_from_an_address_no_account_can_have():
+    gh = ScriptedGh(("GET", r"notifications\?per_page=50&page=1", (200, [_thread(1)])))
+    (message,) = _read(gh, "github:notifications")
+    assert message.author.address == "github:notifications[bot]"
+
+
+def _without_repository_name(thread):
+    thread["repository"].pop("full_name")
+    return thread
 
 
 @pytest.mark.parametrize(
@@ -2716,6 +2739,8 @@ def test_an_empty_inbox_is_an_empty_list():
         (403, {"message": "Missing the notifications scope"}, "permission"),
         (200, {"message": "not a list"}, "unavailable"),
         (200, ["not a thread"], "unavailable"),
+        (200, [_thread(1, updated="yesterday-ish")], "unavailable"),
+        (200, [_without_repository_name(_thread(1))], "unavailable"),
     ],
 )
 def test_an_inbox_that_could_not_be_read_raises_instead_of_looking_empty(
@@ -2727,13 +2752,34 @@ def test_an_inbox_that_could_not_be_read_raises_instead_of_looking_empty(
     assert caught.value.kind == kind
 
 
-def test_the_inbox_refuses_every_verb_but_read_with_no_gh_call():
+INBOX_WRITES = {
+    "send": lambda r: correspond.send(
+        "github:notifications", "hi", dry_run=True, registry=r
+    ),
+    "edit": lambda r: correspond.edit(
+        "github:notifications", "thread-1", "hi", dry_run=True, registry=r
+    ),
+    "react": lambda r: correspond.react(
+        "github:notifications", "thread-1", "eyes", registry=r
+    ),
+    "label": lambda r: correspond.label("github:notifications", ["bug"], registry=r),
+    "close": lambda r: correspond.close("github:notifications", registry=r),
+}
+
+
+@pytest.mark.parametrize("verb", sorted(INBOX_WRITES))
+def test_the_inbox_refuses_every_verb_but_read_with_no_gh_call(verb):
+    gh = ScriptedGh()
+    with pytest.raises(NotSupported, match="notifications"):
+        INBOX_WRITES[verb]({"github": GitHub(run=gh)})
+    assert gh.calls == []
+
+
+def test_the_inbox_is_not_listened_to_and_its_audience_is_never_computed():
     gh = ScriptedGh()
     github = GitHub(run=gh)
     with pytest.raises(NotSupported):
         list(github.poll(github.parse_ref("notifications")))
-    with pytest.raises(NotSupported, match="notifications"):
-        correspond.send(
-            "github:notifications", "hi", dry_run=True, registry={"github": github}
-        )
+    found = correspond.audience("github:notifications", registry={"github": github})
+    assert found.defaulted and "notifications" in str(found.evidence)
     assert gh.calls == []
