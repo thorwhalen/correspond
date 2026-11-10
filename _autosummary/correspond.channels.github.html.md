@@ -24,6 +24,13 @@ limit and never shows in the process table.
   takes its own close reasons (issue: `completed`, `not_planned`, `duplicate`;
   discussion: `resolved`, `outdated`, `duplicate`, with `completed` accepted as
   `resolved`).
+- `github:notifications`: the `gh` account’s notifications inbox, its unread threads
+  across every repository (`GET /notifications`). `read` only: one message per
+  thread (id `thread-ID`), in the conversation the thread is about (`owner/repo#N`,
+  or the repository when the subject has no number), its `url` the subject’s web page,
+  and `repository`, `title`, `type`, `reason`, `unread` and `updated_at` in
+  `native`. Nothing is marked read. An empty inbox is an empty list; an inbox that
+  could not be read raises [`ChannelError`](correspond.errors.html.md#correspond.errors.ChannelError).
 
 Opening an issue takes `Draft.native` keys `labels`, `assignees` and `milestone`,
 set in the creating request so watchers are notified once. GitHub silently drops an
@@ -63,14 +70,14 @@ from its visibility, and its collaborators when the account may list them.
 
 ### Classes
 
-| [`GitHub`](#correspond.channels.github.GitHub)(\*[, run, gh, recent_discussions, ...])   | GitHub through `gh`: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.   |
-|---------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| [`GitHub`](#correspond.channels.github.GitHub)(\*[, run, gh, recent_discussions, ...])   | GitHub through `gh`: read (conversations and the notifications inbox), listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.   |
+|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 
 ### *class* correspond.channels.github.GitHub(\*, run=<function run>, gh='gh', recent_discussions=3, deliveries=None, clock=<built-in function time_ns>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
-GitHub through `gh`: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.
+GitHub through `gh`: read (conversations and the notifications inbox), listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.
 
 #### audience(ref, , draft=None)
 
@@ -104,7 +111,7 @@ a transport failure raises; [`correspond.ops.audience()`](correspond.ops.html.md
 
 #### *property* capabilities *: [Capabilities](correspond.model.html.md#correspond.model.Capabilities)*
 
-Issues, pull request conversations and discussions.
+Issues, pull request conversations, discussions, and the notifications inbox (read only).
 
 #### close(ref, , reason=None, dry_run=False)
 
@@ -148,7 +155,7 @@ mentioned, so `landed` is filtered to the requested names, not the full list.
 
 #### parse_ref(id)
 
-`owner/repo` or `owner/repo#N`, lower-cased (GitHub names are case-insensitive).
+`owner/repo` or `owner/repo#N`, lower-cased (GitHub names are case-insensitive); `notifications` is the inbox.
 
 * **Return type:**
   [`ConversationRef`](correspond.model.html.md#correspond.model.ConversationRef)
@@ -187,7 +194,7 @@ Add one of `REACTIONS` to an issue, a comment, a review comment, a discussion or
 
 #### read(ref, , since=None, limit=None)
 
-An issue, pull request or discussion with its comments; for a repository, recent open issues and pull requests.
+An issue, pull request or discussion with its comments; for a repository, recent open issues and pull requests; for `notifications`, the inbox’s unread threads.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Message`](correspond.model.html.md#correspond.model.Message)]

@@ -1,4 +1,4 @@
-> built 2026-11-10 12:09 UTC from 4b3d1e3 (main) · correspond 0.0.51. Details: build_info.json
+> built 2026-11-10 13:23 UTC from 6223050 (main) · correspond 0.0.52. Details: build_info.json
 
 # index.html.md
 
@@ -25,7 +25,7 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 
 | Channel    | References                                                                                                                                                                                                                                                                                                        | Operations                                                                                                                                                                                                                                                                             | Built on                                                                                                                                                                              |
 |------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `github`   | `github:owner/repo`, `github:owner/repo#12`                                                                                                                                                                                                                                                                       | read, listen (issues, comments, pull request review threads, discussions), send (opening an issue takes `native` labels, assignees, milestone; `native` category opens a discussion instead), edit, react, label, unlabel, close, reopen, verify (webhooks), audience                  | the `gh` CLI and its login; correspond holds no token                                                                                                                                 |
+| `github`   | `github:owner/repo`, `github:owner/repo#12`, `github:notifications` (the account’s inbox, read only)                                                                                                                                                                                                              | read, listen (issues, comments, pull request review threads, discussions), send (opening an issue takes `native` labels, assignees, milestone; `native` category opens a discussion instead), edit, react, label, unlabel, close, reopen, verify (webhooks), audience                  | the `gh` CLI and its login; correspond holds no token                                                                                                                                 |
 | `email`    | `email:` (the folder), `email:someone@example.org`; either takes `?folder=<name>` (a Gmail label is a folder), and `email:` takes `?from=<address or domain>,...` (a domain as `@example.org`); on Gmail, `?gmail=<search>` adds Gmail’s search syntax; quote such a reference in a shell: `'email:?folder=News'` | read, listen, send (with cc and bcc), upload (an attachment), audience                                                                                                                                                                                                                 | `imaplib`, `smtplib`                                                                                                                                                                  |
 | `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                                                                                                                                                                                                                                                       | send, audience                                                                                                                                                                                                                                                                         | `urllib`                                                                                                                                                                              |
 | `macos`    | `macos:`                                                                                                                                                                                                                                                                                                          | send, audience                                                                                                                                                                                                                                                                         | `terminal-notifier` or `osascript`                                                                                                                                                    |
@@ -41,6 +41,8 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 Every v0.1 adapter uses the Python standard library. Apprise, Google Drive and Discord are extras, and each registers only when its extra is installed. Signal (through `signal-cli-rest-api`; its WebSocket client is the `signal` extra) is built too.
 
 **Apprise** reaches the long tail (Discord and Slack webhooks, Matrix, Pushover, Gotify, SMS gateways…) for sending only. A reference names an *alias*, never an Apprise URL, because the URL carries the service’s credentials. An alias is 1-64 of `a-z`, `0-9` and `-` (case folded; `all` and `always` are Apprise’s match-everything tags and are refused). `apprise:<alias>` sends to the one URL in `CORRESPOND_APPRISE_URL_<ALIAS>` (upper case, `-` as `_`), else the Keychain item `correspond-apprise-url-<alias>`, else every URL tagged exactly `<alias>` in the local Apprise config file named by `config` under `[apprise]` (or `$CORRESPOND_APPRISE_CONFIG`); URLs tagged `always` are not added, so a mistyped alias reaches nobody. Apprise’s own logging, which prints URLs, is silenced while correspond calls it. A plan names the service (the URL’s scheme), never the URL. A partial delivery is `unconfirmed`, never retried blindly. A draft’s priority is not sent (Apprise services take one in their URL, if at all).
+
+**GitHub notifications.** `correspond read github:notifications` (in Python, `correspond.read("github:notifications")`) lists the `gh` account’s unread notification threads across every repository, every page of them. Each thread is one message in the conversation it is about (`github:owner/repo#7`, or the repository when the subject has no number), with `url` the subject’s web page (`https://github.com/owner/repo/pull/7`, not the API’s `.../pulls/7`) and `repository`, `title`, `type`, `reason` (`review_requested`, `mention`, `assign`, …), `unread` and `updated_at` in `native`. Reading marks nothing read. An empty inbox is an empty list; an inbox that could not be read (no login, a token without the `notifications` scope) raises `ChannelError`.
 
 `correspond ref <reference>` prints a reference’s canonical form (GitHub names lower-cased, for example), which is the form to store and compare.
 
@@ -1015,6 +1017,13 @@ limit and never shows in the process table.
   takes its own close reasons (issue: `completed`, `not_planned`, `duplicate`;
   discussion: `resolved`, `outdated`, `duplicate`, with `completed` accepted as
   `resolved`).
+- `github:notifications`: the `gh` account’s notifications inbox, its unread threads
+  across every repository (`GET /notifications`). `read` only: one message per
+  thread (id `thread-ID`), in the conversation the thread is about (`owner/repo#N`,
+  or the repository when the subject has no number), its `url` the subject’s web page,
+  and `repository`, `title`, `type`, `reason`, `unread` and `updated_at` in
+  `native`. Nothing is marked read. An empty inbox is an empty list; an inbox that
+  could not be read raises [`ChannelError`](_autosummary/correspond.errors.html.md#correspond.errors.ChannelError).
 
 Opening an issue takes `Draft.native` keys `labels`, `assignees` and `milestone`,
 set in the creating request so watchers are notified once. GitHub silently drops an
@@ -1054,14 +1063,14 @@ from its visibility, and its collaborators when the account may list them.
 
 ### Classes
 
-| [`GitHub`](_autosummary/correspond.channels.github.html.md#correspond.channels.github.GitHub)(\*[, run, gh, recent_discussions, ...])   | GitHub through `gh`: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.   |
-|---------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| [`GitHub`](_autosummary/correspond.channels.github.html.md#correspond.channels.github.GitHub)(\*[, run, gh, recent_discussions, ...])   | GitHub through `gh`: read (conversations and the notifications inbox), listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.   |
+|---------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 
 ### *class* correspond.channels.github.GitHub(\*, run=<function run>, gh='gh', recent_discussions=3, deliveries=None, clock=<built-in function time_ns>)
 
 Bases: [`object`](https://docs.python.org/3/builtins/functions.html#object)
 
-GitHub through `gh`: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.
+GitHub through `gh`: read (conversations and the notifications inbox), listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.
 
 #### audience(ref, , draft=None)
 
@@ -1095,7 +1104,7 @@ a transport failure raises; [`correspond.ops.audience()`](_autosummary/correspon
 
 #### *property* capabilities *: [Capabilities](_autosummary/correspond.model.html.md#correspond.model.Capabilities)*
 
-Issues, pull request conversations and discussions.
+Issues, pull request conversations, discussions, and the notifications inbox (read only).
 
 #### close(ref, , reason=None, dry_run=False)
 
@@ -1139,7 +1148,7 @@ mentioned, so `landed` is filtered to the requested names, not the full list.
 
 #### parse_ref(id)
 
-`owner/repo` or `owner/repo#N`, lower-cased (GitHub names are case-insensitive).
+`owner/repo` or `owner/repo#N`, lower-cased (GitHub names are case-insensitive); `notifications` is the inbox.
 
 * **Return type:**
   [`ConversationRef`](_autosummary/correspond.model.html.md#correspond.model.ConversationRef)
@@ -1178,7 +1187,7 @@ Add one of `REACTIONS` to an issue, a comment, a review comment, a discussion or
 
 #### read(ref, , since=None, limit=None)
 
-An issue, pull request or discussion with its comments; for a repository, recent open issues and pull requests.
+An issue, pull request or discussion with its comments; for a repository, recent open issues and pull requests; for `notifications`, the inbox’s unread threads.
 
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Message`](_autosummary/correspond.model.html.md#correspond.model.Message)]
@@ -6026,18 +6035,18 @@ Where a channel’s platform delivers its updates now (Telegram: none means list
 
 # About this build
 
-This documentation was built on **2026-11-10 12:09 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b"><code>4b3d1e3</code></a> on branch <code>main</code>, for **correspond 0.0.51** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-10 13:23 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/62230506915306498274fe81ff2375058c2f2894"><code>6223050</code></a> on branch <code>main</code>, for **correspond 0.0.52** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.51) is behind the latest release on PyPI (0.0.52): `pip install correspond` gives newer code than these docs describe.
+- The documented version (0.0.52) is behind the latest release on PyPI (0.0.53): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b"><code>4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/62230506915306498274fe81ff2375058c2f2894"><code>62230506915306498274fe81ff2375058c2f2894</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -6048,9 +6057,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/42813117168">42813117168</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/42823846800">42823846800</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b</code> (in the history of the built commit)  |
+| Event commit | <code>62230506915306498274fe81ff2375058c2f2894</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -6075,13 +6084,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.52/">0.0.52</a>, newer than the documented version (0.0.51).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.53/">0.0.53</a>, newer than the documented version (0.0.52).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b
+git checkout 62230506915306498274fe81ff2375058c2f2894
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

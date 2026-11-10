@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="_static/documentation_options.js?v=440a2162"></script>
+    <script src="_static/documentation_options.js?v=73f2ab08"></script>
     <script src="_static/doctools.js?v=fd6eb6e6"></script>
     <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="_static/clipboard.min.js?v=a7894cd8"></script>
@@ -57,7 +57,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.51" />
+  <meta name="docsearch:version" content="0.0.52" />
   
     
     <script src="_static/searchtools.js"></script>
@@ -360,7 +360,7 @@ correspond<span class="w"> </span>requirements<span class="w"> </span>email<span
 </thead>
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">github</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo</span></code>, <code class="docutils literal notranslate"><span class="pre">github:owner/repo#12</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">github:owner/repo</span></code>, <code class="docutils literal notranslate"><span class="pre">github:owner/repo#12</span></code>, <code class="docutils literal notranslate"><span class="pre">github:notifications</span></code> (the account’s inbox, read only)</p></td>
 <td><p>read, listen (issues, comments, pull request review threads, discussions), send (opening an issue takes <code class="docutils literal notranslate"><span class="pre">native</span></code> labels, assignees, milestone; <code class="docutils literal notranslate"><span class="pre">native</span></code> category opens a discussion instead), edit, react, label, unlabel, close, reopen, verify (webhooks), audience</p></td>
 <td><p>the <code class="docutils literal notranslate"><span class="pre">gh</span></code> CLI and its login; correspond holds no token</p></td>
 </tr>
@@ -424,6 +424,7 @@ correspond<span class="w"> </span>requirements<span class="w"> </span>email<span
 </div>
 <p>Every v0.1 adapter uses the Python standard library. Apprise, Google Drive and Discord are extras, and each registers only when its extra is installed. Signal (through <code class="docutils literal notranslate"><span class="pre">signal-cli-rest-api</span></code>; its WebSocket client is the <code class="docutils literal notranslate"><span class="pre">signal</span></code> extra) is built too.</p>
 <p><strong>Apprise</strong> reaches the long tail (Discord and Slack webhooks, Matrix, Pushover, Gotify, SMS gateways…) for sending only. A reference names an <em>alias</em>, never an Apprise URL, because the URL carries the service’s credentials. An alias is 1-64 of <code class="docutils literal notranslate"><span class="pre">a-z</span></code>, <code class="docutils literal notranslate"><span class="pre">0-9</span></code> and <code class="docutils literal notranslate"><span class="pre">-</span></code> (case folded; <code class="docutils literal notranslate"><span class="pre">all</span></code> and <code class="docutils literal notranslate"><span class="pre">always</span></code> are Apprise’s match-everything tags and are refused). <code class="docutils literal notranslate"><span class="pre">apprise:&lt;alias&gt;</span></code> sends to the one URL in <code class="docutils literal notranslate"><span class="pre">CORRESPOND_APPRISE_URL_&lt;ALIAS&gt;</span></code> (upper case, <code class="docutils literal notranslate"><span class="pre">-</span></code> as <code class="docutils literal notranslate"><span class="pre">_</span></code>), else the Keychain item <code class="docutils literal notranslate"><span class="pre">correspond-apprise-url-&lt;alias&gt;</span></code>, else every URL tagged exactly <code class="docutils literal notranslate"><span class="pre">&lt;alias&gt;</span></code> in the local Apprise config file named by <code class="docutils literal notranslate"><span class="pre">config</span></code> under <code class="docutils literal notranslate"><span class="pre">[apprise]</span></code> (or <code class="docutils literal notranslate"><span class="pre">$CORRESPOND_APPRISE_CONFIG</span></code>); URLs tagged <code class="docutils literal notranslate"><span class="pre">always</span></code> are not added, so a mistyped alias reaches nobody. Apprise’s own logging, which prints URLs, is silenced while correspond calls it. A plan names the service (the URL’s scheme), never the URL. A partial delivery is <code class="docutils literal notranslate"><span class="pre">unconfirmed</span></code>, never retried blindly. A draft’s priority is not sent (Apprise services take one in their URL, if at all).</p>
+<p><strong>GitHub notifications.</strong> <code class="docutils literal notranslate"><span class="pre">correspond</span> <span class="pre">read</span> <span class="pre">github:notifications</span></code> (in Python, <code class="docutils literal notranslate"><span class="pre">correspond.read(&quot;github:notifications&quot;)</span></code>) lists the <code class="docutils literal notranslate"><span class="pre">gh</span></code> account’s unread notification threads across every repository, every page of them. Each thread is one message in the conversation it is about (<code class="docutils literal notranslate"><span class="pre">github:owner/repo#7</span></code>, or the repository when the subject has no number), with <code class="docutils literal notranslate"><span class="pre">url</span></code> the subject’s web page (<code class="docutils literal notranslate"><span class="pre">https://github.com/owner/repo/pull/7</span></code>, not the API’s <code class="docutils literal notranslate"><span class="pre">.../pulls/7</span></code>) and <code class="docutils literal notranslate"><span class="pre">repository</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">reason</span></code> (<code class="docutils literal notranslate"><span class="pre">review_requested</span></code>, <code class="docutils literal notranslate"><span class="pre">mention</span></code>, <code class="docutils literal notranslate"><span class="pre">assign</span></code>, …), <code class="docutils literal notranslate"><span class="pre">unread</span></code> and <code class="docutils literal notranslate"><span class="pre">updated_at</span></code> in <code class="docutils literal notranslate"><span class="pre">native</span></code>. Reading marks nothing read. An empty inbox is an empty list; an inbox that could not be read (no login, a token without the <code class="docutils literal notranslate"><span class="pre">notifications</span></code> scope) raises <code class="docutils literal notranslate"><span class="pre">ChannelError</span></code>.</p>
 <p><code class="docutils literal notranslate"><span class="pre">correspond</span> <span class="pre">ref</span> <span class="pre">&lt;reference&gt;</span></code> prints a reference’s canonical form (GitHub names lower-cased, for example), which is the form to store and compare.</p>
 </section>
 <section id="authenticity">
@@ -674,7 +675,7 @@ claude<span class="w"> </span>--dangerously-load-development-channels<span class
 </section>
 </section>
 
-<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-10 12:09 UTC from <a href="https://github.com/thorwhalen/correspond/commit/4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b">4b3d1e3</a> (main) · correspond 0.0.51 · <a href="about-this-build.html">about this build</a></p>
+<p class="epythet-provenance" style="font-size:.8em;opacity:.65;margin-top:2.5em;text-align:right">built 2026-11-10 13:23 UTC from <a href="https://github.com/thorwhalen/correspond/commit/62230506915306498274fe81ff2375058c2f2894">6223050</a> (main) · correspond 0.0.52 · <a href="about-this-build.html">about this build</a></p>
 
                 </article>
               

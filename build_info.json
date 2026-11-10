@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-11-10T12:09:45Z",
+  "built_at": "2026-11-10T13:23:39Z",
   "package": {
     "name": "correspond",
-    "version": "0.0.51",
+    "version": "0.0.52",
     "display_name": "correspond",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b",
-    "short_commit": "4b3d1e3",
+    "commit": "62230506915306498274fe81ff2375058c2f2894",
+    "short_commit": "6223050",
     "branch": "main",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/thorwhalen/correspond",
-    "commit_url": "https://github.com/thorwhalen/correspond/commit/4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b",
+    "commit_url": "https://github.com/thorwhalen/correspond/commit/62230506915306498274fe81ff2375058c2f2894",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "thorwhalen/correspond",
-    "sha": "4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b",
+    "sha": "62230506915306498274fe81ff2375058c2f2894",
     "sha_in_history": true,
     "ref": "refs/heads/main",
     "ref_name": "main",
-    "run_id": "42813117168",
-    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/42813117168",
+    "run_id": "42823846800",
+    "run_url": "https://github.com/thorwhalen/correspond/actions/runs/42823846800",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -60,16 +60,16 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.0.52",
+    "latest": "0.0.53",
     "relation": "behind",
     "error": null
   },
-  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout 4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/thorwhalen/correspond && cd correspond\ngit checkout 62230506915306498274fe81ff2375058c2f2894\npip install \"epythet==0.2.22\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
     "aligned": false,
     "notes": [
-      "The documented version (0.0.51) is behind the latest release on PyPI (0.0.52): `pip install correspond` gives newer code than these docs describe."
+      "The documented version (0.0.52) is behind the latest release on PyPI (0.0.53): `pip install correspond` gives newer code than these docs describe."
     ]
   }
 }

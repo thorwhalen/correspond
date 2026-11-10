@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=440a2162"></script>
+    <script src="../_static/documentation_options.js?v=73f2ab08"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.51" />
+  <meta name="docsearch:version" content="0.0.52" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -445,6 +445,13 @@ a discussion through GraphQL <code class="docutils literal notranslate"><span cl
 takes its own close reasons (issue: <code class="docutils literal notranslate"><span class="pre">completed</span></code>, <code class="docutils literal notranslate"><span class="pre">not_planned</span></code>, <code class="docutils literal notranslate"><span class="pre">duplicate</span></code>;
 discussion: <code class="docutils literal notranslate"><span class="pre">resolved</span></code>, <code class="docutils literal notranslate"><span class="pre">outdated</span></code>, <code class="docutils literal notranslate"><span class="pre">duplicate</span></code>, with <code class="docutils literal notranslate"><span class="pre">completed</span></code> accepted as
 <code class="docutils literal notranslate"><span class="pre">resolved</span></code>).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">github:notifications</span></code>: the <code class="docutils literal notranslate"><span class="pre">gh</span></code> account’s notifications inbox, its unread threads
+across every repository (<code class="docutils literal notranslate"><span class="pre">GET</span> <span class="pre">/notifications</span></code>). <code class="docutils literal notranslate"><span class="pre">read</span></code> only: one message per
+thread (id <code class="docutils literal notranslate"><span class="pre">thread-ID</span></code>), in the conversation the thread is about (<code class="docutils literal notranslate"><span class="pre">owner/repo#N</span></code>,
+or the repository when the subject has no number), its <code class="docutils literal notranslate"><span class="pre">url</span></code> the subject’s web page,
+and <code class="docutils literal notranslate"><span class="pre">repository</span></code>, <code class="docutils literal notranslate"><span class="pre">title</span></code>, <code class="docutils literal notranslate"><span class="pre">type</span></code>, <code class="docutils literal notranslate"><span class="pre">reason</span></code>, <code class="docutils literal notranslate"><span class="pre">unread</span></code> and <code class="docutils literal notranslate"><span class="pre">updated_at</span></code> in
+<code class="docutils literal notranslate"><span class="pre">native</span></code>. Nothing is marked read. An empty inbox is an empty list; an inbox that
+could not be read raises <a class="reference internal" href="correspond.errors.html#correspond.errors.ChannelError" title="correspond.errors.ChannelError"><code class="xref py py-class docutils literal notranslate"><span class="pre">ChannelError</span></code></a>.</p></li>
 </ul>
 <p>Opening an issue takes <code class="docutils literal notranslate"><span class="pre">Draft.native</span></code> keys <code class="docutils literal notranslate"><span class="pre">labels</span></code>, <code class="docutils literal notranslate"><span class="pre">assignees</span></code> and <code class="docutils literal notranslate"><span class="pre">milestone</span></code>,
 set in the creating request so watchers are notified once. GitHub silently drops an
@@ -489,7 +496,7 @@ from its visibility, and its collaborators when the account may list them.</p>
 <div class="pst-scrollable-table-container"><table class="autosummary longtable table">
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.github.GitHub" title="correspond.channels.github.GitHub"><code class="xref py py-obj docutils literal notranslate"><span class="pre">GitHub</span></code></a>(*[, run, gh, recent_discussions, ...])</p></td>
-<td><p>GitHub through <code class="docutils literal notranslate"><span class="pre">gh</span></code>: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.</p></td>
+<td><p>GitHub through <code class="docutils literal notranslate"><span class="pre">gh</span></code>: read (conversations and the notifications inbox), listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.</p></td>
 </tr>
 </tbody>
 </table>
@@ -498,7 +505,7 @@ from its visibility, and its collaborators when the account may list them.</p>
 <dt class="sig sig-object py" id="correspond.channels.github.GitHub">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.github.</span></span><span class="sig-name descname"><span class="pre">GitHub</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">gh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'gh'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">recent_discussions</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">deliveries</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clock</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;built-in</span> <span class="pre">function</span> <span class="pre">time_ns&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub" title="Link to this definition">#</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/builtins/functions.html#object" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
-<p>GitHub through <code class="docutils literal notranslate"><span class="pre">gh</span></code>: read, listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.</p>
+<p>GitHub through <code class="docutils literal notranslate"><span class="pre">gh</span></code>: read (conversations and the notifications inbox), listen, send, edit, react, verify webhook deliveries, and say who reads a conversation.</p>
 <dl class="field-list simple">
 </dl>
 <dl class="py method">
@@ -537,7 +544,7 @@ a transport failure raises; <a class="reference internal" href="correspond.ops.h
 <dl class="py property">
 <dt class="sig sig-object py" id="correspond.channels.github.GitHub.capabilities">
 <span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">capabilities</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="correspond.model.html#correspond.model.Capabilities" title="correspond.model.Capabilities"><span class="pre">Capabilities</span></a></span><a class="headerlink" href="#correspond.channels.github.GitHub.capabilities" title="Link to this definition">#</a></dt>
-<dd><p>Issues, pull request conversations and discussions.</p>
+<dd><p>Issues, pull request conversations, discussions, and the notifications inbox (read only).</p>
 </dd></dl>
 
 <dl class="py method">
@@ -595,7 +602,7 @@ mentioned, so <code class="docutils literal notranslate"><span class="pre">lande
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.github.GitHub.parse_ref">
 <span class="sig-name descname"><span class="pre">parse_ref</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.parse_ref"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.parse_ref" title="Link to this definition">#</a></dt>
-<dd><p><code class="docutils literal notranslate"><span class="pre">owner/repo</span></code> or <code class="docutils literal notranslate"><span class="pre">owner/repo#N</span></code>, lower-cased (GitHub names are case-insensitive).</p>
+<dd><p><code class="docutils literal notranslate"><span class="pre">owner/repo</span></code> or <code class="docutils literal notranslate"><span class="pre">owner/repo#N</span></code>, lower-cased (GitHub names are case-insensitive); <code class="docutils literal notranslate"><span class="pre">notifications</span></code> is the inbox.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.ConversationRef" title="correspond.model.ConversationRef"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConversationRef</span></code></a></span></p>
@@ -648,7 +655,7 @@ discussion comment is <code class="docutils literal notranslate"><span class="pr
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.github.GitHub.read">
 <span class="sig-name descname"><span class="pre">read</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">since</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">limit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/github.html#GitHub.read"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.github.GitHub.read" title="Link to this definition">#</a></dt>
-<dd><p>An issue, pull request or discussion with its comments; for a repository, recent open issues and pull requests.</p>
+<dd><p>An issue, pull request or discussion with its comments; for a repository, recent open issues and pull requests; for <code class="docutils literal notranslate"><span class="pre">notifications</span></code>, the inbox’s unread threads.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/builtins/stdtypes.html#list" title="(in Python v3.15)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>[<a class="reference internal" href="correspond.model.html#correspond.model.Message" title="correspond.model.Message"><code class="xref py py-class docutils literal notranslate"><span class="pre">Message</span></code></a>]</span></p>
