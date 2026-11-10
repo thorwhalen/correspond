@@ -441,3 +441,29 @@ def test_an_allowlisted_own_account_message_is_dropped_loudly():
         notifications([REF], gate=ADA, cursors={}, registry={"fake": fake}, log=logged.append)
     )
     assert notes == [] and "different account" in logged[0]
+
+
+# ------------------------------------- the two FastMCP internals the server drives (#48)
+
+
+def test_a_fastmcp_without_the_internals_fails_at_startup_saying_which_and_why():
+    from correspond.channel import fastmcp_internals
+
+    class Renamed:
+        _mcp_server = object()  # _lifespan_manager is gone, as after a rename
+
+    with pytest.raises(RuntimeError) as raised:
+        fastmcp_internals(Renamed())
+    message = str(raised.value)
+    assert "_lifespan_manager" in message and "fastmcp" in message
+    assert "issues/48" in message
+
+
+def test_the_installed_fastmcp_still_has_the_internals_the_server_drives():
+    pytest.importorskip("py2mcp")
+    from correspond.channel import fastmcp_internals
+    from correspond.mcp import mk_server
+
+    low_level, lifespan = fastmcp_internals(mk_server())
+    assert callable(low_level.run) and callable(low_level.create_initialization_options)
+    assert callable(lifespan)

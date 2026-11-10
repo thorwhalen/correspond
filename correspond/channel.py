@@ -359,6 +359,53 @@ def _session_message(note: Mapping[str, Any]):
     )
 
 
+#: The private FastMCP attributes :func:`serve_streams` drives, since FastMCP has no public
+#: way to run its server over streams it does not open itself.
+FASTMCP_INTERNALS = ("_mcp_server", "_lifespan_manager")
+
+
+#: FastMCP releases the channel's wire tests have passed with, for the rename error.
+FASTMCP_TESTED = "3.3 to 4.1"
+
+#: Distributions that may carry FastMCP's version: since 3.4 the code ships in
+#: ``fastmcp-slim`` and ``fastmcp`` is a meta-package over it.
+_FASTMCP_DISTRIBUTIONS = ("fastmcp", "fastmcp-slim")
+
+
+def _fastmcp_version() -> str:
+    from importlib.metadata import PackageNotFoundError, version
+
+    for distribution in _FASTMCP_DISTRIBUTIONS:
+        try:
+            return f"version {version(distribution)}"
+        except PackageNotFoundError:
+            continue
+    return "version unknown"
+
+
+def fastmcp_internals(server: Any) -> tuple[Any, Any]:
+    """FastMCP's low-level server and its lifespan manager, or a ``RuntimeError`` naming the missing one.
+
+    Both are private, so a FastMCP release may rename them; this says so at startup
+    rather than as a bare ``AttributeError`` mid-run. The tests check the installed
+    FastMCP still has them.
+
+    >>> fastmcp_internals(object())
+    Traceback (most recent call last):
+    ...
+    RuntimeError: correspond-channel drives FastMCP's private _mcp_server and _lifespan_manager, and this fastmcp (...) has no _mcp_server, _lifespan_manager: ...
+    """
+    missing = [name for name in FASTMCP_INTERNALS if not hasattr(server, name)]
+    if missing:
+        raise RuntimeError(
+            f"correspond-channel drives FastMCP's private {' and '.join(FASTMCP_INTERNALS)}, "
+            f"and this fastmcp ({_fastmcp_version()}) has no {', '.join(missing)}: pin a "
+            f"fastmcp the tests passed with ({FASTMCP_TESTED}), and report it at "
+            "https://github.com/thorwhalen/correspond/issues/48"
+        )
+    return tuple(getattr(server, name) for name in FASTMCP_INTERNALS)
+
+
 async def serve_streams(
     read_stream,
     write_stream,
@@ -389,6 +436,9 @@ async def serve_streams(
         server = mk_server(
             allow_send=allow_send, instructions=f"{INSTRUCTIONS} {CHANNEL_INSTRUCTIONS}"
         )
+    # FastMCP's low-level server, as its own run_stdio_async uses it, and its lifespan;
+    # fetched before anything starts, so a renamed internal fails here, not mid-run
+    low_level, lifespan_manager = fastmcp_internals(server)
     server.experimental_capabilities[CHANNEL_CAPABILITY] = {}
     if gate.relay_to:
         server.experimental_capabilities[PERMISSION_CAPABILITY] = {}
@@ -448,10 +498,7 @@ async def serve_streams(
             await anyio.sleep(interval)
 
     session_in, session_read = anyio.create_memory_object_stream(0)
-    low_level = (
-        server._mcp_server
-    )  # FastMCP's low-level server, as its own run_stdio_async uses it
-    async with server._lifespan_manager(), anyio.create_task_group() as tasks:
+    async with lifespan_manager(), anyio.create_task_group() as tasks:
         tasks.start_soon(tap, read_stream, session_in, tasks)
         tasks.start_soon(poll)
         await low_level.run(
