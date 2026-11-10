@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=e072a57b"></script>
+    <script src="../../_static/documentation_options.js?v=440a2162"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.50" />
+  <meta name="docsearch:version" content="0.0.51" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1100,6 +1100,53 @@ window.runMermaid = runMermaid;</script>
     <span class="p">)</span>
 
 
+<span class="c1">#: The private FastMCP attributes :func:`serve_streams` drives, since FastMCP has no public</span>
+<span class="c1">#: way to run its server over streams it does not open itself.</span>
+<span class="n">FASTMCP_INTERNALS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"_mcp_server"</span><span class="p">,</span> <span class="s2">"_lifespan_manager"</span><span class="p">)</span>
+
+
+<span class="c1">#: FastMCP releases the channel's wire tests have passed with, for the rename error.</span>
+<span class="n">FASTMCP_TESTED</span> <span class="o">=</span> <span class="s2">"3.3 to 4.1"</span>
+
+<span class="c1">#: Distributions that may carry FastMCP's version: since 3.4 the code ships in</span>
+<span class="c1">#: ``fastmcp-slim`` and ``fastmcp`` is a meta-package over it.</span>
+<span class="n">_FASTMCP_DISTRIBUTIONS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"fastmcp"</span><span class="p">,</span> <span class="s2">"fastmcp-slim"</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fastmcp_version</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">importlib.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">PackageNotFoundError</span><span class="p">,</span> <span class="n">version</span>
+
+    <span class="k">for</span> <span class="n">distribution</span> <span class="ow">in</span> <span class="n">_FASTMCP_DISTRIBUTIONS</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">"version </span><span class="si">{</span><span class="n">version</span><span class="p">(</span><span class="n">distribution</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span>
+        <span class="k">except</span> <span class="n">PackageNotFoundError</span><span class="p">:</span>
+            <span class="k">continue</span>
+    <span class="k">return</span> <span class="s2">"version unknown"</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">fastmcp_internals</span><span class="p">(</span><span class="n">server</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""FastMCP's low-level server and its lifespan manager, or a ``RuntimeError`` naming the missing one.</span>
+
+<span class="sd">    Both are private, so a FastMCP release may rename them; this says so at startup</span>
+<span class="sd">    rather than as a bare ``AttributeError`` mid-run. The tests check the installed</span>
+<span class="sd">    FastMCP still has them.</span>
+
+<span class="sd">    &gt;&gt;&gt; fastmcp_internals(object())</span>
+<span class="sd">    Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">    RuntimeError: correspond-channel drives FastMCP's private _mcp_server and _lifespan_manager, and this fastmcp (...) has no _mcp_server, _lifespan_manager: ...</span>
+<span class="sd">    """</span>
+    <span class="n">missing</span> <span class="o">=</span> <span class="p">[</span><span class="n">name</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">FASTMCP_INTERNALS</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">name</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">missing</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"correspond-channel drives FastMCP's private </span><span class="si">{</span><span class="s1">' and '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">FASTMCP_INTERNALS</span><span class="p">)</span><span class="si">}</span><span class="s2">, "</span>
+            <span class="sa">f</span><span class="s2">"and this fastmcp (</span><span class="si">{</span><span class="n">_fastmcp_version</span><span class="p">()</span><span class="si">}</span><span class="s2">) has no </span><span class="si">{</span><span class="s1">', '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing</span><span class="p">)</span><span class="si">}</span><span class="s2">: pin a "</span>
+            <span class="sa">f</span><span class="s2">"fastmcp the tests passed with (</span><span class="si">{</span><span class="n">FASTMCP_TESTED</span><span class="si">}</span><span class="s2">), and report it at "</span>
+            <span class="s2">"https://github.com/thorwhalen/correspond/issues/48"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">FASTMCP_INTERNALS</span><span class="p">)</span>
+
+
 <div class="viewcode-block" id="serve_streams">
 <a class="viewcode-back" href="../../_autosummary/correspond.channel.html#correspond.channel.serve_streams">[docs]</a>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">serve_streams</span><span class="p">(</span>
@@ -1132,6 +1179,9 @@ window.runMermaid = runMermaid;</script>
         <span class="n">server</span> <span class="o">=</span> <span class="n">mk_server</span><span class="p">(</span>
             <span class="n">allow_send</span><span class="o">=</span><span class="n">allow_send</span><span class="p">,</span> <span class="n">instructions</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">INSTRUCTIONS</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">CHANNEL_INSTRUCTIONS</span><span class="si">}</span><span class="s2">"</span>
         <span class="p">)</span>
+    <span class="c1"># FastMCP's low-level server, as its own run_stdio_async uses it, and its lifespan;</span>
+    <span class="c1"># fetched before anything starts, so a renamed internal fails here, not mid-run</span>
+    <span class="n">low_level</span><span class="p">,</span> <span class="n">lifespan_manager</span> <span class="o">=</span> <span class="n">fastmcp_internals</span><span class="p">(</span><span class="n">server</span><span class="p">)</span>
     <span class="n">server</span><span class="o">.</span><span class="n">experimental_capabilities</span><span class="p">[</span><span class="n">CHANNEL_CAPABILITY</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">if</span> <span class="n">gate</span><span class="o">.</span><span class="n">relay_to</span><span class="p">:</span>
         <span class="n">server</span><span class="o">.</span><span class="n">experimental_capabilities</span><span class="p">[</span><span class="n">PERMISSION_CAPABILITY</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
@@ -1191,10 +1241,7 @@ window.runMermaid = runMermaid;</script>
             <span class="k">await</span> <span class="n">anyio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">interval</span><span class="p">)</span>
 
     <span class="n">session_in</span><span class="p">,</span> <span class="n">session_read</span> <span class="o">=</span> <span class="n">anyio</span><span class="o">.</span><span class="n">create_memory_object_stream</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-    <span class="n">low_level</span> <span class="o">=</span> <span class="p">(</span>
-        <span class="n">server</span><span class="o">.</span><span class="n">_mcp_server</span>
-    <span class="p">)</span>  <span class="c1"># FastMCP's low-level server, as its own run_stdio_async uses it</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">server</span><span class="o">.</span><span class="n">_lifespan_manager</span><span class="p">(),</span> <span class="n">anyio</span><span class="o">.</span><span class="n">create_task_group</span><span class="p">()</span> <span class="k">as</span> <span class="n">tasks</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">lifespan_manager</span><span class="p">(),</span> <span class="n">anyio</span><span class="o">.</span><span class="n">create_task_group</span><span class="p">()</span> <span class="k">as</span> <span class="n">tasks</span><span class="p">:</span>
         <span class="n">tasks</span><span class="o">.</span><span class="n">start_soon</span><span class="p">(</span><span class="n">tap</span><span class="p">,</span> <span class="n">read_stream</span><span class="p">,</span> <span class="n">session_in</span><span class="p">,</span> <span class="n">tasks</span><span class="p">)</span>
         <span class="n">tasks</span><span class="o">.</span><span class="n">start_soon</span><span class="p">(</span><span class="n">poll</span><span class="p">)</span>
         <span class="k">await</span> <span class="n">low_level</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>

@@ -1,4 +1,4 @@
-> built 2026-11-04 11:58 UTC from b2e2ac1 (main) · correspond 0.0.50. Details: build_info.json
+> built 2026-11-10 12:09 UTC from 4b3d1e3 (main) · correspond 0.0.51. Details: build_info.json
 
 # index.html.md
 
@@ -6026,18 +6026,18 @@ Where a channel’s platform delivers its updates now (Telegram: none means list
 
 # About this build
 
-This documentation was built on **2026-11-04 11:58 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/b2e2ac1686354d09cbd645b9bb8452f59e62d670"><code>b2e2ac1</code></a> on branch <code>main</code>, for **correspond 0.0.50** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-10 12:09 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b"><code>4b3d1e3</code></a> on branch <code>main</code>, for **correspond 0.0.51** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.50) is behind the latest release on PyPI (0.0.51): `pip install correspond` gives newer code than these docs describe.
+- The documented version (0.0.51) is behind the latest release on PyPI (0.0.52): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/b2e2ac1686354d09cbd645b9bb8452f59e62d670"><code>b2e2ac1686354d09cbd645b9bb8452f59e62d670</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b"><code>4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -6048,9 +6048,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/41825023429">41825023429</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/42813117168">42813117168</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>b2e2ac1686354d09cbd645b9bb8452f59e62d670</code> (in the history of the built commit)  |
+| Event commit | <code>4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -6059,7 +6059,7 @@ The documentation and the package may be misaligned:
 | epythet  | 0.2.22  |
 | Sphinx   | 9.1.1   |
 | docutils | 0.22.4  |
-| Python   | 3.12.15 |
+| Python   | 3.12.16 |
 
 ## Configuration as resolved
 
@@ -6075,13 +6075,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.51/">0.0.51</a>, newer than the documented version (0.0.50).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.52/">0.0.52</a>, newer than the documented version (0.0.51).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout b2e2ac1686354d09cbd645b9bb8452f59e62d670
+git checkout 4b3d1e33fa51cfedd1c49da74adc5ce58ea3e16b
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

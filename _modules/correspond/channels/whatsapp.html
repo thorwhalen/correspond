@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=e072a57b"></script>
+    <script src="../../../_static/documentation_options.js?v=440a2162"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.50" />
+  <meta name="docsearch:version" content="0.0.51" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -813,7 +813,9 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"Contact card omitted"</span><span class="p">:</span> <span class="s2">"contact"</span><span class="p">,</span>
     <span class="s2">"&lt;Media omitted&gt;"</span><span class="p">:</span> <span class="s2">"media"</span><span class="p">,</span>
 <span class="p">}</span>
-<span class="n">_ATTACHED_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^&lt;attached:\s*(?P&lt;name&gt;[^&gt;]+)&gt;$|^(?P&lt;name2&gt;\S+) \(file attached\)$"</span><span class="p">)</span>
+<span class="n">_ATTACHED_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="sa">r</span><span class="s2">"^&lt;attached:\s*(?P&lt;name&gt;[^&gt;]+)&gt;$|^(?P&lt;name2&gt;\S+) \(file attached\)$"</span>
+<span class="p">)</span>
 <span class="n">_DELETED</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"This message was deleted."</span><span class="p">,</span> <span class="s2">"You deleted this message."</span><span class="p">)</span>
 <span class="n">_CALL_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^(Missed )?(voice|video) call(, .*)?$"</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">I</span><span class="p">)</span>
 
@@ -998,7 +1000,12 @@ window.runMermaid = runMermaid;</script>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_looks_secret</span><span class="p">(</span><span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">"""One token that could be a password: 8 to 128 characters, not a URL or an address, with letters and digits (or three character classes)."""</span>
-    <span class="k">if</span> <span class="ow">not</span> <span class="mi">8</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">128</span> <span class="ow">or</span> <span class="s2">"://"</span> <span class="ow">in</span> <span class="n">token</span> <span class="ow">or</span> <span class="s2">"@"</span> <span class="ow">in</span> <span class="n">token</span> <span class="ow">or</span> <span class="n">token</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"www."</span><span class="p">):</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="ow">not</span> <span class="mi">8</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">128</span>
+        <span class="ow">or</span> <span class="s2">"://"</span> <span class="ow">in</span> <span class="n">token</span>
+        <span class="ow">or</span> <span class="s2">"@"</span> <span class="ow">in</span> <span class="n">token</span>
+        <span class="ow">or</span> <span class="n">token</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">"www."</span><span class="p">)</span>
+    <span class="p">):</span>
         <span class="k">return</span> <span class="kc">False</span>
     <span class="n">lower</span><span class="p">,</span> <span class="n">upper</span><span class="p">,</span> <span class="n">digit</span><span class="p">,</span> <span class="n">other</span> <span class="o">=</span> <span class="p">(</span>
         <span class="nb">bool</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">token</span><span class="p">))</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="p">(</span><span class="sa">r</span><span class="s2">"[a-z]"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"[A-Z]"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"\d"</span><span class="p">,</span> <span class="sa">r</span><span class="s2">"[^\w\s]"</span><span class="p">)</span>
@@ -1030,11 +1037,17 @@ window.runMermaid = runMermaid;</script>
         <span class="n">new</span> <span class="o">=</span> <span class="n">_KEY_SHAPES</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">REDACTED</span><span class="p">,</span> <span class="n">new</span><span class="p">)</span>
         <span class="n">token</span> <span class="o">=</span> <span class="n">new</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
         <span class="k">if</span> <span class="s2">" "</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">token</span> <span class="ow">and</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">token</span> <span class="ow">and</span> <span class="n">_looks_secret</span><span class="p">(</span><span class="n">token</span><span class="p">):</span>
-            <span class="n">recent</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span> <span class="o">-</span> <span class="n">lookback</span><span class="p">)</span> <span class="p">:</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]]</span>
+            <span class="n">recent</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">[</span><span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">index</span> <span class="o">-</span> <span class="n">lookback</span><span class="p">)</span> <span class="p">:</span> <span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="p">]</span>
             <span class="k">if</span> <span class="nb">any</span><span class="p">(</span><span class="n">_CREDENTIAL_WORDS</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">recent</span><span class="p">):</span>
                 <span class="n">new</span> <span class="o">=</span> <span class="n">REDACTED</span>
         <span class="k">if</span> <span class="n">new</span> <span class="o">!=</span> <span class="n">text</span><span class="p">:</span>
-            <span class="n">row</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">row</span><span class="p">,</span> <span class="s2">"text"</span><span class="p">:</span> <span class="n">new</span><span class="p">,</span> <span class="s2">"native"</span><span class="p">:</span> <span class="p">{</span><span class="o">**</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}),</span> <span class="s2">"redacted"</span><span class="p">:</span> <span class="kc">True</span><span class="p">}}</span>
+            <span class="n">row</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="o">**</span><span class="n">row</span><span class="p">,</span>
+                <span class="s2">"text"</span><span class="p">:</span> <span class="n">new</span><span class="p">,</span>
+                <span class="s2">"native"</span><span class="p">:</span> <span class="p">{</span><span class="o">**</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"native"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}),</span> <span class="s2">"redacted"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+            <span class="p">}</span>
         <span class="n">out</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">out</span></div>
 
@@ -1139,7 +1152,9 @@ window.runMermaid = runMermaid;</script>
             <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">value</span>
 
             <span class="n">configured</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"self_name"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_self_names</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">n</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">configured</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span> <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_self_names</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+                <span class="n">n</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">configured</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">","</span><span class="p">)</span> <span class="k">if</span> <span class="n">n</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_self_names</span>
 
     <span class="nd">@property</span>
@@ -1204,7 +1219,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">readers</span><span class="o">=</span><span class="n">readers</span><span class="p">,</span>
             <span class="n">external</span><span class="o">=</span><span class="nb">bool</span><span class="p">(</span><span class="n">others</span><span class="p">)</span> <span class="k">if</span> <span class="n">senders</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">durability</span><span class="o">=</span><span class="p">(</span><span class="s2">"copies_pushed"</span><span class="p">,),</span>
-            <span class="n">widening</span><span class="o">=</span><span class="p">(</span><span class="s2">"forwarding"</span><span class="p">,)</span> <span class="o">+</span> <span class="p">((</span><span class="s2">"joiners_read_history"</span><span class="p">,)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">senders</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="p">()),</span>
+            <span class="n">widening</span><span class="o">=</span><span class="p">(</span><span class="s2">"forwarding"</span><span class="p">,)</span>
+            <span class="o">+</span> <span class="p">((</span><span class="s2">"joiners_read_history"</span><span class="p">,)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">senders</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span> <span class="k">else</span> <span class="p">()),</span>
             <span class="n">evidence</span><span class="o">=</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">senders</span><span class="p">)</span><span class="si">}</span><span class="s2"> sender(s) in the imported exports of </span><span class="si">{</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="si">}</span><span class="s2">; a member who never wrote is not listed"</span><span class="p">,</span>
             <span class="p">),</span>
@@ -1262,7 +1278,11 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">        ``export_span`` (first and last time in the export). An export whose messages are</span>
 <span class="sd">        all archived adds nothing and changes nothing but the import log.</span>
 <span class="sd">        """</span>
-        <span class="n">raw</span> <span class="o">=</span> <span class="n">source</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span> <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="n">source</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">source</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span>
+            <span class="k">else</span> <span class="n">Path</span><span class="p">(</span><span class="n">source</span><span class="p">)</span><span class="o">.</span><span class="n">expanduser</span><span class="p">()</span><span class="o">.</span><span class="n">read_bytes</span><span class="p">()</span>
+        <span class="p">)</span>
         <span class="n">parsed</span> <span class="o">=</span> <span class="n">parse_export</span><span class="p">(</span><span class="n">export_text</span><span class="p">(</span><span class="n">raw</span><span class="p">),</span> <span class="n">dayfirst</span><span class="o">=</span><span class="n">dayfirst</span><span class="p">,</span> <span class="n">tz</span><span class="o">=</span><span class="n">tz</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">redact</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">parsed</span> <span class="o">=</span> <span class="n">redact</span><span class="p">(</span><span class="n">parsed</span><span class="p">)</span>
