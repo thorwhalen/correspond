@@ -2600,3 +2600,140 @@ def test_a_comment_with_more_than_100_replies_is_read_whole():
     assert len(replies) == 150 and replies[0].id == "discussioncomment-650"
     comment = next(m for m in messages if m.id == "discussioncomment-501")
     assert "replies_truncated" not in comment.native
+
+
+# ------------------------------------------------------------- notifications inbox
+
+
+def _thread(
+    thread_id,
+    *,
+    subject_url=f"https://api.github.com/repos/{REPO}/issues/1",
+    subject_type="Issue",
+    reason="mention",
+    updated="2026-09-11T08:00:00Z",
+):
+    return {
+        "id": str(thread_id),
+        "unread": True,
+        "reason": reason,
+        "updated_at": updated,
+        "last_read_at": None,
+        "subject": {
+            "title": f"thread {thread_id}",
+            "url": subject_url,
+            "latest_comment_url": subject_url,
+            "type": subject_type,
+        },
+        "repository": {
+            "full_name": "OctoCat/Hello-World",
+            "html_url": "https://github.com/OctoCat/Hello-World",
+        },
+        "url": f"https://api.github.com/notifications/threads/{thread_id}",
+    }
+
+
+def test_the_inbox_reference_is_its_own_and_never_a_repository():
+    ref = GitHub().parse_ref("Notifications")
+    assert (ref.encoded, ref.kind) == ("github:notifications", "inbox")
+    assert GitHub().parse_ref("notifications/inbox").kind == "repository"
+
+
+def test_reading_the_inbox_gives_one_message_per_thread_with_its_web_page():
+    gh = ScriptedGh(
+        (
+            "GET",
+            r"notifications\?per_page=50&page=1",
+            (
+                200,
+                [
+                    _thread(
+                        3,
+                        subject_url=f"https://api.github.com/repos/{REPO}/pulls/7",
+                        subject_type="PullRequest",
+                        reason="review_requested",
+                        updated="2026-09-11T10:00:00Z",
+                    ),
+                    _thread(1, reason="assign"),
+                    _thread(
+                        2,
+                        subject_url=None,
+                        subject_type="CheckSuite",
+                        reason="ci_activity",
+                        updated="2026-09-11T09:00:00Z",
+                    ),
+                ],
+            ),
+        ),
+    )
+    messages = _read(gh, "github:notifications")
+    assert [m.id for m in messages] == ["thread-1", "thread-2", "thread-3"]
+    issue, checks, pull = messages
+    assert pull.url == "https://github.com/OctoCat/Hello-World/pull/7"
+    assert issue.url == "https://github.com/OctoCat/Hello-World/issues/1"
+    assert checks.url == "https://github.com/OctoCat/Hello-World"
+    assert (pull.conversation.encoded, pull.conversation.kind) == (
+        f"github:{REPO}#7",
+        "pull_request",
+    )
+    assert pull.conversation.parent.encoded == f"github:{REPO}"
+    assert (checks.conversation.encoded, checks.conversation.kind) == (
+        f"github:{REPO}",
+        "repository",
+    )
+    assert pull.native["repository"] == "OctoCat/Hello-World"
+    assert (pull.native["title"], pull.native["type"]) == ("thread 3", "PullRequest")
+    assert (pull.native["reason"], pull.native["unread"]) == ("review_requested", True)
+    assert pull.native["updated_at"] == "2026-09-11T10:00:00Z" and pull.text == "thread 3"
+    assert pull.authenticity.grade.value == "platform" and pull.author.is_bot
+    assert set(pull.native) <= set(GitHub().capabilities.native_fields)
+    assert gh.paths() == ["notifications?per_page=50&page=1"]  # no write, no other read
+
+
+def test_the_inbox_is_read_past_fifty_threads():
+    first = [_thread(n) for n in range(1, 51)]
+    gh = ScriptedGh(
+        ("GET", r"notifications\?since=.*&per_page=50&page=1", (200, first)),
+        ("GET", r"notifications\?since=.*&per_page=50&page=2", (200, [_thread(51)])),
+    )
+    messages = _read(gh, "github:notifications", since="2026-09-01T00:00:00Z")
+    assert len(messages) == 51 and {m.id for m in messages} >= {"thread-1", "thread-51"}
+    assert gh.paths() == [
+        "notifications?since=2026-09-01T00:00:00Z&per_page=50&page=1",
+        "notifications?since=2026-09-01T00:00:00Z&per_page=50&page=2",
+    ]
+
+
+def test_an_empty_inbox_is_an_empty_list():
+    gh = ScriptedGh(("GET", r"notifications\?per_page=50&page=1", (200, [])))
+    assert _read(gh, "github:notifications") == []
+
+
+@pytest.mark.parametrize(
+    "status, body, kind",
+    [
+        (401, {"message": "Bad credentials"}, "auth"),
+        (403, {"message": "Missing the notifications scope"}, "permission"),
+        (200, {"message": "not a list"}, "unavailable"),
+        (200, ["not a thread"], "unavailable"),
+    ],
+)
+def test_an_inbox_that_could_not_be_read_raises_instead_of_looking_empty(
+    status, body, kind
+):
+    gh = ScriptedGh(("GET", r"notifications\?per_page=50&page=1", (status, body)))
+    with pytest.raises(ChannelError) as caught:
+        _read(gh, "github:notifications")
+    assert caught.value.kind == kind
+
+
+def test_the_inbox_refuses_every_verb_but_read_with_no_gh_call():
+    gh = ScriptedGh()
+    github = GitHub(run=gh)
+    with pytest.raises(NotSupported):
+        list(github.poll(github.parse_ref("notifications")))
+    with pytest.raises(NotSupported, match="notifications"):
+        correspond.send(
+            "github:notifications", "hi", dry_run=True, registry={"github": github}
+        )
+    assert gh.calls == []
