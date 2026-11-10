@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "hatchling",
+    "hatchling>=1.27",  # PEP 639: license = "<SPDX>" with license-files
 ]
 build-backend = "hatchling.build"
 

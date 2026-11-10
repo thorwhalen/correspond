@@ -364,6 +364,25 @@ def _session_message(note: Mapping[str, Any]):
 FASTMCP_INTERNALS = ("_mcp_server", "_lifespan_manager")
 
 
+#: FastMCP releases the channel's wire tests have passed with, for the rename error.
+FASTMCP_TESTED = "3.3 to 4.1"
+
+#: Distributions that may carry FastMCP's version: since 3.4 the code ships in
+#: ``fastmcp-slim`` and ``fastmcp`` is a meta-package over it.
+_FASTMCP_DISTRIBUTIONS = ("fastmcp", "fastmcp-slim")
+
+
+def _fastmcp_version() -> str:
+    from importlib.metadata import PackageNotFoundError, version
+
+    for distribution in _FASTMCP_DISTRIBUTIONS:
+        try:
+            return f"version {version(distribution)}"
+        except PackageNotFoundError:
+            continue
+    return "version unknown"
+
+
 def fastmcp_internals(server: Any) -> tuple[Any, Any]:
     """FastMCP's low-level server and its lifespan manager, or a ``RuntimeError`` naming the missing one.
 
@@ -378,16 +397,10 @@ def fastmcp_internals(server: Any) -> tuple[Any, Any]:
     """
     missing = [name for name in FASTMCP_INTERNALS if not hasattr(server, name)]
     if missing:
-        from importlib.metadata import PackageNotFoundError, version
-
-        try:
-            installed = f"version {version('fastmcp')}"
-        except PackageNotFoundError:
-            installed = "version unknown"
         raise RuntimeError(
             f"correspond-channel drives FastMCP's private {' and '.join(FASTMCP_INTERNALS)}, "
-            f"and this fastmcp ({installed}) has no {', '.join(missing)}: install the "
-            "fastmcp release before the rename, and report it at "
+            f"and this fastmcp ({_fastmcp_version()}) has no {', '.join(missing)}: pin a "
+            f"fastmcp the tests passed with ({FASTMCP_TESTED}), and report it at "
             "https://github.com/thorwhalen/correspond/issues/48"
         )
     return tuple(getattr(server, name) for name in FASTMCP_INTERNALS)
