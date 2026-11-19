@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=73f2ab08"></script>
+    <script src="../../../_static/documentation_options.js?v=d78a2f11"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.52" />
+  <meta name="docsearch:version" content="0.0.53" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -724,6 +724,14 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">A topic is a bearer secret: anyone who knows an unauthenticated one can publish to it and</span>
 <span class="sd">read it. Prefer ``ntfy:`` to writing a topic into a reference that ends up in logs.</span>
 
+<span class="sd">A draft's ``native`` may carry three ntfy fields (:data:`DRAFT_FIELDS`): ``at``, a delivery</span>
+<span class="sd">time the server holds the message until (a Unix timestamp, or a duration or phrase ntfy</span>
+<span class="sd">accepts such as ``30m`` or ``tomorrow, 10am``; 10 seconds to 3 days ahead); ``sequence_id``,</span>
+<span class="sd">which publishes to ``/&lt;topic&gt;/&lt;sequence_id&gt;`` so a later message with the same id replaces it</span>
+<span class="sd">(a scheduled one is replaced on the server); and ``click``, an ``http(s)`` URL opened when the</span>
+<span class="sd">notification is tapped. :meth:`Ntfy.cancel` deletes a scheduled message by its sequence id</span>
+<span class="sd">before it is delivered (ntfy's "dead man's switch" pattern).</span>
+
 <span class="sd">&gt;&gt;&gt; Ntfy().parse_ref("").kind</span>
 <span class="sd">'topic'</span>
 <span class="sd">"""</span>
@@ -752,7 +760,7 @@ window.runMermaid = runMermaid;</script>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">info</span><span class="p">,</span> <span class="n">resolve</span><span class="p">,</span> <span class="n">value</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.settings</span><span class="w"> </span><span class="kn">import</span> <span class="n">keychain_available</span><span class="p">,</span> <span class="n">keychain_service</span><span class="p">,</span> <span class="n">mask</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"PRIORITY"</span><span class="p">,</span> <span class="s2">"Ntfy"</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"DRAFT_FIELDS"</span><span class="p">,</span> <span class="s2">"PRIORITY"</span><span class="p">,</span> <span class="s2">"Ntfy"</span><span class="p">]</span>
 
 <span class="n">NAME</span> <span class="o">=</span> <span class="s2">"ntfy"</span>
 <span class="n">TOPIC_RE</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"^[A-Za-z0-9_-]{1,64}$"</span><span class="p">)</span>
@@ -760,6 +768,14 @@ window.runMermaid = runMermaid;</script>
 <span class="c1">#: Draft priorities as ntfy's 1-5 scale.</span>
 <span class="n">PRIORITY</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"low"</span><span class="p">:</span> <span class="s2">"2"</span><span class="p">,</span> <span class="s2">"normal"</span><span class="p">:</span> <span class="s2">"3"</span><span class="p">,</span> <span class="s2">"high"</span><span class="p">:</span> <span class="s2">"4"</span><span class="p">,</span> <span class="s2">"urgent"</span><span class="p">:</span> <span class="s2">"5"</span><span class="p">}</span>
 <span class="n">MAX_TITLE_CHARS</span> <span class="o">=</span> <span class="mi">250</span>
+<span class="c1">#: The ``Draft.native`` keys ntfy takes: scheduled delivery, replace-by-id, a tap URL.</span>
+<span class="n">DRAFT_FIELDS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"at"</span><span class="p">,</span> <span class="s2">"sequence_id"</span><span class="p">,</span> <span class="s2">"click"</span><span class="p">)</span>
+<span class="n">SEQUENCE_ID_RE</span> <span class="o">=</span> <span class="n">TOPIC_RE</span>
+<span class="c1">#: Path segments ntfy serves itself under a topic: a sequence id must not be one of them.</span>
+<span class="n">RESERVED_SEQUENCE_IDS</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"json"</span><span class="p">,</span> <span class="s2">"sse"</span><span class="p">,</span> <span class="s2">"raw"</span><span class="p">,</span> <span class="s2">"ws"</span><span class="p">,</span> <span class="s2">"publish"</span><span class="p">,</span> <span class="s2">"send"</span><span class="p">,</span> <span class="s2">"trigger"</span><span class="p">,</span> <span class="s2">"auth"</span><span class="p">,</span> <span class="s2">"fire"</span><span class="p">}</span>
+<span class="p">)</span>
+<span class="n">MAX_AT_CHARS</span> <span class="o">=</span> <span class="mi">64</span>
 <span class="n">REMOTE_TIMEOUT_S</span> <span class="o">=</span> <span class="mi">30</span>
 
 
@@ -769,6 +785,68 @@ window.runMermaid = runMermaid;</script>
     <span class="k">if</span> <span class="n">flat</span><span class="o">.</span><span class="n">isascii</span><span class="p">():</span>
         <span class="k">return</span> <span class="n">flat</span>
     <span class="k">return</span> <span class="s2">" "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">Header</span><span class="p">(</span><span class="n">flat</span><span class="p">,</span> <span class="s2">"utf-8"</span><span class="p">,</span> <span class="n">maxlinelen</span><span class="o">=</span><span class="mi">10_000</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_sequence_id</span><span class="p">(</span><span class="n">raw</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""A sequence id ntfy treats as one, or a validation error.</span>
+
+<span class="sd">    &gt;&gt;&gt; _sequence_id("loop-1")</span>
+<span class="sd">    'loop-1'</span>
+<span class="sd">    """</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">raw</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">SEQUENCE_ID_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="ow">or</span> <span class="n">text</span> <span class="ow">in</span> <span class="n">RESERVED_SEQUENCE_IDS</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+            <span class="s2">"ntfy 'sequence_id' must be 1-64 letters, digits, '-' or '_', and not one of ntfy's own paths ("</span>
+            <span class="o">+</span> <span class="s2">", "</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">RESERVED_SEQUENCE_IDS</span><span class="p">))</span>
+            <span class="o">+</span> <span class="s2">")"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">text</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_native_headers</span><span class="p">(</span><span class="n">native</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">"""The headers ``at`` and ``click`` become, and the ``sequence_id``; a bad value is a validation error.</span>
+
+<span class="sd">    Checked here, so a dry run refuses what a real send would; the server still has the</span>
+<span class="sd">    final say on the range of ``at`` (10 s to 3 days).</span>
+
+<span class="sd">    &gt;&gt;&gt; _native_headers({"at": 1700000000, "sequence_id": "loop-1", "click": "https://example.org/x"})</span>
+<span class="sd">    ({'At': '1700000000', 'Click': 'https://example.org/x'}, 'loop-1')</span>
+<span class="sd">    &gt;&gt;&gt; _native_headers({})</span>
+<span class="sd">    ({}, None)</span>
+<span class="sd">    """</span>
+    <span class="n">headers</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">at</span> <span class="o">=</span> <span class="n">native</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"at"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">at</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">at</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">at</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="n">text</span>
+            <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">MAX_AT_CHARS</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">isascii</span><span class="p">()</span> <span class="ow">and</span> <span class="n">text</span><span class="o">.</span><span class="n">isprintable</span><span class="p">())</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"ntfy 'at' must be a Unix timestamp or a short duration or phrase (printable ASCII, at most </span><span class="si">{</span><span class="n">MAX_AT_CHARS</span><span class="si">}</span><span class="s2"> characters)"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">headers</span><span class="p">[</span><span class="s2">"At"</span><span class="p">]</span> <span class="o">=</span> <span class="n">text</span>
+    <span class="n">click</span> <span class="o">=</span> <span class="n">native</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"click"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">click</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">click</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="n">click</span><span class="o">.</span><span class="n">startswith</span><span class="p">((</span><span class="s2">"https://"</span><span class="p">,</span> <span class="s2">"http://"</span><span class="p">))</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="p">(</span><span class="n">click</span><span class="o">.</span><span class="n">isascii</span><span class="p">()</span> <span class="ow">and</span> <span class="n">click</span><span class="o">.</span><span class="n">isprintable</span><span class="p">())</span>
+            <span class="ow">or</span> <span class="nb">any</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">isspace</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">click</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="s2">"ntfy 'click' must be an http(s) URL in printable ASCII without spaces (percent-encode anything else)"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">headers</span><span class="p">[</span><span class="s2">"Click"</span><span class="p">]</span> <span class="o">=</span> <span class="n">click</span>
+    <span class="n">sequence_id</span> <span class="o">=</span> <span class="n">native</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"sequence_id"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">sequence_id</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">sequence_id</span> <span class="o">=</span> <span class="n">_sequence_id</span><span class="p">(</span><span class="n">sequence_id</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">headers</span><span class="p">,</span> <span class="n">sequence_id</span>
 
 
 <div class="viewcode-block" id="Ntfy">
@@ -798,8 +876,10 @@ window.runMermaid = runMermaid;</script>
             <span class="n">priority</span><span class="o">=</span><span class="n">Support</span><span class="o">.</span><span class="n">FULL</span><span class="p">,</span>
             <span class="n">max_title_length</span><span class="o">=</span><span class="n">MAX_TITLE_CHARS</span><span class="p">,</span>
             <span class="n">formats</span><span class="o">=</span><span class="p">(</span><span class="s2">"plain"</span><span class="p">,),</span>
+            <span class="n">draft_fields</span><span class="o">=</span><span class="n">DRAFT_FIELDS</span><span class="p">,</span>
             <span class="n">notes</span><span class="o">=</span><span class="p">(</span>
                 <span class="s2">"send only: no read, listen or sender identity"</span><span class="p">,</span>
+                <span class="s2">"native: at (scheduled delivery, 10 s to 3 days), sequence_id (replace by id), click (tap URL); Ntfy.cancel deletes a scheduled message"</span><span class="p">,</span>
                 <span class="s2">"the server turns a message over 4,096 bytes into an attachment"</span><span class="p">,</span>
                 <span class="s2">"ntfy: (no topic) uses NTFY_TOPIC, the Keychain, or topic_remote"</span><span class="p">,</span>
                 <span class="s2">"a dry run reads only the environment and the config file"</span><span class="p">,</span>
@@ -940,6 +1020,8 @@ window.runMermaid = runMermaid;</script>
             <span class="n">headers</span><span class="p">[</span><span class="s2">"Title"</span><span class="p">]</span> <span class="o">=</span> <span class="n">_header</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">title</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">draft</span><span class="o">.</span><span class="n">priority</span><span class="p">:</span>
             <span class="n">headers</span><span class="p">[</span><span class="s2">"Priority"</span><span class="p">]</span> <span class="o">=</span> <span class="n">PRIORITY</span><span class="p">[</span><span class="n">draft</span><span class="o">.</span><span class="n">priority</span><span class="p">]</span>
+        <span class="n">native_headers</span><span class="p">,</span> <span class="n">sequence_id</span> <span class="o">=</span> <span class="n">_native_headers</span><span class="p">(</span><span class="n">draft</span><span class="o">.</span><span class="n">native</span><span class="p">)</span>
+        <span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">native_headers</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">token</span><span class="p">:</span>
             <span class="n">headers</span><span class="p">[</span><span class="s2">"Authorization"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Bearer </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">"</span>
         <span class="n">deferred</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"topic"</span><span class="p">]</span> <span class="k">if</span> <span class="n">topic</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">[]</span>
@@ -956,14 +1038,20 @@ window.runMermaid = runMermaid;</script>
             <span class="s2">"authenticated"</span><span class="p">:</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">token</span> <span class="k">else</span> <span class="p">(</span><span class="kc">None</span> <span class="k">if</span> <span class="n">deferred_token</span> <span class="k">else</span> <span class="kc">False</span><span class="p">),</span>
             <span class="s2">"text"</span><span class="p">:</span> <span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="p">,</span>
         <span class="p">}</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"At"</span><span class="p">,</span> <span class="s2">"Click"</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">native_headers</span><span class="p">:</span>
+                <span class="n">plan</span><span class="p">[</span><span class="n">key</span><span class="o">.</span><span class="n">lower</span><span class="p">()]</span> <span class="o">=</span> <span class="n">native_headers</span><span class="p">[</span><span class="n">key</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">sequence_id</span><span class="p">:</span>
+            <span class="n">plan</span><span class="p">[</span><span class="s2">"sequence_id"</span><span class="p">]</span> <span class="o">=</span> <span class="n">sequence_id</span>
         <span class="k">if</span> <span class="n">deferred</span><span class="p">:</span>
             <span class="n">plan</span><span class="p">[</span><span class="s2">"looked_up_when_sending"</span><span class="p">]</span> <span class="o">=</span> <span class="n">deferred</span>
         <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
                 <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="n">plan</span>
             <span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">server</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">topic</span><span class="si">}</span><span class="s2">"</span> <span class="o">+</span> <span class="p">(</span><span class="sa">f</span><span class="s2">"/</span><span class="si">{</span><span class="n">sequence_id</span><span class="si">}</span><span class="s2">"</span> <span class="k">if</span> <span class="n">sequence_id</span> <span class="k">else</span> <span class="s2">""</span><span class="p">)</span>
         <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="p">(</span>
-            <span class="s2">"POST"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">server</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">topic</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
+            <span class="s2">"POST"</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="n">draft</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">"utf-8"</span><span class="p">)</span>
         <span class="p">)</span>
         <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">300</span><span class="p">:</span>
             <span class="n">data</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
@@ -981,6 +1069,71 @@ window.runMermaid = runMermaid;</script>
             <span class="n">message_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="s2">"id"</span><span class="p">])</span>
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"id"</span><span class="p">)</span>
             <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">account</span><span class="o">=</span><span class="n">Account</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">server</span><span class="p">,</span> <span class="n">acts_as</span><span class="o">=</span><span class="s2">"service"</span><span class="p">),</span>
+            <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Ntfy.cancel">
+<a class="viewcode-back" href="../../../_autosummary/correspond.channels.ntfy.html#correspond.channels.ntfy.Ntfy.cancel">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">cancel</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ref</span><span class="p">:</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">sequence_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SendResult</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">"""Delete the scheduled message published with ``sequence_id``, so it is never delivered.</span>
+
+<span class="sd">        ntfy answers ``DELETE /&lt;topic&gt;/&lt;sequence_id&gt;``; a message already delivered stays on</span>
+<span class="sd">        the devices that received it. A missing message is not an error on ntfy's side.</span>
+<span class="sd">        Sequence-id updates and deletes need a recent ntfy server (ntfy.sh has them).</span>
+
+<span class="sd">        This is the adapter's own verb, not an ``ops`` one: it runs no ``before_send`` check</span>
+<span class="sd">        and keeps no idempotency record (deleting twice is harmless), and it raises a</span>
+<span class="sd">        validation or channel error rather than returning a failed result.</span>
+<span class="sd">        """</span>
+        <span class="n">sequence_id</span> <span class="o">=</span> <span class="n">_sequence_id</span><span class="p">(</span><span class="n">sequence_id</span><span class="p">)</span>
+        <span class="n">server</span> <span class="o">=</span> <span class="p">(</span><span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"url"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"https://ntfy.sh"</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">"/"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">:</span>
+            <span class="n">topic</span><span class="p">,</span> <span class="n">source</span> <span class="o">=</span> <span class="n">ref</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">"reference"</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">topic</span><span class="p">,</span> <span class="n">source</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_topic</span><span class="p">(</span><span class="n">dry_run</span><span class="o">=</span><span class="n">dry_run</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">topic</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">TOPIC_RE</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">topic</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ChannelError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"the default topic (from </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">) is not a valid ntfy topic"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">topic</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="p">(</span><span class="n">source</span> <span class="o">==</span> <span class="s2">"missing"</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">dry_run</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">MissingRequirement</span><span class="p">(</span>
+                <span class="n">NAME</span><span class="p">,</span>
+                <span class="s2">"there is no topic: the reference names none and no default topic was found"</span><span class="p">,</span>
+                <span class="n">fix</span><span class="o">=</span><span class="s2">"cancel on ntfy:&lt;topic&gt;, or set NTFY_TOPIC, or set topic_remote and topic_remote_file under [ntfy]"</span><span class="p">,</span>
+                <span class="n">kind</span><span class="o">=</span><span class="s2">"validation"</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">token</span> <span class="o">=</span> <span class="n">value</span><span class="p">(</span><span class="n">NAME</span><span class="p">,</span> <span class="s2">"token"</span><span class="p">,</span> <span class="n">run</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">,</span> <span class="n">keychain</span><span class="o">=</span><span class="ow">not</span> <span class="n">dry_run</span><span class="p">)</span>
+        <span class="n">plan</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"action"</span><span class="p">:</span> <span class="s2">"cancel"</span><span class="p">,</span>
+            <span class="s2">"server"</span><span class="p">:</span> <span class="n">server</span><span class="p">,</span>
+            <span class="s2">"topic"</span><span class="p">:</span> <span class="n">mask</span><span class="p">(</span><span class="n">topic</span><span class="p">)</span> <span class="k">if</span> <span class="n">topic</span> <span class="k">else</span> <span class="s2">"(not resolved yet)"</span><span class="p">,</span>
+            <span class="s2">"topic_source"</span><span class="p">:</span> <span class="n">source</span><span class="p">,</span>
+            <span class="s2">"sequence_id"</span><span class="p">:</span> <span class="n">sequence_id</span><span class="p">,</span>
+            <span class="s2">"authenticated"</span><span class="p">:</span> <span class="nb">bool</span><span class="p">(</span><span class="n">token</span><span class="p">)</span> <span class="k">if</span> <span class="p">(</span><span class="n">token</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">dry_run</span><span class="p">)</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">dry_run</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+                <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span> <span class="n">dry_run</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plan</span><span class="o">=</span><span class="n">plan</span>
+            <span class="p">)</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">token</span><span class="p">:</span>
+            <span class="n">headers</span><span class="p">[</span><span class="s2">"Authorization"</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"Bearer </span><span class="si">{</span><span class="n">token</span><span class="si">}</span><span class="s2">"</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">http</span><span class="p">(</span><span class="s2">"DELETE"</span><span class="p">,</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">server</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">topic</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">sequence_id</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status</span> <span class="o">&gt;=</span> <span class="mi">300</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">classify</span><span class="p">(</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">"ntfy refused to cancel the message (</span><span class="si">{</span><span class="n">response</span><span class="o">.</span><span class="n">status</span><span class="si">}</span><span class="s2">)"</span><span class="p">,</span>
+                <span class="n">response</span><span class="o">.</span><span class="n">headers</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">SendResult</span><span class="p">(</span>
+            <span class="n">ok</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
+            <span class="n">conversation</span><span class="o">=</span><span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
             <span class="n">account</span><span class="o">=</span><span class="n">Account</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">server</span><span class="p">,</span> <span class="n">acts_as</span><span class="o">=</span><span class="s2">"service"</span><span class="p">),</span>
             <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
         <span class="p">)</span></div>

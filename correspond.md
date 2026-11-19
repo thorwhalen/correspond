@@ -1,4 +1,4 @@
-> built 2026-11-10 13:23 UTC from 6223050 (main) · correspond 0.0.52. Details: build_info.json
+> built 2026-11-19 18:52 UTC from a9c719f (main) · correspond 0.0.53. Details: build_info.json
 
 # index.html.md
 
@@ -27,7 +27,7 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 |------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `github`   | `github:owner/repo`, `github:owner/repo#12`, `github:notifications` (the account’s inbox, read only)                                                                                                                                                                                                              | read, listen (issues, comments, pull request review threads, discussions), send (opening an issue takes `native` labels, assignees, milestone; `native` category opens a discussion instead), edit, react, label, unlabel, close, reopen, verify (webhooks), audience                  | the `gh` CLI and its login; correspond holds no token                                                                                                                                 |
 | `email`    | `email:` (the folder), `email:someone@example.org`; either takes `?folder=<name>` (a Gmail label is a folder), and `email:` takes `?from=<address or domain>,...` (a domain as `@example.org`); on Gmail, `?gmail=<search>` adds Gmail’s search syntax; quote such a reference in a shell: `'email:?folder=News'` | read, listen, send (with cc and bcc), upload (an attachment), audience                                                                                                                                                                                                                 | `imaplib`, `smtplib`                                                                                                                                                                  |
-| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                                                                                                                                                                                                                                                       | send, audience                                                                                                                                                                                                                                                                         | `urllib`                                                                                                                                                                              |
+| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                                                                                                                                                                                                                                                       | send (with `--native` `at`, `sequence_id`, `click`: scheduled delivery, replace by id, tap URL), audience; `Ntfy.cancel` deletes a scheduled message                                                                                                                                   | `urllib`                                                                                                                                                                              |
 | `macos`    | `macos:`                                                                                                                                                                                                                                                                                                          | send, audience                                                                                                                                                                                                                                                                         | `terminal-notifier` or `osascript`                                                                                                                                                    |
 | `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>`                                                                                                                                                                                                                              | listen (`getUpdates`, or a webhook on a server), read (what listening logged), send, edit, react, upload (a photo or a document), audience, verify (webhook deliveries)                                                                                                                | the Bot API over `urllib`                                                                                                                                                             |
 | `signal`   | `signal:`, `signal:+<number>`, `signal:group.<id>`                                                                                                                                                                                                                                                                | listen (the REST API’s WebSocket, plus safety-number changes as `identity.changed`), read (what listening and sending logged: no history before linking), send, reply, audience                                                                                                        | `signal-cli-rest-api` over `urllib`; `websocket-client` to listen                                                                                                                     |
@@ -1590,6 +1590,14 @@ up when sending), and a plan shows a topic masked.
 A topic is a bearer secret: anyone who knows an unauthenticated one can publish to it and
 read it. Prefer `ntfy:` to writing a topic into a reference that ends up in logs.
 
+A draft’s `native` may carry three ntfy fields ([`DRAFT_FIELDS`](_autosummary/correspond.channels.ntfy.html.md#correspond.channels.ntfy.DRAFT_FIELDS)): `at`, a delivery
+time the server holds the message until (a Unix timestamp, or a duration or phrase ntfy
+accepts such as `30m` or `tomorrow, 10am`; 10 seconds to 3 days ahead); `sequence_id`,
+which publishes to `/<topic>/<sequence_id>` so a later message with the same id replaces it
+(a scheduled one is replaced on the server); and `click`, an `http(s)` URL opened when the
+notification is tapped. [`Ntfy.cancel()`](_autosummary/correspond.channels.ntfy.html.md#correspond.channels.ntfy.Ntfy.cancel) deletes a scheduled message by its sequence id
+before it is delivered (ntfy’s “dead man’s switch” pattern).
+
 ```pycon
 >>> Ntfy().parse_ref("").kind
 'topic'
@@ -1597,13 +1605,21 @@ read it. Prefer `ntfy:` to writing a topic into a reference that ends up in logs
 
 ### Module Attributes
 
-| [`PRIORITY`](_autosummary/correspond.channels.ntfy.html.md#correspond.channels.ntfy.PRIORITY)   | Draft priorities as ntfy's 1-5 scale.   |
-|-------------------------------------------------------------|-----------------------------------------|
+| [`PRIORITY`](_autosummary/correspond.channels.ntfy.html.md#correspond.channels.ntfy.PRIORITY)     | Draft priorities as ntfy's 1-5 scale.         |
+|---------------------------------------------------------------|-----------------------------------------------|
+| [`DRAFT_FIELDS`](_autosummary/correspond.channels.ntfy.html.md#correspond.channels.ntfy.DRAFT_FIELDS) | scheduled delivery, replace-by-id, a tap URL. |
 
 ### Classes
 
 | [`Ntfy`](_autosummary/correspond.channels.ntfy.html.md#correspond.channels.ntfy.Ntfy)(\*[, http, run])   | An ntfy server: publish to a topic.   |
 |--------------------------------------------------------------------------|---------------------------------------|
+
+### correspond.channels.ntfy.DRAFT_FIELDS *= ('at', 'sequence_id', 'click')*
+
+scheduled delivery, replace-by-id, a tap URL.
+
+* **Type:**
+  The `Draft.native` keys ntfy takes
 
 ### *class* correspond.channels.ntfy.Ntfy(\*, http=<function urllib_http>, run=<function run>)
 
@@ -1621,6 +1637,21 @@ gets a copy.
 
 * **Return type:**
   [`Audience`](_autosummary/correspond.model.html.md#correspond.model.Audience)
+
+#### cancel(ref, sequence_id, , dry_run=False)
+
+Delete the scheduled message published with `sequence_id`, so it is never delivered.
+
+ntfy answers `DELETE /<topic>/<sequence_id>`; a message already delivered stays on
+the devices that received it. A missing message is not an error on ntfy’s side.
+Sequence-id updates and deletes need a recent ntfy server (ntfy.sh has them).
+
+This is the adapter’s own verb, not an `ops` one: it runs no `before_send` check
+and keeps no idempotency record (deleting twice is harmless), and it raises a
+validation or channel error rather than returning a failed result.
+
+* **Return type:**
+  [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
 #### *property* capabilities *: [Capabilities](_autosummary/correspond.model.html.md#correspond.model.Capabilities)*
 
@@ -6035,18 +6066,18 @@ Where a channel’s platform delivers its updates now (Telegram: none means list
 
 # About this build
 
-This documentation was built on **2026-11-10 13:23 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/62230506915306498274fe81ff2375058c2f2894"><code>6223050</code></a> on branch <code>main</code>, for **correspond 0.0.52** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-19 18:52 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/a9c719feecf4a7d3e2925ff69ec8d493dd6d1c82"><code>a9c719f</code></a> on branch <code>main</code>, for **correspond 0.0.53** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.52) is behind the latest release on PyPI (0.0.53): `pip install correspond` gives newer code than these docs describe.
+- The documented version (0.0.53) is behind the latest release on PyPI (0.0.54): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/62230506915306498274fe81ff2375058c2f2894"><code>62230506915306498274fe81ff2375058c2f2894</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/a9c719feecf4a7d3e2925ff69ec8d493dd6d1c82"><code>a9c719feecf4a7d3e2925ff69ec8d493dd6d1c82</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -6057,9 +6088,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/42823846800">42823846800</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/44592015127">44592015127</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>62230506915306498274fe81ff2375058c2f2894</code> (in the history of the built commit)  |
+| Event commit | <code>a9c719feecf4a7d3e2925ff69ec8d493dd6d1c82</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -6084,13 +6115,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.53/">0.0.53</a>, newer than the documented version (0.0.52).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.54/">0.0.54</a>, newer than the documented version (0.0.53).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 62230506915306498274fe81ff2375058c2f2894
+git checkout a9c719feecf4a7d3e2925ff69ec8d493dd6d1c82
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

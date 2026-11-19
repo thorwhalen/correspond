@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=73f2ab08"></script>
+    <script src="../_static/documentation_options.js?v=d78a2f11"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.52" />
+  <meta name="docsearch:version" content="0.0.53" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -433,6 +433,13 @@ reads only the environment and the config file (no Keychain, no remote host: tho
 up when sending), and a plan shows a topic masked.</p>
 <p>A topic is a bearer secret: anyone who knows an unauthenticated one can publish to it and
 read it. Prefer <code class="docutils literal notranslate"><span class="pre">ntfy:</span></code> to writing a topic into a reference that ends up in logs.</p>
+<p>A draft’s <code class="docutils literal notranslate"><span class="pre">native</span></code> may carry three ntfy fields (<a class="reference internal" href="#correspond.channels.ntfy.DRAFT_FIELDS" title="correspond.channels.ntfy.DRAFT_FIELDS"><code class="xref py py-data docutils literal notranslate"><span class="pre">DRAFT_FIELDS</span></code></a>): <code class="docutils literal notranslate"><span class="pre">at</span></code>, a delivery
+time the server holds the message until (a Unix timestamp, or a duration or phrase ntfy
+accepts such as <code class="docutils literal notranslate"><span class="pre">30m</span></code> or <code class="docutils literal notranslate"><span class="pre">tomorrow,</span> <span class="pre">10am</span></code>; 10 seconds to 3 days ahead); <code class="docutils literal notranslate"><span class="pre">sequence_id</span></code>,
+which publishes to <code class="docutils literal notranslate"><span class="pre">/&lt;topic&gt;/&lt;sequence_id&gt;</span></code> so a later message with the same id replaces it
+(a scheduled one is replaced on the server); and <code class="docutils literal notranslate"><span class="pre">click</span></code>, an <code class="docutils literal notranslate"><span class="pre">http(s)</span></code> URL opened when the
+notification is tapped. <a class="reference internal" href="#correspond.channels.ntfy.Ntfy.cancel" title="correspond.channels.ntfy.Ntfy.cancel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Ntfy.cancel()</span></code></a> deletes a scheduled message by its sequence id
+before it is delivered (ntfy’s “dead man’s switch” pattern).</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Ntfy</span><span class="p">()</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">kind</span>
 <span class="go">'topic'</span>
 </pre></div>
@@ -442,6 +449,9 @@ read it. Prefer <code class="docutils literal notranslate"><span class="pre">ntf
 <tbody>
 <tr class="row-odd"><td><p><a class="reference internal" href="#correspond.channels.ntfy.PRIORITY" title="correspond.channels.ntfy.PRIORITY"><code class="xref py py-obj docutils literal notranslate"><span class="pre">PRIORITY</span></code></a></p></td>
 <td><p>Draft priorities as ntfy's 1-5 scale.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#correspond.channels.ntfy.DRAFT_FIELDS" title="correspond.channels.ntfy.DRAFT_FIELDS"><code class="xref py py-obj docutils literal notranslate"><span class="pre">DRAFT_FIELDS</span></code></a></p></td>
+<td><p>scheduled delivery, replace-by-id, a tap URL.</p></td>
 </tr>
 </tbody>
 </table>
@@ -455,6 +465,17 @@ read it. Prefer <code class="docutils literal notranslate"><span class="pre">ntf
 </tbody>
 </table>
 </div>
+<dl class="py data">
+<dt class="sig sig-object py" id="correspond.channels.ntfy.DRAFT_FIELDS">
+<span class="sig-prename descclassname"><span class="pre">correspond.channels.ntfy.</span></span><span class="sig-name descname"><span class="pre">DRAFT_FIELDS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">('at',</span> <span class="pre">'sequence_id',</span> <span class="pre">'click')</span></span><a class="headerlink" href="#correspond.channels.ntfy.DRAFT_FIELDS" title="Link to this definition">#</a></dt>
+<dd><p>scheduled delivery, replace-by-id, a tap URL.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The <code class="docutils literal notranslate"><span class="pre">Draft.native</span></code> keys ntfy takes</p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="correspond.channels.ntfy.Ntfy">
 <span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">correspond.channels.ntfy.</span></span><span class="sig-name descname"><span class="pre">Ntfy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">http</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">urllib_http&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;function</span> <span class="pre">run&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/ntfy.html#Ntfy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.ntfy.Ntfy" title="Link to this definition">#</a></dt>
@@ -472,6 +493,23 @@ gets a copy.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.Audience" title="correspond.model.Audience"><code class="xref py py-class docutils literal notranslate"><span class="pre">Audience</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="correspond.channels.ntfy.Ntfy.cancel">
+<span class="sig-name descname"><span class="pre">cancel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/ntfy.html#Ntfy.cancel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.ntfy.Ntfy.cancel" title="Link to this definition">#</a></dt>
+<dd><p>Delete the scheduled message published with <code class="docutils literal notranslate"><span class="pre">sequence_id</span></code>, so it is never delivered.</p>
+<p>ntfy answers <code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">/&lt;topic&gt;/&lt;sequence_id&gt;</span></code>; a message already delivered stays on
+the devices that received it. A missing message is not an error on ntfy’s side.
+Sequence-id updates and deletes need a recent ntfy server (ntfy.sh has them).</p>
+<p>This is the adapter’s own verb, not an <code class="docutils literal notranslate"><span class="pre">ops</span></code> one: it runs no <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check
+and keeps no idempotency record (deleting twice is harmless), and it raises a
+validation or channel error rather than returning a failed result.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="correspond.model.html#correspond.model.SendResult" title="correspond.model.SendResult"><code class="xref py py-class docutils literal notranslate"><span class="pre">SendResult</span></code></a></span></p>
 </dd>
 </dl>
 </dd></dl>
@@ -561,8 +599,10 @@ gets a copy.</p>
   </div>
   <nav id="pst-page-toc-nav" class="page-toc" aria-labelledby="pst-page-navigation-heading-2">
     <ul class="pst-show_toc_level nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.ntfy.DRAFT_FIELDS"><code class="docutils literal notranslate"><span class="pre">DRAFT_FIELDS</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.ntfy.Ntfy"><code class="docutils literal notranslate"><span class="pre">Ntfy</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.ntfy.Ntfy.audience"><code class="docutils literal notranslate"><span class="pre">Ntfy.audience()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.ntfy.Ntfy.cancel"><code class="docutils literal notranslate"><span class="pre">Ntfy.cancel()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.ntfy.Ntfy.capabilities"><code class="docutils literal notranslate"><span class="pre">Ntfy.capabilities</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.ntfy.Ntfy.parse_ref"><code class="docutils literal notranslate"><span class="pre">Ntfy.parse_ref()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#correspond.channels.ntfy.Ntfy.send"><code class="docutils literal notranslate"><span class="pre">Ntfy.send()</span></code></a></li>

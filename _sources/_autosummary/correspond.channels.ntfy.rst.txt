@@ -9,6 +9,7 @@ correspond.channels.ntfy
    .. autosummary::
    
       PRIORITY
+      DRAFT_FIELDS
    
    .. rubric:: Classes
 
