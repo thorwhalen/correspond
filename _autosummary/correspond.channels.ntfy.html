@@ -44,7 +44,7 @@
   <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../_static/documentation_options.js?v=d78a2f11"></script>
+    <script src="../_static/documentation_options.js?v=1c03bfdc"></script>
     <script src="../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -58,7 +58,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.53" />
+  <meta name="docsearch:version" content="0.0.54" />
   
     
     <script src="../_static/searchtools.js"></script>
@@ -438,8 +438,11 @@ time the server holds the message until (a Unix timestamp, or a duration or phra
 accepts such as <code class="docutils literal notranslate"><span class="pre">30m</span></code> or <code class="docutils literal notranslate"><span class="pre">tomorrow,</span> <span class="pre">10am</span></code>; 10 seconds to 3 days ahead); <code class="docutils literal notranslate"><span class="pre">sequence_id</span></code>,
 which publishes to <code class="docutils literal notranslate"><span class="pre">/&lt;topic&gt;/&lt;sequence_id&gt;</span></code> so a later message with the same id replaces it
 (a scheduled one is replaced on the server); and <code class="docutils literal notranslate"><span class="pre">click</span></code>, an <code class="docutils literal notranslate"><span class="pre">http(s)</span></code> URL opened when the
-notification is tapped. <a class="reference internal" href="#correspond.channels.ntfy.Ntfy.cancel" title="correspond.channels.ntfy.Ntfy.cancel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Ntfy.cancel()</span></code></a> deletes a scheduled message by its sequence id
-before it is delivered (ntfy’s “dead man’s switch” pattern).</p>
+notification is tapped. <a class="reference internal" href="#correspond.channels.ntfy.Ntfy.cancel" title="correspond.channels.ntfy.Ntfy.cancel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Ntfy.cancel()</span></code></a> asks the server to delete a message by its
+sequence id. ntfy documents that this stops a scheduled message from being delivered,
+but on ntfy.sh (measured 2026-11-19) the delete is acknowledged with a <code class="docutils literal notranslate"><span class="pre">message_delete</span></code>
+event and the scheduled original is delivered anyway, as is one replaced under the same
+id. Do not rely on cancelling a scheduled message there.</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">Ntfy</span><span class="p">()</span><span class="o">.</span><span class="n">parse_ref</span><span class="p">(</span><span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">kind</span>
 <span class="go">'topic'</span>
 </pre></div>
@@ -500,10 +503,11 @@ gets a copy.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="correspond.channels.ntfy.Ntfy.cancel">
 <span class="sig-name descname"><span class="pre">cancel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ref</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sequence_id</span></span></em>, <em class="sig-param"><span class="keyword-only-separator o"><abbr title="Keyword-only parameters separator (PEP 3102)"><span class="pre">*</span></abbr></span></em>, <em class="sig-param"><span class="n"><span class="pre">dry_run</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/correspond/channels/ntfy.html#Ntfy.cancel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#correspond.channels.ntfy.Ntfy.cancel" title="Link to this definition">#</a></dt>
-<dd><p>Delete the scheduled message published with <code class="docutils literal notranslate"><span class="pre">sequence_id</span></code>, so it is never delivered.</p>
-<p>ntfy answers <code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">/&lt;topic&gt;/&lt;sequence_id&gt;</span></code>; a message already delivered stays on
-the devices that received it. A missing message is not an error on ntfy’s side.
-Sequence-id updates and deletes need a recent ntfy server (ntfy.sh has them).</p>
+<dd><p>Ask the server to delete the message published with <code class="docutils literal notranslate"><span class="pre">sequence_id</span></code>.</p>
+<p>Sends <code class="docutils literal notranslate"><span class="pre">DELETE</span> <span class="pre">/&lt;topic&gt;/&lt;sequence_id&gt;</span></code>; the server emits a <code class="docutils literal notranslate"><span class="pre">message_delete</span></code> event
+to subscribers. ntfy documents that a <em>scheduled</em> message deleted this way is never
+delivered, but ntfy.sh (measured 2026-11-19) still delivers it at its time, so treat
+this as best effort for scheduled messages. A missing message is not an error.</p>
 <p>This is the adapter’s own verb, not an <code class="docutils literal notranslate"><span class="pre">ops</span></code> one: it runs no <code class="docutils literal notranslate"><span class="pre">before_send</span></code> check
 and keeps no idempotency record (deleting twice is harmless), and it raises a
 validation or channel error rather than returning a failed result.</p>

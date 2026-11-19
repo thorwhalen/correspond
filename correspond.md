@@ -1,4 +1,4 @@
-> built 2026-11-19 18:52 UTC from a9c719f (main) · correspond 0.0.53. Details: build_info.json
+> built 2026-11-19 19:08 UTC from 245db06 (main) · correspond 0.0.54. Details: build_info.json
 
 # index.html.md
 
@@ -27,7 +27,7 @@ correspond knows no people. Linking `github:someone` to a person is a people reg
 |------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `github`   | `github:owner/repo`, `github:owner/repo#12`, `github:notifications` (the account’s inbox, read only)                                                                                                                                                                                                              | read, listen (issues, comments, pull request review threads, discussions), send (opening an issue takes `native` labels, assignees, milestone; `native` category opens a discussion instead), edit, react, label, unlabel, close, reopen, verify (webhooks), audience                  | the `gh` CLI and its login; correspond holds no token                                                                                                                                 |
 | `email`    | `email:` (the folder), `email:someone@example.org`; either takes `?folder=<name>` (a Gmail label is a folder), and `email:` takes `?from=<address or domain>,...` (a domain as `@example.org`); on Gmail, `?gmail=<search>` adds Gmail’s search syntax; quote such a reference in a shell: `'email:?folder=News'` | read, listen, send (with cc and bcc), upload (an attachment), audience                                                                                                                                                                                                                 | `imaplib`, `smtplib`                                                                                                                                                                  |
-| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                                                                                                                                                                                                                                                       | send (with `--native` `at`, `sequence_id`, `click`: scheduled delivery, replace by id, tap URL), audience; `Ntfy.cancel` deletes a scheduled message                                                                                                                                   | `urllib`                                                                                                                                                                              |
+| `ntfy`     | `ntfy:` (the default topic), `ntfy:<topic>`                                                                                                                                                                                                                                                                       | send (with `--native` `at`, `sequence_id`, `click`: scheduled delivery, replace by id, tap URL), audience; `Ntfy.cancel` asks for a delete (ntfy.sh still delivers a scheduled original: measured 2026-11-19)                                                                          | `urllib`                                                                                                                                                                              |
 | `macos`    | `macos:`                                                                                                                                                                                                                                                                                                          | send, audience                                                                                                                                                                                                                                                                         | `terminal-notifier` or `osascript`                                                                                                                                                    |
 | `telegram` | `telegram:`, `telegram:<chat id>`, `telegram:@name`, `telegram:<chat id>/<topic id>`                                                                                                                                                                                                                              | listen (`getUpdates`, or a webhook on a server), read (what listening logged), send, edit, react, upload (a photo or a document), audience, verify (webhook deliveries)                                                                                                                | the Bot API over `urllib`                                                                                                                                                             |
 | `signal`   | `signal:`, `signal:+<number>`, `signal:group.<id>`                                                                                                                                                                                                                                                                | listen (the REST API’s WebSocket, plus safety-number changes as `identity.changed`), read (what listening and sending logged: no history before linking), send, reply, audience                                                                                                        | `signal-cli-rest-api` over `urllib`; `websocket-client` to listen                                                                                                                     |
@@ -1595,8 +1595,11 @@ time the server holds the message until (a Unix timestamp, or a duration or phra
 accepts such as `30m` or `tomorrow, 10am`; 10 seconds to 3 days ahead); `sequence_id`,
 which publishes to `/<topic>/<sequence_id>` so a later message with the same id replaces it
 (a scheduled one is replaced on the server); and `click`, an `http(s)` URL opened when the
-notification is tapped. [`Ntfy.cancel()`](_autosummary/correspond.channels.ntfy.html.md#correspond.channels.ntfy.Ntfy.cancel) deletes a scheduled message by its sequence id
-before it is delivered (ntfy’s “dead man’s switch” pattern).
+notification is tapped. [`Ntfy.cancel()`](_autosummary/correspond.channels.ntfy.html.md#correspond.channels.ntfy.Ntfy.cancel) asks the server to delete a message by its
+sequence id. ntfy documents that this stops a scheduled message from being delivered,
+but on ntfy.sh (measured 2026-11-19) the delete is acknowledged with a `message_delete`
+event and the scheduled original is delivered anyway, as is one replaced under the same
+id. Do not rely on cancelling a scheduled message there.
 
 ```pycon
 >>> Ntfy().parse_ref("").kind
@@ -1640,11 +1643,12 @@ gets a copy.
 
 #### cancel(ref, sequence_id, , dry_run=False)
 
-Delete the scheduled message published with `sequence_id`, so it is never delivered.
+Ask the server to delete the message published with `sequence_id`.
 
-ntfy answers `DELETE /<topic>/<sequence_id>`; a message already delivered stays on
-the devices that received it. A missing message is not an error on ntfy’s side.
-Sequence-id updates and deletes need a recent ntfy server (ntfy.sh has them).
+Sends `DELETE /<topic>/<sequence_id>`; the server emits a `message_delete` event
+to subscribers. ntfy documents that a *scheduled* message deleted this way is never
+delivered, but ntfy.sh (measured 2026-11-19) still delivers it at its time, so treat
+this as best effort for scheduled messages. A missing message is not an error.
 
 This is the adapter’s own verb, not an `ops` one: it runs no `before_send` check
 and keeps no idempotency record (deleting twice is harmless), and it raises a
@@ -6066,18 +6070,16 @@ Where a channel’s platform delivers its updates now (Telegram: none means list
 
 # About this build
 
-This documentation was built on **2026-11-19 18:52 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/a9c719feecf4a7d3e2925ff69ec8d493dd6d1c82"><code>a9c719f</code></a> on branch <code>main</code>, for **correspond 0.0.53** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-19 19:08 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/245db0684f0f07d94116bdfd75680d24e9e90a9d"><code>245db06</code></a> on branch <code>main</code>, for **correspond 0.0.54** (from <code>pyproject.toml</code>).
 
-#### WARNING
-The documentation and the package may be misaligned:
-
-- The documented version (0.0.53) is behind the latest release on PyPI (0.0.54): `pip install correspond` gives newer code than these docs describe.
+#### NOTE
+Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/a9c719feecf4a7d3e2925ff69ec8d493dd6d1c82"><code>a9c719feecf4a7d3e2925ff69ec8d493dd6d1c82</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/245db0684f0f07d94116bdfd75680d24e9e90a9d"><code>245db0684f0f07d94116bdfd75680d24e9e90a9d</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -6088,9 +6090,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/44592015127">44592015127</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/44594822453">44594822453</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>a9c719feecf4a7d3e2925ff69ec8d493dd6d1c82</code> (in the history of the built commit)  |
+| Event commit | <code>245db0684f0f07d94116bdfd75680d24e9e90a9d</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -6115,13 +6117,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.54/">0.0.54</a>, newer than the documented version (0.0.53).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.54/">0.0.54</a>, the same as the documented version.
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout a9c719feecf4a7d3e2925ff69ec8d493dd6d1c82
+git checkout 245db0684f0f07d94116bdfd75680d24e9e90a9d
 pip install "epythet==0.2.22"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

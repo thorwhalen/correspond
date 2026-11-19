@@ -19,8 +19,11 @@ time the server holds the message until (a Unix timestamp, or a duration or phra
 accepts such as `30m` or `tomorrow, 10am`; 10 seconds to 3 days ahead); `sequence_id`,
 which publishes to `/<topic>/<sequence_id>` so a later message with the same id replaces it
 (a scheduled one is replaced on the server); and `click`, an `http(s)` URL opened when the
-notification is tapped. [`Ntfy.cancel()`](#correspond.channels.ntfy.Ntfy.cancel) deletes a scheduled message by its sequence id
-before it is delivered (ntfy’s “dead man’s switch” pattern).
+notification is tapped. [`Ntfy.cancel()`](#correspond.channels.ntfy.Ntfy.cancel) asks the server to delete a message by its
+sequence id. ntfy documents that this stops a scheduled message from being delivered,
+but on ntfy.sh (measured 2026-11-19) the delete is acknowledged with a `message_delete`
+event and the scheduled original is delivered anyway, as is one replaced under the same
+id. Do not rely on cancelling a scheduled message there.
 
 ```pycon
 >>> Ntfy().parse_ref("").kind
@@ -64,11 +67,12 @@ gets a copy.
 
 #### cancel(ref, sequence_id, , dry_run=False)
 
-Delete the scheduled message published with `sequence_id`, so it is never delivered.
+Ask the server to delete the message published with `sequence_id`.
 
-ntfy answers `DELETE /<topic>/<sequence_id>`; a message already delivered stays on
-the devices that received it. A missing message is not an error on ntfy’s side.
-Sequence-id updates and deletes need a recent ntfy server (ntfy.sh has them).
+Sends `DELETE /<topic>/<sequence_id>`; the server emits a `message_delete` event
+to subscribers. ntfy documents that a *scheduled* message deleted this way is never
+delivered, but ntfy.sh (measured 2026-11-19) still delivers it at its time, so treat
+this as best effort for scheduled messages. A missing message is not an error.
 
 This is the adapter’s own verb, not an `ops` one: it runs no `before_send` check
 and keeps no idempotency record (deleting twice is harmless), and it raises a
