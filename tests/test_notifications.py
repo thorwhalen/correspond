@@ -220,6 +220,9 @@ def test_a_scheduled_message_with_a_sequence_id_and_a_click_url():
 def test_bad_ntfy_native_fields_are_refused_not_dropped():
     for native in (
         {"sequence_id": "has space"},
+        {"sequence_id": "json"},
+        {"click": "https://example.org/\u00e9"},
+        {"at": "demain \u00e0 10h"},
         {"click": "javascript:alert(1)"},
         {"at": "x" * 100},
         {"unknown": 1},
