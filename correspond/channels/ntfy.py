@@ -10,6 +10,14 @@ up when sending), and a plan shows a topic masked.
 A topic is a bearer secret: anyone who knows an unauthenticated one can publish to it and
 read it. Prefer ``ntfy:`` to writing a topic into a reference that ends up in logs.
 
+A draft's ``native`` may carry three ntfy fields (:data:`DRAFT_FIELDS`): ``at``, a delivery
+time the server holds the message until (a Unix timestamp, or a duration or phrase ntfy
+accepts such as ``30m`` or ``tomorrow, 10am``; 10 seconds to 3 days ahead); ``sequence_id``,
+which publishes to ``/<topic>/<sequence_id>`` so a later message with the same id replaces it
+(a scheduled one is replaced on the server); and ``click``, an ``http(s)`` URL opened when the
+notification is tapped. :meth:`Ntfy.cancel` deletes a scheduled message by its sequence id
+before it is delivered (ntfy's "dead man's switch" pattern).
+
 >>> Ntfy().parse_ref("").kind
 'topic'
 """
@@ -38,7 +46,7 @@ from correspond.model import (
 from correspond.registry import info, resolve, value
 from correspond.settings import keychain_available, keychain_service, mask
 
-__all__ = ["PRIORITY", "Ntfy"]
+__all__ = ["DRAFT_FIELDS", "PRIORITY", "Ntfy"]
 
 NAME = "ntfy"
 TOPIC_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
@@ -46,6 +54,14 @@ HOST_RE = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9._@-]{0,252}$")
 #: Draft priorities as ntfy's 1-5 scale.
 PRIORITY = {"low": "2", "normal": "3", "high": "4", "urgent": "5"}
 MAX_TITLE_CHARS = 250
+#: The ``Draft.native`` keys ntfy takes: scheduled delivery, replace-by-id, a tap URL.
+DRAFT_FIELDS = ("at", "sequence_id", "click")
+SEQUENCE_ID_RE = TOPIC_RE
+#: Path segments ntfy serves itself under a topic: a sequence id must not be one of them.
+RESERVED_SEQUENCE_IDS = frozenset(
+    {"json", "sse", "raw", "ws", "publish", "send", "trigger", "auth", "fire"}
+)
+MAX_AT_CHARS = 64
 REMOTE_TIMEOUT_S = 30
 
 
@@ -55,6 +71,68 @@ def _header(text: str) -> str:
     if flat.isascii():
         return flat
     return " ".join(Header(flat, "utf-8", maxlinelen=10_000).encode().split())
+
+
+def _sequence_id(raw: object) -> str:
+    """A sequence id ntfy treats as one, or a validation error.
+
+    >>> _sequence_id("loop-1")
+    'loop-1'
+    """
+    text = str(raw or "")
+    if not SEQUENCE_ID_RE.match(text) or text in RESERVED_SEQUENCE_IDS:
+        raise ChannelError(
+            "ntfy 'sequence_id' must be 1-64 letters, digits, '-' or '_', and not one of ntfy's own paths ("
+            + ", ".join(sorted(RESERVED_SEQUENCE_IDS))
+            + ")",
+            kind="validation",
+        )
+    return text
+
+
+def _native_headers(native) -> tuple[dict[str, str], str | None]:
+    """The headers ``at`` and ``click`` become, and the ``sequence_id``; a bad value is a validation error.
+
+    Checked here, so a dry run refuses what a real send would; the server still has the
+    final say on the range of ``at`` (10 s to 3 days).
+
+    >>> _native_headers({"at": 1700000000, "sequence_id": "loop-1", "click": "https://example.org/x"})
+    ({'At': '1700000000', 'Click': 'https://example.org/x'}, 'loop-1')
+    >>> _native_headers({})
+    ({}, None)
+    """
+    headers: dict[str, str] = {}
+    at = native.get("at")
+    if at is not None:
+        text = str(at).strip()
+        if (
+            isinstance(at, bool)
+            or not text
+            or len(text) > MAX_AT_CHARS
+            or not (text.isascii() and text.isprintable())
+        ):
+            raise ChannelError(
+                f"ntfy 'at' must be a Unix timestamp or a short duration or phrase (printable ASCII, at most {MAX_AT_CHARS} characters)",
+                kind="validation",
+            )
+        headers["At"] = text
+    click = native.get("click")
+    if click is not None:
+        if (
+            not isinstance(click, str)
+            or not click.startswith(("https://", "http://"))
+            or not (click.isascii() and click.isprintable())
+            or any(c.isspace() for c in click)
+        ):
+            raise ChannelError(
+                "ntfy 'click' must be an http(s) URL in printable ASCII without spaces (percent-encode anything else)",
+                kind="validation",
+            )
+        headers["Click"] = click
+    sequence_id = native.get("sequence_id")
+    if sequence_id is not None:
+        sequence_id = _sequence_id(sequence_id)
+    return headers, sequence_id
 
 
 class Ntfy:
@@ -82,8 +160,10 @@ class Ntfy:
             priority=Support.FULL,
             max_title_length=MAX_TITLE_CHARS,
             formats=("plain",),
+            draft_fields=DRAFT_FIELDS,
             notes=(
                 "send only: no read, listen or sender identity",
+                "native: at (scheduled delivery, 10 s to 3 days), sequence_id (replace by id), click (tap URL); Ntfy.cancel deletes a scheduled message",
                 "the server turns a message over 4,096 bytes into an attachment",
                 "ntfy: (no topic) uses NTFY_TOPIC, the Keychain, or topic_remote",
                 "a dry run reads only the environment and the config file",
@@ -216,6 +296,8 @@ class Ntfy:
             headers["Title"] = _header(draft.title)
         if draft.priority:
             headers["Priority"] = PRIORITY[draft.priority]
+        native_headers, sequence_id = _native_headers(draft.native)
+        headers.update(native_headers)
         if token:
             headers["Authorization"] = f"Bearer {token}"
         deferred = ["topic"] if topic is None else []
@@ -232,14 +314,20 @@ class Ntfy:
             "authenticated": True if token else (None if deferred_token else False),
             "text": draft.text,
         }
+        for key in ("At", "Click"):
+            if key in native_headers:
+                plan[key.lower()] = native_headers[key]
+        if sequence_id:
+            plan["sequence_id"] = sequence_id
         if deferred:
             plan["looked_up_when_sending"] = deferred
         if dry_run:
             return SendResult(
                 ok=True, channel=NAME, conversation=ref.encoded, dry_run=True, plan=plan
             )
+        path = f"{server}/{topic}" + (f"/{sequence_id}" if sequence_id else "")
         response = self.http(
-            "POST", f"{server}/{topic}", headers=headers, body=draft.text.encode("utf-8")
+            "POST", path, headers=headers, body=draft.text.encode("utf-8")
         )
         if response.status >= 300:
             data = response.json()
@@ -257,6 +345,68 @@ class Ntfy:
             message_id=str(data["id"])
             if isinstance(data, dict) and data.get("id")
             else None,
+            account=Account(channel=NAME, id=server, acts_as="service"),
+            plan=plan,
+        )
+
+    def cancel(
+        self, ref: ConversationRef, sequence_id: str, *, dry_run: bool = False
+    ) -> SendResult:
+        """Delete the scheduled message published with ``sequence_id``, so it is never delivered.
+
+        ntfy answers ``DELETE /<topic>/<sequence_id>``; a message already delivered stays on
+        the devices that received it. A missing message is not an error on ntfy's side.
+        Sequence-id updates and deletes need a recent ntfy server (ntfy.sh has them).
+
+        This is the adapter's own verb, not an ``ops`` one: it runs no ``before_send`` check
+        and keeps no idempotency record (deleting twice is harmless), and it raises a
+        validation or channel error rather than returning a failed result.
+        """
+        sequence_id = _sequence_id(sequence_id)
+        server = (value(NAME, "url") or "https://ntfy.sh").rstrip("/")
+        if ref.id:
+            topic, source = ref.id, "reference"
+        else:
+            topic, source = self._default_topic(dry_run=dry_run)
+        if topic is not None and not TOPIC_RE.match(topic):
+            raise ChannelError(
+                f"the default topic (from {source}) is not a valid ntfy topic",
+                kind="validation",
+            )
+        if topic is None and (source == "missing" or not dry_run):
+            raise MissingRequirement(
+                NAME,
+                "there is no topic: the reference names none and no default topic was found",
+                fix="cancel on ntfy:<topic>, or set NTFY_TOPIC, or set topic_remote and topic_remote_file under [ntfy]",
+                kind="validation",
+            )
+        token = value(NAME, "token", run=self.run, keychain=not dry_run)
+        plan = {
+            "action": "cancel",
+            "server": server,
+            "topic": mask(topic) if topic else "(not resolved yet)",
+            "topic_source": source,
+            "sequence_id": sequence_id,
+            "authenticated": bool(token) if (token or not dry_run) else None,
+        }
+        if dry_run:
+            return SendResult(
+                ok=True, channel=NAME, conversation=ref.encoded, dry_run=True, plan=plan
+            )
+        headers = {}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+        response = self.http("DELETE", f"{server}/{topic}/{sequence_id}", headers=headers)
+        if response.status >= 300:
+            raise classify(
+                response.status,
+                f"ntfy refused to cancel the message ({response.status})",
+                response.headers,
+            )
+        return SendResult(
+            ok=True,
+            channel=NAME,
+            conversation=ref.encoded,
             account=Account(channel=NAME, id=server, acts_as="service"),
             plan=plan,
         )

@@ -190,6 +190,66 @@ def test_ntfy_failures_are_classified():
     ) and "example-topic" not in result.error
 
 
+def test_a_scheduled_message_with_a_sequence_id_and_a_click_url():
+    http = FakeHttp(_ok())
+    result = correspond.send(
+        "ntfy:example-topic",
+        "reminder due",
+        native={
+            "at": 1700000000,
+            "sequence_id": "loop-1",
+            "click": "https://example.org/l/1",
+        },
+        registry=_ntfy(http),
+    )
+    assert result.ok
+    call = http.calls[0]
+    assert call["url"] == "https://ntfy.sh/example-topic/loop-1"
+    assert call["headers"]["At"] == "1700000000"
+    assert call["headers"]["Click"] == "https://example.org/l/1"
+    planned = correspond.send(
+        "ntfy:example-topic",
+        "x",
+        native={"at": "30m", "sequence_id": "loop-1"},
+        dry_run=True,
+        registry=_ntfy(FakeHttp()),
+    )
+    assert planned.plan["at"] == "30m" and planned.plan["sequence_id"] == "loop-1"
+
+
+def test_bad_ntfy_native_fields_are_refused_not_dropped():
+    for native in (
+        {"sequence_id": "has space"},
+        {"sequence_id": "json"},
+        {"click": "https://example.org/\u00e9"},
+        {"at": "demain \u00e0 10h"},
+        {"click": "javascript:alert(1)"},
+        {"at": "x" * 100},
+        {"unknown": 1},
+    ):
+        http = FakeHttp()
+        result = correspond.send(
+            "ntfy:example-topic", "x", native=native, registry=_ntfy(http)
+        )
+        assert not result.ok and not http.calls, native
+
+
+def test_cancel_deletes_a_scheduled_message_by_sequence_id():
+    http = FakeHttp(Response(200, {}, b"{}"))
+    ntfy = Ntfy(http=http, run=_no_run)
+    planned = ntfy.cancel(ntfy.parse_ref("example-topic"), "loop-1", dry_run=True)
+    assert planned.dry_run and planned.plan["action"] == "cancel" and not http.calls
+    result = ntfy.cancel(ntfy.parse_ref("example-topic"), "loop-1")
+    assert result.ok
+    call = http.calls[0]
+    assert (
+        call["method"] == "DELETE"
+        and call["url"] == "https://ntfy.sh/example-topic/loop-1"
+    )
+    with pytest.raises(ChannelError):
+        ntfy.cancel(ntfy.parse_ref("example-topic"), "../etc")
+
+
 def test_ntfy_is_send_only():
     with pytest.raises(correspond.NotSupported, match="read"):
         correspond.read("ntfy:example-topic", registry=_ntfy(FakeHttp()))
