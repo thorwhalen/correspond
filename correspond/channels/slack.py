@@ -489,6 +489,21 @@ def _parent_of(messages: list[dict], thread: str) -> dict | None:
     return next((m for m in messages if float(m["ts"]) == float(thread)), None)
 
 
+def _previous(message: Mapping[str, Any]) -> dict:
+    """What an edit or a deletion says the message was: its text and its author's id, when given.
+
+    >>> _previous({"text": "first", "user": "U0123ABCD", "ts": "1.2"})
+    {'previous_text': 'first', 'previous_author': 'U0123ABCD'}
+    >>> _previous({"ts": "1.2"})
+    {}
+    """
+    found = {
+        "previous_text": message.get("text"),
+        "previous_author": message.get("user") or message.get("bot_id"),
+    }
+    return {key: str(value) for key, value in found.items() if value is not None}
+
+
 def _ts_time(ts: str | None) -> datetime | None:
     try:
         return datetime.fromtimestamp(float(ts), tz=timezone.utc) if ts else None
@@ -1387,7 +1402,8 @@ class Slack:
         """What the Events API receiver stored after ``cursor`` (``e<arrival ns>``) for this channel (or thread), in arrival order.
 
         New messages are ``message.created``, edits ``message.updated`` and deletions
-        ``message.deleted``. A first listen, or one whose cursor came from polling, looks
+        ``message.deleted``, the last two with the original wording in their payload
+        (``previous_text``, ``previous_author``) when Slack sends it. A first listen, or one whose cursor came from polling, looks
         back a day; stored events older than a week are deleted on the way.
         """
         now_ns = int(self.clock() * 10**9)
@@ -1443,10 +1459,17 @@ class Slack:
         event: Mapping[str, Any],
         token: str,
     ) -> Event | None:
-        """One stored ``message`` event as listen reports it, or ``None`` when it is not for ``ref``."""
+        """One stored ``message`` event as listen reports it, or ``None`` when it is not for ``ref``.
+
+        An edit's and a deletion's payload carry what Slack says the message was before
+        (``previous_message``), when it says: ``previous_text`` and ``previous_author``
+        (the author's Slack user id), so an audit can keep the original wording.
+        """
         subtype = event.get("subtype")
+        previous = event.get("previous_message")
+        before = _previous(previous) if isinstance(previous, Mapping) else {}
         if subtype == "message_deleted":
-            previous = event.get("previous_message") or {}
+            previous = previous if isinstance(previous, Mapping) else {}
             deleted = str(event.get("deleted_ts") or previous.get("ts") or "")
             if not deleted or (
                 thread and thread not in (deleted, previous.get("thread_ts"))
@@ -1456,7 +1479,11 @@ class Slack:
                 kind="message.deleted",
                 channel=NAME,
                 delivery_id=f"slack:{channel}:{deleted}:deleted",
-                payload={"message_id": deleted, "conversation": ref.encoded},
+                payload={
+                    "message_id": deleted,
+                    "conversation": ref.encoded,
+                    **before,
+                },
             )
         edited = subtype == "message_changed"
         data = event.get("message") if edited else event
@@ -1485,6 +1512,7 @@ class Slack:
                 else f"slack:{channel}:{ts}"
             ),
             message=self._message(ref, dict(data), token),
+            payload=before if edited else {},
         )
 
     def _window(
