@@ -130,11 +130,17 @@ def test_events_delivery_lists_created_edited_and_deleted_messages(monkeypatch):
                 "type": "message",
                 "subtype": "message_changed",
                 "message": {**first, "text": "first, edited", "edited": {"ts": "1760000005.000000"}},
+                "previous_message": first,
             },
         },
         received_key(stamp + 4, "Ev4"): {
             "channel": CHANNEL,
-            "event": {"type": "message", "subtype": "message_deleted", "deleted_ts": "1760000000.000100"},
+            "event": {
+                "type": "message",
+                "subtype": "message_deleted",
+                "deleted_ts": "1760000000.000100",
+                "previous_message": {**first, "text": "first, edited"},
+            },
         },
         received_key(stamp + 5, "Ev5"): {
             "channel": CHANNEL,
@@ -152,7 +158,10 @@ def test_events_delivery_lists_created_edited_and_deleted_messages(monkeypatch):
     got = list(correspond.listen(f"slack:{CHANNEL}", cursors=cursors, registry=registry))
     assert [e.kind for e in got] == ["message.created", "message.updated", "message.deleted"]
     assert got[1].message.text == "first, edited"
+    assert got[1].payload["previous_text"] == "first"  # the original wording, for an audit
     assert got[2].payload["message_id"] == "1760000000.000100"
+    assert got[2].payload["previous_text"] == "first, edited"
+    assert got[2].payload["previous_author"] == first["user"]
     assert cursors[f"slack:{CHANNEL}"] == f"e{stamp + 5}"
     thread = list(
         correspond.listen(
