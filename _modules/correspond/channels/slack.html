@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../../_static/documentation_options.js?v=1c03bfdc"></script>
+    <script src="../../../_static/documentation_options.js?v=b87b3bc5"></script>
     <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.54" />
+  <meta name="docsearch:version" content="0.0.55" />
   
     
     <script src="../../../_static/searchtools.js"></script>
@@ -1207,6 +1207,21 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">    {'ts': '1.500000'}</span>
 <span class="sd">    """</span>
     <span class="k">return</span> <span class="nb">next</span><span class="p">((</span><span class="n">m</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">messages</span> <span class="k">if</span> <span class="nb">float</span><span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="s2">"ts"</span><span class="p">])</span> <span class="o">==</span> <span class="nb">float</span><span class="p">(</span><span class="n">thread</span><span class="p">)),</span> <span class="kc">None</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_previous</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""What an edit or a deletion says the message was: its text and its author's id, when given.</span>
+
+<span class="sd">    &gt;&gt;&gt; _previous({"text": "first", "user": "U0123ABCD", "ts": "1.2"})</span>
+<span class="sd">    {'previous_text': 'first', 'previous_author': 'U0123ABCD'}</span>
+<span class="sd">    &gt;&gt;&gt; _previous({"ts": "1.2"})</span>
+<span class="sd">    {}</span>
+<span class="sd">    """</span>
+    <span class="n">found</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">"previous_text"</span><span class="p">:</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">),</span>
+        <span class="s2">"previous_author"</span><span class="p">:</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"user"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">message</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"bot_id"</span><span class="p">),</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">found</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">}</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_ts_time</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">datetime</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
@@ -2118,7 +2133,8 @@ window.runMermaid = runMermaid;</script>
 <span class="w">        </span><span class="sd">"""What the Events API receiver stored after ``cursor`` (``e&lt;arrival ns&gt;``) for this channel (or thread), in arrival order.</span>
 
 <span class="sd">        New messages are ``message.created``, edits ``message.updated`` and deletions</span>
-<span class="sd">        ``message.deleted``. A first listen, or one whose cursor came from polling, looks</span>
+<span class="sd">        ``message.deleted``, the last two with the original wording in their payload</span>
+<span class="sd">        (``previous_text``, ``previous_author``) when Slack sends it. A first listen, or one whose cursor came from polling, looks</span>
 <span class="sd">        back a day; stored events older than a week are deleted on the way.</span>
 <span class="sd">        """</span>
         <span class="n">now_ns</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">clock</span><span class="p">()</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span><span class="p">)</span>
@@ -2174,10 +2190,17 @@ window.runMermaid = runMermaid;</script>
         <span class="n">event</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
         <span class="n">token</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Event</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
-<span class="w">        </span><span class="sd">"""One stored ``message`` event as listen reports it, or ``None`` when it is not for ``ref``."""</span>
+<span class="w">        </span><span class="sd">"""One stored ``message`` event as listen reports it, or ``None`` when it is not for ``ref``.</span>
+
+<span class="sd">        An edit's and a deletion's payload carry what Slack says the message was before</span>
+<span class="sd">        (``previous_message``), when it says: ``previous_text`` and ``previous_author``</span>
+<span class="sd">        (the author's Slack user id), so an audit can keep the original wording.</span>
+<span class="sd">        """</span>
         <span class="n">subtype</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"subtype"</span><span class="p">)</span>
+        <span class="n">previous</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"previous_message"</span><span class="p">)</span>
+        <span class="n">before</span> <span class="o">=</span> <span class="n">_previous</span><span class="p">(</span><span class="n">previous</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">previous</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)</span> <span class="k">else</span> <span class="p">{}</span>
         <span class="k">if</span> <span class="n">subtype</span> <span class="o">==</span> <span class="s2">"message_deleted"</span><span class="p">:</span>
-            <span class="n">previous</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"previous_message"</span><span class="p">)</span> <span class="ow">or</span> <span class="p">{}</span>
+            <span class="n">previous</span> <span class="o">=</span> <span class="n">previous</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">previous</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)</span> <span class="k">else</span> <span class="p">{}</span>
             <span class="n">deleted</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"deleted_ts"</span><span class="p">)</span> <span class="ow">or</span> <span class="n">previous</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"ts"</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">""</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">deleted</span> <span class="ow">or</span> <span class="p">(</span>
                 <span class="n">thread</span> <span class="ow">and</span> <span class="n">thread</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="n">deleted</span><span class="p">,</span> <span class="n">previous</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"thread_ts"</span><span class="p">))</span>
@@ -2187,7 +2210,11 @@ window.runMermaid = runMermaid;</script>
                 <span class="n">kind</span><span class="o">=</span><span class="s2">"message.deleted"</span><span class="p">,</span>
                 <span class="n">channel</span><span class="o">=</span><span class="n">NAME</span><span class="p">,</span>
                 <span class="n">delivery_id</span><span class="o">=</span><span class="sa">f</span><span class="s2">"slack:</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">deleted</span><span class="si">}</span><span class="s2">:deleted"</span><span class="p">,</span>
-                <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">"message_id"</span><span class="p">:</span> <span class="n">deleted</span><span class="p">,</span> <span class="s2">"conversation"</span><span class="p">:</span> <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">},</span>
+                <span class="n">payload</span><span class="o">=</span><span class="p">{</span>
+                    <span class="s2">"message_id"</span><span class="p">:</span> <span class="n">deleted</span><span class="p">,</span>
+                    <span class="s2">"conversation"</span><span class="p">:</span> <span class="n">ref</span><span class="o">.</span><span class="n">encoded</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">before</span><span class="p">,</span>
+                <span class="p">},</span>
             <span class="p">)</span>
         <span class="n">edited</span> <span class="o">=</span> <span class="n">subtype</span> <span class="o">==</span> <span class="s2">"message_changed"</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">event</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"message"</span><span class="p">)</span> <span class="k">if</span> <span class="n">edited</span> <span class="k">else</span> <span class="n">event</span>
@@ -2216,6 +2243,7 @@ window.runMermaid = runMermaid;</script>
                 <span class="k">else</span> <span class="sa">f</span><span class="s2">"slack:</span><span class="si">{</span><span class="n">channel</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">ts</span><span class="si">}</span><span class="s2">"</span>
             <span class="p">),</span>
             <span class="n">message</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_message</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="nb">dict</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">token</span><span class="p">),</span>
+            <span class="n">payload</span><span class="o">=</span><span class="n">before</span> <span class="k">if</span> <span class="n">edited</span> <span class="k">else</span> <span class="p">{},</span>
         <span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_window</span><span class="p">(</span>

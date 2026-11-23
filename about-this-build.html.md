@@ -2,16 +2,18 @@
 
 # About this build
 
-This documentation was built on **2026-11-19 19:08 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/245db0684f0f07d94116bdfd75680d24e9e90a9d"><code>245db06</code></a> on branch <code>main</code>, for **correspond 0.0.54** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-23 08:04 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/2199247f1703104118abfb918824ef061ef9887b"><code>2199247</code></a> on branch <code>main</code>, for **correspond 0.0.55** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.55) is behind the latest release on PyPI (0.0.56): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/245db0684f0f07d94116bdfd75680d24e9e90a9d"><code>245db0684f0f07d94116bdfd75680d24e9e90a9d</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/2199247f1703104118abfb918824ef061ef9887b"><code>2199247f1703104118abfb918824ef061ef9887b</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -22,15 +24,15 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/44594822453">44594822453</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/45135455607">45135455607</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>245db0684f0f07d94116bdfd75680d24e9e90a9d</code> (in the history of the built commit)  |
+| Event commit | <code>2199247f1703104118abfb918824ef061ef9887b</code> (in the history of the built commit)  |
 
 ## Tools
 
 |          |         |
 |----------|---------|
-| epythet  | 0.2.22  |
+| epythet  | 0.2.25  |
 | Sphinx   | 9.1.1   |
 | docutils | 0.22.4  |
 | Python   | 3.12.16 |
@@ -49,14 +51,14 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.54/">0.0.54</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.56/">0.0.56</a>, newer than the documented version (0.0.55).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 245db0684f0f07d94116bdfd75680d24e9e90a9d
-pip install "epythet==0.2.22"
+git checkout 2199247f1703104118abfb918824ef061ef9887b
+pip install "epythet==0.2.25"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 

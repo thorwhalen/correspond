@@ -1,4 +1,4 @@
-> built 2026-11-19 19:08 UTC from 245db06 (main) · correspond 0.0.54. Details: build_info.json
+> built 2026-11-23 08:04 UTC from 2199247 (main) · correspond 0.0.55. Details: build_info.json
 
 # index.html.md
 
@@ -110,7 +110,7 @@ correspond listen github:owner/repo    # issue, comment, review comment and disc
 correspond listen email: --peek        # look without moving the cursor
 ```
 
-Cursors live under the data root, one per reference. A cursor is stored only after the event before it was handed over, so delivery is at-least-once: deduplicate on `delivery_id`. The first listen looks back a day. Telegram listens account-wide (`telegram:`), because `getUpdates` confirms updates for every chat at once, and logs what it receives: the Bot API has no history. On a server, Telegram can push instead: install `correspond[server]` and run `correspond-telegram-webhook` behind your HTTPS reverse proxy. It binds `127.0.0.1` (another address only with `webhook_allow_remote`), and the receiver stores nothing that lacks the `webhook_secret`, in arrival order. Run `correspond set-webhook telegram https://... --dry-run`, then without `--dry-run` (one connection at a time), set `delivery = "webhook"`, and `listen telegram:` reads what the receiver stored; `correspond webhook-info telegram` says where updates go now. The receiver keeps updates under the data root, or in the store `webhook_store = "module:attr"` names (an `s3dol` store on a server, say). Telegram serves `getUpdates` or a webhook, never both: `correspond delete-webhook telegram` returns to polling. GitHub has no `since` filter for discussions, so a reply that does not move its discussion’s activity can be missed by polling; a `discussion_comment` webhook closes that gap: run `correspond-github-webhook` the same way (`127.0.0.1:8082`), add a repository or organization webhook (content type `application/json`, the `webhook_secret`, the “Discussion comments” event) pointing at your proxy, and set `delivery = "webhook"` under `[github]`. The receiver verifies `X-Hub-Signature-256` and keeps only which discussion had a comment; listen still polls, and also reads those discussions whole. Slack can push too, through its Events API: run `correspond-slack-events` the same way (`127.0.0.1:8083`), give your proxy’s URL as the app’s Event Subscriptions Request URL (bot events `message.channels`, and `message.groups` for private channels), and set `delivery = "events"` under `[slack]`. The receiver checks every request’s `X-Slack-Signature` with the `signing_secret` (five-minute window), answers Slack’s `url_verification`, and keeps the `message` events; listen then reads them instead of polling, edits (`message.updated`) and deletions (`message.deleted`) included. Without a public URL, `delivery = "socket"` (the `slack` extra and an app-level `app_token`) opens Slack’s Socket Mode for a short window on each listen and stores the same events. Either way every channel’s message events are kept for a week; set `keep_channels` to a comma-separated list of channel ids to keep only those (a listen to any other channel is then refused). Writers on one machine (the receiver, and every process listening over Socket Mode) take turns through a lock file under the data root, so they may share one store; a `webhook_store` shared between machines still needs one writer. For a GovSlack workspace set `api_base = "https://slack-gov.com/api"` under `[slack]` (or `CORRESPOND_SLACK_API_BASE`): the Web API, Socket Mode and file fetches then go to `slack-gov.com` hosts only, and a `slack.com` URL in an answer is refused. Incoming webhooks on `hooks.slack-gov.com` work with either setting.
+Cursors live under the data root, one per reference. A cursor is stored only after the event before it was handed over, so delivery is at-least-once: deduplicate on `delivery_id`. The first listen looks back a day. Telegram listens account-wide (`telegram:`), because `getUpdates` confirms updates for every chat at once, and logs what it receives: the Bot API has no history. On a server, Telegram can push instead: install `correspond[server]` and run `correspond-telegram-webhook` behind your HTTPS reverse proxy. It binds `127.0.0.1` (another address only with `webhook_allow_remote`), and the receiver stores nothing that lacks the `webhook_secret`, in arrival order. Run `correspond set-webhook telegram https://... --dry-run`, then without `--dry-run` (one connection at a time), set `delivery = "webhook"`, and `listen telegram:` reads what the receiver stored; `correspond webhook-info telegram` says where updates go now. The receiver keeps updates under the data root, or in the store `webhook_store = "module:attr"` names (an `s3dol` store on a server, say). Telegram serves `getUpdates` or a webhook, never both: `correspond delete-webhook telegram` returns to polling. GitHub has no `since` filter for discussions, so a reply that does not move its discussion’s activity can be missed by polling; a `discussion_comment` webhook closes that gap: run `correspond-github-webhook` the same way (`127.0.0.1:8082`), add a repository or organization webhook (content type `application/json`, the `webhook_secret`, the “Discussion comments” event) pointing at your proxy, and set `delivery = "webhook"` under `[github]`. The receiver verifies `X-Hub-Signature-256` and keeps only which discussion had a comment; listen still polls, and also reads those discussions whole. Slack can push too, through its Events API: run `correspond-slack-events` the same way (`127.0.0.1:8083`), give your proxy’s URL as the app’s Event Subscriptions Request URL (bot events `message.channels`, and `message.groups` for private channels), and set `delivery = "events"` under `[slack]`. The receiver checks every request’s `X-Slack-Signature` with the `signing_secret` (five-minute window), answers Slack’s `url_verification`, and keeps the `message` events; listen then reads them instead of polling, edits (`message.updated`) and deletions (`message.deleted`) included, each with the wording Slack says the message had before (`previous_text` and `previous_author` in the event’s payload), so an audit keeps the original. Without a public URL, `delivery = "socket"` (the `slack` extra and an app-level `app_token`) opens Slack’s Socket Mode for a short window on each listen and stores the same events. Either way every channel’s message events are kept for a week; set `keep_channels` to a comma-separated list of channel ids to keep only those (a listen to any other channel is then refused). Writers on one machine (the receiver, and every process listening over Socket Mode) take turns through a lock file under the data root, so they may share one store; a `webhook_store` shared between machines still needs one writer. For a GovSlack workspace set `api_base = "https://slack-gov.com/api"` under `[slack]` (or `CORRESPOND_SLACK_API_BASE`): the Web API, Socket Mode and file fetches then go to `slack-gov.com` hosts only, and a `slack.com` URL in an answer is refused. Incoming webhooks on `hooks.slack-gov.com` work with either setting.
 
 ## Configuration
 
@@ -6070,16 +6070,18 @@ Where a channel’s platform delivers its updates now (Telegram: none means list
 
 # About this build
 
-This documentation was built on **2026-11-19 19:08 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/245db0684f0f07d94116bdfd75680d24e9e90a9d"><code>245db06</code></a> on branch <code>main</code>, for **correspond 0.0.54** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-23 08:04 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/2199247f1703104118abfb918824ef061ef9887b"><code>2199247</code></a> on branch <code>main</code>, for **correspond 0.0.55** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.0.55) is behind the latest release on PyPI (0.0.56): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/245db0684f0f07d94116bdfd75680d24e9e90a9d"><code>245db0684f0f07d94116bdfd75680d24e9e90a9d</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/2199247f1703104118abfb918824ef061ef9887b"><code>2199247f1703104118abfb918824ef061ef9887b</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -6090,15 +6092,15 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/44594822453">44594822453</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/45135455607">45135455607</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>245db0684f0f07d94116bdfd75680d24e9e90a9d</code> (in the history of the built commit)  |
+| Event commit | <code>2199247f1703104118abfb918824ef061ef9887b</code> (in the history of the built commit)  |
 
 ## Tools
 
 |          |         |
 |----------|---------|
-| epythet  | 0.2.22  |
+| epythet  | 0.2.25  |
 | Sphinx   | 9.1.1   |
 | docutils | 0.22.4  |
 | Python   | 3.12.16 |
@@ -6117,14 +6119,14 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.54/">0.0.54</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/correspond/0.0.56/">0.0.56</a>, newer than the documented version (0.0.55).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 245db0684f0f07d94116bdfd75680d24e9e90a9d
-pip install "epythet==0.2.22"
+git checkout 2199247f1703104118abfb918824ef061ef9887b
+pip install "epythet==0.2.25"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 
