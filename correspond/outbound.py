@@ -29,8 +29,14 @@ A caller that promises every write was checked (an unattended writer, a connecto
 real check: ``require_check=True`` on the write verbs, ``--require-check`` on the command
 line, or ``CORRESPOND_REQUIRE_CHECK=1`` in the environment (any value but empty, ``0``,
 ``false``, ``no`` or ``off``). Then a write whose check resolves to :func:`notice`, by any of
-the three steps, stops with ``before_send_unavailable``. Either source can only add the
-requirement: an argument of ``False`` does not lift the environment's.
+the three steps (also through a bound ``__call__``, a :func:`functools.partial` or a
+:func:`functools.wraps` wrapper of it), stops with ``before_send_unavailable``. Either source
+can only add the requirement: an argument of ``False`` does not lift the environment's. A
+function of the operator's own that checks nothing still counts as a check: whoever writes
+the config chooses it.
+
+A send replayed by its ``idempotency_key`` answers the earlier result and posts nothing, so
+no check runs for it; that earlier result's plan says which check it went out under.
 
 The plan's ``before_send_check`` line names the check that ran (``module:attr``), on every
 write, so a log of results shows which writes went out under :func:`notice`.
@@ -49,7 +55,7 @@ made without correspond never meets it. liaise's hook covers those.
 >>> resolve(None, config={}, require=True)
 Traceback (most recent call last):
     ...
-correspond.errors.BeforeSendUnavailable: no check configured, and this caller requires one (require_check, --require-check or $CORRESPOND_REQUIRE_CHECK): name one with before_send = "module:attr" at the top of the config; until then nothing is sent
+correspond.errors.CheckRequired: no check configured, and this caller requires one (require_check, --require-check or $CORRESPOND_REQUIRE_CHECK): name one with before_send = "module:attr" at the top of the config; until then nothing is sent
 >>> resolve(None, config={"before_send": "no.such.module:check"})
 Traceback (most recent call last):
     ...
@@ -58,7 +64,9 @@ correspond.errors.BeforeSendUnavailable: before_send = 'no.such.module:check' in
 
 from __future__ import annotations
 
+import functools
 import importlib
+import inspect
 import os
 from collections.abc import Callable, Mapping
 from typing import Any
@@ -67,6 +75,7 @@ from correspond.errors import (
     CHECK_KINDS,
     BeforeSendFailed,
     BeforeSendUnavailable,
+    CheckRequired,
     CorrespondError,
     Stopped,
 )
@@ -114,6 +123,28 @@ def check_required(require: bool = False) -> bool:
     return bool(require) or value.strip().lower() not in _OFF
 
 
+def _is_notice(func: Any) -> bool:
+    """Whether ``func`` is :func:`notice` under another name: its bound ``__call__``, a partial, or a ``functools.wraps`` wrapper.
+
+    >>> _is_notice(functools.partial(notice)), _is_notice(notice.__call__), _is_notice(print)
+    (True, True, False)
+    """
+    seen: set[int] = set()
+    while id(func) not in seen:
+        if func is notice:
+            return True
+        seen.add(id(func))
+        if isinstance(func, functools.partial):
+            func = func.func
+        elif getattr(func, "__self__", None) is not None:
+            func = func.__self__
+        elif getattr(func, "__wrapped__", None) is not None:
+            func = inspect.unwrap(func)
+        else:
+            return False
+    return False
+
+
 def _name_of(func: Callable) -> str:
     module = getattr(func, "__module__", None) or "?"
     return f"{module}:{getattr(func, '__qualname__', type(func).__name__)}"
@@ -155,8 +186,10 @@ def resolve(
     check found is :func:`notice`.
     """
     func, name = _resolve(before_send, config=config)
-    if func is notice and check_required(require):
-        raise BeforeSendUnavailable(
+    if _is_notice(func):
+        name = DEFAULT  # one name for "no real check", whatever alias the config used
+    if name == DEFAULT and check_required(require):
+        raise CheckRequired(
             "no check configured, and this caller requires one "
             f"(require_check, --require-check or ${REQUIRE_CHECK_ENVVAR}): "
             f'name one with {CONFIG_KEY} = "module:attr" at the top of the config; '
@@ -232,7 +265,9 @@ def check(
     from correspond.ops import audience as compute_audience
 
     found = compute_audience(ref, draft, registry=registry)
-    name: str | None = None  # known once the check is resolved
+    name: str | None = (
+        None  # known once the check is resolved (or stopped for want of one)
+    )
     stopped: Stopped | None = None
     try:
         func, name = resolve(before_send, require=require_check)
@@ -251,6 +286,8 @@ def check(
             )
     except Stopped as error:
         stopped = error
+        if isinstance(error, CheckRequired):
+            name = DEFAULT
         if error.error_kind not in CHECK_KINDS:
             stopped = BeforeSendFailed(
                 f"the check stopped the write with error_kind {error.error_kind!r}, "

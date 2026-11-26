@@ -406,6 +406,18 @@ def fastmcp_internals(server: Any) -> tuple[Any, Any]:
     return tuple(getattr(server, name) for name in FASTMCP_INTERNALS)
 
 
+def _relay_can_be_checked() -> None:
+    """Raise :class:`~correspond.errors.CheckRequired` now when ``$CORRESPOND_REQUIRE_CHECK`` is on and only ``notice`` is configured.
+
+    Every relayed prompt would be stopped by the check; saying so at startup beats one log
+    line per prompt that never reaches the operator.
+    """
+    from correspond.outbound import check_required, resolve
+
+    if check_required():
+        resolve()
+
+
 async def serve_streams(
     read_stream,
     write_stream,
@@ -431,6 +443,8 @@ async def serve_streams(
 
     if gate.relay_to and not allow_send:
         raise ValueError("the permission relay sends prompts, so it needs allow_send")
+    if gate.relay_to and send is None:
+        _relay_can_be_checked()
     refs = list(dict.fromkeys([*refs, *([gate.relay_to] if gate.relay_to else [])]))
     if server is None:
         server = mk_server(
@@ -598,6 +612,13 @@ def options(
         raise SystemExit(
             "correspond-channel: --relay-to sends permission prompts, so it needs --allow-send"
         )
+    if relay_to:
+        try:
+            _relay_can_be_checked()
+        except CorrespondError as error:
+            raise SystemExit(
+                f"correspond-channel: --relay-to sends permission prompts, which nothing would send: {error}"
+            ) from None
     approve = (
         _listed(args.approve_grades or config.get("approve_grades")) or APPROVE_GRADES
     )

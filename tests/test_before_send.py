@@ -28,6 +28,15 @@ def hold(ref, draft, audience, **context):
 def allow(ref, draft, audience, **context):
     return None
 
+import functools
+from correspond.outbound import notice
+
+partial_notice = functools.partial(notice)
+
+@functools.wraps(notice)
+def wrapped_notice(*args, **kwargs):
+    return notice(*args, **kwargs)
+
 not_callable = 42
 """
 
@@ -63,6 +72,26 @@ class EditableFake(FakeChannel):
 
     def upload(self, ref, name, data, *, media_type="", dry_run=False):
         return self._done(ref, "upload", dry_run, self.uploaded, name=name)
+
+
+class FullWriteFake(EditableFake):
+    """:class:`EditableFake` with labels, close and reopen too, every one recorded in ``written``."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.written = []
+
+    def label(self, ref, labels, *, dry_run=False):
+        return self._done(ref, "label", dry_run, self.written, labels=list(labels))
+
+    def unlabel(self, ref, labels, *, dry_run=False):
+        return self._done(ref, "unlabel", dry_run, self.written, labels=list(labels))
+
+    def close(self, ref, *, reason=None, dry_run=False):
+        return self._done(ref, "close", dry_run, self.written, reason=reason)
+
+    def reopen(self, ref, *, dry_run=False):
+        return self._done(ref, "reopen", dry_run, self.written)
 
 
 @pytest.fixture
@@ -493,12 +522,7 @@ def test_cli_require_check(capsys, fake, configure):
     assert f"before_send_check: {CHECKS_MODULE}:allow" in out
 
 
-def test_every_write_tool_takes_require_check_and_mcp_hides_it():
-    writes = [t for t in tools.TOOLS if tools.SIDE_EFFECTS[t.__name__] == "external"]
-    assert {t.__name__ for t in writes} >= {"send", "edit", "upload", "close"}
-    for tool in writes:
-        if "dry_run" in inspect.signature(tool).parameters:
-            assert "require_check" in inspect.signature(tool).parameters, tool.__name__
+def test_mcp_hides_require_check():
     for ref in refs(allow_send=True):
         exposed = _without(_resolve(ref))
         assert "require_check" not in inspect.signature(exposed).parameters, ref
@@ -513,3 +537,86 @@ def test_mcp_writes_honour_the_environment_variable(editable, monkeypatch):
     ):
         assert result["error_kind"] == "before_send_unavailable", result
     assert editable.sent == editable.edited == []
+
+
+WRITE_VERBS = {
+    "send": ("fake:example/demo", "x"),
+    "edit": ("fake:example/demo", "m1", "x"),
+    "react": ("fake:example/demo", "m1", "eyes"),
+    "upload": ("fake:example/demo", "a.txt", b"a"),
+    "label": ("fake:example/demo", ["bug"]),
+    "unlabel": ("fake:example/demo", ["bug"]),
+    "close": ("fake:example/demo",),
+    "reopen": ("fake:example/demo",),
+}
+
+
+@pytest.mark.parametrize("verb", sorted(WRITE_VERBS))
+def test_every_write_verb_forwards_require_check_to_the_check(monkeypatch, verb):
+    from correspond import ops, outbound
+
+    channel = FullWriteFake(conversations=demo_channel().conversations)
+    registry.register_channel(channel, replace=True)
+
+    seen = []
+    real = outbound.check
+
+    def spy(*args, require_check=False, **kwargs):
+        seen.append(require_check)
+        return real(*args, require_check=require_check, **kwargs)
+
+    monkeypatch.setattr(outbound, "check", spy)
+    getattr(ops, verb)(*WRITE_VERBS[verb], dry_run=True, require_check=True)
+    try:
+        assert seen == [True], seen
+        result = getattr(ops, verb)(*WRITE_VERBS[verb], require_check=True)
+        _stopped_for_want_of_a_check(result)
+        assert channel.sent == channel.edited == channel.reacted == []
+        assert channel.uploaded == channel.written == []
+        assert getattr(ops, verb)(*WRITE_VERBS[verb]).ok  # unchanged without it
+    finally:
+        registry.unregister_channel("fake")
+
+
+def test_every_ops_write_verb_and_external_tool_takes_require_check():
+    from correspond import ops
+
+    for name in [*WRITE_VERBS, "set_webhook", "delete_webhook"]:
+        assert "require_check" in inspect.signature(getattr(ops, name)).parameters
+    for tool in tools.TOOLS:
+        if tools.SIDE_EFFECTS[tool.__name__] == "external":
+            params = inspect.signature(tool).parameters
+            assert "require_check" in params, tool.__name__
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        f'"{DEFAULT}"',
+        '"correspond.outbound:notice.__call__"',
+        f'"{CHECKS_MODULE}:partial_notice"',
+        f'"{CHECKS_MODULE}:wrapped_notice"',
+    ],
+)
+def test_notice_under_another_name_is_still_no_check(fake, configure, value):
+    configure(value)
+    assert (
+        correspond.send("fake:example/demo", "x", dry_run=True).plan["before_send_check"]
+        == DEFAULT
+    )  # a log filtered on the default finds the aliases too
+    result = correspond.send("fake:example/demo", "x", require_check=True)
+    _stopped_for_want_of_a_check(result)
+    assert result.plan["before_send_check"] == DEFAULT and fake.sent == []
+
+
+def test_the_relay_refuses_to_start_when_a_check_is_required_and_none_is_set(
+    fake, monkeypatch
+):
+    from correspond.channel import options
+
+    REF, RELAY = "fake:example/demo", "fake:example/relay"
+    assert options([REF, "--relay-to", RELAY, "--allow-send"], config={})["gate"]
+    monkeypatch.setenv(REQUIRE_CHECK_ENVVAR, "1")
+    with pytest.raises(SystemExit, match="requires one"):
+        options([REF, "--relay-to", RELAY, "--allow-send"], config={})
+    assert options([REF, "--allow-send"], config={})  # no relay, nothing to refuse
