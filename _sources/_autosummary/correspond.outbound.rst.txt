@@ -11,12 +11,14 @@ correspond.outbound
       BeforeSend
       CONFIG_KEY
       DEFAULT
+      REQUIRE_CHECK_ENVVAR
    
    .. rubric:: Functions
 
    .. autosummary::
    
       check
+      check_required
       notice
       resolve
    

@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=b87b3bc5"></script>
+    <script src="../../_static/documentation_options.js?v=8f83b1af"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.55" />
+  <meta name="docsearch:version" content="0.0.56" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -721,8 +721,10 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">``edit``, ``react``, ``label``, ``unlabel``, ``close``, ``reopen``) are exposed only when the operator starts it with</span>
 <span class="sd">``--allow-send``, and every write still takes ``dry_run``.</span>
 
-<span class="sd">The data root is the server's, never the model's: ``data_dir`` is removed from every tool's</span>
-<span class="sd">schema. Point the server elsewhere with ``CORRESPOND_DATA_DIR`` in the client configuration::</span>
+<span class="sd">The data root and the check requirement are the server's, never the model's: ``data_dir``</span>
+<span class="sd">and ``require_check`` are removed from every tool's schema. Point the server elsewhere with</span>
+<span class="sd">``CORRESPOND_DATA_DIR``, and make every write require a real ``before_send`` check with</span>
+<span class="sd">``CORRESPOND_REQUIRE_CHECK=1``, in the client configuration::</span>
 
 <span class="sd">    {"mcpServers": {"correspond": {"command": "correspond-mcp"}}}</span>
 <span class="sd">"""</span>
@@ -749,7 +751,7 @@ window.runMermaid = runMermaid;</script>
 
 <span class="n">DEFAULT_EFFECTS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"read"</span><span class="p">,</span> <span class="s2">"external-read"</span><span class="p">)</span>
 <span class="n">SEND_EFFECTS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"external"</span><span class="p">,)</span>
-<span class="n">HIDDEN_PARAMETERS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"data_dir"</span><span class="p">,)</span>
+<span class="n">HIDDEN_PARAMETERS</span> <span class="o">=</span> <span class="p">(</span><span class="s2">"data_dir"</span><span class="p">,</span> <span class="s2">"require_check"</span><span class="p">)</span>
 <span class="n">INSTRUCTIONS</span> <span class="o">=</span> <span class="p">(</span>
     <span class="s2">"Read and write messages on the user's channels (GitHub, email, ntfy, macOS notifications, Telegram, a web inbox) "</span>
     <span class="s2">"through one set of verbs. References look like github:owner/repo#12, email:someone@example.org, "</span>

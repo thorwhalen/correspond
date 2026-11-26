@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=b87b3bc5"></script>
+    <script src="../../_static/documentation_options.js?v=8f83b1af"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.55" />
+  <meta name="docsearch:version" content="0.0.56" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -749,6 +749,7 @@ window.runMermaid = runMermaid;</script>
     <span class="s2">"BeforeSendFailed"</span><span class="p">,</span>
     <span class="s2">"BeforeSendUnavailable"</span><span class="p">,</span>
     <span class="s2">"ChannelError"</span><span class="p">,</span>
+    <span class="s2">"CheckRequired"</span><span class="p">,</span>
     <span class="s2">"CorrespondError"</span><span class="p">,</span>
     <span class="s2">"InvalidRef"</span><span class="p">,</span>
     <span class="s2">"MissingRequirement"</span><span class="p">,</span>
@@ -893,6 +894,13 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">"""The configured ``before_send`` check could not be loaded, so nothing is sent."""</span>
 
     <span class="n">error_kind</span> <span class="o">=</span> <span class="s2">"before_send_unavailable"</span></div>
+
+
+
+<div class="viewcode-block" id="CheckRequired">
+<a class="viewcode-back" href="../../_autosummary/correspond.errors.html#correspond.CheckRequired">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">CheckRequired</span><span class="p">(</span><span class="n">BeforeSendUnavailable</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""The caller requires a real ``before_send`` check and none is configured (only the default ``notice``), so nothing is sent."""</span></div>
 
 
 

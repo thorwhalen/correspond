@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=b87b3bc5"></script>
+    <script src="../../_static/documentation_options.js?v=8f83b1af"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.55" />
+  <meta name="docsearch:version" content="0.0.56" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -739,6 +739,22 @@ window.runMermaid = runMermaid;</script>
 <span class="sd">3. else :func:`notice`, which lets the write go ahead: the audience line it adds to the plan</span>
 <span class="sd">   is the whole of it.</span>
 
+<span class="sd">A caller that promises every write was checked (an unattended writer, a connector) asks for a</span>
+<span class="sd">real check: ``require_check=True`` on the write verbs, ``--require-check`` on the command</span>
+<span class="sd">line, or ``CORRESPOND_REQUIRE_CHECK=1`` in the environment (any value but empty, ``0``,</span>
+<span class="sd">``false``, ``no`` or ``off``). Then a write whose check resolves to :func:`notice`, by any of</span>
+<span class="sd">the three steps (also through a bound ``__call__``, a :func:`functools.partial` or a</span>
+<span class="sd">:func:`functools.wraps` wrapper of it), stops with ``before_send_unavailable``. Either source</span>
+<span class="sd">can only add the requirement: an argument of ``False`` does not lift the environment's. A</span>
+<span class="sd">function of the operator's own that checks nothing still counts as a check: whoever writes</span>
+<span class="sd">the config chooses it.</span>
+
+<span class="sd">A send replayed by its ``idempotency_key`` answers the earlier result and posts nothing, so</span>
+<span class="sd">no check runs for it; that earlier result's plan says which check it went out under.</span>
+
+<span class="sd">The plan's ``before_send_check`` line names the check that ran (``module:attr``), on every</span>
+<span class="sd">write, so a log of results shows which writes went out under :func:`notice`.</span>
+
 <span class="sd">Anything else the check does (raise another exception, exit, return a value, stop with an</span>
 <span class="sd">``error_kind`` outside :data:`~correspond.errors.CHECK_KINDS`) also stops the write</span>
 <span class="sd">(``before_send_failed``). liaise supplies a real check (``liaise.vet.before_send``).</span>
@@ -750,6 +766,10 @@ window.runMermaid = runMermaid;</script>
 
 <span class="sd">&gt;&gt;&gt; resolve(None, config={})[1]</span>
 <span class="sd">'correspond.outbound:notice'</span>
+<span class="sd">&gt;&gt;&gt; resolve(None, config={}, require=True)</span>
+<span class="sd">Traceback (most recent call last):</span>
+<span class="sd">    ...</span>
+<span class="sd">correspond.errors.CheckRequired: no check configured, and this caller requires one (require_check, --require-check or $CORRESPOND_REQUIRE_CHECK): name one with before_send = "module:attr" at the top of the config; until then nothing is sent</span>
 <span class="sd">&gt;&gt;&gt; resolve(None, config={"before_send": "no.such.module:check"})</span>
 <span class="sd">Traceback (most recent call last):</span>
 <span class="sd">    ...</span>
@@ -758,7 +778,10 @@ window.runMermaid = runMermaid;</script>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 
+<span class="kn">import</span><span class="w"> </span><span class="nn">functools</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">importlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">inspect</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">collections.abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Mapping</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
 
@@ -766,12 +789,22 @@ window.runMermaid = runMermaid;</script>
     <span class="n">CHECK_KINDS</span><span class="p">,</span>
     <span class="n">BeforeSendFailed</span><span class="p">,</span>
     <span class="n">BeforeSendUnavailable</span><span class="p">,</span>
+    <span class="n">CheckRequired</span><span class="p">,</span>
     <span class="n">CorrespondError</span><span class="p">,</span>
     <span class="n">Stopped</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.model</span><span class="w"> </span><span class="kn">import</span> <span class="n">Audience</span><span class="p">,</span> <span class="n">ConversationRef</span><span class="p">,</span> <span class="n">Draft</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"CONFIG_KEY"</span><span class="p">,</span> <span class="s2">"DEFAULT"</span><span class="p">,</span> <span class="s2">"BeforeSend"</span><span class="p">,</span> <span class="s2">"check"</span><span class="p">,</span> <span class="s2">"notice"</span><span class="p">,</span> <span class="s2">"resolve"</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">"CONFIG_KEY"</span><span class="p">,</span>
+    <span class="s2">"DEFAULT"</span><span class="p">,</span>
+    <span class="s2">"REQUIRE_CHECK_ENVVAR"</span><span class="p">,</span>
+    <span class="s2">"BeforeSend"</span><span class="p">,</span>
+    <span class="s2">"check"</span><span class="p">,</span>
+    <span class="s2">"check_required"</span><span class="p">,</span>
+    <span class="s2">"notice"</span><span class="p">,</span>
+    <span class="s2">"resolve"</span><span class="p">,</span>
+<span class="p">]</span>
 
 <span class="c1">#: A ``before_send`` check, called ``(ref, draft, audience, *, operation, dry_run, message_id)``: returns ``None`` to let the write go ahead, raises ``Refused`` or ``NeedsApproval`` to stop it.</span>
 <span class="n">BeforeSend</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
@@ -779,6 +812,10 @@ window.runMermaid = runMermaid;</script>
 <span class="n">CONFIG_KEY</span> <span class="o">=</span> <span class="s2">"before_send"</span>
 <span class="c1">#: The check that runs when neither the argument nor the config names one.</span>
 <span class="n">DEFAULT</span> <span class="o">=</span> <span class="s2">"correspond.outbound:notice"</span>
+<span class="c1">#: The environment variable that makes every write in the process require a real check.</span>
+<span class="n">REQUIRE_CHECK_ENVVAR</span> <span class="o">=</span> <span class="s2">"CORRESPOND_REQUIRE_CHECK"</span>
+<span class="c1">#: The values of :data:`REQUIRE_CHECK_ENVVAR` that leave the requirement off; any other value turns it on.</span>
+<span class="n">_OFF</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">""</span><span class="p">,</span> <span class="s2">"0"</span><span class="p">,</span> <span class="s2">"false"</span><span class="p">,</span> <span class="s2">"no"</span><span class="p">,</span> <span class="s2">"off"</span><span class="p">})</span>
 
 
 <div class="viewcode-block" id="notice">
@@ -789,6 +826,43 @@ window.runMermaid = runMermaid;</script>
 <span class="w">    </span><span class="sd">"""The default check: every write goes ahead, and its plan and summary say who can read it."""</span>
     <span class="k">return</span> <span class="kc">None</span></div>
 
+
+
+<div class="viewcode-block" id="check_required">
+<a class="viewcode-back" href="../../_autosummary/correspond.outbound.html#correspond.outbound.check_required">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">check_required</span><span class="p">(</span><span class="n">require</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether a write must run a real check: ``require``, or :data:`REQUIRE_CHECK_ENVVAR` set to anything but an off value.</span>
+
+<span class="sd">    An unrecognised value turns the requirement on: a typo must not lift it.</span>
+
+<span class="sd">    &gt;&gt;&gt; check_required(True)</span>
+<span class="sd">    True</span>
+<span class="sd">    """</span>
+    <span class="n">value</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">REQUIRE_CHECK_ENVVAR</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">require</span><span class="p">)</span> <span class="ow">or</span> <span class="n">value</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_OFF</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_is_notice</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Whether ``func`` is :func:`notice` under another name: its bound ``__call__``, a partial, or a ``functools.wraps`` wrapper.</span>
+
+<span class="sd">    &gt;&gt;&gt; _is_notice(functools.partial(notice)), _is_notice(notice.__call__), _is_notice(print)</span>
+<span class="sd">    (True, True, False)</span>
+<span class="sd">    """</span>
+    <span class="n">seen</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">while</span> <span class="nb">id</span><span class="p">(</span><span class="n">func</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">func</span> <span class="ow">is</span> <span class="n">notice</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="nb">id</span><span class="p">(</span><span class="n">func</span><span class="p">))</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">):</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="n">func</span>
+        <span class="k">elif</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="s2">"__self__"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="n">func</span><span class="o">.</span><span class="vm">__self__</span>
+        <span class="k">elif</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="s2">"__wrapped__"</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">func</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+    <span class="k">return</span> <span class="kc">False</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_name_of</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -821,13 +895,35 @@ window.runMermaid = runMermaid;</script>
 <div class="viewcode-block" id="resolve">
 <a class="viewcode-back" href="../../_autosummary/correspond.outbound.html#correspond.outbound.resolve">[docs]</a>
 <span class="k">def</span><span class="w"> </span><span class="nf">resolve</span><span class="p">(</span>
-    <span class="n">before_send</span><span class="p">:</span> <span class="n">BeforeSend</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">before_send</span><span class="p">:</span> <span class="n">BeforeSend</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">config</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">require</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">BeforeSend</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""The check to run and the name it is reported by: the argument, else the config's, else :func:`notice`.</span>
 
 <span class="sd">    Raises :class:`~correspond.errors.BeforeSendUnavailable` when the config names a check</span>
-<span class="sd">    that cannot be loaded, or cannot itself be read.</span>
+<span class="sd">    that cannot be loaded, or cannot itself be read, and, when a real check is required</span>
+<span class="sd">    (``require`` or :data:`REQUIRE_CHECK_ENVVAR`, see :func:`check_required`), when the</span>
+<span class="sd">    check found is :func:`notice`.</span>
 <span class="sd">    """</span>
+    <span class="n">func</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">_resolve</span><span class="p">(</span><span class="n">before_send</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_is_notice</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">DEFAULT</span>  <span class="c1"># one name for "no real check", whatever alias the config used</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="n">DEFAULT</span> <span class="ow">and</span> <span class="n">check_required</span><span class="p">(</span><span class="n">require</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">CheckRequired</span><span class="p">(</span>
+            <span class="s2">"no check configured, and this caller requires one "</span>
+            <span class="sa">f</span><span class="s2">"(require_check, --require-check or $</span><span class="si">{</span><span class="n">REQUIRE_CHECK_ENVVAR</span><span class="si">}</span><span class="s2">): "</span>
+            <span class="sa">f</span><span class="s1">'name one with </span><span class="si">{</span><span class="n">CONFIG_KEY</span><span class="si">}</span><span class="s1"> = "module:attr" at the top of the config; '</span>
+            <span class="s2">"until then nothing is sent"</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">func</span><span class="p">,</span> <span class="n">name</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_resolve</span><span class="p">(</span>
+    <span class="n">before_send</span><span class="p">:</span> <span class="n">BeforeSend</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">BeforeSend</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
     <span class="k">if</span> <span class="n">before_send</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">before_send</span><span class="p">):</span>
             <span class="k">raise</span> <span class="n">BeforeSendUnavailable</span><span class="p">(</span>
@@ -856,8 +952,7 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
         <span class="k">return</span> <span class="n">notice</span><span class="p">,</span> <span class="n">DEFAULT</span>
     <span class="n">reference</span> <span class="o">=</span> <span class="n">config</span><span class="p">[</span><span class="n">CONFIG_KEY</span><span class="p">]</span>
-    <span class="k">return</span> <span class="n">_load</span><span class="p">(</span><span class="n">reference</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">reference</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span></div>
-
+    <span class="k">return</span> <span class="n">_load</span><span class="p">(</span><span class="n">reference</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">reference</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_verdict_line</span><span class="p">(</span><span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n">stopped</span><span class="p">:</span> <span class="n">Stopped</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
@@ -882,21 +977,25 @@ window.runMermaid = runMermaid;</script>
     <span class="n">dry_run</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">message_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">before_send</span><span class="p">:</span> <span class="n">BeforeSend</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">require_check</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">registry</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">Stopped</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
 <span class="w">    </span><span class="sd">"""Compute the audience, run the check, and return the plan lines with what stopped the write (``None``: it may go ahead).</span>
 
 <span class="sd">    The audience is computed first, so a write that cannot be checked still shows who it</span>
-<span class="sd">    would have reached. Never raises for anything the check does (``KeyboardInterrupt``</span>
+<span class="sd">    would have reached. ``require_check`` stops the write when no real check would run</span>
+<span class="sd">    (see :func:`resolve`). Never raises for anything the check does (``KeyboardInterrupt``</span>
 <span class="sd">    aside, which stops everything).</span>
 <span class="sd">    """</span>
     <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">audience</span> <span class="k">as</span> <span class="n">compute_audience</span>
 
     <span class="n">found</span> <span class="o">=</span> <span class="n">compute_audience</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">draft</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">registry</span><span class="p">)</span>
-    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># known once the check is resolved</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="kc">None</span>  <span class="c1"># known once the check is resolved (or stopped for want of one)</span>
+    <span class="p">)</span>
     <span class="n">stopped</span><span class="p">:</span> <span class="n">Stopped</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">try</span><span class="p">:</span>
-        <span class="n">func</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">resolve</span><span class="p">(</span><span class="n">before_send</span><span class="p">)</span>
+        <span class="n">func</span><span class="p">,</span> <span class="n">name</span> <span class="o">=</span> <span class="n">resolve</span><span class="p">(</span><span class="n">before_send</span><span class="p">,</span> <span class="n">require</span><span class="o">=</span><span class="n">require_check</span><span class="p">)</span>
         <span class="n">answer</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span>
             <span class="n">ref</span><span class="p">,</span>
             <span class="n">draft</span><span class="p">,</span>
@@ -912,6 +1011,8 @@ window.runMermaid = runMermaid;</script>
             <span class="p">)</span>
     <span class="k">except</span> <span class="n">Stopped</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
         <span class="n">stopped</span> <span class="o">=</span> <span class="n">error</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">error</span><span class="p">,</span> <span class="n">CheckRequired</span><span class="p">):</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">DEFAULT</span>
         <span class="k">if</span> <span class="n">error</span><span class="o">.</span><span class="n">error_kind</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">CHECK_KINDS</span><span class="p">:</span>
             <span class="n">stopped</span> <span class="o">=</span> <span class="n">BeforeSendFailed</span><span class="p">(</span>
                 <span class="sa">f</span><span class="s2">"the check stopped the write with error_kind </span><span class="si">{</span><span class="n">error</span><span class="o">.</span><span class="n">error_kind</span><span class="si">!r}</span><span class="s2">, "</span>
@@ -927,6 +1028,7 @@ window.runMermaid = runMermaid;</script>
         <span class="s2">"audience"</span><span class="p">:</span> <span class="n">found</span><span class="o">.</span><span class="n">in_words</span><span class="p">(),</span>
         <span class="s2">"audience_hash"</span><span class="p">:</span> <span class="n">found</span><span class="o">.</span><span class="n">hash</span><span class="p">,</span>
         <span class="s2">"before_send"</span><span class="p">:</span> <span class="n">_verdict_line</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">stopped</span><span class="p">),</span>
+        <span class="s2">"before_send_check"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span>
     <span class="p">}</span>
     <span class="k">if</span> <span class="n">stopped</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">stopped</span><span class="o">.</span><span class="n">details</span><span class="p">:</span>
         <span class="n">lines</span><span class="p">[</span><span class="s2">"before_send_details"</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>

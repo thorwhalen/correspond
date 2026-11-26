@@ -42,7 +42,7 @@ the same verbs, through [`correspond.tools`](correspond.tools.html.md#module-cor
 | [`react`](#correspond.react)(ref, message_id, reaction, \*[, ...])        | Add a reaction to a message (the channel's capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft's text.                            |
 | [`read`](#correspond.read)(ref, \*[, since, limit, registry])            | The messages of a conversation, oldest first (`limit` keeps the most recent ones).                                                                                                |
 | [`register_channel`](#correspond.register_channel)(adapter, \*[, name, ...])         | Add an adapter (tests, or a channel defined outside correspond).                                                                                                                  |
-| [`reopen`](#correspond.reopen)(ref, \*[, dry_run, registry, before_send])  | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                          |
+| [`reopen`](#correspond.reopen)(ref, \*[, dry_run, registry, ...])          | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                          |
 | [`route`](#correspond.route)(message, \*[, bindings, threads, ...])       | Run the chain (bindings, thread continuity, metadata rules, classifier) and return the first decision, or `None`.                                                                 |
 | [`send`](#correspond.send)(ref, text, \*[, title, reply_to, ...])        | Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.                   |
 | [`unlabel`](#correspond.unlabel)(ref, labels, \*[, dry_run, registry, ...]) | Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                        |
@@ -731,14 +731,14 @@ What a channel needs and what is missing: the install command, binaries, platfor
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.close(ref, , reason=None, dry_run=False, registry=None, before_send=None)
+### correspond.close(ref, , reason=None, dry_run=False, registry=None, before_send=None, require_check=False)
 
 Close a conversation (an issue or a discussion), with an optional `reason` in the channel’s vocabulary; the `before_send` check sees the reason (or `close`) as the draft’s text.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.edit(ref, message_id, text, , dry_run=False, registry=None, before_send=None)
+### correspond.edit(ref, message_id, text, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Replace the text of a message correspond’s account wrote; the `before_send` check runs first, as for [`send()`](#correspond.send).
 
@@ -752,7 +752,7 @@ The adapter registered under `name`; [`UnknownChannel`](correspond.errors.html.m
 * **Return type:**
   [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
 
-### correspond.label(ref, labels, , dry_run=False, registry=None, before_send=None)
+### correspond.label(ref, labels, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Add `labels` to a conversation; the `before_send` check sees them, comma-joined, as the draft’s text.
 
@@ -790,7 +790,7 @@ A reference normalised by its channel’s adapter (kind and parent filled in, th
 * **Return type:**
   [`ConversationRef`](correspond.model.html.md#correspond.model.ConversationRef)
 
-### correspond.react(ref, message_id, reaction, , dry_run=False, registry=None, before_send=None)
+### correspond.react(ref, message_id, reaction, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Add a reaction to a message (the channel’s capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft’s text.
 
@@ -811,7 +811,7 @@ Add an adapter (tests, or a channel defined outside correspond). `replace` swaps
 * **Return type:**
   [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
 
-### correspond.reopen(ref, , dry_run=False, registry=None, before_send=None)
+### correspond.reopen(ref, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Reopen a closed conversation; the `before_send` check sees `reopen` as the draft’s text.
 
@@ -825,7 +825,7 @@ Run the chain (bindings, thread continuity, metadata rules, classifier) and retu
 * **Return type:**
   [`RouteDecision`](correspond.routing.html.md#correspond.routing.RouteDecision) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), attachments=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), attachments=(), dry_run=False, registry=None, before_send=None, require_check=False, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
@@ -841,6 +841,9 @@ guarantees it (a mention added, an address copied) or the send fails with
 `NotSupported("notify")`.
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](correspond.outbound.html.md#correspond.outbound.notice).
+`require_check` (or `$CORRESPOND_REQUIRE_CHECK`) stops the send with
+`before_send_unavailable` when that would be [`notice()`](correspond.outbound.html.md#correspond.outbound.notice): for
+a caller that promises every write was checked. The other write verbs take it too.
 
 `idempotency_key` makes sending the same message again safe: a key that already sent
 answers that send’s result and posts nothing, and one whose earlier attempt may have
@@ -853,7 +856,7 @@ plain one is checked, then set, which covers one process.
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.unlabel(ref, labels, , dry_run=False, registry=None, before_send=None)
+### correspond.unlabel(ref, labels, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft’s text.
 
@@ -867,7 +870,7 @@ Remove a channel from the registry.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, native=None, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, native=None, registry=None, before_send=None, require_check=False, idempotency_key=None, sends=None)
 
 Send a file to a conversation.
 

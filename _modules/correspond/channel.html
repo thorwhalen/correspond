@@ -41,7 +41,7 @@
   <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=75c7c72ae941e8b558d8" />
 <link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=75c7c72ae941e8b558d8" />
 
-    <script src="../../_static/documentation_options.js?v=b87b3bc5"></script>
+    <script src="../../_static/documentation_options.js?v=8f83b1af"></script>
     <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
     <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
@@ -411,7 +411,7 @@ window.runMermaid = runMermaid;</script>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="color-scheme" content="light dark"/>
   <meta name="docsearch:language" content="en"/>
-  <meta name="docsearch:version" content="0.0.55" />
+  <meta name="docsearch:version" content="0.0.56" />
   
     
     <script src="../../_static/searchtools.js"></script>
@@ -1147,6 +1147,18 @@ window.runMermaid = runMermaid;</script>
     <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">server</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">FASTMCP_INTERNALS</span><span class="p">)</span>
 
 
+<span class="k">def</span><span class="w"> </span><span class="nf">_relay_can_be_checked</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Raise :class:`~correspond.errors.CheckRequired` now when ``$CORRESPOND_REQUIRE_CHECK`` is on and only ``notice`` is configured.</span>
+
+<span class="sd">    Every relayed prompt would be stopped by the check; saying so at startup beats one log</span>
+<span class="sd">    line per prompt that never reaches the operator.</span>
+<span class="sd">    """</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">correspond.outbound</span><span class="w"> </span><span class="kn">import</span> <span class="n">check_required</span><span class="p">,</span> <span class="n">resolve</span>
+
+    <span class="k">if</span> <span class="n">check_required</span><span class="p">():</span>
+        <span class="n">resolve</span><span class="p">()</span>
+
+
 <div class="viewcode-block" id="serve_streams">
 <a class="viewcode-back" href="../../_autosummary/correspond.channel.html#correspond.channel.serve_streams">[docs]</a>
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">serve_streams</span><span class="p">(</span>
@@ -1174,6 +1186,8 @@ window.runMermaid = runMermaid;</script>
 
     <span class="k">if</span> <span class="n">gate</span><span class="o">.</span><span class="n">relay_to</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">allow_send</span><span class="p">:</span>
         <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"the permission relay sends prompts, so it needs allow_send"</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">gate</span><span class="o">.</span><span class="n">relay_to</span> <span class="ow">and</span> <span class="n">send</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">_relay_can_be_checked</span><span class="p">()</span>
     <span class="n">refs</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">([</span><span class="o">*</span><span class="n">refs</span><span class="p">,</span> <span class="o">*</span><span class="p">([</span><span class="n">gate</span><span class="o">.</span><span class="n">relay_to</span><span class="p">]</span> <span class="k">if</span> <span class="n">gate</span><span class="o">.</span><span class="n">relay_to</span> <span class="k">else</span> <span class="p">[])]))</span>
     <span class="k">if</span> <span class="n">server</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">server</span> <span class="o">=</span> <span class="n">mk_server</span><span class="p">(</span>
@@ -1345,6 +1359,13 @@ window.runMermaid = runMermaid;</script>
         <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span>
             <span class="s2">"correspond-channel: --relay-to sends permission prompts, so it needs --allow-send"</span>
         <span class="p">)</span>
+    <span class="k">if</span> <span class="n">relay_to</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">_relay_can_be_checked</span><span class="p">()</span>
+        <span class="k">except</span> <span class="n">CorrespondError</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">SystemExit</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"correspond-channel: --relay-to sends permission prompts, which nothing would send: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">"</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="kc">None</span>
     <span class="n">approve</span> <span class="o">=</span> <span class="p">(</span>
         <span class="n">_listed</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">approve_grades</span> <span class="ow">or</span> <span class="n">config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"approve_grades"</span><span class="p">))</span> <span class="ow">or</span> <span class="n">APPROVE_GRADES</span>
     <span class="p">)</span>

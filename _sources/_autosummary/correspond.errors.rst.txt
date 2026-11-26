@@ -18,6 +18,7 @@ correspond.errors
       BeforeSendFailed
       BeforeSendUnavailable
       ChannelError
+      CheckRequired
       CorrespondError
       InvalidRef
       MissingRequirement

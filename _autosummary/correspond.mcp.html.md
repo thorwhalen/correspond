@@ -9,8 +9,10 @@ library. By default the server exposes only the tools that read (`channels`,
 `edit`, `react`, `label`, `unlabel`, `close`, `reopen`) are exposed only when the operator starts it with
 `--allow-send`, and every write still takes `dry_run`.
 
-The data root is the server’s, never the model’s: `data_dir` is removed from every tool’s
-schema. Point the server elsewhere with `CORRESPOND_DATA_DIR` in the client configuration:
+The data root and the check requirement are the server’s, never the model’s: `data_dir`
+and `require_check` are removed from every tool’s schema. Point the server elsewhere with
+`CORRESPOND_DATA_DIR`, and make every write require a real `before_send` check with
+`CORRESPOND_REQUIRE_CHECK=1`, in the client configuration:
 
 ```default
 {"mcpServers": {"correspond": {"command": "correspond-mcp"}}}

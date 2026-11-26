@@ -1,4 +1,4 @@
-> built 2026-11-23 08:04 UTC from 2199247 (main) · correspond 0.0.55. Details: build_info.json
+> built 2026-11-26 15:26 UTC from 34c154e (main) · correspond 0.0.56. Details: build_info.json
 
 # index.html.md
 
@@ -97,7 +97,7 @@ scope: public
 - `--cc` and `--bcc` (comma-separated) copy further recipients on channels that grade `cc` (email); elsewhere they are refused by name. Bcc addresses go on the envelope only, never in a header, and they count in the audience.
 - `--notify` (comma-separated, `notify=` in Python) names who must be notified, and the writer guarantees it: on GitHub (and Telegram, for a member of the chat with a public username) a mention (`@octocat`) the text lacks is added on a closing `cc` line; on email an address that is neither To nor Cc goes in Cc, and so counts in the audience. The plan shows what was added (`mentions_added`, `cc_added`). A channel that cannot guarantee it refuses the draft with `NotSupported("notify")` rather than sending without it.
 - **Files.** `correspond upload <ref> <path>` sends one file; `correspond send <ref> "text" --attach a.pdf,b.csv` sends files with the text (email: each attached; Telegram: one, the text its caption). Paths are read only when they are regular files outside hidden folders (`--include-hidden` to allow one), and the plan names each file’s real path. `--idempotency-key` keeps a retried upload from posting twice, and on Telegram `--native '{"as_document": true}'` sends an image as the file it is.
-- **Every write (`send`, `edit`, `react`, `upload`, `label`, `unlabel`, `close`, `reopen`) passes the `before_send` check first** (an upload’s check sees only the file name), on the dry run too. The plan shows `audience` (who can read it, in words), `audience_hash`, and `before_send` (the verdict). With nothing configured the check lets the write go ahead, so the audience line is all it adds. A check can stop the write: `refused` (not as written, not here) or `needs_approval` (wait for the operator), with any details it attached in `before_send_details`. A configured check that does not load stops every write (`before_send_unavailable`), and one that crashes stops that write (`before_send_failed`). Nothing is sent in any of these cases, and `--allow-send` on the MCP server does not skip the check.
+- **Every write (`send`, `edit`, `react`, `upload`, `label`, `unlabel`, `close`, `reopen`) passes the `before_send` check first** (an upload’s check sees only the file name), on the dry run too. The plan shows `audience` (who can read it, in words), `audience_hash`, `before_send` (the verdict) and `before_send_check` (the `module:attr` of the check that ran, on real writes too, so a log of results shows which went out unchecked). With nothing configured the check lets the write go ahead, so the audience line is all it adds; a caller that must not write unchecked passes `--require-check` (or sets `CORRESPOND_REQUIRE_CHECK=1`), and then a write with no real check configured stops with `before_send_unavailable`. A check can stop the write: `refused` (not as written, not here) or `needs_approval` (wait for the operator), with any details it attached in `before_send_details`. A configured check that does not load stops every write (`before_send_unavailable`), and one that crashes stops that write (`before_send_failed`). Nothing is sent in any of these cases, and `--allow-send` on the MCP server does not skip the check.
 - The check guards drafts, not the process running correspond: whoever sets its environment or edits the config file (`$CORRESPOND_CONFIG` can point at another file) chooses the check. Commands that write without correspond (`gh issue comment`, say) are covered by liaise’s hook, not by this check.
 - A write that fails is a result, not an exception: `ok: false`, an `error_kind` (`auth`, `permission`, `not_found`, `rate_limited`, `network`, `validation`, `unavailable`, `unconfirmed`, or one of the four check kinds above), and whether a retry can help (`retryable`, `retry_after`).
 - **`--idempotency-key KEY` (`idempotency_key=` in Python) keeps a message from going out twice.** A channel can post and then fail (the platform took the message, and its answer never came), so a retry would post it again. With a key, correspond remembers what the key did (under the data root, in `sends/`): the same key after a send that went out posts nothing and returns that result. After a failure that may have posted (`network`, `unavailable`, a crash), it reads the conversation back for its own message with the same text and returns it if found. If it cannot confirm, it sends nothing and fails with `unconfirmed`: check the conversation, then send with a new key. A key reused for a different message is refused (`validation`). Nothing is added to the posted text. Two processes sending with the same key at the same moment are not covered.
@@ -137,6 +137,7 @@ Cursors live under the data root, one per reference. A cursor is stored only aft
   ```
 
   It is imported when a write first needs it. Leave it out and the default (`correspond.outbound:notice`) only shows the audience. A `before_send` key inside a table is refused rather than ignored. A Python caller can pass `before_send=` to the write functions instead; the command line and the MCP tools cannot.
+- **Requiring a check.** An unattended caller that promises every write was checked (a connector, a scheduled job) should not depend on a config line being present. `correspond send … --require-check`, `require_check=True` on the Python write functions, or `CORRESPOND_REQUIRE_CHECK=1` in the environment makes a write whose check would be the default `notice` (left out, or named explicitly) stop with `before_send_unavailable` instead of going ahead. Any value of the variable other than empty, `0`, `false`, `no` or `off` turns it on, and an argument cannot turn off what the environment turned on. The MCP tools do not offer the argument: set the variable in the server’s environment. `notice` under another name (a partial, a bound `__call__`, a `functools.wraps` wrapper) counts as `notice`, and the plan names it `correspond.outbound:notice`; a function of your own that checks nothing still counts as a check, since whoever writes the config chooses it. A send replayed by its `idempotency_key` posts nothing and runs no check: the earlier result says which check it went out under. `correspond-channel --relay-to` refuses to start when the variable is on and no real check is configured, since every relayed prompt would be stopped.
 - **State** (cursors, the Telegram log, web inbox reports, stored Slack events) lives under `~/.local/share/correspond/` (or `$CORRESPOND_DATA_DIR`), one folder per kind, never in a repository. Each folder is the owner’s only (mode `0o700`): a new one is created so, and one an older version created with a wider mode is tightened the first time it is used (a folder you do not own is left alone, with a warning).
 
 ## The web inbox
@@ -2775,18 +2776,19 @@ verbs report it as a `SendResult` whose `error_kind` is one of [`CHECK_KINDS`](_
 
 ### Exceptions
 
-| [`BeforeSendFailed`](_autosummary/correspond.errors.html.md#correspond.errors.BeforeSendFailed)(reason, \*\*details)             | The `before_send` check raised something else, or returned a value, so nothing is sent.      |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
-| [`BeforeSendUnavailable`](_autosummary/correspond.errors.html.md#correspond.errors.BeforeSendUnavailable)(reason, \*\*details)        | The configured `before_send` check could not be loaded, so nothing is sent.                  |
-| [`ChannelError`](_autosummary/correspond.errors.html.md#correspond.errors.ChannelError)(message, \*, kind[, retryable, ...]) | A platform call that failed, classified so the caller can decide what to do.                 |
-| [`CorrespondError`](_autosummary/correspond.errors.html.md#correspond.errors.CorrespondError)                                   | An expected failure, with a message meant for the person or agent that asked.                |
-| [`InvalidRef`](_autosummary/correspond.errors.html.md#correspond.errors.InvalidRef)                                        | A conversation reference that does not parse, or that its channel rejects.                   |
-| [`MissingRequirement`](_autosummary/correspond.errors.html.md#correspond.errors.MissingRequirement)(channel, missing, \*, fix)     | Something the channel needs is not here: a credential, a binary, an extra, an OS.            |
-| [`NeedsApproval`](_autosummary/correspond.errors.html.md#correspond.errors.NeedsApproval)(reason, \*\*details)                | Draft to operator: the write waits for the operator's approval.                              |
-| [`NotSupported`](_autosummary/correspond.errors.html.md#correspond.errors.NotSupported)(operation, channel, \*[, ...])       | The channel does not have this operation (or this feature of it).                            |
-| [`Refused`](_autosummary/correspond.errors.html.md#correspond.errors.Refused)(reason, \*\*details)                      | Block: this draft does not go to this conversation as written.                               |
-| [`Stopped`](_autosummary/correspond.errors.html.md#correspond.errors.Stopped)(reason, \*\*details)                      | A write the `before_send` check did not let leave: `error_kind` says how, `reason` says why. |
-| [`UnknownChannel`](_autosummary/correspond.errors.html.md#correspond.errors.UnknownChannel)(channel, \*[, known, hint])        | A channel name that no registered adapter answers to.                                        |
+| [`BeforeSendFailed`](_autosummary/correspond.errors.html.md#correspond.errors.BeforeSendFailed)(reason, \*\*details)             | The `before_send` check raised something else, or returned a value, so nothing is sent.                                |
+|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| [`BeforeSendUnavailable`](_autosummary/correspond.errors.html.md#correspond.errors.BeforeSendUnavailable)(reason, \*\*details)        | The configured `before_send` check could not be loaded, so nothing is sent.                                            |
+| [`ChannelError`](_autosummary/correspond.errors.html.md#correspond.errors.ChannelError)(message, \*, kind[, retryable, ...]) | A platform call that failed, classified so the caller can decide what to do.                                           |
+| [`CheckRequired`](_autosummary/correspond.errors.html.md#correspond.errors.CheckRequired)(reason, \*\*details)                | The caller requires a real `before_send` check and none is configured (only the default `notice`), so nothing is sent. |
+| [`CorrespondError`](_autosummary/correspond.errors.html.md#correspond.errors.CorrespondError)                                   | An expected failure, with a message meant for the person or agent that asked.                                          |
+| [`InvalidRef`](_autosummary/correspond.errors.html.md#correspond.errors.InvalidRef)                                        | A conversation reference that does not parse, or that its channel rejects.                                             |
+| [`MissingRequirement`](_autosummary/correspond.errors.html.md#correspond.errors.MissingRequirement)(channel, missing, \*, fix)     | Something the channel needs is not here: a credential, a binary, an extra, an OS.                                      |
+| [`NeedsApproval`](_autosummary/correspond.errors.html.md#correspond.errors.NeedsApproval)(reason, \*\*details)                | Draft to operator: the write waits for the operator's approval.                                                        |
+| [`NotSupported`](_autosummary/correspond.errors.html.md#correspond.errors.NotSupported)(operation, channel, \*[, ...])       | The channel does not have this operation (or this feature of it).                                                      |
+| [`Refused`](_autosummary/correspond.errors.html.md#correspond.errors.Refused)(reason, \*\*details)                      | Block: this draft does not go to this conversation as written.                                                         |
+| [`Stopped`](_autosummary/correspond.errors.html.md#correspond.errors.Stopped)(reason, \*\*details)                      | A write the `before_send` check did not let leave: `error_kind` says how, `reason` says why.                           |
+| [`UnknownChannel`](_autosummary/correspond.errors.html.md#correspond.errors.UnknownChannel)(channel, \*[, known, hint])        | A channel name that no registered adapter answers to.                                                                  |
 
 ### *exception* correspond.errors.BeforeSendFailed(reason, \*\*details)
 
@@ -2809,6 +2811,12 @@ Why the `before_send` check stopped a write. Nothing was sent; a retry of the sa
 Bases: [`CorrespondError`](_autosummary/correspond.errors.html.md#correspond.errors.CorrespondError)
 
 A platform call that failed, classified so the caller can decide what to do.
+
+### *exception* correspond.errors.CheckRequired(reason, \*\*details)
+
+Bases: [`BeforeSendUnavailable`](_autosummary/correspond.errors.html.md#correspond.errors.BeforeSendUnavailable)
+
+The caller requires a real `before_send` check and none is configured (only the default `notice`), so nothing is sent.
 
 ### *exception* correspond.errors.CorrespondError
 
@@ -2912,7 +2920,7 @@ the same verbs, through [`correspond.tools`](_autosummary/correspond.tools.html.
 | [`react`](_autosummary/correspond.html.md#correspond.react)(ref, message_id, reaction, \*[, ...])        | Add a reaction to a message (the channel's capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft's text.                            |
 | [`read`](_autosummary/correspond.html.md#correspond.read)(ref, \*[, since, limit, registry])            | The messages of a conversation, oldest first (`limit` keeps the most recent ones).                                                                                                |
 | [`register_channel`](_autosummary/correspond.html.md#correspond.register_channel)(adapter, \*[, name, ...])         | Add an adapter (tests, or a channel defined outside correspond).                                                                                                                  |
-| [`reopen`](_autosummary/correspond.html.md#correspond.reopen)(ref, \*[, dry_run, registry, before_send])  | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                          |
+| [`reopen`](_autosummary/correspond.html.md#correspond.reopen)(ref, \*[, dry_run, registry, ...])          | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                          |
 | [`route`](_autosummary/correspond.html.md#correspond.route)(message, \*[, bindings, threads, ...])       | Run the chain (bindings, thread continuity, metadata rules, classifier) and return the first decision, or `None`.                                                                 |
 | [`send`](_autosummary/correspond.html.md#correspond.send)(ref, text, \*[, title, reply_to, ...])        | Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.                   |
 | [`unlabel`](_autosummary/correspond.html.md#correspond.unlabel)(ref, labels, \*[, dry_run, registry, ...]) | Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                        |
@@ -3601,14 +3609,14 @@ What a channel needs and what is missing: the install command, binaries, platfor
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.close(ref, , reason=None, dry_run=False, registry=None, before_send=None)
+### correspond.close(ref, , reason=None, dry_run=False, registry=None, before_send=None, require_check=False)
 
 Close a conversation (an issue or a discussion), with an optional `reason` in the channel’s vocabulary; the `before_send` check sees the reason (or `close`) as the draft’s text.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.edit(ref, message_id, text, , dry_run=False, registry=None, before_send=None)
+### correspond.edit(ref, message_id, text, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Replace the text of a message correspond’s account wrote; the `before_send` check runs first, as for [`send()`](_autosummary/correspond.html.md#correspond.send).
 
@@ -3622,7 +3630,7 @@ The adapter registered under `name`; [`UnknownChannel`](_autosummary/correspond.
 * **Return type:**
   [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
 
-### correspond.label(ref, labels, , dry_run=False, registry=None, before_send=None)
+### correspond.label(ref, labels, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Add `labels` to a conversation; the `before_send` check sees them, comma-joined, as the draft’s text.
 
@@ -3660,7 +3668,7 @@ A reference normalised by its channel’s adapter (kind and parent filled in, th
 * **Return type:**
   [`ConversationRef`](_autosummary/correspond.model.html.md#correspond.model.ConversationRef)
 
-### correspond.react(ref, message_id, reaction, , dry_run=False, registry=None, before_send=None)
+### correspond.react(ref, message_id, reaction, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Add a reaction to a message (the channel’s capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft’s text.
 
@@ -3681,7 +3689,7 @@ Add an adapter (tests, or a channel defined outside correspond). `replace` swaps
 * **Return type:**
   [`Any`](https://docs.python.org/3/library/typing.html#typing.Any)
 
-### correspond.reopen(ref, , dry_run=False, registry=None, before_send=None)
+### correspond.reopen(ref, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Reopen a closed conversation; the `before_send` check sees `reopen` as the draft’s text.
 
@@ -3695,7 +3703,7 @@ Run the chain (bindings, thread continuity, metadata rules, classifier) and retu
 * **Return type:**
   [`RouteDecision`](_autosummary/correspond.routing.html.md#correspond.routing.RouteDecision) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), attachments=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), attachments=(), dry_run=False, registry=None, before_send=None, require_check=False, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
@@ -3711,6 +3719,9 @@ guarantees it (a mention added, an address copied) or the send fails with
 `NotSupported("notify")`.
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice).
+`require_check` (or `$CORRESPOND_REQUIRE_CHECK`) stops the send with
+`before_send_unavailable` when that would be [`notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice): for
+a caller that promises every write was checked. The other write verbs take it too.
 
 `idempotency_key` makes sending the same message again safe: a key that already sent
 answers that send’s result and posts nothing, and one whose earlier attempt may have
@@ -3723,7 +3734,7 @@ plain one is checked, then set, which covers one process.
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.unlabel(ref, labels, , dry_run=False, registry=None, before_send=None)
+### correspond.unlabel(ref, labels, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft’s text.
 
@@ -3737,7 +3748,7 @@ Remove a channel from the registry.
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, native=None, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, native=None, registry=None, before_send=None, require_check=False, idempotency_key=None, sends=None)
 
 Send a file to a conversation.
 
@@ -3945,8 +3956,10 @@ library. By default the server exposes only the tools that read (`channels`,
 `edit`, `react`, `label`, `unlabel`, `close`, `reopen`) are exposed only when the operator starts it with
 `--allow-send`, and every write still takes `dry_run`.
 
-The data root is the server’s, never the model’s: `data_dir` is removed from every tool’s
-schema. Point the server elsewhere with `CORRESPOND_DATA_DIR` in the client configuration:
+The data root and the check requirement are the server’s, never the model’s: `data_dir`
+and `require_check` are removed from every tool’s schema. Point the server elsewhere with
+`CORRESPOND_DATA_DIR`, and make every write require a real `before_send` check with
+`CORRESPOND_REQUIRE_CHECK=1`, in the client configuration:
 
 ```default
 {"mcpServers": {"correspond": {"command": "correspond-mcp"}}}
@@ -4710,7 +4723,7 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 | [`parse_ref`](_autosummary/correspond.ops.html.md#correspond.ops.parse_ref)(ref, \*[, registry])                     | A reference normalised by its channel's adapter (kind and parent filled in, the id validated).                                                                                    |
 | [`react`](_autosummary/correspond.ops.html.md#correspond.ops.react)(ref, message_id, reaction, \*[, ...])        | Add a reaction to a message (the channel's capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft's text.                            |
 | [`read`](_autosummary/correspond.ops.html.md#correspond.ops.read)(ref, \*[, since, limit, registry])            | The messages of a conversation, oldest first (`limit` keeps the most recent ones).                                                                                                |
-| [`reopen`](_autosummary/correspond.ops.html.md#correspond.ops.reopen)(ref, \*[, dry_run, registry, before_send])  | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                          |
+| [`reopen`](_autosummary/correspond.ops.html.md#correspond.ops.reopen)(ref, \*[, dry_run, registry, ...])          | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                          |
 | [`send`](_autosummary/correspond.ops.html.md#correspond.ops.send)(ref, text, \*[, title, reply_to, ...])        | Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.                   |
 | [`unlabel`](_autosummary/correspond.ops.html.md#correspond.ops.unlabel)(ref, labels, \*[, dry_run, registry, ...]) | Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                        |
 | [`upload`](_autosummary/correspond.ops.html.md#correspond.ops.upload)(ref, name, data, \*[, media_type, ...])     | Send a file to a conversation.                                                                                                                                                    |
@@ -4857,21 +4870,21 @@ What a channel can do, graded, with its limits.
 * **Return type:**
   [`Capabilities`](_autosummary/correspond.model.html.md#correspond.model.Capabilities)
 
-### correspond.ops.close(ref, , reason=None, dry_run=False, registry=None, before_send=None)
+### correspond.ops.close(ref, , reason=None, dry_run=False, registry=None, before_send=None, require_check=False)
 
 Close a conversation (an issue or a discussion), with an optional `reason` in the channel’s vocabulary; the `before_send` check sees the reason (or `close`) as the draft’s text.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.delete_webhook(channel, , drop_pending_updates=False, dry_run=False, registry=None, before_send=None)
+### correspond.ops.delete_webhook(channel, , drop_pending_updates=False, dry_run=False, registry=None, before_send=None, require_check=False)
 
 Stop webhook delivery for `channel`, so it can be polled again; the `before_send` check runs (`operation="delete_webhook"`).
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.edit(ref, message_id, text, , dry_run=False, registry=None, before_send=None)
+### correspond.ops.edit(ref, message_id, text, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Replace the text of a message correspond’s account wrote; the `before_send` check runs first, as for [`send()`](_autosummary/correspond.ops.html.md#correspond.ops.send).
 
@@ -4892,7 +4905,7 @@ The operations an adapter implements, in [`OPERATIONS`](_autosummary/correspond.
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
 
-### correspond.ops.label(ref, labels, , dry_run=False, registry=None, before_send=None)
+### correspond.ops.label(ref, labels, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Add `labels` to a conversation; the `before_send` check sees them, comma-joined, as the draft’s text.
 
@@ -4916,7 +4929,7 @@ A reference normalised by its channel’s adapter (kind and parent filled in, th
 * **Return type:**
   [`ConversationRef`](_autosummary/correspond.model.html.md#correspond.model.ConversationRef)
 
-### correspond.ops.react(ref, message_id, reaction, , dry_run=False, registry=None, before_send=None)
+### correspond.ops.react(ref, message_id, reaction, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Add a reaction to a message (the channel’s capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft’s text.
 
@@ -4930,14 +4943,14 @@ The messages of a conversation, oldest first (`limit` keeps the most recent ones
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Message`](_autosummary/correspond.model.html.md#correspond.model.Message)]
 
-### correspond.ops.reopen(ref, , dry_run=False, registry=None, before_send=None)
+### correspond.ops.reopen(ref, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Reopen a closed conversation; the `before_send` check sees `reopen` as the draft’s text.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), attachments=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), attachments=(), dry_run=False, registry=None, before_send=None, require_check=False, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](_autosummary/correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
@@ -4953,6 +4966,9 @@ guarantees it (a mention added, an address copied) or the send fails with
 `NotSupported("notify")`.
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice).
+`require_check` (or `$CORRESPOND_REQUIRE_CHECK`) stops the send with
+`before_send_unavailable` when that would be [`notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice): for
+a caller that promises every write was checked. The other write verbs take it too.
 
 `idempotency_key` makes sending the same message again safe: a key that already sent
 answers that send’s result and posts nothing, and one whose earlier attempt may have
@@ -4965,7 +4981,7 @@ plain one is checked, then set, which covers one process.
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.set_webhook(channel, url, , dry_run=False, registry=None, before_send=None)
+### correspond.ops.set_webhook(channel, url, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Have `channel`’s platform POST its updates to `url`: listening by polling stops until [`delete_webhook()`](_autosummary/correspond.ops.html.md#correspond.ops.delete_webhook).
 
@@ -4976,14 +4992,14 @@ on the dry run too.
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.unlabel(ref, labels, , dry_run=False, registry=None, before_send=None)
+### correspond.ops.unlabel(ref, labels, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft’s text.
 
 * **Return type:**
   [`SendResult`](_autosummary/correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, native=None, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.ops.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, native=None, registry=None, before_send=None, require_check=False, idempotency_key=None, sends=None)
 
 Send a file to a conversation.
 
@@ -5064,6 +5080,22 @@ Which check runs:
 3. else [`notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice), which lets the write go ahead: the audience line it adds to the plan
    is the whole of it.
 
+A caller that promises every write was checked (an unattended writer, a connector) asks for a
+real check: `require_check=True` on the write verbs, `--require-check` on the command
+line, or `CORRESPOND_REQUIRE_CHECK=1` in the environment (any value but empty, `0`,
+`false`, `no` or `off`). Then a write whose check resolves to [`notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice), by any of
+the three steps (also through a bound `__call__`, a [`functools.partial()`](https://docs.python.org/3/library/functools.html#functools.partial) or a
+[`functools.wraps()`](https://docs.python.org/3/library/functools.html#functools.wraps) wrapper of it), stops with `before_send_unavailable`. Either source
+can only add the requirement: an argument of `False` does not lift the environment’s. A
+function of the operator’s own that checks nothing still counts as a check: whoever writes
+the config chooses it.
+
+A send replayed by its `idempotency_key` answers the earlier result and posts nothing, so
+no check runs for it; that earlier result’s plan says which check it went out under.
+
+The plan’s `before_send_check` line names the check that ran (`module:attr`), on every
+write, so a log of results shows which writes went out under [`notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice).
+
 Anything else the check does (raise another exception, exit, return a value, stop with an
 `error_kind` outside [`CHECK_KINDS`](_autosummary/correspond.errors.html.md#correspond.errors.CHECK_KINDS)) also stops the write
 (`before_send_failed`). liaise supplies a real check (`liaise.vet.before_send`).
@@ -5076,6 +5108,10 @@ made without correspond never meets it. liaise’s hook covers those.
 ```pycon
 >>> resolve(None, config={})[1]
 'correspond.outbound:notice'
+>>> resolve(None, config={}, require=True)
+Traceback (most recent call last):
+    ...
+correspond.errors.CheckRequired: no check configured, and this caller requires one (require_check, --require-check or $CORRESPOND_REQUIRE_CHECK): name one with before_send = "module:attr" at the top of the config; until then nothing is sent
 >>> resolve(None, config={"before_send": "no.such.module:check"})
 Traceback (most recent call last):
     ...
@@ -5084,17 +5120,19 @@ correspond.errors.BeforeSendUnavailable: before_send = 'no.such.module:check' in
 
 ### Module Attributes
 
-| [`BeforeSend`](_autosummary/correspond.outbound.html.md#correspond.outbound.BeforeSend)   | returns `None` to let the write go ahead, raises `Refused` or `NeedsApproval` to stop it.   |
-|---------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| [`CONFIG_KEY`](_autosummary/correspond.outbound.html.md#correspond.outbound.CONFIG_KEY)   | The top-level key of the config file naming the check, as `"module:attr"`.                  |
-| [`DEFAULT`](_autosummary/correspond.outbound.html.md#correspond.outbound.DEFAULT)      | The check that runs when neither the argument nor the config names one.                     |
+| [`BeforeSend`](_autosummary/correspond.outbound.html.md#correspond.outbound.BeforeSend)           | returns `None` to let the write go ahead, raises `Refused` or `NeedsApproval` to stop it.   |
+|-----------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| [`CONFIG_KEY`](_autosummary/correspond.outbound.html.md#correspond.outbound.CONFIG_KEY)           | The top-level key of the config file naming the check, as `"module:attr"`.                  |
+| [`DEFAULT`](_autosummary/correspond.outbound.html.md#correspond.outbound.DEFAULT)              | The check that runs when neither the argument nor the config names one.                     |
+| [`REQUIRE_CHECK_ENVVAR`](_autosummary/correspond.outbound.html.md#correspond.outbound.REQUIRE_CHECK_ENVVAR) | The environment variable that makes every write in the process require a real check.        |
 
 ### Functions
 
-| [`check`](_autosummary/correspond.outbound.html.md#correspond.outbound.check)(ref, draft, \*[, operation, dry_run, ...])   | Compute the audience, run the check, and return the plan lines with what stopped the write (`None`: it may go ahead).                             |
-|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`notice`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice)(ref, draft, audience, \*\*context)          | The default check: every write goes ahead, and its plan and summary say who can read it.                                                          |
-| [`resolve`](_autosummary/correspond.outbound.html.md#correspond.outbound.resolve)([before_send, config])                     | The check to run and the name it is reported by: the argument, else the config's, else [`notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice). |
+| [`check`](_autosummary/correspond.outbound.html.md#correspond.outbound.check)(ref, draft, \*[, operation, dry_run, ...])   | Compute the audience, run the check, and return the plan lines with what stopped the write (`None`: it may go ahead).                                        |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`check_required`](_autosummary/correspond.outbound.html.md#correspond.outbound.check_required)([require])                          | Whether a write must run a real check: `require`, or [`REQUIRE_CHECK_ENVVAR`](_autosummary/correspond.outbound.html.md#correspond.outbound.REQUIRE_CHECK_ENVVAR) set to anything but an off value. |
+| [`notice`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice)(ref, draft, audience, \*\*context)          | The default check: every write goes ahead, and its plan and summary say who can read it.                                                                     |
+| [`resolve`](_autosummary/correspond.outbound.html.md#correspond.outbound.resolve)([before_send, config, require])            | The check to run and the name it is reported by: the argument, else the config's, else [`notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice).            |
 
 ### correspond.outbound.BeforeSend
 
@@ -5113,16 +5151,35 @@ The top-level key of the config file naming the check, as `"module:attr"`.
 
 The check that runs when neither the argument nor the config names one.
 
-### correspond.outbound.check(ref, draft, , operation='send', dry_run=False, message_id=None, before_send=None, registry=None)
+### correspond.outbound.REQUIRE_CHECK_ENVVAR *= 'CORRESPOND_REQUIRE_CHECK'*
+
+The environment variable that makes every write in the process require a real check.
+
+### correspond.outbound.check(ref, draft, , operation='send', dry_run=False, message_id=None, before_send=None, require_check=False, registry=None)
 
 Compute the audience, run the check, and return the plan lines with what stopped the write (`None`: it may go ahead).
 
 The audience is computed first, so a write that cannot be checked still shows who it
-would have reached. Never raises for anything the check does (`KeyboardInterrupt`
+would have reached. `require_check` stops the write when no real check would run
+(see [`resolve()`](_autosummary/correspond.outbound.html.md#correspond.outbound.resolve)). Never raises for anything the check does (`KeyboardInterrupt`
 aside, which stops everything).
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict), [`Stopped`](_autosummary/correspond.errors.html.md#correspond.errors.Stopped) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
+
+### correspond.outbound.check_required(require=False)
+
+Whether a write must run a real check: `require`, or [`REQUIRE_CHECK_ENVVAR`](_autosummary/correspond.outbound.html.md#correspond.outbound.REQUIRE_CHECK_ENVVAR) set to anything but an off value.
+
+An unrecognised value turns the requirement on: a typo must not lift it.
+
+```pycon
+>>> check_required(True)
+True
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ### correspond.outbound.notice(ref, draft, audience, \*\*context)
 
@@ -5131,12 +5188,14 @@ The default check: every write goes ahead, and its plan and summary say who can 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.outbound.resolve(before_send=None, , config=None)
+### correspond.outbound.resolve(before_send=None, , config=None, require=False)
 
 The check to run and the name it is reported by: the argument, else the config’s, else [`notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice).
 
 Raises [`BeforeSendUnavailable`](_autosummary/correspond.errors.html.md#correspond.errors.BeforeSendUnavailable) when the config names a check
-that cannot be loaded, or cannot itself be read.
+that cannot be loaded, or cannot itself be read, and, when a real check is required
+(`require` or [`REQUIRE_CHECK_ENVVAR`](_autosummary/correspond.outbound.html.md#correspond.outbound.REQUIRE_CHECK_ENVVAR), see [`check_required()`](_autosummary/correspond.outbound.html.md#correspond.outbound.check_required)), when the
+check found is [`notice()`](_autosummary/correspond.outbound.html.md#correspond.outbound.notice).
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`None`](https://docs.python.org/3/builtins/constants.html#None)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
@@ -5883,28 +5942,28 @@ operation the channel lacks, a platform error) comes back as `ok: false` with an
 
 ### Functions
 
-| [`audience`](_autosummary/correspond.tools.html.md#correspond.tools.audience)(ref, \*[, cc, bcc, notify])            | Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow.   |
-|--------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`authored`](_autosummary/correspond.tools.html.md#correspond.tools.authored)(text)                                  | What the sender of one email body wrote: their text and inline answers, apart from quoted replies, forwards, signature and disclaimer.                                                                         |
-| [`authored_thread`](_autosummary/correspond.tools.html.md#correspond.tools.authored_thread)(path, \*[, author])             | What each sender of an email thread wrote, oldest first, with inline answers recovered by comparing each message with the earlier ones.                                                                        |
-| [`capabilities`](_autosummary/correspond.tools.html.md#correspond.tools.capabilities)(channel)                           | What a channel can do, graded per operation (full, partial, none), with its limits, rate limits and notes.                                                                                                     |
-| [`channels`](_autosummary/correspond.tools.html.md#correspond.tools.channels)()                                      | List the channels correspond knows: available, missing a module, planned (with its tracking issue), or registered from outside.                                                                                |
-| [`close`](_autosummary/correspond.tools.html.md#correspond.tools.close)(ref, \*[, reason, dry_run])               | Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it).                                                                                      |
-| [`edit`](_autosummary/correspond.tools.html.md#correspond.tools.edit)(ref, message_id, text, \*[, dry_run])      | Replace the text of a message this account wrote (`message_id` as `read` shows it).                                                                                                                            |
-| [`import_export`](_autosummary/correspond.tools.html.md#correspond.tools.import_export)(path, ref, \*[, date_order, tz])  | Import a chat export (WhatsApp: the .zip or \_chat.txt from Export chat) into the local archive of `ref` (whatsapp:<chat>, a name you choose).                                                                 |
-| [`label`](_autosummary/correspond.tools.html.md#correspond.tools.label)(ref, labels, \*[, dry_run])               | Add labels (comma-separated; a label name may not itself contain a comma) to a conversation (`capabilities` says whether a channel supports it).                                                               |
-| [`listen`](_autosummary/correspond.tools.html.md#correspond.tools.listen)(ref, \*[, limit, peek, data_dir])        | New activity on a conversation since the last listen (a first listen looks back a little).                                                                                                                     |
-| [`react`](_autosummary/correspond.tools.html.md#correspond.tools.react)(ref, message_id, reaction, \*[, dry_run]) | Add a reaction to a message (`capabilities` lists the reactions a channel accepts).                                                                                                                            |
-| [`read`](_autosummary/correspond.tools.html.md#correspond.tools.read)(ref, \*[, since, limit])                   | Read a conversation: messages oldest first, each with its author, authenticity grade, time and text.                                                                                                           |
-| [`ref`](_autosummary/correspond.tools.html.md#correspond.tools.ref)(ref)                                        | Parse and normalise a conversation reference (`<channel>:<id>`): its channel, id, kind, parent, and the canonical form, which parses back to the same reference.                                               |
-| [`reopen`](_autosummary/correspond.tools.html.md#correspond.tools.reopen)(ref, \*[, dry_run])                      | Reopen a closed conversation.                                                                                                                                                                                  |
-| [`requirements`](_autosummary/correspond.tools.html.md#correspond.tools.requirements)(channel)                           | What a channel needs (install command, binaries, platform, each setting and where to get it) and what is missing.                                                                                              |
-| [`send`](_autosummary/correspond.tools.html.md#correspond.tools.send)(ref, text, \*[, title, reply_to, ...])     | Send a message to a conversation.                                                                                                                                                                              |
-| [`unlabel`](_autosummary/correspond.tools.html.md#correspond.tools.unlabel)(ref, labels, \*[, dry_run])             | Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation.                                                                                                              |
-| [`upload`](_autosummary/correspond.tools.html.md#correspond.tools.upload)(ref, path, \*[, name, media_type, ...])  | Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`).                                                                                    |
-| [`webhook_info`](_autosummary/correspond.tools.html.md#correspond.tools.webhook_info)(channel)                           | Where a channel's platform delivers its updates now (Telegram: none means listen polls with getUpdates; a host means a webhook receiver gets them, with `pending_update_count` and the last delivery error).   |
-| [`set_webhook`](_autosummary/correspond.tools.html.md#correspond.tools.set_webhook)(channel, url, \*[, dry_run])        | Have a channel's platform POST every update to `url` (HTTPS) instead of being polled (Telegram: with the configured webhook_secret, one connection at a time).                                                 |
-| [`delete_webhook`](_autosummary/correspond.tools.html.md#correspond.tools.delete_webhook)(channel, \*[, ...])              | Stop a channel's webhook delivery, so it can be polled again (listen then needs delivery = poll).                                                                                                              |
+| [`audience`](_autosummary/correspond.tools.html.md#correspond.tools.audience)(ref, \*[, cc, bcc, notify])               | Who can read a conversation, now and later: its scope (operator, named, group, org, public), known readers, reader classes that cannot be listed, what a send leaves behind and how the readership can grow.   |
+|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`authored`](_autosummary/correspond.tools.html.md#correspond.tools.authored)(text)                                     | What the sender of one email body wrote: their text and inline answers, apart from quoted replies, forwards, signature and disclaimer.                                                                         |
+| [`authored_thread`](_autosummary/correspond.tools.html.md#correspond.tools.authored_thread)(path, \*[, author])                | What each sender of an email thread wrote, oldest first, with inline answers recovered by comparing each message with the earlier ones.                                                                        |
+| [`capabilities`](_autosummary/correspond.tools.html.md#correspond.tools.capabilities)(channel)                              | What a channel can do, graded per operation (full, partial, none), with its limits, rate limits and notes.                                                                                                     |
+| [`channels`](_autosummary/correspond.tools.html.md#correspond.tools.channels)()                                         | List the channels correspond knows: available, missing a module, planned (with its tracking issue), or registered from outside.                                                                                |
+| [`close`](_autosummary/correspond.tools.html.md#correspond.tools.close)(ref, \*[, reason, dry_run, require_check])   | Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it).                                                                                      |
+| [`edit`](_autosummary/correspond.tools.html.md#correspond.tools.edit)(ref, message_id, text, \*[, dry_run, ...])    | Replace the text of a message this account wrote (`message_id` as `read` shows it).                                                                                                                            |
+| [`import_export`](_autosummary/correspond.tools.html.md#correspond.tools.import_export)(path, ref, \*[, date_order, tz])     | Import a chat export (WhatsApp: the .zip or \_chat.txt from Export chat) into the local archive of `ref` (whatsapp:<chat>, a name you choose).                                                                 |
+| [`label`](_autosummary/correspond.tools.html.md#correspond.tools.label)(ref, labels, \*[, dry_run, require_check])   | Add labels (comma-separated; a label name may not itself contain a comma) to a conversation (`capabilities` says whether a channel supports it).                                                               |
+| [`listen`](_autosummary/correspond.tools.html.md#correspond.tools.listen)(ref, \*[, limit, peek, data_dir])           | New activity on a conversation since the last listen (a first listen looks back a little).                                                                                                                     |
+| [`react`](_autosummary/correspond.tools.html.md#correspond.tools.react)(ref, message_id, reaction, \*[, ...])        | Add a reaction to a message (`capabilities` lists the reactions a channel accepts).                                                                                                                            |
+| [`read`](_autosummary/correspond.tools.html.md#correspond.tools.read)(ref, \*[, since, limit])                      | Read a conversation: messages oldest first, each with its author, authenticity grade, time and text.                                                                                                           |
+| [`ref`](_autosummary/correspond.tools.html.md#correspond.tools.ref)(ref)                                           | Parse and normalise a conversation reference (`<channel>:<id>`): its channel, id, kind, parent, and the canonical form, which parses back to the same reference.                                               |
+| [`reopen`](_autosummary/correspond.tools.html.md#correspond.tools.reopen)(ref, \*[, dry_run, require_check])          | Reopen a closed conversation.                                                                                                                                                                                  |
+| [`requirements`](_autosummary/correspond.tools.html.md#correspond.tools.requirements)(channel)                              | What a channel needs (install command, binaries, platform, each setting and where to get it) and what is missing.                                                                                              |
+| [`send`](_autosummary/correspond.tools.html.md#correspond.tools.send)(ref, text, \*[, title, reply_to, ...])        | Send a message to a conversation.                                                                                                                                                                              |
+| [`unlabel`](_autosummary/correspond.tools.html.md#correspond.tools.unlabel)(ref, labels, \*[, dry_run, require_check]) | Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation.                                                                                                              |
+| [`upload`](_autosummary/correspond.tools.html.md#correspond.tools.upload)(ref, path, \*[, name, media_type, ...])     | Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`).                                                                                    |
+| [`webhook_info`](_autosummary/correspond.tools.html.md#correspond.tools.webhook_info)(channel)                              | Where a channel's platform delivers its updates now (Telegram: none means listen polls with getUpdates; a host means a webhook receiver gets them, with `pending_update_count` and the last delivery error).   |
+| [`set_webhook`](_autosummary/correspond.tools.html.md#correspond.tools.set_webhook)(channel, url, \*[, dry_run, ...])      | Have a channel's platform POST every update to `url` (HTTPS) instead of being polled (Telegram: with the configured webhook_secret, one connection at a time).                                                 |
+| [`delete_webhook`](_autosummary/correspond.tools.html.md#correspond.tools.delete_webhook)(channel, \*[, ...])                 | Stop a channel's webhook delivery, so it can be polled again (listen then needs delivery = poll).                                                                                                              |
 
 ### correspond.tools.SIDE_EFFECTS *= {'audience': 'external-read', 'authored': 'read', 'authored_thread': 'read', 'capabilities': 'read', 'channels': 'read', 'close': 'external', 'delete_webhook': 'external', 'edit': 'external', 'import_export': 'read', 'label': 'external', 'listen': 'external-read', 'react': 'external', 'read': 'external-read', 'ref': 'read', 'reopen': 'external', 'requirements': 'read', 'send': 'external', 'set_webhook': 'external', 'unlabel': 'external', 'upload': 'external', 'webhook_info': 'external-read'}*
 
@@ -5951,21 +6010,21 @@ List the channels correspond knows: available, missing a module, planned (with i
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.close(ref, , reason=None, dry_run=False)
+### correspond.tools.close(ref, , reason=None, dry_run=False, require_check=False)
 
 Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it). `reason` is in the channel’s vocabulary (GitHub issues: completed, not_planned or duplicate; GitHub discussions: resolved, outdated or duplicate). Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.delete_webhook(channel, , drop_pending_updates=False, dry_run=False)
+### correspond.tools.delete_webhook(channel, , drop_pending_updates=False, dry_run=False, require_check=False)
 
 Stop a channel’s webhook delivery, so it can be polled again (listen then needs delivery = poll). Pending updates are kept unless `drop_pending_updates`. Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.edit(ref, message_id, text, , dry_run=False)
+### correspond.tools.edit(ref, message_id, text, , dry_run=False, require_check=False)
 
 Replace the text of a message this account wrote (`message_id` as `read` shows it). Run it with `dry_run` first. The new text passes the before_send check, as for `send`.
 
@@ -5979,7 +6038,7 @@ Import a chat export (WhatsApp: the .zip or \_chat.txt from Export chat) into th
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.label(ref, labels, , dry_run=False)
+### correspond.tools.label(ref, labels, , dry_run=False, require_check=False)
 
 Add labels (comma-separated; a label name may not itself contain a comma) to a conversation (`capabilities` says whether a channel supports it). Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
@@ -5993,7 +6052,7 @@ New activity on a conversation since the last listen (a first listen looks back 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.react(ref, message_id, reaction, , dry_run=False)
+### correspond.tools.react(ref, message_id, reaction, , dry_run=False, require_check=False)
 
 Add a reaction to a message (`capabilities` lists the reactions a channel accepts). Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
@@ -6014,7 +6073,7 @@ Parse and normalise a conversation reference (`<channel>:<id>`): its channel, id
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.reopen(ref, , dry_run=False)
+### correspond.tools.reopen(ref, , dry_run=False, require_check=False)
 
 Reopen a closed conversation. Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
@@ -6028,28 +6087,28 @@ What a channel needs (install command, binaries, platform, each setting and wher
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, native=None, notify=None, attach=None, include_hidden=False, idempotency_key=None, dry_run=False)
+### correspond.tools.send(ref, text, , title=None, reply_to=None, priority=None, cc=None, bcc=None, native=None, notify=None, attach=None, include_hidden=False, idempotency_key=None, dry_run=False, require_check=False)
 
 Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens, the plan reporting which of them stuck; or `{"category": "<name or slug>"}` to open a discussion instead). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. `attach` (comma-separated paths on this machine; a path may not contain a comma) sends files with the text, as many as the channel’s `max_attachments` (email: each attached; Telegram: one, the text its caption); the paths are read as for `upload`, and the plan names each file’s real path. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator’s before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.set_webhook(channel, url, , dry_run=False)
+### correspond.tools.set_webhook(channel, url, , dry_run=False, require_check=False)
 
 Have a channel’s platform POST every update to `url` (HTTPS) instead of being polled (Telegram: with the configured webhook_secret, one connection at a time). Whoever `url` belongs to reads every message the account receives from then on: only ever a URL the operator gave for their own receiver. Listening by polling stops until `delete_webhook`, and listen then needs delivery = webhook. Run it with `dry_run` first and show the operator the plan. It passes the before_send check, as for `send`.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.unlabel(ref, labels, , dry_run=False)
+### correspond.tools.unlabel(ref, labels, , dry_run=False, require_check=False)
 
 Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation. Run it with `dry_run` first. It passes the before_send check, as for `send`.
 
 * **Return type:**
   [`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict)
 
-### correspond.tools.upload(ref, path, , name=None, media_type=None, include_hidden=False, native=None, idempotency_key=None, dry_run=False)
+### correspond.tools.upload(ref, path, , name=None, media_type=None, include_hidden=False, native=None, idempotency_key=None, dry_run=False, require_check=False)
 
 Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`). `name` is what recipients see (the file’s own name by default); `media_type` is guessed from the file’s real name when not given. A path through a hidden file or folder (a dot name, such as ~/.ssh) is refused unless `include_hidden`. `native` is a JSON object of the channel’s own options (`upload_fields` in its capabilities; on Telegram `{"as_document": true}` sends an image as the file it is, not a recompressed photo). Give an `idempotency_key` when you may upload it again after a failure: the same key never posts it twice. Run it with `dry_run` first: the plan shows `source` (the real path read), the name, size and SHA-256; show the operator the source. The before_send check sees that metadata, never the contents, so never upload a file the user did not ask to send.
 
@@ -6070,18 +6129,18 @@ Where a channel’s platform delivers its updates now (Telegram: none means list
 
 # About this build
 
-This documentation was built on **2026-11-23 08:04 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/2199247f1703104118abfb918824ef061ef9887b"><code>2199247</code></a> on branch <code>main</code>, for **correspond 0.0.55** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-26 15:26 UTC** from commit <a href="https://github.com/thorwhalen/correspond/commit/34c154e80843a2c9f0ab800b23d84f43cfe712e8"><code>34c154e</code></a> on branch <code>main</code>, for **correspond 0.0.56** (from <code>pyproject.toml</code>).
 
 #### WARNING
 The documentation and the package may be misaligned:
 
-- The documented version (0.0.55) is behind the latest release on PyPI (0.0.56): `pip install correspond` gives newer code than these docs describe.
+- The documented version (0.0.56) is behind the latest release on PyPI (0.0.57): `pip install correspond` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                              |
 |---------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/2199247f1703104118abfb918824ef061ef9887b"><code>2199247f1703104118abfb918824ef061ef9887b</code></a> |
+| Commit              | <a href="https://github.com/thorwhalen/correspond/commit/34c154e80843a2c9f0ab800b23d84f43cfe712e8"><code>34c154e80843a2c9f0ab800b23d84f43cfe712e8</code></a> |
 | Branch              | <code>main</code>                                                                                                                                            |
 | Tags at this commit | none                                                                                                                                                         |
 | Working tree        | clean                                                                                                                                                        |
@@ -6092,9 +6151,9 @@ The documentation and the package may be misaligned:
 |              |                                                                                             |
 |--------------|---------------------------------------------------------------------------------------------|
 | Repository   | <code>thorwhalen/correspond</code>                                                          |
-| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/45135455607">45135455607</a> |
+| Run          | <a href="https://github.com/thorwhalen/correspond/actions/runs/45848855098">45848855098</a> |
 | Ref          | <code>refs/heads/main</code>                                                                |
-| Event commit | <code>2199247f1703104118abfb918824ef061ef9887b</code> (in the history of the built commit)  |
+| Event commit | <code>34c154e80843a2c9f0ab800b23d84f43cfe712e8</code> (in the history of the built commit)  |
 
 ## Tools
 
@@ -6119,13 +6178,13 @@ The documentation and the package may be misaligned:
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/correspond/0.0.56/">0.0.56</a>, newer than the documented version (0.0.55).
+Latest release: <a href="https://pypi.org/project/correspond/0.0.57/">0.0.57</a>, newer than the documented version (0.0.56).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/thorwhalen/correspond && cd correspond
-git checkout 2199247f1703104118abfb918824ef061ef9887b
+git checkout 34c154e80843a2c9f0ab800b23d84f43cfe712e8
 pip install "epythet==0.2.25"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```

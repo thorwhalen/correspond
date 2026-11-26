@@ -57,7 +57,7 @@ check that refuses, holds for approval, cannot be loaded or fails stops the writ
 | [`parse_ref`](#correspond.ops.parse_ref)(ref, \*[, registry])                     | A reference normalised by its channel's adapter (kind and parent filled in, the id validated).                                                                                    |
 | [`react`](#correspond.ops.react)(ref, message_id, reaction, \*[, ...])        | Add a reaction to a message (the channel's capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft's text.                            |
 | [`read`](#correspond.ops.read)(ref, \*[, since, limit, registry])            | The messages of a conversation, oldest first (`limit` keeps the most recent ones).                                                                                                |
-| [`reopen`](#correspond.ops.reopen)(ref, \*[, dry_run, registry, before_send])  | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                          |
+| [`reopen`](#correspond.ops.reopen)(ref, \*[, dry_run, registry, ...])          | Reopen a closed conversation; the `before_send` check sees `reopen` as the draft's text.                                                                                          |
 | [`send`](#correspond.ops.send)(ref, text, \*[, title, reply_to, ...])        | Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.                   |
 | [`unlabel`](#correspond.ops.unlabel)(ref, labels, \*[, dry_run, registry, ...]) | Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft's text.                                                                        |
 | [`upload`](#correspond.ops.upload)(ref, name, data, \*[, media_type, ...])     | Send a file to a conversation.                                                                                                                                                    |
@@ -204,21 +204,21 @@ What a channel can do, graded, with its limits.
 * **Return type:**
   [`Capabilities`](correspond.model.html.md#correspond.model.Capabilities)
 
-### correspond.ops.close(ref, , reason=None, dry_run=False, registry=None, before_send=None)
+### correspond.ops.close(ref, , reason=None, dry_run=False, registry=None, before_send=None, require_check=False)
 
 Close a conversation (an issue or a discussion), with an optional `reason` in the channel’s vocabulary; the `before_send` check sees the reason (or `close`) as the draft’s text.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.delete_webhook(channel, , drop_pending_updates=False, dry_run=False, registry=None, before_send=None)
+### correspond.ops.delete_webhook(channel, , drop_pending_updates=False, dry_run=False, registry=None, before_send=None, require_check=False)
 
 Stop webhook delivery for `channel`, so it can be polled again; the `before_send` check runs (`operation="delete_webhook"`).
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.edit(ref, message_id, text, , dry_run=False, registry=None, before_send=None)
+### correspond.ops.edit(ref, message_id, text, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Replace the text of a message correspond’s account wrote; the `before_send` check runs first, as for [`send()`](#correspond.ops.send).
 
@@ -239,7 +239,7 @@ The operations an adapter implements, in [`OPERATIONS`](correspond.model.html.md
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis)]
 
-### correspond.ops.label(ref, labels, , dry_run=False, registry=None, before_send=None)
+### correspond.ops.label(ref, labels, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Add `labels` to a conversation; the `before_send` check sees them, comma-joined, as the draft’s text.
 
@@ -263,7 +263,7 @@ A reference normalised by its channel’s adapter (kind and parent filled in, th
 * **Return type:**
   [`ConversationRef`](correspond.model.html.md#correspond.model.ConversationRef)
 
-### correspond.ops.react(ref, message_id, reaction, , dry_run=False, registry=None, before_send=None)
+### correspond.ops.react(ref, message_id, reaction, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Add a reaction to a message (the channel’s capabilities list the reactions it accepts); the `before_send` check sees the reaction as the draft’s text.
 
@@ -277,14 +277,14 @@ The messages of a conversation, oldest first (`limit` keeps the most recent ones
 * **Return type:**
   [`list`](https://docs.python.org/3/builtins/stdtypes.html#list)[[`Message`](correspond.model.html.md#correspond.model.Message)]
 
-### correspond.ops.reopen(ref, , dry_run=False, registry=None, before_send=None)
+### correspond.ops.reopen(ref, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Reopen a closed conversation; the `before_send` check sees `reopen` as the draft’s text.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), attachments=(), dry_run=False, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.ops.send(ref, text, , title=None, reply_to=None, priority=None, cc=(), bcc=(), native=None, notify=(), attachments=(), dry_run=False, registry=None, before_send=None, require_check=False, idempotency_key=None, sends=None)
 
 Send `text` (or a [`Draft`](correspond.model.html.md#correspond.model.Draft)) to a conversation; `dry_run` shows the plan and sends nothing.
 
@@ -300,6 +300,9 @@ guarantees it (a mention added, an address copied) or the send fails with
 `NotSupported("notify")`.
 `before_send(ref, draft, audience)` runs first, on the dry run too; when `None`, the
 config’s `before_send` reference, else [`correspond.outbound.notice()`](correspond.outbound.html.md#correspond.outbound.notice).
+`require_check` (or `$CORRESPOND_REQUIRE_CHECK`) stops the send with
+`before_send_unavailable` when that would be [`notice()`](correspond.outbound.html.md#correspond.outbound.notice): for
+a caller that promises every write was checked. The other write verbs take it too.
 
 `idempotency_key` makes sending the same message again safe: a key that already sent
 answers that send’s result and posts nothing, and one whose earlier attempt may have
@@ -312,7 +315,7 @@ plain one is checked, then set, which covers one process.
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.set_webhook(channel, url, , dry_run=False, registry=None, before_send=None)
+### correspond.ops.set_webhook(channel, url, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Have `channel`’s platform POST its updates to `url`: listening by polling stops until [`delete_webhook()`](#correspond.ops.delete_webhook).
 
@@ -323,14 +326,14 @@ on the dry run too.
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.unlabel(ref, labels, , dry_run=False, registry=None, before_send=None)
+### correspond.ops.unlabel(ref, labels, , dry_run=False, registry=None, before_send=None, require_check=False)
 
 Remove `labels` from a conversation; the `before_send` check sees them, comma-joined, as the draft’s text.
 
 * **Return type:**
   [`SendResult`](correspond.model.html.md#correspond.model.SendResult)
 
-### correspond.ops.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, native=None, registry=None, before_send=None, idempotency_key=None, sends=None)
+### correspond.ops.upload(ref, name, data, , media_type='application/octet-stream', dry_run=False, source=None, native=None, registry=None, before_send=None, require_check=False, idempotency_key=None, sends=None)
 
 Send a file to a conversation.
 

@@ -29,6 +29,22 @@ Which check runs:
 3. else [`notice()`](#correspond.outbound.notice), which lets the write go ahead: the audience line it adds to the plan
    is the whole of it.
 
+A caller that promises every write was checked (an unattended writer, a connector) asks for a
+real check: `require_check=True` on the write verbs, `--require-check` on the command
+line, or `CORRESPOND_REQUIRE_CHECK=1` in the environment (any value but empty, `0`,
+`false`, `no` or `off`). Then a write whose check resolves to [`notice()`](#correspond.outbound.notice), by any of
+the three steps (also through a bound `__call__`, a [`functools.partial()`](https://docs.python.org/3/library/functools.html#functools.partial) or a
+[`functools.wraps()`](https://docs.python.org/3/library/functools.html#functools.wraps) wrapper of it), stops with `before_send_unavailable`. Either source
+can only add the requirement: an argument of `False` does not lift the environment’s. A
+function of the operator’s own that checks nothing still counts as a check: whoever writes
+the config chooses it.
+
+A send replayed by its `idempotency_key` answers the earlier result and posts nothing, so
+no check runs for it; that earlier result’s plan says which check it went out under.
+
+The plan’s `before_send_check` line names the check that ran (`module:attr`), on every
+write, so a log of results shows which writes went out under [`notice()`](#correspond.outbound.notice).
+
 Anything else the check does (raise another exception, exit, return a value, stop with an
 `error_kind` outside [`CHECK_KINDS`](correspond.errors.html.md#correspond.errors.CHECK_KINDS)) also stops the write
 (`before_send_failed`). liaise supplies a real check (`liaise.vet.before_send`).
@@ -41,6 +57,10 @@ made without correspond never meets it. liaise’s hook covers those.
 ```pycon
 >>> resolve(None, config={})[1]
 'correspond.outbound:notice'
+>>> resolve(None, config={}, require=True)
+Traceback (most recent call last):
+    ...
+correspond.errors.CheckRequired: no check configured, and this caller requires one (require_check, --require-check or $CORRESPOND_REQUIRE_CHECK): name one with before_send = "module:attr" at the top of the config; until then nothing is sent
 >>> resolve(None, config={"before_send": "no.such.module:check"})
 Traceback (most recent call last):
     ...
@@ -49,17 +69,19 @@ correspond.errors.BeforeSendUnavailable: before_send = 'no.such.module:check' in
 
 ### Module Attributes
 
-| [`BeforeSend`](#correspond.outbound.BeforeSend)   | returns `None` to let the write go ahead, raises `Refused` or `NeedsApproval` to stop it.   |
-|---------------------------------------------------------------|---------------------------------------------------------------------------------------------|
-| [`CONFIG_KEY`](#correspond.outbound.CONFIG_KEY)   | The top-level key of the config file naming the check, as `"module:attr"`.                  |
-| [`DEFAULT`](#correspond.outbound.DEFAULT)      | The check that runs when neither the argument nor the config names one.                     |
+| [`BeforeSend`](#correspond.outbound.BeforeSend)           | returns `None` to let the write go ahead, raises `Refused` or `NeedsApproval` to stop it.   |
+|-----------------------------------------------------------------------|---------------------------------------------------------------------------------------------|
+| [`CONFIG_KEY`](#correspond.outbound.CONFIG_KEY)           | The top-level key of the config file naming the check, as `"module:attr"`.                  |
+| [`DEFAULT`](#correspond.outbound.DEFAULT)              | The check that runs when neither the argument nor the config names one.                     |
+| [`REQUIRE_CHECK_ENVVAR`](#correspond.outbound.REQUIRE_CHECK_ENVVAR) | The environment variable that makes every write in the process require a real check.        |
 
 ### Functions
 
-| [`check`](#correspond.outbound.check)(ref, draft, \*[, operation, dry_run, ...])   | Compute the audience, run the check, and return the plan lines with what stopped the write (`None`: it may go ahead).                             |
-|-----------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
-| [`notice`](#correspond.outbound.notice)(ref, draft, audience, \*\*context)          | The default check: every write goes ahead, and its plan and summary say who can read it.                                                          |
-| [`resolve`](#correspond.outbound.resolve)([before_send, config])                     | The check to run and the name it is reported by: the argument, else the config's, else [`notice()`](#correspond.outbound.notice). |
+| [`check`](#correspond.outbound.check)(ref, draft, \*[, operation, dry_run, ...])   | Compute the audience, run the check, and return the plan lines with what stopped the write (`None`: it may go ahead).                                        |
+|-----------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [`check_required`](#correspond.outbound.check_required)([require])                          | Whether a write must run a real check: `require`, or [`REQUIRE_CHECK_ENVVAR`](#correspond.outbound.REQUIRE_CHECK_ENVVAR) set to anything but an off value. |
+| [`notice`](#correspond.outbound.notice)(ref, draft, audience, \*\*context)          | The default check: every write goes ahead, and its plan and summary say who can read it.                                                                     |
+| [`resolve`](#correspond.outbound.resolve)([before_send, config, require])            | The check to run and the name it is reported by: the argument, else the config's, else [`notice()`](#correspond.outbound.notice).            |
 
 ### correspond.outbound.BeforeSend
 
@@ -78,16 +100,35 @@ The top-level key of the config file naming the check, as `"module:attr"`.
 
 The check that runs when neither the argument nor the config names one.
 
-### correspond.outbound.check(ref, draft, , operation='send', dry_run=False, message_id=None, before_send=None, registry=None)
+### correspond.outbound.REQUIRE_CHECK_ENVVAR *= 'CORRESPOND_REQUIRE_CHECK'*
+
+The environment variable that makes every write in the process require a real check.
+
+### correspond.outbound.check(ref, draft, , operation='send', dry_run=False, message_id=None, before_send=None, require_check=False, registry=None)
 
 Compute the audience, run the check, and return the plan lines with what stopped the write (`None`: it may go ahead).
 
 The audience is computed first, so a write that cannot be checked still shows who it
-would have reached. Never raises for anything the check does (`KeyboardInterrupt`
+would have reached. `require_check` stops the write when no real check would run
+(see [`resolve()`](#correspond.outbound.resolve)). Never raises for anything the check does (`KeyboardInterrupt`
 aside, which stops everything).
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict), [`Stopped`](correspond.errors.html.md#correspond.errors.Stopped) | [`None`](https://docs.python.org/3/builtins/constants.html#None)]
+
+### correspond.outbound.check_required(require=False)
+
+Whether a write must run a real check: `require`, or [`REQUIRE_CHECK_ENVVAR`](#correspond.outbound.REQUIRE_CHECK_ENVVAR) set to anything but an off value.
+
+An unrecognised value turns the requirement on: a typo must not lift it.
+
+```pycon
+>>> check_required(True)
+True
+```
+
+* **Return type:**
+  [`bool`](https://docs.python.org/3/builtins/functions.html#bool)
 
 ### correspond.outbound.notice(ref, draft, audience, \*\*context)
 
@@ -96,12 +137,14 @@ The default check: every write goes ahead, and its plan and summary say who can 
 * **Return type:**
   [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
-### correspond.outbound.resolve(before_send=None, , config=None)
+### correspond.outbound.resolve(before_send=None, , config=None, require=False)
 
 The check to run and the name it is reported by: the argument, else the config’s, else [`notice()`](#correspond.outbound.notice).
 
 Raises [`BeforeSendUnavailable`](correspond.errors.html.md#correspond.errors.BeforeSendUnavailable) when the config names a check
-that cannot be loaded, or cannot itself be read.
+that cannot be loaded, or cannot itself be read, and, when a real check is required
+(`require` or [`REQUIRE_CHECK_ENVVAR`](#correspond.outbound.REQUIRE_CHECK_ENVVAR), see [`check_required()`](#correspond.outbound.check_required)), when the
+check found is [`notice()`](#correspond.outbound.notice).
 
 * **Return type:**
   [`tuple`](https://docs.python.org/3/builtins/stdtypes.html#tuple)[[`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[`...`](https://docs.python.org/3/builtins/constants.html#Ellipsis), [`None`](https://docs.python.org/3/builtins/constants.html#None)], [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]

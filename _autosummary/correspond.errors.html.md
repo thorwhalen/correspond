@@ -35,18 +35,19 @@ verbs report it as a `SendResult` whose `error_kind` is one of [`CHECK_KINDS`](#
 
 ### Exceptions
 
-| [`BeforeSendFailed`](#correspond.errors.BeforeSendFailed)(reason, \*\*details)             | The `before_send` check raised something else, or returned a value, so nothing is sent.      |
-|----------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------|
-| [`BeforeSendUnavailable`](#correspond.errors.BeforeSendUnavailable)(reason, \*\*details)        | The configured `before_send` check could not be loaded, so nothing is sent.                  |
-| [`ChannelError`](#correspond.errors.ChannelError)(message, \*, kind[, retryable, ...]) | A platform call that failed, classified so the caller can decide what to do.                 |
-| [`CorrespondError`](#correspond.errors.CorrespondError)                                   | An expected failure, with a message meant for the person or agent that asked.                |
-| [`InvalidRef`](#correspond.errors.InvalidRef)                                        | A conversation reference that does not parse, or that its channel rejects.                   |
-| [`MissingRequirement`](#correspond.errors.MissingRequirement)(channel, missing, \*, fix)     | Something the channel needs is not here: a credential, a binary, an extra, an OS.            |
-| [`NeedsApproval`](#correspond.errors.NeedsApproval)(reason, \*\*details)                | Draft to operator: the write waits for the operator's approval.                              |
-| [`NotSupported`](#correspond.errors.NotSupported)(operation, channel, \*[, ...])       | The channel does not have this operation (or this feature of it).                            |
-| [`Refused`](#correspond.errors.Refused)(reason, \*\*details)                      | Block: this draft does not go to this conversation as written.                               |
-| [`Stopped`](#correspond.errors.Stopped)(reason, \*\*details)                      | A write the `before_send` check did not let leave: `error_kind` says how, `reason` says why. |
-| [`UnknownChannel`](#correspond.errors.UnknownChannel)(channel, \*[, known, hint])        | A channel name that no registered adapter answers to.                                        |
+| [`BeforeSendFailed`](#correspond.errors.BeforeSendFailed)(reason, \*\*details)             | The `before_send` check raised something else, or returned a value, so nothing is sent.                                |
+|----------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------|
+| [`BeforeSendUnavailable`](#correspond.errors.BeforeSendUnavailable)(reason, \*\*details)        | The configured `before_send` check could not be loaded, so nothing is sent.                                            |
+| [`ChannelError`](#correspond.errors.ChannelError)(message, \*, kind[, retryable, ...]) | A platform call that failed, classified so the caller can decide what to do.                                           |
+| [`CheckRequired`](#correspond.errors.CheckRequired)(reason, \*\*details)                | The caller requires a real `before_send` check and none is configured (only the default `notice`), so nothing is sent. |
+| [`CorrespondError`](#correspond.errors.CorrespondError)                                   | An expected failure, with a message meant for the person or agent that asked.                                          |
+| [`InvalidRef`](#correspond.errors.InvalidRef)                                        | A conversation reference that does not parse, or that its channel rejects.                                             |
+| [`MissingRequirement`](#correspond.errors.MissingRequirement)(channel, missing, \*, fix)     | Something the channel needs is not here: a credential, a binary, an extra, an OS.                                      |
+| [`NeedsApproval`](#correspond.errors.NeedsApproval)(reason, \*\*details)                | Draft to operator: the write waits for the operator's approval.                                                        |
+| [`NotSupported`](#correspond.errors.NotSupported)(operation, channel, \*[, ...])       | The channel does not have this operation (or this feature of it).                                                      |
+| [`Refused`](#correspond.errors.Refused)(reason, \*\*details)                      | Block: this draft does not go to this conversation as written.                                                         |
+| [`Stopped`](#correspond.errors.Stopped)(reason, \*\*details)                      | A write the `before_send` check did not let leave: `error_kind` says how, `reason` says why.                           |
+| [`UnknownChannel`](#correspond.errors.UnknownChannel)(channel, \*[, known, hint])        | A channel name that no registered adapter answers to.                                                                  |
 
 ### *exception* correspond.errors.BeforeSendFailed(reason, \*\*details)
 
@@ -69,6 +70,12 @@ Why the `before_send` check stopped a write. Nothing was sent; a retry of the sa
 Bases: [`CorrespondError`](#correspond.errors.CorrespondError)
 
 A platform call that failed, classified so the caller can decide what to do.
+
+### *exception* correspond.errors.CheckRequired(reason, \*\*details)
+
+Bases: [`BeforeSendUnavailable`](#correspond.errors.BeforeSendUnavailable)
+
+The caller requires a real `before_send` check and none is configured (only the default `notice`), so nothing is sent.
 
 ### *exception* correspond.errors.CorrespondError
 
