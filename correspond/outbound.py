@@ -25,6 +25,16 @@ Which check runs:
 3. else :func:`notice`, which lets the write go ahead: the audience line it adds to the plan
    is the whole of it.
 
+A caller that promises every write was checked (an unattended writer, a connector) asks for a
+real check: ``require_check=True`` on the write verbs, ``--require-check`` on the command
+line, or ``CORRESPOND_REQUIRE_CHECK=1`` in the environment (any value but empty, ``0``,
+``false``, ``no`` or ``off``). Then a write whose check resolves to :func:`notice`, by any of
+the three steps, stops with ``before_send_unavailable``. Either source can only add the
+requirement: an argument of ``False`` does not lift the environment's.
+
+The plan's ``before_send_check`` line names the check that ran (``module:attr``), on every
+write, so a log of results shows which writes went out under :func:`notice`.
+
 Anything else the check does (raise another exception, exit, return a value, stop with an
 ``error_kind`` outside :data:`~correspond.errors.CHECK_KINDS`) also stops the write
 (``before_send_failed``). liaise supplies a real check (``liaise.vet.before_send``).
@@ -36,6 +46,10 @@ made without correspond never meets it. liaise's hook covers those.
 
 >>> resolve(None, config={})[1]
 'correspond.outbound:notice'
+>>> resolve(None, config={}, require=True)
+Traceback (most recent call last):
+    ...
+correspond.errors.BeforeSendUnavailable: no check configured, and this caller requires one (require_check, --require-check or $CORRESPOND_REQUIRE_CHECK): name one with before_send = "module:attr" at the top of the config; until then nothing is sent
 >>> resolve(None, config={"before_send": "no.such.module:check"})
 Traceback (most recent call last):
     ...
@@ -45,6 +59,7 @@ correspond.errors.BeforeSendUnavailable: before_send = 'no.such.module:check' in
 from __future__ import annotations
 
 import importlib
+import os
 from collections.abc import Callable, Mapping
 from typing import Any
 
@@ -57,7 +72,16 @@ from correspond.errors import (
 )
 from correspond.model import Audience, ConversationRef, Draft
 
-__all__ = ["CONFIG_KEY", "DEFAULT", "BeforeSend", "check", "notice", "resolve"]
+__all__ = [
+    "CONFIG_KEY",
+    "DEFAULT",
+    "REQUIRE_CHECK_ENVVAR",
+    "BeforeSend",
+    "check",
+    "check_required",
+    "notice",
+    "resolve",
+]
 
 #: A ``before_send`` check, called ``(ref, draft, audience, *, operation, dry_run, message_id)``: returns ``None`` to let the write go ahead, raises ``Refused`` or ``NeedsApproval`` to stop it.
 BeforeSend = Callable[..., None]
@@ -65,6 +89,10 @@ BeforeSend = Callable[..., None]
 CONFIG_KEY = "before_send"
 #: The check that runs when neither the argument nor the config names one.
 DEFAULT = "correspond.outbound:notice"
+#: The environment variable that makes every write in the process require a real check.
+REQUIRE_CHECK_ENVVAR = "CORRESPOND_REQUIRE_CHECK"
+#: The values of :data:`REQUIRE_CHECK_ENVVAR` that leave the requirement off; any other value turns it on.
+_OFF = frozenset({"", "0", "false", "no", "off"})
 
 
 def notice(
@@ -72,6 +100,18 @@ def notice(
 ) -> None:
     """The default check: every write goes ahead, and its plan and summary say who can read it."""
     return None
+
+
+def check_required(require: bool = False) -> bool:
+    """Whether a write must run a real check: ``require``, or :data:`REQUIRE_CHECK_ENVVAR` set to anything but an off value.
+
+    An unrecognised value turns the requirement on: a typo must not lift it.
+
+    >>> check_required(True)
+    True
+    """
+    value = os.environ.get(REQUIRE_CHECK_ENVVAR, "")
+    return bool(require) or value.strip().lower() not in _OFF
 
 
 def _name_of(func: Callable) -> str:
@@ -102,13 +142,32 @@ def _load(reference: Any) -> BeforeSend:
 
 
 def resolve(
-    before_send: BeforeSend | None = None, *, config: Mapping[str, Any] | None = None
+    before_send: BeforeSend | None = None,
+    *,
+    config: Mapping[str, Any] | None = None,
+    require: bool = False,
 ) -> tuple[BeforeSend, str]:
     """The check to run and the name it is reported by: the argument, else the config's, else :func:`notice`.
 
     Raises :class:`~correspond.errors.BeforeSendUnavailable` when the config names a check
-    that cannot be loaded, or cannot itself be read.
+    that cannot be loaded, or cannot itself be read, and, when a real check is required
+    (``require`` or :data:`REQUIRE_CHECK_ENVVAR`, see :func:`check_required`), when the
+    check found is :func:`notice`.
     """
+    func, name = _resolve(before_send, config=config)
+    if func is notice and check_required(require):
+        raise BeforeSendUnavailable(
+            "no check configured, and this caller requires one "
+            f"(require_check, --require-check or ${REQUIRE_CHECK_ENVVAR}): "
+            f'name one with {CONFIG_KEY} = "module:attr" at the top of the config; '
+            "until then nothing is sent"
+        )
+    return func, name
+
+
+def _resolve(
+    before_send: BeforeSend | None, *, config: Mapping[str, Any] | None
+) -> tuple[BeforeSend, str]:
     if before_send is not None:
         if not callable(before_send):
             raise BeforeSendUnavailable(
@@ -160,12 +219,14 @@ def check(
     dry_run: bool = False,
     message_id: str | None = None,
     before_send: BeforeSend | None = None,
+    require_check: bool = False,
     registry: Mapping[str, Any] | None = None,
 ) -> tuple[dict, Stopped | None]:
     """Compute the audience, run the check, and return the plan lines with what stopped the write (``None``: it may go ahead).
 
     The audience is computed first, so a write that cannot be checked still shows who it
-    would have reached. Never raises for anything the check does (``KeyboardInterrupt``
+    would have reached. ``require_check`` stops the write when no real check would run
+    (see :func:`resolve`). Never raises for anything the check does (``KeyboardInterrupt``
     aside, which stops everything).
     """
     from correspond.ops import audience as compute_audience
@@ -174,7 +235,7 @@ def check(
     name: str | None = None  # known once the check is resolved
     stopped: Stopped | None = None
     try:
-        func, name = resolve(before_send)
+        func, name = resolve(before_send, require=require_check)
         answer = func(
             ref,
             draft,
@@ -205,6 +266,7 @@ def check(
         "audience": found.in_words(),
         "audience_hash": found.hash,
         "before_send": _verdict_line(name, stopped),
+        "before_send_check": name,
     }
     if stopped is not None and stopped.details:
         lines["before_send_details"] = {

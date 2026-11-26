@@ -20,6 +20,9 @@ _REF = {
 _DRY_RUN = {
     "help": "show the plan, who can read it and the before_send verdict; contact nothing but the audience lookup, and change nothing"
 }
+_REQUIRE_CHECK = {
+    "help": "stop the write (before_send_unavailable) unless the config names a real before_send check; for unattended callers ($CORRESPOND_REQUIRE_CHECK=1 does the same)"
+}
 _CC = {"help": "comma-separated addresses to copy (email)"}
 _BCC = {
     "help": "comma-separated addresses to copy blind (email): they count in the audience"
@@ -73,18 +76,21 @@ HELP = {
             "help": "comma-separated handles (GitHub, Telegram) or addresses (email) the channel must notify: a missing mention is added, an address goes in Cc"
         },
         "dry_run": _DRY_RUN,
+        "require_check": _REQUIRE_CHECK,
     },
     "edit": {
         "ref": _REF,
         "message_id": {"help": "the message id, as read shows it"},
         "text": {"help": "the new text, or - to read it from stdin"},
         "dry_run": _DRY_RUN,
+        "require_check": _REQUIRE_CHECK,
     },
     "react": {
         "ref": _REF,
         "message_id": {"help": "the message id, as read shows it"},
         "reaction": {"help": "the reaction, e.g. +1 or eyes (see capabilities)"},
         "dry_run": _DRY_RUN,
+        "require_check": _REQUIRE_CHECK,
     },
     "label": {
         "ref": _REF,
@@ -92,6 +98,7 @@ HELP = {
             "help": "comma-separated labels to add (a label name may not itself contain a comma)"
         },
         "dry_run": _DRY_RUN,
+        "require_check": _REQUIRE_CHECK,
     },
     "unlabel": {
         "ref": _REF,
@@ -99,6 +106,7 @@ HELP = {
             "help": "comma-separated labels to remove (a label name may not itself contain a comma)"
         },
         "dry_run": _DRY_RUN,
+        "require_check": _REQUIRE_CHECK,
     },
     "close": {
         "ref": _REF,
@@ -106,21 +114,26 @@ HELP = {
             "help": "why, in the channel's vocabulary (GitHub issues: completed, not_planned or duplicate)"
         },
         "dry_run": _DRY_RUN,
+        "require_check": _REQUIRE_CHECK,
     },
     "reopen": {
         "ref": _REF,
         "dry_run": _DRY_RUN,
+        "require_check": _REQUIRE_CHECK,
     },
+    "upload": {"ref": _REF, "dry_run": _DRY_RUN, "require_check": _REQUIRE_CHECK},
     "webhook-info": {"channel": {"help": "a channel name, e.g. telegram"}},
     "set-webhook": {
         "channel": {"help": "a channel name, e.g. telegram"},
         "url": {"help": "the HTTPS address of your own webhook receiver"},
         "dry_run": _DRY_RUN,
+        "require_check": _REQUIRE_CHECK,
     },
     "delete-webhook": {
         "channel": {"help": "a channel name, e.g. telegram"},
         "drop_pending_updates": {"help": "discard the updates Telegram is holding"},
         "dry_run": _DRY_RUN,
+        "require_check": _REQUIRE_CHECK,
     },
     "authored": {
         "text": {"help": "one email body as plain text, or - to read it from stdin"}

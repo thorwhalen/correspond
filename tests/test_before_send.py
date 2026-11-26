@@ -12,7 +12,7 @@ from correspond import registry, tools
 from correspond.errors import CHECK_KINDS, NeedsApproval, Refused
 from correspond.mcp import _resolve, _without, refs
 from correspond.model import Audience, ConversationRef, Draft, SendResult
-from correspond.outbound import DEFAULT, notice
+from correspond.outbound import DEFAULT, REQUIRE_CHECK_ENVVAR, notice
 from correspond.testing import FakeChannel, demo_channel
 
 CHECKS_MODULE = "c3_invented_checks"
@@ -24,6 +24,9 @@ def refuse(ref, draft, audience, **context):
 
 def hold(ref, draft, audience, **context):
     raise NeedsApproval("public audience")
+
+def allow(ref, draft, audience, **context):
+    return None
 
 not_callable = 42
 """
@@ -373,3 +376,140 @@ def test_the_mcp_server_itself_passes_through_the_check(editable, configure):
             getattr(answer, "structured_content", None) or str(answer), default=str
         )
     assert editable.sent == [] and editable.edited == []
+
+
+# ------------------------------------------------------------------ a caller that requires a real check (issue 117)
+
+
+def _stopped_for_want_of_a_check(result):
+    assert (result.ok, result.error_kind) == (False, "before_send_unavailable"), result
+    assert "requires one" in result.error and "nothing is sent" in result.error
+    assert result.plan["audience"]  # who it would have reached is still shown
+
+
+def test_require_check_stops_every_write_when_only_notice_would_run(editable):
+    for dry_run in (True, False):
+        _stopped_for_want_of_a_check(
+            correspond.send("fake:example/demo", "x", dry_run=dry_run, require_check=True)
+        )
+        _stopped_for_want_of_a_check(
+            correspond.edit(
+                "fake:example/demo", "m1", "x", dry_run=dry_run, require_check=True
+            )
+        )
+        _stopped_for_want_of_a_check(
+            correspond.react(
+                "fake:example/demo", "m1", "eyes", dry_run=dry_run, require_check=True
+            )
+        )
+        _stopped_for_want_of_a_check(
+            correspond.upload(
+                "fake:example/demo", "a.txt", b"a", dry_run=dry_run, require_check=True
+            )
+        )
+    assert editable.sent == editable.edited == editable.reacted == []
+    assert editable.uploaded == []
+    # without the requirement, the same writes still go ahead (interactive callers unchanged)
+    assert correspond.send("fake:example/demo", "x").ok and len(editable.sent) == 1
+
+
+def test_require_check_lets_a_write_through_a_real_check(fake, configure):
+    configure(f'"{CHECKS_MODULE}:allow"')
+    result = correspond.send("fake:example/demo", "x", require_check=True)
+    assert result.ok and len(fake.sent) == 1
+    assert result.plan["before_send_check"] == f"{CHECKS_MODULE}:allow"
+    configure(f'"{CHECKS_MODULE}:refuse"')
+    refused = correspond.send("fake:example/demo", "x", require_check=True)
+    assert refused.error_kind == "refused" and len(fake.sent) == 1
+
+
+def test_notice_named_explicitly_is_not_a_real_check(fake, configure):
+    configure(f'"{DEFAULT}"')
+    assert correspond.send(
+        "fake:example/demo", "x"
+    ).ok  # unchanged without the requirement
+    _stopped_for_want_of_a_check(
+        correspond.send("fake:example/demo", "x", require_check=True)
+    )
+    _stopped_for_want_of_a_check(
+        correspond.send("fake:example/demo", "x", before_send=notice, require_check=True)
+    )
+    assert len(fake.sent) == 1
+
+
+def test_a_check_passed_in_python_satisfies_the_requirement(fake):
+    result = correspond.send(
+        "fake:example/demo", "x", before_send=lambda *a, **k: None, require_check=True
+    )
+    assert result.ok and len(fake.sent) == 1
+
+
+@pytest.mark.parametrize("value", ["1", "true", "YES", "on", "ture", " 1 "])
+def test_the_environment_variable_requires_a_check(fake, monkeypatch, value):
+    monkeypatch.setenv(REQUIRE_CHECK_ENVVAR, value)
+    for require_check in (False, True):  # an argument of False does not lift it
+        _stopped_for_want_of_a_check(
+            correspond.send("fake:example/demo", "x", require_check=require_check)
+        )
+    assert tools.send("fake:example/demo", "x")["error_kind"] == (
+        "before_send_unavailable"
+    )
+    assert fake.sent == []
+
+
+@pytest.mark.parametrize("value", ["", "0", "false", "No", "OFF"])
+def test_the_environment_variable_off_values_leave_writes_as_they_were(
+    fake, monkeypatch, value
+):
+    monkeypatch.setenv(REQUIRE_CHECK_ENVVAR, value)
+    assert correspond.send("fake:example/demo", "x").ok and len(fake.sent) == 1
+
+
+def test_the_plan_names_the_check_that_ran_on_real_writes(fake, configure):
+    sent = correspond.send("fake:example/demo", "x")
+    assert sent.ok and not sent.dry_run
+    assert sent.plan["before_send_check"] == DEFAULT
+    assert "no check configured" in sent.plan["before_send"]
+    configure(f'"{CHECKS_MODULE}:allow"')
+    checked = correspond.send("fake:example/demo", "x")
+    assert checked.plan["before_send_check"] == f"{CHECKS_MODULE}:allow"
+    assert tools.send("fake:example/demo", "x")["plan"]["before_send_check"] == (
+        f"{CHECKS_MODULE}:allow"
+    )
+
+
+def test_cli_require_check(capsys, fake, configure):
+    code, out, err, channel = _cli(
+        capsys, "send", "fake:example/demo", "x", "--require-check", "--json"
+    )
+    result = json.loads(out)
+    assert code == 1 and result["error_kind"] == "before_send_unavailable"
+    assert "requires one" in result["summary"] and channel.sent == []
+    configure(f'"{CHECKS_MODULE}:allow"')
+    code, out, err, channel = _cli(
+        capsys, "send", "fake:example/demo", "x", "--require-check"
+    )
+    assert code == 0 and len(channel.sent) == 1
+    assert f"before_send_check: {CHECKS_MODULE}:allow" in out
+
+
+def test_every_write_tool_takes_require_check_and_mcp_hides_it():
+    writes = [t for t in tools.TOOLS if tools.SIDE_EFFECTS[t.__name__] == "external"]
+    assert {t.__name__ for t in writes} >= {"send", "edit", "upload", "close"}
+    for tool in writes:
+        if "dry_run" in inspect.signature(tool).parameters:
+            assert "require_check" in inspect.signature(tool).parameters, tool.__name__
+    for ref in refs(allow_send=True):
+        exposed = _without(_resolve(ref))
+        assert "require_check" not in inspect.signature(exposed).parameters, ref
+
+
+def test_mcp_writes_honour_the_environment_variable(editable, monkeypatch):
+    monkeypatch.setenv(REQUIRE_CHECK_ENVVAR, "1")
+    exposed = {r.split(":", 1)[1]: _without(_resolve(r)) for r in refs(allow_send=True)}
+    for result in (
+        exposed["send"](ref="fake:example/demo", text="x"),
+        exposed["edit"](ref="fake:example/demo", message_id="m1", text="x"),
+    ):
+        assert result["error_kind"] == "before_send_unavailable", result
+    assert editable.sent == editable.edited == []

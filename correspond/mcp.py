@@ -7,8 +7,10 @@ library. By default the server exposes only the tools that read (``channels``,
 ``edit``, ``react``, ``label``, ``unlabel``, ``close``, ``reopen``) are exposed only when the operator starts it with
 ``--allow-send``, and every write still takes ``dry_run``.
 
-The data root is the server's, never the model's: ``data_dir`` is removed from every tool's
-schema. Point the server elsewhere with ``CORRESPOND_DATA_DIR`` in the client configuration::
+The data root and the check requirement are the server's, never the model's: ``data_dir``
+and ``require_check`` are removed from every tool's schema. Point the server elsewhere with
+``CORRESPOND_DATA_DIR``, and make every write require a real ``before_send`` check with
+``CORRESPOND_REQUIRE_CHECK=1``, in the client configuration::
 
     {"mcpServers": {"correspond": {"command": "correspond-mcp"}}}
 """
@@ -35,7 +37,7 @@ __all__ = [
 
 DEFAULT_EFFECTS = ("read", "external-read")
 SEND_EFFECTS = ("external",)
-HIDDEN_PARAMETERS = ("data_dir",)
+HIDDEN_PARAMETERS = ("data_dir", "require_check")
 INSTRUCTIONS = (
     "Read and write messages on the user's channels (GitHub, email, ntfy, macOS notifications, Telegram, a web inbox) "
     "through one set of verbs. References look like github:owner/repo#12, email:someone@example.org, "
