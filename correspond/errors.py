@@ -35,6 +35,7 @@ __all__ = [
     "BeforeSendFailed",
     "BeforeSendUnavailable",
     "ChannelError",
+    "CheckRequired",
     "CorrespondError",
     "InvalidRef",
     "MissingRequirement",
@@ -153,6 +154,10 @@ class BeforeSendUnavailable(Stopped):
     """The configured ``before_send`` check could not be loaded, so nothing is sent."""
 
     error_kind = "before_send_unavailable"
+
+
+class CheckRequired(BeforeSendUnavailable):
+    """The caller requires a real ``before_send`` check and none is configured (only the default ``notice``), so nothing is sent."""
 
 
 class BeforeSendFailed(Stopped):

@@ -496,6 +496,7 @@ def _webhook_write(
     *,
     dry_run: bool,
     before_send: Callable[..., None] | None,
+    require_check: bool,
     registry: Mapping[str, Any] | None,
 ) -> SendResult:
     adapter = _webhook_adapter(channel, registry, WebhookManager, "set the webhook")
@@ -506,6 +507,7 @@ def _webhook_write(
         Draft(text=text),
         dry_run=dry_run,
         before_send=before_send,
+        require_check=require_check,
         registry=registry,
         write=lambda rehearse: call(adapter, rehearse),
     )
@@ -518,6 +520,7 @@ def set_webhook(
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
+    require_check: bool = False,
 ) -> SendResult:
     """Have ``channel``'s platform POST its updates to ``url``: listening by polling stops until :func:`delete_webhook`.
 
@@ -532,6 +535,7 @@ def set_webhook(
         lambda adapter, rehearse: adapter.set_webhook(url, dry_run=rehearse),
         dry_run=dry_run,
         before_send=before_send,
+        require_check=require_check,
         registry=registry,
     )
 
@@ -543,6 +547,7 @@ def delete_webhook(
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
+    require_check: bool = False,
 ) -> SendResult:
     """Stop webhook delivery for ``channel``, so it can be polled again; the ``before_send`` check runs (``operation="delete_webhook"``)."""
     return _webhook_write(
@@ -555,6 +560,7 @@ def delete_webhook(
         ),
         dry_run=dry_run,
         before_send=before_send,
+        require_check=require_check,
         registry=registry,
     )
 
@@ -701,6 +707,7 @@ def _checked_write(
     *,
     dry_run: bool,
     before_send: Callable[..., None] | None,
+    require_check: bool,
     registry: Mapping[str, Any] | None,
     write: Callable[[bool], SendResult],
     message_id: str | None = None,
@@ -723,6 +730,7 @@ def _checked_write(
         dry_run=dry_run,
         message_id=message_id,
         before_send=before_send,
+        require_check=require_check,
         registry=registry,
     )
     if stopped is None:
@@ -760,6 +768,7 @@ def send(
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
+    require_check: bool = False,
     idempotency_key: str | None = None,
     sends: MutableMapping[str, Any] | None = None,
 ) -> SendResult:
@@ -777,6 +786,9 @@ def send(
     ``NotSupported("notify")``.
     ``before_send(ref, draft, audience)`` runs first, on the dry run too; when ``None``, the
     config's ``before_send`` reference, else :func:`correspond.outbound.notice`.
+    ``require_check`` (or ``$CORRESPOND_REQUIRE_CHECK``) stops the send with
+    ``before_send_unavailable`` when that would be :func:`~correspond.outbound.notice`: for
+    a caller that promises every write was checked. The other write verbs take it too.
 
     ``idempotency_key`` makes sending the same message again safe: a key that already sent
     answers that send's result and posts nothing, and one whose earlier attempt may have
@@ -872,6 +884,7 @@ def send(
         effective,
         dry_run=dry_run,
         before_send=before_send,
+        require_check=require_check,
         registry=registry,
         write=write,
     )
@@ -1073,6 +1086,7 @@ def edit(
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
+    require_check: bool = False,
 ) -> SendResult:
     """Replace the text of a message correspond's account wrote; the ``before_send`` check runs first, as for :func:`send`."""
     adapter, ref = _adapter_for(ref, "edit", registry)
@@ -1089,6 +1103,7 @@ def edit(
         draft,
         dry_run=dry_run,
         before_send=before_send,
+        require_check=require_check,
         registry=registry,
         message_id=str(message_id),
         write=lambda rehearse: adapter.edit(
@@ -1105,6 +1120,7 @@ def react(
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
+    require_check: bool = False,
 ) -> SendResult:
     """Add a reaction to a message (the channel's capabilities list the reactions it accepts); the ``before_send`` check sees the reaction as the draft's text."""
     adapter, ref = _adapter_for(ref, "react", registry)
@@ -1123,6 +1139,7 @@ def react(
         Draft(text=reaction),
         dry_run=dry_run,
         before_send=before_send,
+        require_check=require_check,
         registry=registry,
         message_id=str(message_id),
         write=lambda rehearse: adapter.react(
@@ -1142,6 +1159,7 @@ def label(
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
+    require_check: bool = False,
 ) -> SendResult:
     """Add ``labels`` to a conversation; the ``before_send`` check sees them, comma-joined, as the draft's text."""
     adapter, ref = _adapter_for(ref, "label", registry)
@@ -1155,6 +1173,7 @@ def label(
         Draft(text=", ".join(labels)),
         dry_run=dry_run,
         before_send=before_send,
+        require_check=require_check,
         registry=registry,
         write=lambda rehearse: adapter.label(ref, labels, dry_run=rehearse),
     )
@@ -1167,6 +1186,7 @@ def unlabel(
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
+    require_check: bool = False,
 ) -> SendResult:
     """Remove ``labels`` from a conversation; the ``before_send`` check sees them, comma-joined, as the draft's text."""
     adapter, ref = _adapter_for(ref, "unlabel", registry)
@@ -1180,6 +1200,7 @@ def unlabel(
         Draft(text=", ".join(labels)),
         dry_run=dry_run,
         before_send=before_send,
+        require_check=require_check,
         registry=registry,
         write=lambda rehearse: adapter.unlabel(ref, labels, dry_run=rehearse),
     )
@@ -1196,6 +1217,7 @@ def upload(
     native: Mapping[str, Any] | None = None,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
+    require_check: bool = False,
     idempotency_key: str | None = None,
     sends: MutableMapping[str, Any] | None = None,
 ) -> SendResult:
@@ -1280,6 +1302,7 @@ def upload(
         draft,
         dry_run=dry_run,
         before_send=before_send,
+        require_check=require_check,
         registry=registry,
         write=write,
     )
@@ -1299,6 +1322,7 @@ def close(
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
+    require_check: bool = False,
 ) -> SendResult:
     """Close a conversation (an issue or a discussion), with an optional ``reason`` in the channel's vocabulary; the ``before_send`` check sees the reason (or ``close``) as the draft's text."""
     adapter, ref = _adapter_for(ref, "close", registry)
@@ -1310,6 +1334,7 @@ def close(
         Draft(text=reason or "close"),
         dry_run=dry_run,
         before_send=before_send,
+        require_check=require_check,
         registry=registry,
         write=lambda rehearse: adapter.close(ref, reason=reason, dry_run=rehearse),
     )
@@ -1321,6 +1346,7 @@ def reopen(
     dry_run: bool = False,
     registry: Mapping[str, Any] | None = None,
     before_send: Callable[..., None] | None = None,
+    require_check: bool = False,
 ) -> SendResult:
     """Reopen a closed conversation; the ``before_send`` check sees ``reopen`` as the draft's text."""
     adapter, ref = _adapter_for(ref, "reopen", registry)
@@ -1331,6 +1357,7 @@ def reopen(
         Draft(text="reopen"),
         dry_run=dry_run,
         before_send=before_send,
+        require_check=require_check,
         registry=registry,
         write=lambda rehearse: adapter.reopen(ref, dry_run=rehearse),
     )

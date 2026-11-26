@@ -11,6 +11,7 @@ def isolated(tmp_path, monkeypatch):
     for info in registry.CHANNELS:
         for setting in info.settings:
             monkeypatch.delenv(setting.env, raising=False)
+    monkeypatch.delenv("CORRESPOND_REQUIRE_CHECK", raising=False)
     monkeypatch.setenv(settings.CONFIG_ENVVAR, str(tmp_path / "absent-config.toml"))
     monkeypatch.setenv(settings.DATA_DIR_ENVVAR, str(tmp_path / "data"))
     monkeypatch.setattr(settings, "keychain_get", lambda service, **kwargs: "")

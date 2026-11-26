@@ -473,6 +473,7 @@ def send(
     include_hidden: bool = False,
     idempotency_key: str | None = None,
     dry_run: bool = False,
+    require_check: bool = False,
 ) -> dict:
     """Send a message to a conversation. Run it with `dry_run` first and show the plan, with who can read it: a real send reaches people and cannot be unsent. `priority` is low, normal, high or urgent, on channels that have priorities; `cc` and `bcc` (comma-separated) copy further recipients on email. `native` is a JSON object of fields only this channel has, the keys its `capabilities` list under `draft_fields` (on github:owner/repo, `{"labels": [...], "assignees": [...], "milestone": N}` set when the issue opens, the plan reporting which of them stuck; or `{"category": "<name or slug>"}` to open a discussion instead). `notify` (comma-separated) names who must be notified, and the channel guarantees it: on GitHub a missing mention is added, on email the address goes in Cc; a channel that cannot answers NotSupported. `attach` (comma-separated paths on this machine; a path may not contain a comma) sends files with the text, as many as the channel's `max_attachments` (email: each attached; Telegram: one, the text its caption); the paths are read as for `upload`, and the plan names each file's real path. Give an `idempotency_key` (any name for this one message) when you may send it again after a failure: the same key never posts it twice, and `unconfirmed` means an earlier try may have gone out, so check the conversation before sending with a new key. Every send passes the operator's before_send check first; `refused` or `needs_approval` is the answer for this draft: show the reason to the user, never reword the draft to get past it."""
     return _write_result(
@@ -490,21 +491,40 @@ def send(
                 ConversationRef.parse(ref).channel, attach, include_hidden=include_hidden
             ),
             dry_run=dry_run,
+            require_check=require_check,
             idempotency_key=idempotency_key or None,
         )
     )
 
 
 @_as_result
-def edit(ref: str, message_id: str, text: str, *, dry_run: bool = False) -> dict:
+def edit(
+    ref: str,
+    message_id: str,
+    text: str,
+    *,
+    dry_run: bool = False,
+    require_check: bool = False,
+) -> dict:
     """Replace the text of a message this account wrote (`message_id` as `read` shows it). Run it with `dry_run` first. The new text passes the before_send check, as for `send`."""
-    return _write_result(ops.edit(ref, message_id, text, dry_run=dry_run))
+    return _write_result(
+        ops.edit(ref, message_id, text, dry_run=dry_run, require_check=require_check)
+    )
 
 
 @_as_result
-def react(ref: str, message_id: str, reaction: str, *, dry_run: bool = False) -> dict:
+def react(
+    ref: str,
+    message_id: str,
+    reaction: str,
+    *,
+    dry_run: bool = False,
+    require_check: bool = False,
+) -> dict:
     """Add a reaction to a message (`capabilities` lists the reactions a channel accepts). Run it with `dry_run` first. It passes the before_send check, as for `send`."""
-    return _write_result(ops.react(ref, message_id, reaction, dry_run=dry_run))
+    return _write_result(
+        ops.react(ref, message_id, reaction, dry_run=dry_run, require_check=require_check)
+    )
 
 
 def _local_file(channel: str, path: str, *, include_hidden: bool) -> tuple[str, bytes]:
@@ -586,6 +606,7 @@ def upload(
     native: str | None = None,
     idempotency_key: str | None = None,
     dry_run: bool = False,
+    require_check: bool = False,
 ) -> dict:
     """Send the regular file at `path` (on this machine) to a conversation (`capabilities` gives `upload` and `max_upload_bytes`). `name` is what recipients see (the file's own name by default); `media_type` is guessed from the file's real name when not given. A path through a hidden file or folder (a dot name, such as ~/.ssh) is refused unless `include_hidden`. `native` is a JSON object of the channel's own options (`upload_fields` in its capabilities; on Telegram `{"as_document": true}` sends an image as the file it is, not a recompressed photo). Give an `idempotency_key` when you may upload it again after a failure: the same key never posts it twice. Run it with `dry_run` first: the plan shows `source` (the real path read), the name, size and SHA-256; show the operator the source. The before_send check sees that metadata, never the contents, so never upload a file the user did not ask to send."""
     channel = ConversationRef.parse(ref).channel
@@ -600,32 +621,51 @@ def upload(
             native=_native(native),
             idempotency_key=idempotency_key or None,
             dry_run=dry_run,
+            require_check=require_check,
         )
     )
 
 
 @_as_result
-def label(ref: str, labels: str, *, dry_run: bool = False) -> dict:
+def label(
+    ref: str, labels: str, *, dry_run: bool = False, require_check: bool = False
+) -> dict:
     """Add labels (comma-separated; a label name may not itself contain a comma) to a conversation (`capabilities` says whether a channel supports it). Run it with `dry_run` first. It passes the before_send check, as for `send`."""
-    return _write_result(ops.label(ref, _addresses(labels), dry_run=dry_run))
+    return _write_result(
+        ops.label(ref, _addresses(labels), dry_run=dry_run, require_check=require_check)
+    )
 
 
 @_as_result
-def unlabel(ref: str, labels: str, *, dry_run: bool = False) -> dict:
+def unlabel(
+    ref: str, labels: str, *, dry_run: bool = False, require_check: bool = False
+) -> dict:
     """Remove labels (comma-separated; a label name may not itself contain a comma) from a conversation. Run it with `dry_run` first. It passes the before_send check, as for `send`."""
-    return _write_result(ops.unlabel(ref, _addresses(labels), dry_run=dry_run))
+    return _write_result(
+        ops.unlabel(ref, _addresses(labels), dry_run=dry_run, require_check=require_check)
+    )
 
 
 @_as_result
-def close(ref: str, *, reason: str | None = None, dry_run: bool = False) -> dict:
+def close(
+    ref: str,
+    *,
+    reason: str | None = None,
+    dry_run: bool = False,
+    require_check: bool = False,
+) -> dict:
     """Close a conversation, e.g. an issue whose question has been answered (`capabilities` says whether a channel supports it). `reason` is in the channel's vocabulary (GitHub issues: completed, not_planned or duplicate; GitHub discussions: resolved, outdated or duplicate). Run it with `dry_run` first. It passes the before_send check, as for `send`."""
-    return _write_result(ops.close(ref, reason=reason or None, dry_run=dry_run))
+    return _write_result(
+        ops.close(
+            ref, reason=reason or None, dry_run=dry_run, require_check=require_check
+        )
+    )
 
 
 @_as_result
-def reopen(ref: str, *, dry_run: bool = False) -> dict:
+def reopen(ref: str, *, dry_run: bool = False, require_check: bool = False) -> dict:
     """Reopen a closed conversation. Run it with `dry_run` first. It passes the before_send check, as for `send`."""
-    return _write_result(ops.reopen(ref, dry_run=dry_run))
+    return _write_result(ops.reopen(ref, dry_run=dry_run, require_check=require_check))
 
 
 # ------------------------------------------------------------------------------ webhooks
@@ -650,16 +690,24 @@ def webhook_info(channel: str) -> dict:
 
 
 @_as_result
-def set_webhook(channel: str, url: str, *, dry_run: bool = False) -> dict:
+def set_webhook(
+    channel: str, url: str, *, dry_run: bool = False, require_check: bool = False
+) -> dict:
     """Have a channel's platform POST every update to `url` (HTTPS) instead of being polled (Telegram: with the configured webhook_secret, one connection at a time). Whoever `url` belongs to reads every message the account receives from then on: only ever a URL the operator gave for their own receiver. Listening by polling stops until `delete_webhook`, and listen then needs delivery = webhook. Run it with `dry_run` first and show the operator the plan. It passes the before_send check, as for `send`."""
     return _write_result(
-        ops.set_webhook(channel.strip().rstrip(":"), url, dry_run=dry_run)
+        ops.set_webhook(
+            channel.strip().rstrip(":"), url, dry_run=dry_run, require_check=require_check
+        )
     )
 
 
 @_as_result
 def delete_webhook(
-    channel: str, *, drop_pending_updates: bool = False, dry_run: bool = False
+    channel: str,
+    *,
+    drop_pending_updates: bool = False,
+    dry_run: bool = False,
+    require_check: bool = False,
 ) -> dict:
     """Stop a channel's webhook delivery, so it can be polled again (listen then needs delivery = poll). Pending updates are kept unless `drop_pending_updates`. Run it with `dry_run` first. It passes the before_send check, as for `send`."""
     return _write_result(
@@ -667,6 +715,7 @@ def delete_webhook(
             channel.strip().rstrip(":"),
             drop_pending_updates=drop_pending_updates,
             dry_run=dry_run,
+            require_check=require_check,
         )
     )
 

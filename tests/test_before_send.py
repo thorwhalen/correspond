@@ -12,7 +12,7 @@ from correspond import registry, tools
 from correspond.errors import CHECK_KINDS, NeedsApproval, Refused
 from correspond.mcp import _resolve, _without, refs
 from correspond.model import Audience, ConversationRef, Draft, SendResult
-from correspond.outbound import DEFAULT, notice
+from correspond.outbound import DEFAULT, REQUIRE_CHECK_ENVVAR, notice
 from correspond.testing import FakeChannel, demo_channel
 
 CHECKS_MODULE = "c3_invented_checks"
@@ -24,6 +24,18 @@ def refuse(ref, draft, audience, **context):
 
 def hold(ref, draft, audience, **context):
     raise NeedsApproval("public audience")
+
+def allow(ref, draft, audience, **context):
+    return None
+
+import functools
+from correspond.outbound import notice
+
+partial_notice = functools.partial(notice)
+
+@functools.wraps(notice)
+def wrapped_notice(*args, **kwargs):
+    return notice(*args, **kwargs)
 
 not_callable = 42
 """
@@ -60,6 +72,26 @@ class EditableFake(FakeChannel):
 
     def upload(self, ref, name, data, *, media_type="", dry_run=False):
         return self._done(ref, "upload", dry_run, self.uploaded, name=name)
+
+
+class FullWriteFake(EditableFake):
+    """:class:`EditableFake` with labels, close and reopen too, every one recorded in ``written``."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.written = []
+
+    def label(self, ref, labels, *, dry_run=False):
+        return self._done(ref, "label", dry_run, self.written, labels=list(labels))
+
+    def unlabel(self, ref, labels, *, dry_run=False):
+        return self._done(ref, "unlabel", dry_run, self.written, labels=list(labels))
+
+    def close(self, ref, *, reason=None, dry_run=False):
+        return self._done(ref, "close", dry_run, self.written, reason=reason)
+
+    def reopen(self, ref, *, dry_run=False):
+        return self._done(ref, "reopen", dry_run, self.written)
 
 
 @pytest.fixture
@@ -373,3 +405,218 @@ def test_the_mcp_server_itself_passes_through_the_check(editable, configure):
             getattr(answer, "structured_content", None) or str(answer), default=str
         )
     assert editable.sent == [] and editable.edited == []
+
+
+# ------------------------------------------------------------------ a caller that requires a real check (issue 117)
+
+
+def _stopped_for_want_of_a_check(result):
+    assert (result.ok, result.error_kind) == (False, "before_send_unavailable"), result
+    assert "requires one" in result.error and "nothing is sent" in result.error
+    assert result.plan["audience"]  # who it would have reached is still shown
+
+
+def test_require_check_stops_every_write_when_only_notice_would_run(editable):
+    for dry_run in (True, False):
+        _stopped_for_want_of_a_check(
+            correspond.send("fake:example/demo", "x", dry_run=dry_run, require_check=True)
+        )
+        _stopped_for_want_of_a_check(
+            correspond.edit(
+                "fake:example/demo", "m1", "x", dry_run=dry_run, require_check=True
+            )
+        )
+        _stopped_for_want_of_a_check(
+            correspond.react(
+                "fake:example/demo", "m1", "eyes", dry_run=dry_run, require_check=True
+            )
+        )
+        _stopped_for_want_of_a_check(
+            correspond.upload(
+                "fake:example/demo", "a.txt", b"a", dry_run=dry_run, require_check=True
+            )
+        )
+    assert editable.sent == editable.edited == editable.reacted == []
+    assert editable.uploaded == []
+    # without the requirement, the same writes still go ahead (interactive callers unchanged)
+    assert correspond.send("fake:example/demo", "x").ok and len(editable.sent) == 1
+
+
+def test_require_check_lets_a_write_through_a_real_check(fake, configure):
+    configure(f'"{CHECKS_MODULE}:allow"')
+    result = correspond.send("fake:example/demo", "x", require_check=True)
+    assert result.ok and len(fake.sent) == 1
+    assert result.plan["before_send_check"] == f"{CHECKS_MODULE}:allow"
+    configure(f'"{CHECKS_MODULE}:refuse"')
+    refused = correspond.send("fake:example/demo", "x", require_check=True)
+    assert refused.error_kind == "refused" and len(fake.sent) == 1
+
+
+def test_notice_named_explicitly_is_not_a_real_check(fake, configure):
+    configure(f'"{DEFAULT}"')
+    assert correspond.send(
+        "fake:example/demo", "x"
+    ).ok  # unchanged without the requirement
+    _stopped_for_want_of_a_check(
+        correspond.send("fake:example/demo", "x", require_check=True)
+    )
+    _stopped_for_want_of_a_check(
+        correspond.send("fake:example/demo", "x", before_send=notice, require_check=True)
+    )
+    assert len(fake.sent) == 1
+
+
+def test_a_check_passed_in_python_satisfies_the_requirement(fake):
+    result = correspond.send(
+        "fake:example/demo", "x", before_send=lambda *a, **k: None, require_check=True
+    )
+    assert result.ok and len(fake.sent) == 1
+
+
+@pytest.mark.parametrize("value", ["1", "true", "YES", "on", "ture", " 1 "])
+def test_the_environment_variable_requires_a_check(fake, monkeypatch, value):
+    monkeypatch.setenv(REQUIRE_CHECK_ENVVAR, value)
+    for require_check in (False, True):  # an argument of False does not lift it
+        _stopped_for_want_of_a_check(
+            correspond.send("fake:example/demo", "x", require_check=require_check)
+        )
+    assert tools.send("fake:example/demo", "x")["error_kind"] == (
+        "before_send_unavailable"
+    )
+    assert fake.sent == []
+
+
+@pytest.mark.parametrize("value", ["", "0", "false", "No", "OFF"])
+def test_the_environment_variable_off_values_leave_writes_as_they_were(
+    fake, monkeypatch, value
+):
+    monkeypatch.setenv(REQUIRE_CHECK_ENVVAR, value)
+    assert correspond.send("fake:example/demo", "x").ok and len(fake.sent) == 1
+
+
+def test_the_plan_names_the_check_that_ran_on_real_writes(fake, configure):
+    sent = correspond.send("fake:example/demo", "x")
+    assert sent.ok and not sent.dry_run
+    assert sent.plan["before_send_check"] == DEFAULT
+    assert "no check configured" in sent.plan["before_send"]
+    configure(f'"{CHECKS_MODULE}:allow"')
+    checked = correspond.send("fake:example/demo", "x")
+    assert checked.plan["before_send_check"] == f"{CHECKS_MODULE}:allow"
+    assert tools.send("fake:example/demo", "x")["plan"]["before_send_check"] == (
+        f"{CHECKS_MODULE}:allow"
+    )
+
+
+def test_cli_require_check(capsys, fake, configure):
+    code, out, err, channel = _cli(
+        capsys, "send", "fake:example/demo", "x", "--require-check", "--json"
+    )
+    result = json.loads(out)
+    assert code == 1 and result["error_kind"] == "before_send_unavailable"
+    assert "requires one" in result["summary"] and channel.sent == []
+    configure(f'"{CHECKS_MODULE}:allow"')
+    code, out, err, channel = _cli(
+        capsys, "send", "fake:example/demo", "x", "--require-check"
+    )
+    assert code == 0 and len(channel.sent) == 1
+    assert f"before_send_check: {CHECKS_MODULE}:allow" in out
+
+
+def test_mcp_hides_require_check():
+    for ref in refs(allow_send=True):
+        exposed = _without(_resolve(ref))
+        assert "require_check" not in inspect.signature(exposed).parameters, ref
+
+
+def test_mcp_writes_honour_the_environment_variable(editable, monkeypatch):
+    monkeypatch.setenv(REQUIRE_CHECK_ENVVAR, "1")
+    exposed = {r.split(":", 1)[1]: _without(_resolve(r)) for r in refs(allow_send=True)}
+    for result in (
+        exposed["send"](ref="fake:example/demo", text="x"),
+        exposed["edit"](ref="fake:example/demo", message_id="m1", text="x"),
+    ):
+        assert result["error_kind"] == "before_send_unavailable", result
+    assert editable.sent == editable.edited == []
+
+
+WRITE_VERBS = {
+    "send": ("fake:example/demo", "x"),
+    "edit": ("fake:example/demo", "m1", "x"),
+    "react": ("fake:example/demo", "m1", "eyes"),
+    "upload": ("fake:example/demo", "a.txt", b"a"),
+    "label": ("fake:example/demo", ["bug"]),
+    "unlabel": ("fake:example/demo", ["bug"]),
+    "close": ("fake:example/demo",),
+    "reopen": ("fake:example/demo",),
+}
+
+
+@pytest.mark.parametrize("verb", sorted(WRITE_VERBS))
+def test_every_write_verb_forwards_require_check_to_the_check(monkeypatch, verb):
+    from correspond import ops, outbound
+
+    channel = FullWriteFake(conversations=demo_channel().conversations)
+    registry.register_channel(channel, replace=True)
+
+    seen = []
+    real = outbound.check
+
+    def spy(*args, require_check=False, **kwargs):
+        seen.append(require_check)
+        return real(*args, require_check=require_check, **kwargs)
+
+    monkeypatch.setattr(outbound, "check", spy)
+    getattr(ops, verb)(*WRITE_VERBS[verb], dry_run=True, require_check=True)
+    try:
+        assert seen == [True], seen
+        result = getattr(ops, verb)(*WRITE_VERBS[verb], require_check=True)
+        _stopped_for_want_of_a_check(result)
+        assert channel.sent == channel.edited == channel.reacted == []
+        assert channel.uploaded == channel.written == []
+        assert getattr(ops, verb)(*WRITE_VERBS[verb]).ok  # unchanged without it
+    finally:
+        registry.unregister_channel("fake")
+
+
+def test_every_ops_write_verb_and_external_tool_takes_require_check():
+    from correspond import ops
+
+    for name in [*WRITE_VERBS, "set_webhook", "delete_webhook"]:
+        assert "require_check" in inspect.signature(getattr(ops, name)).parameters
+    for tool in tools.TOOLS:
+        if tools.SIDE_EFFECTS[tool.__name__] == "external":
+            params = inspect.signature(tool).parameters
+            assert "require_check" in params, tool.__name__
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        f'"{DEFAULT}"',
+        '"correspond.outbound:notice.__call__"',
+        f'"{CHECKS_MODULE}:partial_notice"',
+        f'"{CHECKS_MODULE}:wrapped_notice"',
+    ],
+)
+def test_notice_under_another_name_is_still_no_check(fake, configure, value):
+    configure(value)
+    assert (
+        correspond.send("fake:example/demo", "x", dry_run=True).plan["before_send_check"]
+        == DEFAULT
+    )  # a log filtered on the default finds the aliases too
+    result = correspond.send("fake:example/demo", "x", require_check=True)
+    _stopped_for_want_of_a_check(result)
+    assert result.plan["before_send_check"] == DEFAULT and fake.sent == []
+
+
+def test_the_relay_refuses_to_start_when_a_check_is_required_and_none_is_set(
+    fake, monkeypatch
+):
+    from correspond.channel import options
+
+    REF, RELAY = "fake:example/demo", "fake:example/relay"
+    assert options([REF, "--relay-to", RELAY, "--allow-send"], config={})["gate"]
+    monkeypatch.setenv(REQUIRE_CHECK_ENVVAR, "1")
+    with pytest.raises(SystemExit, match="requires one"):
+        options([REF, "--relay-to", RELAY, "--allow-send"], config={})
+    assert options([REF, "--allow-send"], config={})  # no relay, nothing to refuse
